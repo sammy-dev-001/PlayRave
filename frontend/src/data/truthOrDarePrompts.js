@@ -1,0 +1,237 @@
+// Truth or Dare prompts organized by category
+const truthOrDarePrompts = {
+    normal: {
+        truths: [
+            "What's the most embarrassing thing you've ever done?",
+            "Who was your first crush?",
+            "What's your biggest fear?",
+            "What's the worst date you've ever been on?",
+            "What's the most childish thing you still do?",
+            "What's your most embarrassing nickname?",
+            "What's the worst gift you've ever received?",
+            "What's your guilty pleasure?",
+            "Have you ever pretended to be sick to skip work/school?",
+            "What's the weirdest dream you've ever had?",
+            "What's your biggest insecurity?",
+            "What's the worst haircut you've ever had?",
+            "Have you ever laughed at an inappropriate time?",
+            "What's something you're terrible at but pretend to be good at?",
+            "What's the longest you've worn the same outfit?",
+            "Have you ever cried because of a movie?",
+            "What's the worst advice you've ever given?",
+            "What's your most irrational fear?",
+            "What's the most expensive thing you've broken?",
+            "Have you ever regifted something?",
+            "What's your most embarrassing childhood memory?",
+            "Have you ever talked to yourself in public?",
+            "What's the strangest food combination you enjoy?",
+            "Have you ever forgotten someone's name right after meeting them?",
+            "What's your biggest pet peeve?",
+            "Have you ever accidentally sent a message to the wrong person?",
+            "What's the most embarrassing thing in your room?",
+            "Have you ever pretended to know something you didn't?",
+            "What's your worst habit?",
+            "Have you ever been caught singing in the shower?"
+        ],
+        dares: [
+            "Do 20 pushups right now",
+            "Do your best impression of someone in the room",
+            "Dance with no music for 1 minute",
+            "Do 10 burpees",
+            "Do the worm",
+            "Do your best celebrity impression",
+            "Plank for 1 minute",
+            "Do a cartwheel (or attempt one)",
+            "Do 20 jumping jacks",
+            "Moonwalk across the room",
+            "Do a handstand against the wall for 30 seconds",
+            "Do the chicken dance",
+            "Yell out the window 'I love pizza!'",
+            "Do 15 squats",
+            "Do your best runway walk",
+            "Sing the alphabet backwards",
+            "Do a trust fall",
+            "Do the macarena",
+            "Do 10 lunges",
+            "Do a silly walk across the room",
+            "Balance a spoon on your nose for 30 seconds",
+            "Do your best robot dance",
+            "Hop on one foot for 1 minute",
+            "Do 5 cartwheels in a row",
+            "Spin around 10 times and walk in a straight line",
+            "Do the splits (or attempt)",
+            "Act like a monkey for 1 minute",
+            "Do your best opera singing",
+            "Walk backwards for the next 2 rounds",
+            "Do 25 jumping jacks while singing"
+        ]
+    },
+    spicy: {
+        truths: [
+            "What's the most attractive thing about someone in this room?",
+            "Have you ever had a crush on someone here?",
+            "What's the sexiest thing someone has done to you?",
+            "Have you ever skinny dipped?",
+            "What's your biggest turn-off in bed?",
+            "Have you ever made out with someone within 24 hours of meeting them?",
+            "What's the most risqué photo you've ever taken?",
+            "Have you ever had a friends-with-benefits situation?",
+            "What's your most embarrassing sexual encounter?",
+            "Have you ever been attracted to someone of the same sex?",
+            "What's the most public place you've made out with someone?",
+            "Have you ever sent a dirty text to the wrong person?",
+            "What's your secret sexual desire?",
+            "Have you ever hooked up with an ex after breaking up?",
+            "What's the most romantic thing you've done for someone?",
+            "Have you ever been caught in a compromising position?",
+            "What's your ideal type physically?",
+            "Have you ever dated two people at once?",
+            "What's the most you've done on a first date?",
+            "Have you ever had a sex dream about someone here?",
+            "What's the longest you've gone on a date?",
+            "Have you ever kissed someone to make someone else jealous?",
+            "What's your biggest bedroom fantasy?",
+            "Have you ever had a crush on a friend's sibling?",
+            "What's the most flirtatious thing you've done?",
+            "Have you ever been in a love triangle?",
+            "What's your favorite physical feature on yourself?",
+            "Have you ever had feelings for someone taken?",
+            "What's the most intimate thing you've done in public?",
+            "Have you ever fantasized about someone in this room?"
+        ],
+        dares: [
+            "Slow dance with someone for 1 minute",
+            "Give someone a passionate hug for 10 seconds",
+            "Whisper your biggest secret in someone's ear",
+            "Let someone feed you a piece of food sensually",
+            "Stare into someone's eyes for 30 seconds without laughing",
+            "Give someone a shoulder massage while making eye contact",
+            "Let the group vote on who you should kiss on the cheek",
+            "Describe your perfect date night in detail",
+            "Show everyone your most flirty text conversation",
+            "Do 7 minutes in heaven with someone (just talking)",
+            "Let someone apply lipstick on you",
+            "Recreate your best pickup line on someone",
+            "Sit on someone's lap for the next 2 rounds",
+            "Let someone smell your neck and describe your scent",
+            "Exchange a piece of clothing with someone",
+            "Give someone a compliment that makes them blush",
+            "Let the group choose two people to slow dance",
+            "Describe your last romantic dream",
+            "Let someone trace their finger on your palm for 30 seconds",
+            "Tell someone here what you find most attractive about them",
+            "Serenade someone with a love song",
+            "Give someone a foot massage",
+            "Let someone play with your hair for 1 minute",
+            "Whisper something romantic in someone's ear",
+            "Hold hands with someone for the next 3 rounds",
+            "Give someone a piggyback ride around the room",
+            "Let someone choose a romantic nickname for you",
+            "Describe your ideal kiss",
+            "Let someone draw a heart on your cheek",
+            "Cuddle with someone for 2 minutes"
+        ]
+    },
+    naughty: {
+        truths: [
+            "What's your biggest sexual fantasy?",
+            "Have you ever had a one-night stand?",
+            "What's the wildest place you've ever had sex?",
+            "Have you ever sent nudes to someone?",
+            "What's your body count?",
+            "Have you ever been walked in on during sex?",
+            "What's the kinkiest thing you've ever done?",
+            "Have you ever had sex in public?",
+            "What's your favorite position?",
+            "Have you ever watched porn with someone?",
+            "What's the longest you've gone without sex?",
+            "Have you ever had a threesome or would you?",
+            "What's your biggest turn-on?",
+            "Have you ever role-played during sex?",
+            "What's the most embarrassing thing that's happened during sex?",
+            "Have you ever faked an orgasm?",
+            "What's your go-to move in bed?",
+            "Have you ever been caught masturbating?",
+            "What's the most adventurous thing you've done sexually?",
+            "Have you ever hooked up with someone here?",
+            "What's your favorite sex toy?",
+            "Have you ever had phone sex?",
+            "What's the longest you've had sex for?",
+            "Have you ever tried BDSM?",
+            "What's your dirtiest sexual thought right now?",
+            "Have you ever had sex with someone you just met?",
+            "What's the most people you've slept with in one week?",
+            "Have you ever had a sexual experience with the same gender?",
+            "What's your favorite place to be touched?",
+            "Have you ever recorded yourself having sex?"
+        ],
+        dares: [
+            "Give someone here a lap dance for 30 seconds",
+            "Kiss the person to your left",
+            "Send a flirty text to your crush right now",
+            "Do a sexy dance for 1 minute",
+            "Let someone give you a hickey or give them one",
+            "Remove two piece of clothing",
+            "Whisper something dirty in someone's ear",
+            "Demonstrate your best kissing technique on your hand",
+            "Let someone lick whipped cream off your neck",
+            "Describe your ideal one-night stand",
+            "Show the group your sexiest photo",
+            "Let someone of the group's choice sit on your lap for 2 rounds",
+            "Make out with someone for 10 seconds",
+            "Tell everyone your dirtiest secret",
+            "Let the group go through your dating app messages",
+            "Recreate your best orgasm face",
+            "Give someone a sensual massage for 1 minute",
+            "Let someone remove one piece of your clothing",
+            "Dirty talk to an imaginary person for 30 seconds",
+            "Let someone spank you 3 times",
+            "Suck on someone's finger for 10 seconds",
+            "Let someone bite your neck gently",
+            "Grind on someone for 30 seconds",
+            "Let someone touch your inner thigh",
+            "Kiss someone's neck for 10 seconds",
+            "Let someone run their hands through your hair sensually",
+            "Simulate a sexual position with someone (clothed)",
+            "Let someone whisper their fantasy in your ear",
+            "Give someone a body shot",
+            "Let someone blindfold you and touch your face",
+            "Give someone a handjob or receive one ",
+            "Suck on someone's nipples for 10 seconds",
+            "Let someone finger you or finger them ",
+            "Hump someone skin-to-skin for 30 seconds",
+            "Give someone oral sex for 10 seconds ",
+            "Receive a blowjob or give one ",
+            "Give someone a nude hug for 10 seconds",
+            "Let someone touch your bare chest",
+            "Grind on someone's lap until they get turned on",
+            "Let someone suck your toes"
+        ]
+    }
+};
+
+export const getRandomTruth = (category = 'normal', usedTruths = []) => {
+    const categoryTruths = truthOrDarePrompts[category]?.truths || truthOrDarePrompts.normal.truths;
+    const availableTruths = categoryTruths.filter(truth => !usedTruths.includes(truth));
+
+    // Reset if all used
+    if (availableTruths.length === 0) {
+        return categoryTruths[Math.floor(Math.random() * categoryTruths.length)];
+    }
+
+    return availableTruths[Math.floor(Math.random() * availableTruths.length)];
+};
+
+export const getRandomDare = (category = 'normal', usedDares = []) => {
+    const categoryDares = truthOrDarePrompts[category]?.dares || truthOrDarePrompts.normal.dares;
+    const availableDares = categoryDares.filter(dare => !usedDares.includes(dare));
+
+    // Reset if all used
+    if (availableDares.length === 0) {
+        return categoryDares[Math.floor(Math.random() * categoryDares.length)];
+    }
+
+    return availableDares[Math.floor(Math.random() * availableDares.length)];
+};
+
+export default truthOrDarePrompts;
