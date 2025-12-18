@@ -740,13 +740,13 @@ class GameManager {
     startWhotGame(roomId, room, hostParticipates = true) {
         const { createWhotDeck, shuffleDeck } = require('../data/whotCards');
 
-        // Check max 4 players
+        // Check player count (2-8 players supported)
         const participatingPlayers = room.players.filter(p => hostParticipates || !p.isHost);
         if (participatingPlayers.length < 2) {
             return { error: 'Whot requires at least 2 players' };
         }
-        if (participatingPlayers.length > 4) {
-            return { error: 'Whot supports maximum 4 players' };
+        if (participatingPlayers.length > 8) {
+            return { error: 'Whot supports maximum 8 players' };
         }
 
         const deck = shuffleDeck(createWhotDeck());
