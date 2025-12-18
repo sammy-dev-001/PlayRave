@@ -28,3 +28,4 @@ npm-debug.log*
 # Native builds (if not using)
 android/
 ios/
+.vercel

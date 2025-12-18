@@ -3,6 +3,7 @@ import { View, StyleSheet, TextInput, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import ConnectionStatus from '../components/ConnectionStatus';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
@@ -72,6 +73,11 @@ const HomeScreen = ({ navigation }) => {
 
     return (
         <NeonContainer style={styles.container} showMuteButton>
+            {/* Connection Status Indicator */}
+            <View style={styles.connectionContainer}>
+                <ConnectionStatus showLabel={true} size="small" />
+            </View>
+
             <View style={styles.logoArea}>
                 <NeonText size={42} weight="bold" glow>PLAYRAVE</NeonText>
                 <NeonText size={16} color={COLORS.limeGlow} style={{ letterSpacing: 2 }}>NEON PARTY</NeonText>
@@ -106,6 +112,12 @@ const styles = StyleSheet.create({
     container: {
         justifyContent: 'center',
         padding: 20,
+    },
+    connectionContainer: {
+        position: 'absolute',
+        top: 50,
+        left: 20,
+        zIndex: 10,
     },
     logoArea: {
         alignItems: 'center',
