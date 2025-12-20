@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -39,78 +39,91 @@ const TruthOrDareCategorySelectionScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer showBackButton>
-            <View style={styles.header}>
-                <NeonText size={32} weight="bold" glow={true}>
-                    TRUTH OR DARE
-                </NeonText>
-                <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                    Choose your category
-                </NeonText>
-            </View>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.header}>
+                    <NeonText size={32} weight="bold" glow={true}>
+                        TRUTH OR DARE
+                    </NeonText>
+                    <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
+                        Choose your category
+                    </NeonText>
+                </View>
 
-            <View style={styles.categoriesContainer}>
-                {categories.map(category => (
-                    <TouchableOpacity
-                        key={category.id}
-                        style={[
-                            styles.categoryCard,
-                            { borderColor: category.color },
-                            selectedCategory === category.id && styles.selectedCard
-                        ]}
-                        onPress={() => setSelectedCategory(category.id)}
-                    >
-                        <NeonText size={48} style={styles.categoryIcon}>
-                            {category.icon}
-                        </NeonText>
-                        <NeonText
-                            size={24}
-                            weight="bold"
-                            color={selectedCategory === category.id ? category.color : COLORS.white}
-                            glow={selectedCategory === category.id}
+                <View style={styles.categoriesContainer}>
+                    {categories.map(category => (
+                        <TouchableOpacity
+                            key={category.id}
+                            style={[
+                                styles.categoryCard,
+                                { borderColor: category.color },
+                                selectedCategory === category.id && styles.selectedCard
+                            ]}
+                            onPress={() => setSelectedCategory(category.id)}
                         >
-                            {category.name}
-                        </NeonText>
-                        <NeonText size={14} color="#888" style={styles.categoryDescription}>
-                            {category.description}
-                        </NeonText>
-                        {selectedCategory === category.id && (
-                            <View style={[styles.selectedBadge, { backgroundColor: category.color }]}>
-                                <NeonText size={12} weight="bold" color="#000">
-                                    SELECTED
-                                </NeonText>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                ))}
-            </View>
+                            <NeonText size={40} style={styles.categoryIcon}>
+                                {category.icon}
+                            </NeonText>
+                            <NeonText
+                                size={22}
+                                weight="bold"
+                                color={selectedCategory === category.id ? category.color : COLORS.white}
+                                glow={selectedCategory === category.id}
+                            >
+                                {category.name}
+                            </NeonText>
+                            <NeonText size={13} color="#888" style={styles.categoryDescription}>
+                                {category.description}
+                            </NeonText>
+                            {selectedCategory === category.id && (
+                                <View style={[styles.selectedBadge, { backgroundColor: category.color }]}>
+                                    <NeonText size={10} weight="bold" color="#000">
+                                        SELECTED
+                                    </NeonText>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
-            <NeonButton
-                title="START GAME"
-                onPress={handleStartGame}
-                variant="primary"
-                style={styles.startButton}
-            />
+                <NeonButton
+                    title="START GAME"
+                    onPress={handleStartGame}
+                    variant="primary"
+                    style={styles.startButton}
+                />
+            </ScrollView>
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: 30,
+    },
     header: {
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: 25,
     },
     subtitle: {
         marginTop: 10,
     },
     categoriesContainer: {
-        gap: 20,
-        marginBottom: 30,
+        gap: 15,
+        marginBottom: 25,
     },
     categoryCard: {
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 16,
         borderWidth: 2,
-        padding: 25,
+        padding: 20,
         alignItems: 'center',
         position: 'relative',
     },
@@ -119,19 +132,19 @@ const styles = StyleSheet.create({
         borderWidth: 3,
     },
     categoryIcon: {
-        marginBottom: 10,
+        marginBottom: 8,
     },
     categoryDescription: {
-        marginTop: 8,
+        marginTop: 6,
         textAlign: 'center',
     },
     selectedBadge: {
         position: 'absolute',
-        top: 10,
-        right: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 12,
+        top: 8,
+        right: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 10,
     },
     startButton: {
         marginTop: 'auto',
@@ -139,3 +152,4 @@ const styles = StyleSheet.create({
 });
 
 export default TruthOrDareCategorySelectionScreen;
+
