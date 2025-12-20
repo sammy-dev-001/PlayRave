@@ -55,10 +55,19 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         console.log("disconnected:", socket.id);
-        const result = roomManager.removePlayer(socket.id);
-        if (result && !result.roomDeleted) {
-            io.to(result.roomId).emit("room-updated", result.room);
-        }
+
+        // Add a grace period before removing player (helps with mobile reconnects)
+        const DISCONNECT_GRACE_PERIOD = 10000; // 10 seconds
+
+        setTimeout(() => {
+            // Check if this socket has reconnected (same player might have new socket)
+            // For now, just remove after the grace period
+            const result = roomManager.removePlayer(socket.id);
+            if (result && !result.roomDeleted) {
+                console.log("Player removed after grace period:", socket.id);
+                io.to(result.roomId).emit("room-updated", result.room);
+            }
+        }, DISCONNECT_GRACE_PERIOD);
     });
 
     socket.on("set-game-type", ({ roomId, gameType }) => {
