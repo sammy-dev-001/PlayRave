@@ -25,7 +25,7 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "backgroundColor": "#0a0a1a",
       "themeColor": "#00ffff",
       "name": "PlayRave",
