@@ -8,7 +8,7 @@ import { COLORS, FONTS } from '../constants/theme';
 
 const JoinScreen = ({ navigation, route }) => {
     const [name, setName] = useState(route.params?.playerName || '');
-    const [code, setCode] = useState('');
+    const [code, setCode] = useState(route.params?.roomCode || '');
 
     const handleJoin = () => {
         if (!name || !code) {

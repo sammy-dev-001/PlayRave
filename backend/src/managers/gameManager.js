@@ -2,6 +2,7 @@ const { getRandomQuestions } = require('../data/triviaQuestions');
 const { getRandomStatements } = require('../data/mythOrFactStatements');
 const { getRandomPrompts } = require('../data/whosMostLikelyPrompts');
 const { getRandomTruth, getRandomDare } = require('../data/truthOrDarePrompts');
+const { getRandomPrompt: getNHIEPrompt } = require('../data/neverHaveIEverPrompts');
 
 class GameManager {
     constructor() {
@@ -1079,6 +1080,92 @@ class GameManager {
             success: true,
             nextPlayerId: game.playerOrder[game.currentPlayerIndex],
             turnCount: game.turnCount
+        };
+    }
+
+    // ==================== NEVER HAVE I EVER ====================
+    startNeverHaveIEverGame(roomId, room, category = 'normal') {
+        const playerOrder = room.players.map(p => p.id);
+        const firstPrompt = getNHIEPrompt(category, []);
+
+        const game = {
+            type: 'never-have-i-ever',
+            roomId,
+            status: 'PLAYING',
+            category,
+            currentPrompt: firstPrompt,
+            usedPrompts: [firstPrompt],
+            roundNumber: 1,
+            playerOrder,
+            playerScores: {},
+            playerResponses: {} // Track who responded this round
+        };
+
+        // Initialize scores
+        playerOrder.forEach(pid => {
+            game.playerScores[pid] = 0;
+            game.playerResponses[pid] = null; // null = not responded, true = has done it, false = hasn't
+        });
+
+        this.activeGames.set(roomId, game);
+        return game;
+    }
+
+    respondNeverHaveIEver(roomId, playerId, hasDoneIt) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'never-have-i-ever') return { error: 'Game not found' };
+
+        game.playerResponses[playerId] = hasDoneIt;
+        if (hasDoneIt) {
+            game.playerScores[playerId] = (game.playerScores[playerId] || 0) + 1;
+        }
+
+        // Check if all players responded
+        const allResponded = game.playerOrder.every(pid => game.playerResponses[pid] !== null);
+
+        return {
+            success: true,
+            playerId,
+            hasDoneIt,
+            allResponded,
+            playerScores: game.playerScores,
+            playerResponses: game.playerResponses
+        };
+    }
+
+    nextNeverHaveIEverRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'never-have-i-ever') return { error: 'Game not found' };
+
+        const newPrompt = getNHIEPrompt(game.category, game.usedPrompts);
+        game.currentPrompt = newPrompt;
+        game.usedPrompts.push(newPrompt);
+        game.roundNumber++;
+
+        // Reset responses for new round
+        game.playerOrder.forEach(pid => {
+            game.playerResponses[pid] = null;
+        });
+
+        return {
+            success: true,
+            currentPrompt: game.currentPrompt,
+            roundNumber: game.roundNumber,
+            playerResponses: game.playerResponses
+        };
+    }
+
+    getNeverHaveIEverState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'never-have-i-ever') return null;
+
+        return {
+            currentPrompt: game.currentPrompt,
+            roundNumber: game.roundNumber,
+            category: game.category,
+            playerScores: game.playerScores,
+            playerResponses: game.playerResponses,
+            status: game.status
         };
     }
 }

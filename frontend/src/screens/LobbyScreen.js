@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Switch } from 'react-native';
+import { View, StyleSheet, FlatList, Switch, Share, Modal, TouchableOpacity, Image, Linking, Platform } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -14,6 +14,7 @@ const LobbyScreen = ({ route, navigation }) => {
     const [selectedGame, setSelectedGame] = useState(route.params.selectedGame || route.params.room.gameType);
     const [hostParticipates, setHostParticipates] = useState(false);
     const [socketConnected, setSocketConnected] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
 
     useEffect(() => {
         const checkConnection = () => {
@@ -86,6 +87,13 @@ const LobbyScreen = ({ route, navigation }) => {
                     players,
                     category: gameState?.category || 'normal'
                 });
+            } else if (gameType === 'never-have-i-ever') {
+                navigation.navigate('OnlineNeverHaveIEver', {
+                    room,
+                    isHost,
+                    initialGameState: gameState,
+                    players
+                });
             }
         };
 
@@ -118,6 +126,16 @@ const LobbyScreen = ({ route, navigation }) => {
             return;
         }
 
+        // For Never Have I Ever, navigate to category selection
+        if (selectedGame === 'never-have-i') {
+            navigation.navigate('OnlineNHIECategory', {
+                room,
+                isHost,
+                playerName
+            });
+            return;
+        }
+
         SocketService.emit('start-game', {
             roomId: room.id,
             gameType: selectedGame,
@@ -129,6 +147,29 @@ const LobbyScreen = ({ route, navigation }) => {
     const handleLeaveLobby = () => {
         SocketService.emit('leave-room', { roomId: room.id });
         navigation.navigate('Home');
+    };
+
+    // Generate join link - using the deployed URL
+    const getJoinLink = () => {
+        // Try to get the app URL from environment or default to playrave.vercel.app
+        const baseUrl = 'https://playrave.vercel.app';
+        return `${baseUrl}?join=${room.id}`;
+    };
+
+    const handleShareLink = async () => {
+        try {
+            await Share.share({
+                message: `Join my PlayRave game! 🎮\n\nRoom Code: ${room.id}\n\nOr use this link:\n${getJoinLink()}`,
+                title: 'Join PlayRave Game'
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
+    };
+
+    const getQRCodeUrl = () => {
+        const joinLink = encodeURIComponent(getJoinLink());
+        return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${joinLink}&bgcolor=1a1a2e&color=00f0ff`;
     };
 
     const renderPlayer = ({ item }) => (
@@ -156,7 +197,57 @@ const LobbyScreen = ({ route, navigation }) => {
                         </NeonText>
                     </View>
                 )}
+                {/* Share Buttons */}
+                <View style={styles.shareButtons}>
+                    <TouchableOpacity style={styles.shareBtn} onPress={handleShareLink}>
+                        <NeonText size={20}>📤</NeonText>
+                        <NeonText size={12} color={COLORS.neonCyan}>Share</NeonText>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.shareBtn} onPress={() => setShowShareModal(true)}>
+                        <NeonText size={20}>📱</NeonText>
+                        <NeonText size={12} color={COLORS.neonCyan}>QR Code</NeonText>
+                    </TouchableOpacity>
+                </View>
             </View>
+
+            {/* QR Code Modal */}
+            <Modal
+                visible={showShareModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowShareModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowShareModal(false)}
+                >
+                    <View style={styles.qrModal}>
+                        <NeonText size={20} weight="bold" glow style={styles.qrTitle}>
+                            SCAN TO JOIN
+                        </NeonText>
+                        <Image
+                            source={{ uri: getQRCodeUrl() }}
+                            style={styles.qrImage}
+                            resizeMode="contain"
+                        />
+                        <NeonText size={14} color="#888" style={styles.qrSubtitle}>
+                            Room: {room.id}
+                        </NeonText>
+                        <NeonButton
+                            title="SHARE LINK"
+                            onPress={() => {
+                                setShowShareModal(false);
+                                handleShareLink();
+                            }}
+                            style={styles.qrShareBtn}
+                        />
+                        <TouchableOpacity onPress={() => setShowShareModal(false)}>
+                            <NeonText size={14} color={COLORS.hotPink}>Close</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             <NeonText size={20} style={styles.sectionTitle}>PLAYERS IN LOBBY</NeonText>
 
@@ -268,6 +359,49 @@ const styles = StyleSheet.create({
     },
     leaveButton: {
         marginTop: 10,
+    },
+    shareButtons: {
+        flexDirection: 'row',
+        gap: 20,
+        marginTop: 15,
+    },
+    shareBtn: {
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+        minWidth: 70,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    qrModal: {
+        backgroundColor: '#1a1a2e',
+        borderRadius: 20,
+        padding: 30,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: COLORS.neonCyan,
+        width: 300,
+    },
+    qrTitle: {
+        marginBottom: 20,
+    },
+    qrImage: {
+        width: 200,
+        height: 200,
+        marginBottom: 15,
+    },
+    qrSubtitle: {
+        marginBottom: 20,
+    },
+    qrShareBtn: {
+        marginBottom: 15,
     }
 });
 

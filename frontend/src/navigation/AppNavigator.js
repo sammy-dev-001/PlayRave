@@ -29,6 +29,8 @@ import WhotGameScreen from '../screens/WhotGameScreen';
 import ScoreboardScreen from '../screens/ScoreboardScreen';
 import NeverHaveIEverCategoryScreen from '../screens/NeverHaveIEverCategoryScreen';
 import NeverHaveIEverScreen from '../screens/NeverHaveIEverScreen';
+import OnlineNHIECategoryScreen from '../screens/OnlineNHIECategoryScreen';
+import OnlineNeverHaveIEverScreen from '../screens/OnlineNeverHaveIEverScreen';
 import { COLORS } from '../constants/theme';
 
 const Stack = createNativeStackNavigator();
@@ -71,6 +73,8 @@ const AppNavigator = () => {
                 <Stack.Screen name="Scoreboard" component={ScoreboardScreen} />
                 <Stack.Screen name="NeverHaveIEverCategory" component={NeverHaveIEverCategoryScreen} />
                 <Stack.Screen name="NeverHaveIEver" component={NeverHaveIEverScreen} />
+                <Stack.Screen name="OnlineNHIECategory" component={OnlineNHIECategoryScreen} />
+                <Stack.Screen name="OnlineNeverHaveIEver" component={OnlineNeverHaveIEverScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

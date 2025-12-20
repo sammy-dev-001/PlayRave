@@ -55,6 +55,24 @@ const HomeScreen = ({ navigation }) => {
         // Don't stop music on cleanup - let it continue during lobby
     }, []);
 
+    // Check for deep link / join parameter in URL
+    useEffect(() => {
+        const checkDeepLink = () => {
+            if (typeof window !== 'undefined' && window.location) {
+                const params = new URLSearchParams(window.location.search);
+                const joinCode = params.get('join');
+                if (joinCode) {
+                    console.log('Deep link detected, room code:', joinCode);
+                    // Clear the URL param to prevent re-triggering
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Navigate to join screen with the room code
+                    navigation.navigate('Join', { playerName: name, roomCode: joinCode });
+                }
+            }
+        };
+        checkDeepLink();
+    }, []);
+
     React.useEffect(() => {
         const onRoomCreated = (room) => {
             console.log('Room created event received:', room);

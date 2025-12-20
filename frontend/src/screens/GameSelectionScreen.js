@@ -62,8 +62,7 @@ const AVAILABLE_GAMES = [
         name: 'Never Have I Ever',
         description: 'Confess your secrets - who has done it?',
         icon: '🤫',
-        color: COLORS.hotPink,
-        comingSoon: true
+        color: COLORS.limeGlow
     },
     {
         id: 'two-truths',

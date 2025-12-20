@@ -193,6 +193,17 @@ io.on("connection", (socket) => {
                 });
             });
             console.log("Truth or Dare game started successfully");
+        } else if (gameType === "never-have-i-ever") {
+            console.log("Starting Never Have I Ever game for room:", roomId, "category:", category);
+            const gameState = gameManager.startNeverHaveIEverGame(roomId, room, category || 'normal');
+
+            // Send game state to all players
+            io.to(roomId).emit("game-started", {
+                gameType: "never-have-i-ever",
+                gameState: gameManager.getNeverHaveIEverState(roomId),
+                players: room.players
+            });
+            console.log("Never Have I Ever game started successfully");
         }
     });
 
@@ -466,6 +477,48 @@ io.on("connection", (socket) => {
         gameManager.endGame(roomId);
         io.to(roomId).emit("truth-or-dare-ended");
     });
+
+    // Never Have I Ever events
+    socket.on("nhie-respond", ({ roomId, hasDoneIt }) => {
+        console.log("nhie-respond event received, roomId:", roomId, "hasDoneIt:", hasDoneIt);
+        const result = gameManager.respondNeverHaveIEver(roomId, socket.id, hasDoneIt);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated state to all players
+        io.to(roomId).emit("nhie-response", {
+            playerId: socket.id,
+            hasDoneIt,
+            playerScores: result.playerScores,
+            playerResponses: result.playerResponses,
+            allResponded: result.allResponded
+        });
+    });
+
+    socket.on("nhie-next-round", ({ roomId }) => {
+        console.log("nhie-next-round event received, roomId:", roomId);
+        const result = gameManager.nextNeverHaveIEverRound(roomId);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("nhie-new-round", {
+            currentPrompt: result.currentPrompt,
+            roundNumber: result.roundNumber,
+            playerResponses: result.playerResponses
+        });
+    });
+
+    socket.on("end-nhie", ({ roomId }) => {
+        console.log("end-nhie event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("nhie-ended");
+    });
 });
 
 const PORT = process.env.PORT || 4000;
@@ -473,3 +526,4 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
     console.log(`Access from your phone using your computer's IP address`);
 });
+
