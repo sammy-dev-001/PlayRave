@@ -35,6 +35,7 @@ import RapidFireCategoryScreen from '../screens/RapidFireCategoryScreen';
 import RapidFireScreen from '../screens/RapidFireScreen';
 import OnlineRapidFireCategoryScreen from '../screens/OnlineRapidFireCategoryScreen';
 import OnlineRapidFireScreen from '../screens/OnlineRapidFireScreen';
+import ScrabbleScreen from '../screens/ScrabbleScreen';
 import { COLORS } from '../constants/theme';
 
 const Stack = createNativeStackNavigator();
@@ -83,6 +84,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="RapidFire" component={RapidFireScreen} />
                 <Stack.Screen name="OnlineRapidFireCategory" component={OnlineRapidFireCategoryScreen} />
                 <Stack.Screen name="OnlineRapidFire" component={OnlineRapidFireScreen} />
+                <Stack.Screen name="Scrabble" component={ScrabbleScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

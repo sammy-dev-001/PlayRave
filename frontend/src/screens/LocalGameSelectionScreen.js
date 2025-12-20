@@ -50,11 +50,18 @@ const LOCAL_GAMES = [
         color: COLORS.limeGlow
     },
     {
+        id: 'scrabble',
+        name: 'Word Builder',
+        description: 'Create words from letter tiles!',
+        icon: '📝',
+        color: COLORS.neonCyan
+    },
+    {
         id: 'hot-seat',
         name: 'Hot Seat',
         description: 'One person answers all questions',
         icon: '🔥',
-        color: COLORS.neonCyan,
+        color: COLORS.hotPink,
         comingSoon: true
     }
 ];
@@ -74,6 +81,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('NeverHaveIEverCategory', { players });
         } else if (gameId === 'rapid-fire') {
             navigation.navigate('RapidFireCategory', { players });
+        } else if (gameId === 'scrabble') {
+            navigation.navigate('Scrabble', { players });
         }
     };
 
