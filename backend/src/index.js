@@ -204,6 +204,17 @@ io.on("connection", (socket) => {
                 players: room.players
             });
             console.log("Never Have I Ever game started successfully");
+        } else if (gameType === "rapid-fire") {
+            console.log("Starting Rapid Fire game for room:", roomId, "category:", category);
+            const gameState = gameManager.startRapidFireGame(roomId, room, category || 'normal');
+
+            // Send game state to all players
+            io.to(roomId).emit("game-started", {
+                gameType: "rapid-fire",
+                gameState: gameManager.getRapidFireState(roomId),
+                players: room.players
+            });
+            console.log("Rapid Fire game started successfully");
         }
     });
 
@@ -519,6 +530,31 @@ io.on("connection", (socket) => {
         gameManager.endGame(roomId);
         io.to(roomId).emit("nhie-ended");
     });
+
+    // Rapid Fire events
+    socket.on("rapid-fire-answer", ({ roomId, answered }) => {
+        console.log("rapid-fire-answer event received, roomId:", roomId, "answered:", answered);
+        const result = gameManager.answerRapidFire(roomId, socket.id, answered);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated state to all players
+        io.to(roomId).emit("rapid-fire-update", {
+            newQuestion: result.newQuestion,
+            currentPlayerId: result.currentPlayerId,
+            playerScores: result.playerScores,
+            roundNumber: result.roundNumber
+        });
+    });
+
+    socket.on("end-rapid-fire", ({ roomId }) => {
+        console.log("end-rapid-fire event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("rapid-fire-ended");
+    });
 });
 
 const PORT = process.env.PORT || 4000;
@@ -526,4 +562,3 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
     console.log(`Access from your phone using your computer's IP address`);
 });
-

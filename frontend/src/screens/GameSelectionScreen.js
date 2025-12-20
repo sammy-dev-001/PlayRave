@@ -77,8 +77,7 @@ const AVAILABLE_GAMES = [
         name: 'Rapid Fire',
         description: 'Quick questions, faster answers!',
         icon: '⚡',
-        color: COLORS.limeGlow,
-        comingSoon: true
+        color: COLORS.limeGlow
     },
     {
         id: 'emoji-charades',

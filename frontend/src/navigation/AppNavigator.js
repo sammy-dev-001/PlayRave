@@ -31,6 +31,10 @@ import NeverHaveIEverCategoryScreen from '../screens/NeverHaveIEverCategoryScree
 import NeverHaveIEverScreen from '../screens/NeverHaveIEverScreen';
 import OnlineNHIECategoryScreen from '../screens/OnlineNHIECategoryScreen';
 import OnlineNeverHaveIEverScreen from '../screens/OnlineNeverHaveIEverScreen';
+import RapidFireCategoryScreen from '../screens/RapidFireCategoryScreen';
+import RapidFireScreen from '../screens/RapidFireScreen';
+import OnlineRapidFireCategoryScreen from '../screens/OnlineRapidFireCategoryScreen';
+import OnlineRapidFireScreen from '../screens/OnlineRapidFireScreen';
 import { COLORS } from '../constants/theme';
 
 const Stack = createNativeStackNavigator();
@@ -75,6 +79,10 @@ const AppNavigator = () => {
                 <Stack.Screen name="NeverHaveIEver" component={NeverHaveIEverScreen} />
                 <Stack.Screen name="OnlineNHIECategory" component={OnlineNHIECategoryScreen} />
                 <Stack.Screen name="OnlineNeverHaveIEver" component={OnlineNeverHaveIEverScreen} />
+                <Stack.Screen name="RapidFireCategory" component={RapidFireCategoryScreen} />
+                <Stack.Screen name="RapidFire" component={RapidFireScreen} />
+                <Stack.Screen name="OnlineRapidFireCategory" component={OnlineRapidFireCategoryScreen} />
+                <Stack.Screen name="OnlineRapidFire" component={OnlineRapidFireScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

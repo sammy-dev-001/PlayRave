@@ -94,6 +94,13 @@ const LobbyScreen = ({ route, navigation }) => {
                     initialGameState: gameState,
                     players
                 });
+            } else if (gameType === 'rapid-fire') {
+                navigation.navigate('OnlineRapidFire', {
+                    room,
+                    isHost,
+                    initialGameState: gameState,
+                    players
+                });
             }
         };
 
@@ -129,6 +136,16 @@ const LobbyScreen = ({ route, navigation }) => {
         // For Never Have I Ever, navigate to category selection
         if (selectedGame === 'never-have-i') {
             navigation.navigate('OnlineNHIECategory', {
+                room,
+                isHost,
+                playerName
+            });
+            return;
+        }
+
+        // For Rapid Fire, navigate to category selection
+        if (selectedGame === 'rapid-fire') {
+            navigation.navigate('OnlineRapidFireCategory', {
                 room,
                 isHost,
                 playerName

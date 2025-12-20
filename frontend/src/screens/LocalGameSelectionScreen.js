@@ -43,9 +43,16 @@ const LOCAL_GAMES = [
         color: COLORS.hotPink
     },
     {
+        id: 'rapid-fire',
+        name: 'Rapid Fire',
+        description: 'Quick questions, 5 seconds to answer!',
+        icon: '⚡',
+        color: COLORS.limeGlow
+    },
+    {
         id: 'hot-seat',
         name: 'Hot Seat',
-        description: 'Answer rapid-fire personal questions',
+        description: 'One person answers all questions',
         icon: '🔥',
         color: COLORS.neonCyan,
         comingSoon: true
@@ -65,6 +72,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('SpinTheBottle', { players });
         } else if (gameId === 'never-have-i-local') {
             navigation.navigate('NeverHaveIEverCategory', { players });
+        } else if (gameId === 'rapid-fire') {
+            navigation.navigate('RapidFireCategory', { players });
         }
     };
 

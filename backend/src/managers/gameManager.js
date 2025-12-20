@@ -3,6 +3,7 @@ const { getRandomStatements } = require('../data/mythOrFactStatements');
 const { getRandomPrompts } = require('../data/whosMostLikelyPrompts');
 const { getRandomTruth, getRandomDare } = require('../data/truthOrDarePrompts');
 const { getRandomPrompt: getNHIEPrompt } = require('../data/neverHaveIEverPrompts');
+const { getRandomQuestion: getRapidFireQ } = require('../data/rapidFirePrompts');
 
 class GameManager {
     constructor() {
@@ -1165,6 +1166,80 @@ class GameManager {
             category: game.category,
             playerScores: game.playerScores,
             playerResponses: game.playerResponses,
+            status: game.status
+        };
+    }
+
+    // ==================== RAPID FIRE ====================
+    startRapidFireGame(roomId, room, category = 'normal') {
+        const playerOrder = room.players.map(p => p.id);
+        const firstQuestion = getRapidFireQ(category, []);
+
+        const game = {
+            type: 'rapid-fire',
+            roomId,
+            status: 'PLAYING',
+            category,
+            currentQuestion: firstQuestion,
+            usedQuestions: [firstQuestion],
+            currentPlayerIndex: 0,
+            roundNumber: 1,
+            playerOrder,
+            playerScores: {},
+            timePerQuestion: 5
+        };
+
+        playerOrder.forEach(pid => {
+            game.playerScores[pid] = 0;
+        });
+
+        this.activeGames.set(roomId, game);
+        return game;
+    }
+
+    answerRapidFire(roomId, playerId, answered) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'rapid-fire') return { error: 'Game not found' };
+
+        const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+        if (playerId !== currentPlayerId) return { error: 'Not your turn' };
+
+        if (answered) {
+            game.playerScores[playerId] = (game.playerScores[playerId] || 0) + 1;
+        }
+
+        // Move to next player
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playerOrder.length;
+        if (game.currentPlayerIndex === 0) {
+            game.roundNumber++;
+        }
+
+        // Get next question
+        const newQuestion = getRapidFireQ(game.category, game.usedQuestions);
+        game.currentQuestion = newQuestion;
+        game.usedQuestions.push(newQuestion);
+
+        return {
+            success: true,
+            answered,
+            newQuestion,
+            currentPlayerId: game.playerOrder[game.currentPlayerIndex],
+            playerScores: game.playerScores,
+            roundNumber: game.roundNumber
+        };
+    }
+
+    getRapidFireState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'rapid-fire') return null;
+
+        return {
+            currentQuestion: game.currentQuestion,
+            currentPlayerId: game.playerOrder[game.currentPlayerIndex],
+            roundNumber: game.roundNumber,
+            category: game.category,
+            playerScores: game.playerScores,
+            timePerQuestion: game.timePerQuestion,
             status: game.status
         };
     }
