@@ -97,7 +97,22 @@ const truthOrDarePrompts = {
             "What's your favorite physical feature on yourself?",
             "Have you ever had feelings for someone taken?",
             "What's the most intimate thing you've done in public?",
-            "Have you ever fantasized about someone in this room?"
+            "Have you ever fantasized about someone in this room?",
+            "What's your biggest regret in a relationship?",
+            "Have you ever cheated or been cheated on?",
+            "What's the craziest thing you've done to impress someone?",
+            "Have you ever stalked someone on social media?",
+            "What's the longest you've gone without kissing someone?",
+            "Have you ever been rejected? How did you handle it?",
+            "What's the most awkward date you've been on?",
+            "Have you ever ghosted someone?",
+            "What's your love language?",
+            "Have you ever lied to get out of a date?",
+            "What's your guilty pleasure when it comes to romance?",
+            "Have you ever fallen for someone you shouldn't have?",
+            "What's the most spontaneous romantic thing you've done?",
+            "Have you ever written a love letter?",
+            "What's the weirdest thing that turns you on?"
         ],
         dares: [
             "Slow dance with someone for 1 minute",
@@ -129,7 +144,17 @@ const truthOrDarePrompts = {
             "Let someone choose a romantic nickname for you",
             "Describe your ideal kiss",
             "Let someone draw a heart on your cheek",
-            "Cuddle with someone for 2 minutes"
+            "Cuddle with someone for 2 minutes",
+            "Do your sexiest walk across the room",
+            "Let someone feed you chocolate seductively",
+            "Act out how you flirt with someone you like",
+            "Let someone give you a back hug for 30 seconds",
+            "Bite your lip seductively while looking at someone",
+            "Let someone whisper compliments in your ear for 30 seconds",
+            "Pose for a romantic photo with someone",
+            "Do a romantic scene from a movie with someone",
+            "Let someone lead you around blindfolded for 1 minute",
+            "Give someone butterfly kisses on their cheek"
         ]
     },
     naughty: {
@@ -161,7 +186,20 @@ const truthOrDarePrompts = {
             "What's the most people you've been intimate with in one week?",
             "Have you ever had an intimate experience with the same gender?",
             "What's your favorite place to be touched?",
-            "Have you ever recorded yourself being intimate?"
+            "Have you ever recorded yourself being intimate?",
+            "What's your most secret kink?",
+            "Have you ever been intimate while someone else was in the room?",
+            "What's the fastest you've gone from meeting someone to being intimate?",
+            "Have you ever been attracted to a friend's partner?",
+            "What's the dirtiest thing you've ever said during intimacy?",
+            "Have you ever had an intimate dream about a celebrity?",
+            "What's something you want to try but haven't?",
+            "Have you ever sexted in a public place?",
+            "What's the most partners you've had in one day?",
+            "Have you ever used food during intimacy?",
+            "What's your opinion on friends with benefits?",
+            "What's your favorite type of foreplay?",
+            "What's the oldest/youngest person you've been with?"
         ],
         dares: [
             "Give someone here a lap dance for 30 seconds",
@@ -185,7 +223,18 @@ const truthOrDarePrompts = {
             "Kiss someone's neck for 5 seconds",
             "Let someone run their hands through your hair sensually",
             "Let someone whisper their fantasy in your ear",
-            "Let someone blindfold you and touch your face"
+            "Let someone blindfold you and touch your face",
+            "Remove your socks with your teeth",
+            "Let someone give you a hickey anywhere they choose",
+            "Moan like you're enjoying yourself",
+            "Let someone pour ice down your shirt",
+            "Do your best strip tease (keep clothes on)",
+            "Let someone draw on your body with their finger",
+            "Kiss someone on the cheek for 5 seconds",
+            "Let someone take a body shot off you",
+            "Demonstrate your favorite position with a pillow",
+            "Let someone blindfold you and kiss your hand",
+            "Send a flirty message to the last person you texted"
         ]
     }
 };
