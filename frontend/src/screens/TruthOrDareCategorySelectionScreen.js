@@ -43,6 +43,9 @@ const TruthOrDareCategorySelectionScreen = ({ route, navigation }) => {
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                bounces={true}
+                alwaysBounceVertical={true}
+                nestedScrollEnabled={true}
             >
                 <View style={styles.header}>
                     <NeonText size={32} weight="bold" glow={true}>
@@ -103,10 +106,10 @@ const TruthOrDareCategorySelectionScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
+        marginTop: 40, // Space for back button
     },
     scrollContent: {
-        flexGrow: 1,
-        paddingBottom: 30,
+        paddingBottom: 40,
     },
     header: {
         alignItems: 'center',
