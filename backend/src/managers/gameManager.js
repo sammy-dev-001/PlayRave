@@ -679,6 +679,17 @@ class GameManager {
 
         let eliminated = [];
 
+        // Guard against empty submissions array
+        if (submissions.length === 0) {
+            return {
+                currentRound: game.currentRound,
+                letter: game.currentLetter,
+                submissions,
+                eliminated: [],
+                remainingPlayers: 0
+            };
+        }
+
         if (validSubmissions.length === 0) {
             // Everyone invalid or didn't submit - only eliminate ONE player
             // Choose the one who submitted last, or if no one submitted, pick randomly
@@ -687,7 +698,7 @@ class GameManager {
                 // Eliminate the last person to submit an invalid word
                 const lastSubmitter = submittedButInvalid[submittedButInvalid.length - 1];
                 eliminated = [lastSubmitter.playerId];
-            } else {
+            } else if (submissions.length > 0) {
                 // No one submitted - pick a random player to eliminate
                 const randomIndex = Math.floor(Math.random() * submissions.length);
                 eliminated = [submissions[randomIndex].playerId];
