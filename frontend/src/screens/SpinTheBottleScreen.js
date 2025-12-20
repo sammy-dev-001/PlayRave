@@ -128,7 +128,7 @@ const SpinTheBottleScreen = ({ route, navigation }) => {
                         <NeonButton
                             title="TRUTH OR DARE"
                             variant="secondary"
-                            onPress={() => navigation.navigate('TruthOrDareGame', route.params)}
+                            onPress={() => navigation.navigate('TruthOrDareCategorySelection', { players })}
                         />
                     </>
                 )}
