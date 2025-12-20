@@ -29,23 +29,28 @@ const WhotGameScreen = ({ route, navigation }) => {
         };
 
         const onCardPlayed = ({ gameState: newState, action, winner: gameWinner }) => {
-            console.log('Card played:', newState, action);
+            console.log('Card played:', newState, 'action:', action, 'winner param:', gameWinner);
             setGameState(newState);
 
-            if (gameWinner) {
-                setWinner(gameWinner);
+            // Check for winner from both the winner param AND the gameState
+            const detectedWinner = gameWinner || newState?.winner;
+            console.log('Detected winner:', detectedWinner, 'current winner state:', winner);
+
+            if (detectedWinner && !winner) {
+                console.log('*** WINNER DETECTED ON FRONTEND ***:', detectedWinner);
+                setWinner(detectedWinner);
                 setTimeout(() => {
-                    const winnerPlayer = room.players.find(p => p.id === gameWinner);
+                    const winnerPlayer = room.players.find(p => p.id === detectedWinner);
                     Alert.alert(
-                        'Game Over!',
+                        'Game Over! 🏆',
                         `${winnerPlayer?.name || 'Someone'} wins!`,
                         [{ text: 'OK', onPress: () => navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name }) }]
                     );
                 }, 500);
             }
 
-            // Show action message
-            if (action) {
+            // Show action message (but not if there's a winner)
+            if (action && !detectedWinner) {
                 const messages = {
                     'pick2': 'Pick 2! Attack stacked',
                     'pick3': 'Pick 3! Attack stacked',

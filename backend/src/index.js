@@ -383,10 +383,16 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // Log winner detection
+        if (result.winner) {
+            console.log("*** WINNER DETECTED ***:", result.winner);
+        }
+
         // Broadcast updated game state to all players
         const room = roomManager.getRoom(roomId);
         room.players.forEach(player => {
             const playerGameState = gameManager.getWhotGameState(roomId, player.id);
+            console.log("Sending whot state to", player.name, "winner in state:", playerGameState?.winner, "result.winner:", result.winner);
             io.to(player.id).emit("whot-card-played", {
                 gameState: playerGameState,
                 action: result.action,
