@@ -18,7 +18,7 @@ const BackButton = () => {
             onPress={() => navigation.goBack()}
         >
             <NeonText size={24} color={COLORS.neonCyan} glow>
-                ← Back
+                ←
             </NeonText>
         </TouchableOpacity>
     );
