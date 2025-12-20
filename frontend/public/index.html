@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#00ffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PlayRave">
+    <meta name="application-name" content="PlayRave">
+    <meta name="msapplication-TileColor" content="#0a0a1a">
+    <meta name="msapplication-config" content="none">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+    
+    <title>PlayRave - Neon Party Games</title>
+    
+    <style>
+        html, body, #root {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a1a;
+            overflow: hidden;
+        }
+        
+        /* Loading indicator */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #0a0a1a;
+            color: #00ffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #loading h1 {
+            font-size: 42px;
+            margin: 0;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            animation: glow 1.5s ease-in-out infinite;
+        }
+        
+        #loading p {
+            margin-top: 20px;
+            color: #c6ff4a;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+        
+        @keyframes glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* PWA Install Prompt */
+        #install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #00ffff;
+            border-radius: 16px;
+            padding: 15px 20px;
+            z-index: 9999;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+        
+        #install-prompt.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        #install-prompt span {
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+        }
+        
+        #install-prompt button {
+            background: linear-gradient(135deg, #00ffff 0%, #00d4ff 100%);
+            color: #0a0a1a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        #install-prompt .close {
+            background: transparent;
+            color: #888;
+            padding: 5px 10px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div id="loading">
+            <h1>PLAYRAVE</h1>
+            <p>NEON PARTY</p>
+        </div>
+    </div>
+    
+    <!-- PWA Install Prompt -->
+    <div id="install-prompt">
+        <span>📱 Add PlayRave to your home screen!</span>
+        <div>
+            <button id="install-btn">Install</button>
+            <button class="close" id="close-prompt">✕</button>
+        </div>
+    </div>
+    
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('PlayRave SW registered:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('PlayRave SW registration failed:', error);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installPrompt = document.getElementById('install-prompt');
+        const installBtn = document.getElementById('install-btn');
+        const closePrompt = document.getElementById('close-prompt');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install prompt after 5 seconds
+            setTimeout(() => {
+                if (deferredPrompt && !localStorage.getItem('pwa-dismissed')) {
+                    installPrompt.classList.add('show');
+                }
+            }, 5000);
+        });
+        
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('PWA install:', outcome);
+                    deferredPrompt = null;
+                    installPrompt.classList.remove('show');
+                }
+            });
+        }
+        
+        if (closePrompt) {
+            closePrompt.addEventListener('click', () => {
+                installPrompt.classList.remove('show');
+                localStorage.setItem('pwa-dismissed', 'true');
+            });
+        }
+        
+        // Hide loading when app starts
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const loading = document.getElementById('loading');
+                if (loading && document.getElementById('root').children.length > 1) {
+                    loading.style.display = 'none';
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
