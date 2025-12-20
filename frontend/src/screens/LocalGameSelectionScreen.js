@@ -25,8 +25,7 @@ const LOCAL_GAMES = [
         name: 'Never Have I Ever',
         description: 'Put fingers down if you have done it',
         icon: '🤫',
-        color: COLORS.limeGlow,
-        comingSoon: true
+        color: COLORS.limeGlow
     },
     {
         id: 'kings-cup',
@@ -59,12 +58,13 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 
     const handleSelectGame = (gameId) => {
         if (gameId === 'truth-or-dare') {
-            // Navigate to category selection screen for Truth or Dare
             navigation.navigate('TruthOrDareCategorySelection', { players });
         } else if (gameId === 'would-you-rather') {
             navigation.navigate('WouldYouRather', { players });
         } else if (gameId === 'spin-bottle') {
             navigation.navigate('SpinTheBottle', { players });
+        } else if (gameId === 'never-have-i-local') {
+            navigation.navigate('NeverHaveIEverCategory', { players });
         }
     };
 

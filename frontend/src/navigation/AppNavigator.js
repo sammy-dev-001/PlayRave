@@ -27,6 +27,8 @@ import WouldYouRatherScreen from '../screens/WouldYouRatherScreen';
 import SpinTheBottleScreen from '../screens/SpinTheBottleScreen';
 import WhotGameScreen from '../screens/WhotGameScreen';
 import ScoreboardScreen from '../screens/ScoreboardScreen';
+import NeverHaveIEverCategoryScreen from '../screens/NeverHaveIEverCategoryScreen';
+import NeverHaveIEverScreen from '../screens/NeverHaveIEverScreen';
 import { COLORS } from '../constants/theme';
 
 const Stack = createNativeStackNavigator();
@@ -67,6 +69,8 @@ const AppNavigator = () => {
                 <Stack.Screen name="SpinTheBottle" component={SpinTheBottleScreen} />
                 <Stack.Screen name="WhotGame" component={WhotGameScreen} />
                 <Stack.Screen name="Scoreboard" component={ScoreboardScreen} />
+                <Stack.Screen name="NeverHaveIEverCategory" component={NeverHaveIEverCategoryScreen} />
+                <Stack.Screen name="NeverHaveIEver" component={NeverHaveIEverScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
