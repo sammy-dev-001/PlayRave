@@ -45,10 +45,17 @@ const AVAILABLE_GAMES = [
     {
         id: 'whot',
         name: 'Naija Whot',
-        description: 'Classic Nigerian card game (2-4 players)',
+        description: 'Classic Nigerian card game (2-8 players)',
         icon: '🃏',
         color: COLORS.electricPurple,
-        maxPlayers: 4
+        maxPlayers: 8
+    },
+    {
+        id: 'truth-or-dare',
+        name: 'Truth or Dare',
+        description: 'Take turns with truths and dares',
+        icon: '🎲',
+        color: COLORS.hotPink
     },
     {
         id: 'never-have-i',

@@ -77,6 +77,15 @@ const LobbyScreen = ({ route, navigation }) => {
                     isHost,
                     initialGameState: gameState // Pass initial game state
                 });
+            } else if (gameType === 'truth-or-dare') {
+                navigation.navigate('OnlineTruthOrDareGame', {
+                    room,
+                    hostParticipates: hostPlays,
+                    isHost,
+                    gameState,
+                    players,
+                    category: gameState?.category || 'normal'
+                });
             }
         };
 
@@ -99,6 +108,16 @@ const LobbyScreen = ({ route, navigation }) => {
     }, [navigation, room]);
 
     const handleStartGame = () => {
+        // For Truth or Dare, navigate to category selection first
+        if (selectedGame === 'truth-or-dare') {
+            navigation.navigate('OnlineTruthOrDareCategory', {
+                room,
+                isHost,
+                playerName
+            });
+            return;
+        }
+
         SocketService.emit('start-game', {
             roomId: room.id,
             gameType: selectedGame,

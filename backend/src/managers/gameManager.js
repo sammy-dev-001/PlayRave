@@ -1,6 +1,7 @@
 const { getRandomQuestions } = require('../data/triviaQuestions');
 const { getRandomStatements } = require('../data/mythOrFactStatements');
 const { getRandomPrompts } = require('../data/whosMostLikelyPrompts');
+const { getRandomTruth, getRandomDare } = require('../data/truthOrDarePrompts');
 
 class GameManager {
     constructor() {
@@ -952,6 +953,122 @@ class GameManager {
 
     getGameState(roomId) {
         return this.activeGames.get(roomId);
+    }
+
+    // Truth or Dare Game Methods
+    startTruthOrDareGame(roomId, room, hostParticipates = true, category = 'normal') {
+        const playerOrder = [];
+
+        // Add participating players
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) {
+                return;
+            }
+            playerOrder.push(player.id);
+        });
+
+        if (playerOrder.length < 2) {
+            return { error: 'Truth or Dare requires at least 2 players' };
+        }
+
+        const gameState = {
+            type: 'truth-or-dare',
+            roomId,
+            category,
+            playerOrder,
+            currentPlayerIndex: 0,
+            currentPrompt: null,
+            promptType: null, // 'truth' or 'dare'
+            usedTruths: [],
+            usedDares: [],
+            turnCount: 0,
+            status: 'WAITING_FOR_CHOICE', // WAITING_FOR_CHOICE, SHOWING_PROMPT
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    getTruthOrDareGameState(roomId, playerId = null) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'truth-or-dare') return null;
+
+        const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+        const isCurrentPlayer = playerId === currentPlayerId;
+
+        return {
+            currentPlayerId,
+            isCurrentPlayer,
+            category: game.category,
+            promptType: game.promptType,
+            // Only show prompt to current player
+            currentPrompt: isCurrentPlayer ? game.currentPrompt : null,
+            turnCount: game.turnCount,
+            status: game.status,
+            playerOrder: game.playerOrder
+        };
+    }
+
+    chooseTruthOrDare(roomId, playerId, choice) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'truth-or-dare') return { error: 'Game not found' };
+
+        // Verify it's the player's turn
+        const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+        if (playerId !== currentPlayerId) {
+            return { error: 'Not your turn' };
+        }
+
+        if (game.status !== 'WAITING_FOR_CHOICE') {
+            return { error: 'Not waiting for choice' };
+        }
+
+        let prompt;
+        if (choice === 'truth') {
+            prompt = getRandomTruth(game.category, game.usedTruths);
+            game.usedTruths.push(prompt);
+            game.promptType = 'truth';
+        } else if (choice === 'dare') {
+            prompt = getRandomDare(game.category, game.usedDares);
+            game.usedDares.push(prompt);
+            game.promptType = 'dare';
+        } else {
+            return { error: 'Invalid choice. Must be "truth" or "dare"' };
+        }
+
+        game.currentPrompt = prompt;
+        game.status = 'SHOWING_PROMPT';
+
+        return {
+            success: true,
+            prompt,
+            promptType: game.promptType
+        };
+    }
+
+    completeTruthOrDareTurn(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'truth-or-dare') return { error: 'Game not found' };
+
+        // Verify it's the player's turn
+        const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+        if (playerId !== currentPlayerId) {
+            return { error: 'Not your turn' };
+        }
+
+        // Move to next player
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playerOrder.length;
+        game.currentPrompt = null;
+        game.promptType = null;
+        game.turnCount++;
+        game.status = 'WAITING_FOR_CHOICE';
+
+        return {
+            success: true,
+            nextPlayerId: game.playerOrder[game.currentPlayerIndex],
+            turnCount: game.turnCount
+        };
     }
 }
 

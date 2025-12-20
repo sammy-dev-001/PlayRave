@@ -164,6 +164,26 @@ io.on("connection", (socket) => {
                 });
             });
             console.log("Whot game started successfully");
+        } else if (gameType === "truth-or-dare") {
+            console.log("Starting Truth or Dare game for room:", roomId, "category:", category);
+            const gameState = gameManager.startTruthOrDareGame(roomId, room, hostParticipates, category || 'normal');
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to ALL players with their personalized view
+            room.players.forEach(player => {
+                const playerGameState = gameManager.getTruthOrDareGameState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "truth-or-dare",
+                    gameState: playerGameState,
+                    players: room.players,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Truth or Dare game started successfully");
         }
     });
 
@@ -384,6 +404,52 @@ io.on("connection", (socket) => {
                 cardsDrawn: result.cardsDrawn
             });
         });
+    });
+
+    // Truth or Dare events
+    socket.on("choose-truth-or-dare", ({ roomId, choice }) => {
+        console.log("choose-truth-or-dare event received, roomId:", roomId, "choice:", choice);
+        const result = gameManager.chooseTruthOrDare(roomId, socket.id, choice);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Send prompt only to current player, status update to everyone
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerGameState = gameManager.getTruthOrDareGameState(roomId, player.id);
+            io.to(player.id).emit("truth-or-dare-chosen", {
+                gameState: playerGameState
+            });
+        });
+    });
+
+    socket.on("complete-truth-or-dare-turn", ({ roomId }) => {
+        console.log("complete-truth-or-dare-turn event received, roomId:", roomId);
+        const result = gameManager.completeTruthOrDareTurn(roomId, socket.id);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Notify all players of the turn change
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerGameState = gameManager.getTruthOrDareGameState(roomId, player.id);
+            io.to(player.id).emit("truth-or-dare-turn-complete", {
+                gameState: playerGameState,
+                turnCount: result.turnCount
+            });
+        });
+    });
+
+    socket.on("end-truth-or-dare", ({ roomId }) => {
+        console.log("end-truth-or-dare event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("truth-or-dare-ended");
     });
 });
 

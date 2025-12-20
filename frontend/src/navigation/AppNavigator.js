@@ -21,6 +21,8 @@ import LocalPartySetupScreen from '../screens/LocalPartySetupScreen';
 import LocalGameSelectionScreen from '../screens/LocalGameSelectionScreen';
 import TruthOrDareCategorySelectionScreen from '../screens/TruthOrDareCategorySelectionScreen';
 import TruthOrDareGameScreen from '../screens/TruthOrDareGameScreen';
+import OnlineTruthOrDareCategoryScreen from '../screens/OnlineTruthOrDareCategoryScreen';
+import OnlineTruthOrDareGameScreen from '../screens/OnlineTruthOrDareGameScreen';
 import WouldYouRatherScreen from '../screens/WouldYouRatherScreen';
 import SpinTheBottleScreen from '../screens/SpinTheBottleScreen';
 import WhotGameScreen from '../screens/WhotGameScreen';
@@ -59,6 +61,8 @@ const AppNavigator = () => {
                 <Stack.Screen name="LocalGameSelection" component={LocalGameSelectionScreen} />
                 <Stack.Screen name="TruthOrDareCategorySelection" component={TruthOrDareCategorySelectionScreen} />
                 <Stack.Screen name="TruthOrDareGame" component={TruthOrDareGameScreen} />
+                <Stack.Screen name="OnlineTruthOrDareCategory" component={OnlineTruthOrDareCategoryScreen} />
+                <Stack.Screen name="OnlineTruthOrDareGame" component={OnlineTruthOrDareGameScreen} />
                 <Stack.Screen name="WouldYouRather" component={WouldYouRatherScreen} />
                 <Stack.Screen name="SpinTheBottle" component={SpinTheBottleScreen} />
                 <Stack.Screen name="WhotGame" component={WhotGameScreen} />
