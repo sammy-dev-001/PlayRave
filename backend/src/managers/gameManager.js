@@ -1089,6 +1089,8 @@ class GameManager {
         const playerOrder = room.players.map(p => p.id);
         const firstPrompt = getNHIEPrompt(category, []);
 
+        const MAX_ROUNDS = 30; // Stop at 30 questions
+
         const game = {
             type: 'never-have-i-ever',
             roomId,
@@ -1097,6 +1099,7 @@ class GameManager {
             currentPrompt: firstPrompt,
             usedPrompts: [firstPrompt],
             roundNumber: 1,
+            maxRounds: MAX_ROUNDS,
             playerOrder,
             playerScores: {},
             playerResponses: {} // Track who responded this round
@@ -1138,6 +1141,17 @@ class GameManager {
         const game = this.activeGames.get(roomId);
         if (!game || game.type !== 'never-have-i-ever') return { error: 'Game not found' };
 
+        // Check if we've reached max rounds
+        if (game.roundNumber >= game.maxRounds) {
+            game.status = 'FINISHED';
+            return {
+                finished: true,
+                playerScores: game.playerScores,
+                roundNumber: game.roundNumber,
+                maxRounds: game.maxRounds
+            };
+        }
+
         const newPrompt = getNHIEPrompt(game.category, game.usedPrompts);
         game.currentPrompt = newPrompt;
         game.usedPrompts.push(newPrompt);
@@ -1152,6 +1166,7 @@ class GameManager {
             success: true,
             currentPrompt: game.currentPrompt,
             roundNumber: game.roundNumber,
+            maxRounds: game.maxRounds,
             playerResponses: game.playerResponses
         };
     }
@@ -1163,6 +1178,7 @@ class GameManager {
         return {
             currentPrompt: game.currentPrompt,
             roundNumber: game.roundNumber,
+            maxRounds: game.maxRounds,
             category: game.category,
             playerScores: game.playerScores,
             playerResponses: game.playerResponses,

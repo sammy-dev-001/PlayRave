@@ -14,13 +14,13 @@ class RoomManager {
         return code;
     }
 
-    createRoom(hostId, playerName) {
+    createRoom(hostId, playerName, avatar, avatarColor) {
         const roomId = this.generateRoomCode();
         const newRoom = {
             id: roomId,
             hostId: hostId,
             players: [
-                { id: hostId, name: playerName, score: 0, isHost: true }
+                { id: hostId, name: playerName, score: 0, isHost: true, avatar, avatarColor, isReady: true }
             ],
             gameState: 'LOBBY', // LOBBY, PLAYING, RESULTS
             currentRound: 0,
@@ -30,14 +30,14 @@ class RoomManager {
         return newRoom;
     }
 
-    joinRoom(roomId, playerId, playerName) {
+    joinRoom(roomId, playerId, playerName, avatar, avatarColor) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: "Room not found" };
         if (room.gameState !== 'LOBBY') return { error: "Game already in progress" };
 
         const playerExists = room.players.find(p => p.id === playerId);
         if (!playerExists) {
-            room.players.push({ id: playerId, name: playerName, score: 0, isHost: false });
+            room.players.push({ id: playerId, name: playerName, score: 0, isHost: false, avatar, avatarColor, isReady: false });
         }
         return { room };
     }
@@ -58,6 +58,30 @@ class RoomManager {
         if (!room) return { error: "Room not found" };
         room.customQuestions = questions;
         return { room };
+    }
+
+    setPlayerReady(roomId, playerId, isReady) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: "Room not found" };
+
+        const player = room.players.find(p => p.id === playerId);
+        if (!player) return { error: "Player not found" };
+
+        player.isReady = isReady;
+        return { room };
+    }
+
+    kickPlayer(roomId, hostId, playerIdToKick) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: "Room not found" };
+        if (room.hostId !== hostId) return { error: "Only host can kick players" };
+        if (hostId === playerIdToKick) return { error: "Host cannot kick themselves" };
+
+        const index = room.players.findIndex(p => p.id === playerIdToKick);
+        if (index === -1) return { error: "Player not found" };
+
+        room.players.splice(index, 1);
+        return { room, kickedPlayerId: playerIdToKick };
     }
 
     removePlayer(socketId) {

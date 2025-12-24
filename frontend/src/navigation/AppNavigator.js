@@ -36,6 +36,16 @@ import RapidFireScreen from '../screens/RapidFireScreen';
 import OnlineRapidFireCategoryScreen from '../screens/OnlineRapidFireCategoryScreen';
 import OnlineRapidFireScreen from '../screens/OnlineRapidFireScreen';
 import ScrabbleScreen from '../screens/ScrabbleScreen';
+import MVPVotingScreen from '../screens/MVPVotingScreen';
+import TeamSetupScreen from '../screens/TeamSetupScreen';
+import PlaylistSetupScreen from '../screens/PlaylistSetupScreen';
+import CaptionThisScreen from '../screens/CaptionThisScreen';
+import SpeedCategoriesScreen from '../screens/SpeedCategoriesScreen';
+import AuctionBluffScreen from '../screens/AuctionBluffScreen';
+import MemoryChainScreen from '../screens/MemoryChainScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SpectatorScreen from '../screens/SpectatorScreen';
+import JoinSpectatorScreen from '../screens/JoinSpectatorScreen';
 import { COLORS } from '../constants/theme';
 
 const Stack = createNativeStackNavigator();
@@ -85,6 +95,16 @@ const AppNavigator = () => {
                 <Stack.Screen name="OnlineRapidFireCategory" component={OnlineRapidFireCategoryScreen} />
                 <Stack.Screen name="OnlineRapidFire" component={OnlineRapidFireScreen} />
                 <Stack.Screen name="Scrabble" component={ScrabbleScreen} />
+                <Stack.Screen name="MVPVoting" component={MVPVotingScreen} />
+                <Stack.Screen name="TeamSetup" component={TeamSetupScreen} />
+                <Stack.Screen name="PlaylistSetup" component={PlaylistSetupScreen} />
+                <Stack.Screen name="CaptionThis" component={CaptionThisScreen} />
+                <Stack.Screen name="SpeedCategories" component={SpeedCategoriesScreen} />
+                <Stack.Screen name="AuctionBluff" component={AuctionBluffScreen} />
+                <Stack.Screen name="MemoryChain" component={MemoryChainScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="Spectator" component={SpectatorScreen} />
+                <Stack.Screen name="JoinSpectator" component={JoinSpectatorScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

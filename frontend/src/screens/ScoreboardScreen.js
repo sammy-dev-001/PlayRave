@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -10,6 +10,7 @@ import { COLORS } from '../constants/theme';
 
 const ScoreboardScreen = ({ route, navigation }) => {
     const { room, finalScores } = route.params;
+    const [isRematchLoading, setIsRematchLoading] = useState(false);
 
     // Check if current player is the winner for rave lights
     const currentPlayerId = SocketService.socket?.id;
@@ -34,9 +35,70 @@ const ScoreboardScreen = ({ route, navigation }) => {
         return () => SoundService.stopMusic();
     }, []);
 
+    // Listen for rematch game started
+    useEffect(() => {
+        const onGameStarted = (data) => {
+            console.log('Rematch game started:', data);
+            setIsRematchLoading(false);
+
+            // Navigate based on game type
+            if (data.gameType === 'trivia') {
+                navigation.replace('Question', {
+                    room,
+                    question: data.question,
+                    questionIndex: 0,
+                    hostParticipates: data.hostParticipates,
+                    isHost
+                });
+            } else if (data.gameType === 'myth-or-fact') {
+                navigation.replace('MythOrFactQuestion', {
+                    room,
+                    statement: data.statement,
+                    hostParticipates: data.hostParticipates,
+                    isHost
+                });
+            } else if (data.gameType === 'whos-most-likely') {
+                navigation.replace('WhosMostLikelyQuestion', {
+                    room,
+                    prompt: data.prompt,
+                    players: data.players,
+                    hostParticipates: data.hostParticipates,
+                    isHost
+                });
+            } else if (data.gameType === 'neon-tap') {
+                navigation.replace('NeonTapGame', {
+                    room,
+                    hostParticipates: data.hostParticipates,
+                    isHost
+                });
+            } else if (data.gameType === 'word-rush') {
+                navigation.replace('WordRushGame', {
+                    room,
+                    hostParticipates: data.hostParticipates,
+                    isHost
+                });
+            }
+        };
+
+        SocketService.on('game-started', onGameStarted);
+        return () => SocketService.off('game-started', onGameStarted);
+    }, [navigation, room, isHost]);
+
     const getPlayerName = (playerId) => {
         const player = room.players.find(p => p.id === playerId);
         return player?.name || 'Unknown';
+    };
+
+    const handleRematch = () => {
+        console.log('Starting rematch for game:', room.gameType);
+        setIsRematchLoading(true);
+
+        // Emit start-game event with the same game type
+        SocketService.emit('start-game', {
+            roomId: room.id,
+            gameType: room.gameType,
+            hostParticipates: true // Default to host participates for rematch
+        });
     };
 
     const handleBackToLobby = () => {
@@ -103,9 +165,19 @@ const ScoreboardScreen = ({ route, navigation }) => {
                 contentContainerStyle={styles.list}
             />
 
+            {isHost && (
+                <NeonButton
+                    title={isRematchLoading ? "STARTING..." : "🔄 REMATCH"}
+                    onPress={handleRematch}
+                    disabled={isRematchLoading}
+                    style={styles.rematchButton}
+                />
+            )}
+
             <NeonButton
                 title="BACK TO LOBBY"
                 onPress={handleBackToLobby}
+                variant="secondary"
                 style={styles.backButton}
             />
         </NeonContainer>
@@ -154,8 +226,11 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 15,
     },
-    backButton: {
+    rematchButton: {
         marginTop: 20,
+    },
+    backButton: {
+        marginTop: 10,
     }
 });
 

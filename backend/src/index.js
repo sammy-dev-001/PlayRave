@@ -19,18 +19,18 @@ const gameManager = require("./managers/gameManager");
 io.on("connection", (socket) => {
     console.log("socket connected:", socket.id);
 
-    socket.on("create-room", ({ playerName }) => {
+    socket.on("create-room", ({ playerName, avatar, avatarColor }) => {
         console.log("create-room event received, playerName:", playerName);
-        const room = roomManager.createRoom(socket.id, playerName);
+        const room = roomManager.createRoom(socket.id, playerName, avatar, avatarColor);
         console.log("Room created:", room);
         socket.join(room.id);
         console.log("Emitting room-created event to socket", socket.id);
         socket.emit("room-created", room);
     });
 
-    socket.on("join-room", ({ roomId, playerName }) => {
+    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor }) => {
         console.log("join-room event received, roomId:", roomId, "playerName:", playerName, "socketId:", socket.id);
-        const result = roomManager.joinRoom(roomId, socket.id, playerName);
+        const result = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor);
         if (result.error) {
             socket.emit("error", { message: result.error });
             return;
@@ -102,6 +102,29 @@ io.on("connection", (socket) => {
         } else {
             console.log("Room not found:", roomId);
         }
+    });
+
+    socket.on("player-ready", ({ roomId, isReady }) => {
+        console.log("player-ready event received, roomId:", roomId, "isReady:", isReady);
+        const result = roomManager.setPlayerReady(roomId, socket.id, isReady);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
+    socket.on("kick-player", ({ roomId, playerIdToKick }) => {
+        console.log("kick-player event received, roomId:", roomId, "playerToKick:", playerIdToKick);
+        const result = roomManager.kickPlayer(roomId, socket.id, playerIdToKick);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        // Notify the kicked player
+        io.to(playerIdToKick).emit("player-kicked", { roomId });
+        // Update all other players
+        io.to(roomId).emit("room-updated", result.room);
     });
 
     // Game events
@@ -518,9 +541,20 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // Check if game is finished (30 rounds reached)
+        if (result.finished) {
+            io.to(roomId).emit("nhie-finished", {
+                playerScores: result.playerScores,
+                roundNumber: result.roundNumber,
+                maxRounds: result.maxRounds
+            });
+            return;
+        }
+
         io.to(roomId).emit("nhie-new-round", {
             currentPrompt: result.currentPrompt,
             roundNumber: result.roundNumber,
+            maxRounds: result.maxRounds,
             playerResponses: result.playerResponses
         });
     });

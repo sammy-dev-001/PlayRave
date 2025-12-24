@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const LOCAL_GAMES = [
     {
@@ -57,6 +59,34 @@ const LOCAL_GAMES = [
         color: COLORS.neonCyan
     },
     {
+        id: 'caption-this',
+        name: 'Caption This',
+        description: 'Write funny captions, vote for the best!',
+        icon: '📸',
+        color: COLORS.electricPurple
+    },
+    {
+        id: 'speed-categories',
+        name: 'Speed Categories',
+        description: 'Name 5 things in 10 seconds!',
+        icon: '🏃',
+        color: COLORS.hotPink
+    },
+    {
+        id: 'auction-bluff',
+        name: 'Auction Bluff',
+        description: 'Bid on items - real facts or bluffs?',
+        icon: '🔨',
+        color: COLORS.neonCyan
+    },
+    {
+        id: 'memory-chain',
+        name: 'Memory Chain',
+        description: 'Remember the growing sequence!',
+        icon: '🧠',
+        color: COLORS.limeGlow
+    },
+    {
         id: 'hot-seat',
         name: 'Hot Seat',
         description: 'One person answers all questions',
@@ -83,6 +113,14 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('RapidFireCategory', { players });
         } else if (gameId === 'scrabble') {
             navigation.navigate('Scrabble', { players });
+        } else if (gameId === 'caption-this') {
+            navigation.navigate('CaptionThis', { players });
+        } else if (gameId === 'speed-categories') {
+            navigation.navigate('SpeedCategories', { players });
+        } else if (gameId === 'auction-bluff') {
+            navigation.navigate('AuctionBluff', { players });
+        } else if (gameId === 'memory-chain') {
+            navigation.navigate('MemoryChain', { players });
         }
     };
 
@@ -139,13 +177,13 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     );
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
-                <NeonText size={32} weight="bold" glow>
+                <NeonText size={SCREEN_WIDTH < 375 ? 26 : 32} weight="bold" glow>
                     CHOOSE GAME
                 </NeonText>
                 <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                    {players.length} players ready
+                    {players.length} players ready 🎮
                 </NeonText>
             </View>
 
@@ -159,10 +197,16 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 25,
     },
     subtitle: {
         marginTop: 10,
+    },
+    gamesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        paddingBottom: 20,
     },
     gamesContainer: {
         gap: 20,

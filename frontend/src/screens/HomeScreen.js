@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, TextInput, Alert, TouchableOpacity, Dimensions } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import ConnectionStatus from '../components/ConnectionStatus';
+import AvatarPicker, { AvatarDisplay } from '../components/AvatarPicker';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
+import { getRandomAvatar, getRandomColor } from '../data/avatars';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
+    const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+    const [selectedAvatar, setSelectedAvatar] = useState(getRandomAvatar());
+    const [selectedColor, setSelectedColor] = useState(getRandomColor());
 
     // Start music on user interaction (required for web audio policy)
     const startMusicOnInteraction = async () => {
@@ -25,6 +32,11 @@ const HomeScreen = ({ navigation }) => {
         }
     };
 
+    const handleAvatarSelect = ({ avatar, color }) => {
+        setSelectedAvatar(avatar);
+        setSelectedColor(color);
+    };
+
     const handleCreate = async () => {
         console.log('handleCreate called, name:', name);
         if (!name) {
@@ -33,14 +45,22 @@ const HomeScreen = ({ navigation }) => {
         }
         // Start music on first interaction
         await startMusicOnInteraction();
-        console.log('Emitting create-room event with playerName:', name);
-        SocketService.emit('create-room', { playerName: name });
+        console.log('Emitting create-room event with playerName:', name, 'avatar:', selectedAvatar);
+        SocketService.emit('create-room', {
+            playerName: name,
+            avatar: selectedAvatar,
+            avatarColor: selectedColor
+        });
     };
 
     const handleJoin = async () => {
         // Start music on first interaction
         await startMusicOnInteraction();
-        navigation.navigate('Join', { playerName: name });
+        navigation.navigate('Join', {
+            playerName: name,
+            avatar: selectedAvatar,
+            avatarColor: selectedColor
+        });
     };
 
     const handleLocalParty = async () => {
@@ -66,7 +86,12 @@ const HomeScreen = ({ navigation }) => {
                     // Clear the URL param to prevent re-triggering
                     window.history.replaceState({}, document.title, window.location.pathname);
                     // Navigate to join screen with the room code
-                    navigation.navigate('Join', { playerName: name, roomCode: joinCode });
+                    navigation.navigate('Join', {
+                        playerName: name,
+                        roomCode: joinCode,
+                        avatar: selectedAvatar,
+                        avatarColor: selectedColor
+                    });
                 }
             }
         };
@@ -90,18 +115,35 @@ const HomeScreen = ({ navigation }) => {
     }, [navigation, name]);
 
     return (
-        <NeonContainer style={styles.container} showMuteButton>
+        <NeonContainer style={styles.container} showMuteButton scrollable>
             {/* Connection Status Indicator */}
             <View style={styles.connectionContainer}>
                 <ConnectionStatus showLabel={true} size="small" />
             </View>
 
+            {/* Logo */}
             <View style={styles.logoArea}>
-                <NeonText size={42} weight="bold" glow>PLAYRAVE</NeonText>
-                <NeonText size={16} color={COLORS.limeGlow} style={{ letterSpacing: 2 }}>NEON PARTY</NeonText>
+                <NeonText size={SCREEN_WIDTH < 375 ? 36 : 42} weight="bold" glow>PLAYRAVE</NeonText>
+                <NeonText size={SCREEN_WIDTH < 375 ? 14 : 16} color={COLORS.limeGlow} style={{ letterSpacing: 2 }}>NEON PARTY</NeonText>
             </View>
 
+            {/* Input Area */}
             <View style={styles.inputArea}>
+                {/* Avatar Selection */}
+                <TouchableOpacity
+                    style={styles.avatarSection}
+                    onPress={() => setShowAvatarPicker(true)}
+                >
+                    <AvatarDisplay
+                        avatar={selectedAvatar}
+                        color={selectedColor}
+                        size={SCREEN_WIDTH < 375 ? 60 : 70}
+                    />
+                    <NeonText size={12} color={COLORS.neonCyan} style={styles.changeAvatarText}>
+                        TAP TO CHANGE
+                    </NeonText>
+                </TouchableOpacity>
+
                 <NeonText style={{ marginBottom: 10 }}>ENTER YOUR NAME</NeonText>
                 <TextInput
                     style={styles.input}
@@ -112,24 +154,53 @@ const HomeScreen = ({ navigation }) => {
                 />
             </View>
 
+            {/* Buttons */}
             <View style={styles.actions}>
-                <NeonButton title="HOST ONLINE PARTY" onPress={handleCreate} />
-                <NeonButton title="JOIN ONLINE PARTY" variant="secondary" onPress={handleJoin} />
+                <NeonButton title="HOST ONLINE PARTY" onPress={handleCreate} icon="🎮" />
+                <NeonButton title="JOIN ONLINE PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
                 <NeonButton
                     title="START LOCAL PARTY"
                     variant="secondary"
                     onPress={handleLocalParty}
+                    icon="🎲"
                     style={{ marginTop: 20 }}
                 />
             </View>
+
+            {/* Profile Button */}
+            <TouchableOpacity
+                style={styles.profileButton}
+                onPress={() => navigation.navigate('Profile')}
+            >
+                <NeonText size={14} color={COLORS.neonCyan}>
+                    📊 MY PROFILE & STATS
+                </NeonText>
+            </TouchableOpacity>
+
+            {/* Spectate Button */}
+            <TouchableOpacity
+                style={styles.spectateButton}
+                onPress={() => navigation.navigate('JoinSpectator')}
+            >
+                <NeonText size={14} color={COLORS.electricPurple}>
+                    👁️ SPECTATE A GAME
+                </NeonText>
+            </TouchableOpacity>
+
+            {/* Avatar Picker Modal */}
+            <AvatarPicker
+                visible={showAvatarPicker}
+                onClose={() => setShowAvatarPicker(false)}
+                onSelect={handleAvatarSelect}
+                currentAvatar={selectedAvatar}
+            />
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        justifyContent: 'center',
-        padding: 20,
+        flex: 1,
     },
     connectionContainer: {
         position: 'absolute',
@@ -156,6 +227,23 @@ const styles = StyleSheet.create({
     },
     actions: {
         gap: 15,
+    },
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    changeAvatarText: {
+        marginTop: 8,
+        letterSpacing: 1,
+    },
+    profileButton: {
+        alignItems: 'center',
+        padding: 15,
+        marginTop: 20,
+    },
+    spectateButton: {
+        alignItems: 'center',
+        padding: 10,
     }
 });
 
