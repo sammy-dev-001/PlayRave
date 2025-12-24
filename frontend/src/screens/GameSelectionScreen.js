@@ -213,18 +213,18 @@ const GameSelectionScreen = ({ route, navigation }) => {
             disabled={game.comingSoon}
         >
             <View style={styles.gameIcon}>
-                <NeonText size={40}>{game.icon}</NeonText>
+                <NeonText size={28}>{game.icon}</NeonText>
             </View>
             <View style={styles.gameInfo}>
-                <NeonText size={20} weight="bold" color={game.color}>
+                <NeonText size={16} weight="bold" color={game.color}>
                     {game.name}
                 </NeonText>
-                <NeonText size={14} color="#999" style={{ marginTop: 5 }}>
+                <NeonText size={12} color="#999" style={{ marginTop: 3 }}>
                     {game.description}
                 </NeonText>
                 {game.comingSoon && (
                     <View style={styles.comingSoonBadge}>
-                        <NeonText size={12} color={COLORS.hotPink}>
+                        <NeonText size={10} color={COLORS.hotPink}>
                             COMING SOON
                         </NeonText>
                     </View>
@@ -232,75 +232,73 @@ const GameSelectionScreen = ({ route, navigation }) => {
             </View>
             {selectedGame === game.id && (
                 <View style={styles.checkmark}>
-                    <NeonText size={24}>✓</NeonText>
+                    <NeonText size={18}>✓</NeonText>
                 </View>
             )}
         </TouchableOpacity>
     );
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={14} color={COLORS.hotPink}>ROOM CODE</NeonText>
-                <NeonText size={32} weight="bold" glow color={COLORS.neonCyan}>
+                <NeonText size={28} weight="bold" glow color={COLORS.neonCyan}>
                     {room.id}
                 </NeonText>
             </View>
 
-            <NeonText size={24} weight="bold" style={styles.title}>
+            <NeonText size={22} weight="bold" style={styles.title}>
                 SELECT A GAME
             </NeonText>
 
-            <ScrollView style={styles.gamesList} showsVerticalScrollIndicator={false}>
+            <View style={styles.gamesList}>
                 {AVAILABLE_GAMES.map(renderGameCard)}
-            </ScrollView>
-
-            <View style={styles.bottomSection}>
-                {selectedGame === 'trivia' && (
-                    <View style={styles.categorySection}>
-                        <NeonText size={16} style={styles.categoryTitle}>SELECT CATEGORY</NeonText>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                            {CATEGORIES.map((category) => (
-                                <TouchableOpacity
-                                    key={category}
-                                    style={[
-                                        styles.categoryChip,
-                                        selectedCategory === category && styles.selectedCategoryChip
-                                    ]}
-                                    onPress={() => setSelectedCategory(category)}
-                                >
-                                    <NeonText
-                                        size={14}
-                                        color={selectedCategory === category ? COLORS.limeGlow : COLORS.white}
-                                    >
-                                        {category}
-                                    </NeonText>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {selectedGame === 'trivia' && (
-                    <View style={styles.customToggleContainer}>
-                        <NeonText size={16}>Use Custom Questions</NeonText>
-                        <Switch
-                            value={useCustomQuestions}
-                            onValueChange={setUseCustomQuestions}
-                            trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
-                            thumbColor={useCustomQuestions ? COLORS.limeGlow : '#f4f3f4'}
-                            ios_backgroundColor="#3e3e3e"
-                        />
-                    </View>
-                )}
-
-                <NeonButton
-                    title={selectedGame === 'trivia' && useCustomQuestions ? "CREATE QUESTIONS" : "CONTINUE TO LOBBY"}
-                    onPress={handleContinue}
-                    disabled={!selectedGame}
-                    style={styles.continueButton}
-                />
             </View>
+
+            {selectedGame === 'trivia' && (
+                <View style={styles.categorySection}>
+                    <NeonText size={16} style={styles.categoryTitle}>SELECT CATEGORY</NeonText>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                        {CATEGORIES.map((category) => (
+                            <TouchableOpacity
+                                key={category}
+                                style={[
+                                    styles.categoryChip,
+                                    selectedCategory === category && styles.selectedCategoryChip
+                                ]}
+                                onPress={() => setSelectedCategory(category)}
+                            >
+                                <NeonText
+                                    size={14}
+                                    color={selectedCategory === category ? COLORS.limeGlow : COLORS.white}
+                                >
+                                    {category}
+                                </NeonText>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+
+            {selectedGame === 'trivia' && (
+                <View style={styles.customToggleContainer}>
+                    <NeonText size={16}>Use Custom Questions</NeonText>
+                    <Switch
+                        value={useCustomQuestions}
+                        onValueChange={setUseCustomQuestions}
+                        trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
+                        thumbColor={useCustomQuestions ? COLORS.limeGlow : '#f4f3f4'}
+                        ios_backgroundColor="#3e3e3e"
+                    />
+                </View>
+            )}
+
+            <NeonButton
+                title={selectedGame === 'trivia' && useCustomQuestions ? "CREATE QUESTIONS" : "CONTINUE TO LOBBY"}
+                onPress={handleContinue}
+                disabled={!selectedGame}
+                style={styles.continueButton}
+            />
         </NeonContainer>
     );
 };
@@ -308,24 +306,23 @@ const GameSelectionScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        marginBottom: 30,
-        marginTop: 20,
+        marginBottom: 15,
+        marginTop: 10,
     },
     title: {
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: 15,
     },
     gamesList: {
-        flex: 1,
-        marginBottom: 20,
+        marginBottom: 15,
     },
     gameCard: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 20,
-        borderRadius: 12,
-        marginBottom: 15,
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 10,
         borderWidth: 2,
         borderColor: 'rgba(177, 78, 255, 0.3)',
     },
@@ -337,51 +334,51 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     gameIcon: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 45,
+        height: 45,
+        borderRadius: 22,
         backgroundColor: 'rgba(0,0,0,0.3)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 15,
+        marginRight: 12,
     },
     gameInfo: {
         flex: 1,
     },
     comingSoonBadge: {
-        marginTop: 8,
+        marginTop: 6,
         alignSelf: 'flex-start',
         backgroundColor: 'rgba(255, 0, 128, 0.2)',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
         borderRadius: 4,
         borderWidth: 1,
         borderColor: COLORS.hotPink,
     },
     checkmark: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
+        width: 26,
+        height: 26,
+        borderRadius: 13,
         backgroundColor: COLORS.neonCyan,
         alignItems: 'center',
         justifyContent: 'center',
     },
     categorySection: {
-        marginBottom: 20,
+        marginBottom: 15,
     },
     categoryTitle: {
-        marginBottom: 12,
+        marginBottom: 10,
         textAlign: 'center',
         letterSpacing: 1,
     },
     categoryScroll: {
-        maxHeight: 50,
+        maxHeight: 45,
     },
     categoryChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        marginRight: 10,
-        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        marginRight: 8,
+        borderRadius: 18,
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderWidth: 1,
         borderColor: 'rgba(177, 78, 255, 0.3)',
@@ -395,17 +392,14 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
+        padding: 12,
         borderRadius: 8,
         marginBottom: 15,
         borderWidth: 1,
         borderColor: COLORS.electricPurple,
     },
-    bottomSection: {
-        paddingBottom: 30, // Extra padding for iPhone home indicator
-    },
     continueButton: {
-        marginBottom: 10,
+        marginBottom: 30, // Extra bottom margin for safe area
     },
     disabledButton: {
         opacity: 0.5,
