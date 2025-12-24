@@ -23,26 +23,30 @@ const NeonContainer = ({
 
     const padding = getPadding();
 
+    const content = scrollable ? (
+        <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, { paddingHorizontal: padding }, style]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+        >
+            {children}
+        </ScrollView>
+    ) : (
+        <View style={[styles.container, { padding }, style]}>
+            {children}
+        </View>
+    );
+
     return (
         <View style={styles.rootContainer}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.deepNightBlack} />
             <NeonBackground />
             {showBackButton && <BackButton />}
             {showMuteButton && <MuteButton />}
-            {scrollable ? (
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={[styles.scrollContent, { padding }, style]}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {children}
-                </ScrollView>
-            ) : (
-                <View style={[styles.container, { padding }, style]}>
-                    {children}
-                </View>
-            )}
+            <SafeAreaView style={styles.safeArea}>
+                {content}
+            </SafeAreaView>
         </View>
     );
 };
@@ -55,6 +59,9 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.deepNightBlack,
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
+    safeArea: {
+        flex: 1,
+    },
     scrollView: {
         flex: 1,
         height: '100%',
@@ -62,10 +69,14 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         minHeight: '100%',
+        paddingTop: 60, // Account for back button
+        paddingBottom: 30, // Safe area for iPhone home indicator
     },
     container: {
         flex: 1,
         height: '100%',
+        paddingTop: 60, // Account for back button
+        paddingBottom: Platform.OS === 'ios' ? 20 : 10, // Extra bottom padding for iOS
     },
 });
 

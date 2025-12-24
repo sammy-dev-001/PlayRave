@@ -4,7 +4,15 @@ import Constants from 'expo-constants';
 // Auto-detect the server IP from Expo's manifest
 // This gets the same IP that Expo uses to serve the app
 const getServerUrl = () => {
-    // Check for production backend URL from environment variable (Vercel deployment)
+    // For web deployment (Vercel), use the production backend URL
+    if (typeof window !== 'undefined' && window.location &&
+        (window.location.hostname.includes('vercel.app') ||
+            window.location.hostname.includes('playrave'))) {
+        console.log('Using production backend URL for web deployment');
+        return 'https://playrave.onrender.com';
+    }
+
+    // Check for production backend URL from environment variable
     if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_BACKEND_URL) {
         console.log('Using production backend URL:', process.env.EXPO_PUBLIC_BACKEND_URL);
         return process.env.EXPO_PUBLIC_BACKEND_URL;

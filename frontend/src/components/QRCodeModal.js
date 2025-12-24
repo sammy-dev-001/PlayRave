@@ -45,7 +45,7 @@ const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
         // Use the app's deployed URL or localhost for testing
         const host = baseUrl || (Platform.OS === 'web'
             ? window.location.origin
-            : 'https://playrave.vercel.app'); // Replace with your deployed URL
+            : 'https://playrave-ten.vercel.app');
         return `${host}?join=${roomId}`;
     };
 

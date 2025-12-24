@@ -5,6 +5,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import ConnectionStatus from '../components/ConnectionStatus';
 import AvatarPicker, { AvatarDisplay } from '../components/AvatarPicker';
+import InstallAppModal from '../components/InstallAppModal';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
@@ -194,6 +195,9 @@ const HomeScreen = ({ navigation }) => {
                 onSelect={handleAvatarSelect}
                 currentAvatar={selectedAvatar}
             />
+
+            {/* iOS Install App Prompt */}
+            <InstallAppModal />
         </NeonContainer>
     );
 };

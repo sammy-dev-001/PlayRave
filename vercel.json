@@ -1,0 +1,28 @@
+{
+    "rootDirectory": "frontend",
+    "buildCommand": "EXPO_PUBLIC_BACKEND_URL=$EXPO_PUBLIC_BACKEND_URL npx expo export -p web",
+    "outputDirectory": "dist",
+    "framework": null,
+    "build": {
+        "env": {
+            "EXPO_PUBLIC_BACKEND_URL": "@expo_public_backend_url"
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/_expo/static/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        }
+    ]
+}

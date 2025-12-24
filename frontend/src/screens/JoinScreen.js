@@ -9,6 +9,8 @@ import { COLORS, FONTS } from '../constants/theme';
 const JoinScreen = ({ navigation, route }) => {
     const [name, setName] = useState(route.params?.playerName || '');
     const [code, setCode] = useState(route.params?.roomCode || '');
+    const avatar = route.params?.avatar;
+    const avatarColor = route.params?.avatarColor;
 
     const handleJoin = () => {
         if (!name || !code) {
@@ -16,7 +18,12 @@ const JoinScreen = ({ navigation, route }) => {
             return;
         }
 
-        SocketService.emit('join-room', { roomId: code.toUpperCase(), playerName: name });
+        SocketService.emit('join-room', {
+            roomId: code.toUpperCase(),
+            playerName: name,
+            avatar,
+            avatarColor
+        });
         // Listen for success/fail in App or Manager, but for now we assume success triggers event
         // Ideally we wait for an ack, but Socket.io generic emit doesn't wait. Use listeners.
     };

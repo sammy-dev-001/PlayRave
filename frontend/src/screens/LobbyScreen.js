@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Switch, Share, Modal, TouchableOpacity, Image, Linking, Platform } from 'react-native';
+import { View, StyleSheet, FlatList, Switch, Share, Modal, TouchableOpacity, Image, Linking, Platform, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -9,12 +9,28 @@ import { COLORS } from '../constants/theme';
 
 const LobbyScreen = ({ route, navigation }) => {
     const [room, setRoom] = useState(route.params.room);
-    const { isHost, playerName } = route.params;
+    const { playerName } = route.params;
     const fromGame = route.params.fromGame || false;
     const [selectedGame, setSelectedGame] = useState(route.params.selectedGame || route.params.room.gameType);
     const [hostParticipates, setHostParticipates] = useState(false);
     const [socketConnected, setSocketConnected] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [myReadyStatus, setMyReadyStatus] = useState(false);
+
+    // Dynamically determine if current player is host
+    const getCurrentPlayerId = () => SocketService.socket?.id;
+    const currentPlayerIsHost = () => {
+        const currentId = getCurrentPlayerId();
+        if (!currentId || !room) return false;
+
+        // Check if current player matches room hostId
+        if (room.hostId === currentId) return true;
+
+        // Also check player's isHost flag in players array
+        const currentPlayer = room.players.find(p => p.id === currentId);
+        return currentPlayer?.isHost || false;
+    };
+    const isHost = currentPlayerIsHost();
 
     useEffect(() => {
         const checkConnection = () => {
@@ -31,6 +47,23 @@ const LobbyScreen = ({ route, navigation }) => {
             if (updatedRoom.gameType) {
                 setSelectedGame(updatedRoom.gameType);
             }
+            // Update my ready status when room updates
+            const currentId = getCurrentPlayerId();
+            const me = updatedRoom.players.find(p => p.id === currentId);
+            if (me) {
+                setMyReadyStatus(me.isReady || false);
+            }
+        };
+
+        const onPlayerKicked = () => {
+            Alert.alert(
+                'Kicked from Lobby',
+                'You have been removed from this lobby by the host.',
+                [{
+                    text: 'OK',
+                    onPress: () => navigation.navigate('Home')
+                }]
+            );
         };
 
         const onGameStarted = ({ gameType, question, statement, prompt, players, hostParticipates: hostPlays, gameState }) => {
@@ -106,6 +139,7 @@ const LobbyScreen = ({ route, navigation }) => {
 
         SocketService.on('room-updated', onRoomUpdated);
         SocketService.on('game-started', onGameStarted);
+        SocketService.on('player-kicked', onPlayerKicked);
 
         const pollInterval = setInterval(() => {
             checkConnection();
@@ -118,6 +152,7 @@ const LobbyScreen = ({ route, navigation }) => {
             clearInterval(pollInterval);
             SocketService.off('room-updated', onRoomUpdated);
             SocketService.off('game-started', onGameStarted);
+            SocketService.off('player-kicked', onPlayerKicked);
             // Don't stop music here - let it continue or stop when game starts
         };
     }, [navigation, room]);
@@ -166,10 +201,33 @@ const LobbyScreen = ({ route, navigation }) => {
         navigation.navigate('Home');
     };
 
+    const handleKickPlayer = (playerId, playerName) => {
+        Alert.alert(
+            'Kick Player',
+            `Are you sure you want to remove ${playerName} from the lobby?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Kick',
+                    style: 'destructive',
+                    onPress: () => {
+                        SocketService.emit('kick-player', { roomId: room.id, playerIdToKick: playerId });
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleToggleReady = () => {
+        const newReadyStatus = !myReadyStatus;
+        setMyReadyStatus(newReadyStatus);
+        SocketService.emit('player-ready', { roomId: room.id, isReady: newReadyStatus });
+    };
+
     // Generate join link - using the deployed URL
     const getJoinLink = () => {
-        // Try to get the app URL from environment or default to playrave.vercel.app
-        const baseUrl = 'https://playrave.vercel.app';
+        // Use the current deployed URL
+        const baseUrl = 'https://playrave-lx34.vercel.app';
         return `${baseUrl}?join=${room.id}`;
     };
 
@@ -189,16 +247,41 @@ const LobbyScreen = ({ route, navigation }) => {
         return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${joinLink}&bgcolor=1a1a2e&color=00f0ff`;
     };
 
-    const renderPlayer = ({ item }) => (
-        <View style={styles.playerRow}>
-            <View style={styles.avatar}>
-                <NeonText size={20}>👤</NeonText>
+    const renderPlayer = ({ item }) => {
+        const isBase64Image = item.avatar && typeof item.avatar === 'string' && item.avatar.startsWith('data:image');
+        const currentPlayerId = getCurrentPlayerId();
+        const isMe = item.id === currentPlayerId;
+
+        return (
+            <View style={styles.playerRow}>
+                <View style={styles.avatar}>
+                    {isBase64Image ? (
+                        <Image source={{ uri: item.avatar }} style={styles.avatarImage} />
+                    ) : item.avatar?.emoji ? (
+                        <NeonText size={20}>{item.avatar.emoji}</NeonText>
+                    ) : (
+                        <NeonText size={20}>👤</NeonText>
+                    )}
+                </View>
+                <View style={styles.playerInfo}>
+                    <NeonText size={18} style={styles.playerName}>
+                        {item.name} {item.isHost ? '👑' : ''} {isMe ? '(You)' : ''}
+                    </NeonText>
+                    {item.isReady && !item.isHost && (
+                        <NeonText size={12} color={COLORS.limeGlow}>✓ Ready</NeonText>
+                    )}
+                </View>
+                {isHost && !item.isHost && (
+                    <TouchableOpacity
+                        style={styles.kickButton}
+                        onPress={() => handleKickPlayer(item.id, item.name)}
+                    >
+                        <NeonText size={12} color={COLORS.hotPink}>KICK</NeonText>
+                    </TouchableOpacity>
+                )}
             </View>
-            <NeonText size={18} style={styles.playerName}>
-                {item.name} {item.isHost ? '👑' : ''}
-            </NeonText>
-        </View>
-    );
+        );
+    };
 
     return (
         <NeonContainer showMuteButton showBackButton>
@@ -288,6 +371,17 @@ const LobbyScreen = ({ route, navigation }) => {
                 </View>
             )}
 
+            {!isHost && !fromGame && (
+                <View style={styles.readyContainer}>
+                    <NeonButton
+                        title={myReadyStatus ? "✓ READY" : "READY UP"}
+                        onPress={handleToggleReady}
+                        variant={myReadyStatus ? "primary" : "secondary"}
+                        style={{ backgroundColor: myReadyStatus ? COLORS.limeGlow : undefined }}
+                    />
+                </View>
+            )}
+
             {isHost ? (
                 <>
                     <NeonButton title="START GAME" onPress={handleStartGame} />
@@ -353,9 +447,29 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 15,
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
+    playerInfo: {
+        flex: 1,
     },
     playerName: {
         color: 'white',
+    },
+    kickButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(255,0,102,0.2)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.hotPink,
+    },
+    readyContainer: {
+        marginBottom: 20,
     },
     toggleContainer: {
         flexDirection: 'row',

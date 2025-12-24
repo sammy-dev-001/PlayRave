@@ -10,6 +10,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
     const { room, isHost, initialGameState, players } = route.params;
     const [gameState, setGameState] = useState(initialGameState || {});
     const [hasResponded, setHasResponded] = useState(false);
+    const [gameFinished, setGameFinished] = useState(false);
 
     const currentPlayerId = SocketService.socket?.id;
 
@@ -22,27 +23,42 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
             }));
         };
 
-        const onNewRound = ({ currentPrompt, roundNumber, playerResponses }) => {
+        const onNewRound = ({ currentPrompt, roundNumber, maxRounds, playerResponses }) => {
             setGameState(prev => ({
                 ...prev,
                 currentPrompt,
                 roundNumber,
+                maxRounds,
                 playerResponses
             }));
             setHasResponded(false);
         };
 
+        const onGameFinished = ({ playerScores }) => {
+            setGameState(prev => ({
+                ...prev,
+                playerScores
+            }));
+            setGameFinished(true);
+        };
+
         const onGameEnded = () => {
-            navigation.navigate('Lobby', { room, isHost, playerName: players.find(p => p.id === currentPlayerId)?.name });
+            // Use reset to avoid navigation loop
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'GameSelection', params: { room, playerName: players.find(p => p.id === currentPlayerId)?.name } }]
+            });
         };
 
         SocketService.on('nhie-response', onResponse);
         SocketService.on('nhie-new-round', onNewRound);
+        SocketService.on('nhie-finished', onGameFinished);
         SocketService.on('nhie-ended', onGameEnded);
 
         return () => {
             SocketService.off('nhie-response', onResponse);
             SocketService.off('nhie-new-round', onNewRound);
+            SocketService.off('nhie-finished', onGameFinished);
             SocketService.off('nhie-ended', onGameEnded);
         };
     }, [navigation, room, isHost, currentPlayerId, players]);
@@ -61,6 +77,13 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
         SocketService.emit('end-nhie', { roomId: room.id });
     };
 
+    const handleReturnToLobby = () => {
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'GameSelection', params: { room, playerName: players.find(p => p.id === currentPlayerId)?.name } }]
+        });
+    };
+
     const getCategoryColor = () => {
         switch (gameState.category) {
             case 'spicy': return COLORS.hotPink;
@@ -76,6 +99,48 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
 
     const myResponse = gameState.playerResponses?.[currentPlayerId];
 
+    // Game finished - show results screen
+    if (gameFinished) {
+        const sortedPlayers = [...players].sort((a, b) =>
+            (gameState.playerScores?.[b.id] || 0) - (gameState.playerScores?.[a.id] || 0)
+        );
+
+        return (
+            <NeonContainer>
+                <View style={styles.header}>
+                    <NeonText size={28} weight="bold" glow>🎉 GAME OVER!</NeonText>
+                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                        {gameState.roundNumber} rounds completed
+                    </NeonText>
+                </View>
+
+                <NeonText size={18} weight="bold" style={{ textAlign: 'center', marginBottom: 20 }}>
+                    FINAL SCORES
+                </NeonText>
+
+                <ScrollView style={{ flex: 1 }}>
+                    {sortedPlayers.map((player, index) => (
+                        <View key={player.id} style={[styles.resultRow, index === 0 && styles.winnerRow]}>
+                            <NeonText size={18}>
+                                {index === 0 ? '🏆' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                            </NeonText>
+                            <NeonText size={18} weight="bold" style={{ flex: 1, marginLeft: 15 }}>
+                                {player.name}
+                            </NeonText>
+                            <NeonText size={18} color={COLORS.hotPink}>
+                                {gameState.playerScores?.[player.id] || 0} 🍺
+                            </NeonText>
+                        </View>
+                    ))}
+                </ScrollView>
+
+                <View style={styles.actions}>
+                    <NeonButton title="RETURN TO LOBBY" onPress={handleReturnToLobby} />
+                </View>
+            </NeonContainer>
+        );
+    }
+
     return (
         <NeonContainer>
             <View style={styles.header}>
@@ -88,7 +153,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
                     </NeonText>
                 </View>
                 <NeonText size={14} color="#888">
-                    Round {gameState.roundNumber}
+                    Round {gameState.roundNumber} / {gameState.maxRounds || 30}
                 </NeonText>
             </View>
 
@@ -264,6 +329,21 @@ const styles = StyleSheet.create({
     },
     actions: {
         gap: 10,
+        paddingBottom: 20,
+    },
+    resultRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        padding: 15,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#444',
+    },
+    winnerRow: {
+        borderColor: COLORS.limeGlow,
+        backgroundColor: 'rgba(198, 255, 74, 0.1)',
     }
 });
 

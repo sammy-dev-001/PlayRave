@@ -255,49 +255,52 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 {AVAILABLE_GAMES.map(renderGameCard)}
             </ScrollView>
 
-            {selectedGame === 'trivia' && (
-                <View style={styles.categorySection}>
-                    <NeonText size={16} style={styles.categoryTitle}>SELECT CATEGORY</NeonText>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                        {CATEGORIES.map((category) => (
-                            <TouchableOpacity
-                                key={category}
-                                style={[
-                                    styles.categoryChip,
-                                    selectedCategory === category && styles.selectedCategoryChip
-                                ]}
-                                onPress={() => setSelectedCategory(category)}
-                            >
-                                <NeonText
-                                    size={14}
-                                    color={selectedCategory === category ? COLORS.limeGlow : COLORS.white}
+            <View style={styles.bottomSection}>
+                {selectedGame === 'trivia' && (
+                    <View style={styles.categorySection}>
+                        <NeonText size={16} style={styles.categoryTitle}>SELECT CATEGORY</NeonText>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                            {CATEGORIES.map((category) => (
+                                <TouchableOpacity
+                                    key={category}
+                                    style={[
+                                        styles.categoryChip,
+                                        selectedCategory === category && styles.selectedCategoryChip
+                                    ]}
+                                    onPress={() => setSelectedCategory(category)}
                                 >
-                                    {category}
-                                </NeonText>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            )}
+                                    <NeonText
+                                        size={14}
+                                        color={selectedCategory === category ? COLORS.limeGlow : COLORS.white}
+                                    >
+                                        {category}
+                                    </NeonText>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
-            {selectedGame === 'trivia' && (
-                <View style={styles.customToggleContainer}>
-                    <NeonText size={16}>Use Custom Questions</NeonText>
-                    <Switch
-                        value={useCustomQuestions}
-                        onValueChange={setUseCustomQuestions}
-                        trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
-                        thumbColor={useCustomQuestions ? COLORS.limeGlow : '#f4f3f4'}
-                        ios_backgroundColor="#3e3e3e"
-                    />
-                </View>
-            )}
+                {selectedGame === 'trivia' && (
+                    <View style={styles.customToggleContainer}>
+                        <NeonText size={16}>Use Custom Questions</NeonText>
+                        <Switch
+                            value={useCustomQuestions}
+                            onValueChange={setUseCustomQuestions}
+                            trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
+                            thumbColor={useCustomQuestions ? COLORS.limeGlow : '#f4f3f4'}
+                            ios_backgroundColor="#3e3e3e"
+                        />
+                    </View>
+                )}
 
-            <NeonButton
-                title={selectedGame === 'trivia' && useCustomQuestions ? "CREATE QUESTIONS" : "CONTINUE TO LOBBY"}
-                onPress={handleContinue}
-                disabled={!selectedGame}
-            />
+                <NeonButton
+                    title={selectedGame === 'trivia' && useCustomQuestions ? "CREATE QUESTIONS" : "CONTINUE TO LOBBY"}
+                    onPress={handleContinue}
+                    disabled={!selectedGame}
+                    style={styles.continueButton}
+                />
+            </View>
         </NeonContainer>
     );
 };
@@ -394,9 +397,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         padding: 15,
         borderRadius: 8,
-        marginBottom: 20,
+        marginBottom: 15,
         borderWidth: 1,
         borderColor: COLORS.electricPurple,
+    },
+    bottomSection: {
+        paddingBottom: 30, // Extra padding for iPhone home indicator
+    },
+    continueButton: {
+        marginBottom: 10,
     },
     disabledButton: {
         opacity: 0.5,
