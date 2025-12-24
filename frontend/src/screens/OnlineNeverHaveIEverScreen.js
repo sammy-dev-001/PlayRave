@@ -4,6 +4,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
@@ -34,12 +35,24 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
             setHasResponded(false);
         };
 
-        const onGameFinished = ({ playerScores }) => {
+        const onGameFinished = async ({ playerScores }) => {
             setGameState(prev => ({
                 ...prev,
                 playerScores
             }));
             setGameFinished(true);
+
+            // Record stats
+            try {
+                const myScore = playerScores?.[currentPlayerId] || 0;
+                const scores = Object.values(playerScores || {});
+                const maxScore = Math.max(...scores, 0);
+                const isWinner = myScore === maxScore && myScore > 0;
+                await ProfileService.recordGame('never-have-i-ever', isWinner, myScore);
+                console.log('NHIE stats recorded:', { won: isWinner, points: myScore });
+            } catch (error) {
+                console.error('Error recording stats:', error);
+            }
         };
 
         const onGameEnded = () => {

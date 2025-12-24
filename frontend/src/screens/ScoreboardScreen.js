@@ -6,6 +6,7 @@ import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
+import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const ScoreboardScreen = ({ route, navigation }) => {
@@ -20,18 +21,33 @@ const ScoreboardScreen = ({ route, navigation }) => {
     const currentPlayer = room.players.find(p => p.id === currentUserId);
     const isHost = currentPlayer?.isHost || false;
 
-    // Play music and sounds based on result
+    // Get current player's score and position
+    const playerScore = finalScores.find(s => s.playerId === currentPlayerId);
+    const playerRank = finalScores.findIndex(s => s.playerId === currentPlayerId) + 1;
+    const isWinner = playerRank === 1;
+
+    // Record game stats and play sounds
     useEffect(() => {
+        // Record stats
+        const recordStats = async () => {
+            try {
+                const points = playerScore?.score || 0;
+                await ProfileService.recordGame(room.gameType, isWinner, points);
+                console.log('Game stats recorded:', { gameType: room.gameType, won: isWinner, points });
+            } catch (error) {
+                console.error('Error recording stats:', error);
+            }
+        };
+        recordStats();
+
+        // Play music and sounds
         if (showRaveLights) {
-            // Winner gets victory fanfare
             SoundService.playWinner();
             SoundService.playGameOverMusic();
         } else {
-            // Others hear the game over music
             SoundService.playGameOverMusic();
         }
 
-        // Stop music when leaving
         return () => SoundService.stopMusic();
     }, []);
 

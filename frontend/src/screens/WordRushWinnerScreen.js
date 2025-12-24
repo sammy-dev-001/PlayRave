@@ -6,6 +6,7 @@ import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
+import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const WordRushWinnerScreen = ({ route, navigation }) => {
@@ -14,10 +15,22 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
     const isWinner = winner && winner === currentPlayerId;
     const noWinner = !winner; // Everyone lost
 
-    // Play sounds and music based on result
+    // Play sounds, music, and record stats
     useEffect(() => {
+        // Record stats
+        const recordStats = async () => {
+            try {
+                // Word Rush doesn't have points, just win/lose
+                await ProfileService.recordGame('word-rush', isWinner, isWinner ? 100 : 0);
+                console.log('Word Rush stats recorded:', { won: isWinner });
+            } catch (error) {
+                console.error('Error recording stats:', error);
+            }
+        };
+        recordStats();
+
+        // Play sounds
         if (noWinner) {
-            // Everyone lost - play defeat sound
             SoundService.playDefeatMusic();
         } else if (isWinner) {
             SoundService.playWinner();

@@ -586,8 +586,10 @@ io.on("connection", (socket) => {
 
     socket.on("end-rapid-fire", ({ roomId }) => {
         console.log("end-rapid-fire event received, roomId:", roomId);
+        const gameState = gameManager.getRapidFireState(roomId);
+        const playerScores = gameState?.playerScores || {};
         gameManager.endGame(roomId);
-        io.to(roomId).emit("rapid-fire-ended");
+        io.to(roomId).emit("rapid-fire-ended", { playerScores });
     });
 });
 

@@ -4,6 +4,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const QUESTION_TIME = 5;
@@ -32,7 +33,19 @@ const OnlineRapidFireScreen = ({ route, navigation }) => {
             setIsTimerRunning(false);
         };
 
-        const onGameEnded = () => {
+        const onGameEnded = async ({ playerScores }) => {
+            // Record stats before navigating
+            try {
+                const myScore = playerScores?.[currentPlayerId] || 0;
+                const scores = Object.values(playerScores || {});
+                const maxScore = Math.max(...scores, 0);
+                const isWinner = myScore === maxScore && myScore > 0;
+                await ProfileService.recordGame('rapid-fire', isWinner, myScore);
+                console.log('Rapid Fire stats recorded:', { won: isWinner, points: myScore });
+            } catch (error) {
+                console.error('Error recording stats:', error);
+            }
+
             navigation.navigate('Lobby', { room, isHost, playerName: players.find(p => p.id === currentPlayerId)?.name });
         };
 
