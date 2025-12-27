@@ -1718,6 +1718,167 @@ class GameManager {
             opinion: game.currentOpinion
         };
     }
+
+    // Hot Seat Game Methods
+    startHotSeatGame(roomId, room, hostParticipates = true) {
+        const playerOrder = [];
+
+        // Add participating players
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) {
+                return;
+            }
+            playerOrder.push({
+                id: player.id,
+                name: player.name,
+                hasBeenHotSeat: false
+            });
+        });
+
+        if (playerOrder.length < 2) {
+            return { error: 'Hot Seat requires at least 2 players' };
+        }
+
+        // Shuffle player order
+        for (let i = playerOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
+        }
+
+        const gameState = {
+            type: 'hot-seat',
+            roomId,
+            playerOrder,
+            hotSeatPlayerIndex: 0,
+            hotSeatPlayerId: playerOrder[0].id,
+            hotSeatPlayerName: playerOrder[0].name,
+            submittedQuestions: {}, // { playerId: question }
+            currentQuestionIndex: 0,
+            phase: 'submitting', // submitting, answering, finished
+            round: 1,
+            hostParticipates
+        };
+
+        playerOrder[0].hasBeenHotSeat = true;
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    getHotSeatGameState(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat') return null;
+
+        const isHotSeat = playerId === game.hotSeatPlayerId;
+        const hasSubmitted = !!game.submittedQuestions[playerId];
+        const totalPlayers = game.playerOrder.length - 1; // Exclude hot seat player
+        const submittedCount = Object.keys(game.submittedQuestions).length;
+
+        // Get questions as array for answering phase
+        const questions = Object.entries(game.submittedQuestions).map(([pid, q]) => ({
+            fromPlayerId: pid,
+            fromPlayerName: game.playerOrder.find(p => p.id === pid)?.name || 'Anonymous',
+            question: q
+        }));
+
+        return {
+            hotSeatPlayerId: game.hotSeatPlayerId,
+            hotSeatPlayerName: game.hotSeatPlayerName,
+            isHotSeat,
+            hasSubmitted,
+            submittedCount,
+            totalExpected: totalPlayers,
+            phase: game.phase,
+            round: game.round,
+            questions: game.phase === 'answering' ? questions : [],
+            currentQuestionIndex: game.currentQuestionIndex
+        };
+    }
+
+    submitHotSeatQuestion(roomId, playerId, question) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat') return { error: 'Game not found' };
+
+        if (playerId === game.hotSeatPlayerId) {
+            return { error: 'Hot seat player cannot submit questions' };
+        }
+
+        if (game.phase !== 'submitting') {
+            return { error: 'Not in submitting phase' };
+        }
+
+        if (!question || question.trim().length === 0) {
+            return { error: 'Question cannot be empty' };
+        }
+
+        game.submittedQuestions[playerId] = question.trim();
+
+        const totalExpected = game.playerOrder.length - 1;
+        const submittedCount = Object.keys(game.submittedQuestions).length;
+
+        // Check if all players submitted
+        if (submittedCount >= totalExpected) {
+            game.phase = 'answering';
+            game.currentQuestionIndex = 0;
+        }
+
+        return {
+            success: true,
+            submittedCount,
+            totalExpected,
+            allSubmitted: submittedCount >= totalExpected
+        };
+    }
+
+    nextHotSeatQuestion(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat') return { error: 'Game not found' };
+
+        const questions = Object.keys(game.submittedQuestions);
+        game.currentQuestionIndex++;
+
+        if (game.currentQuestionIndex >= questions.length) {
+            // Move to next hot seat player
+            return this.nextHotSeatPlayer(roomId);
+        }
+
+        return {
+            success: true,
+            currentQuestionIndex: game.currentQuestionIndex
+        };
+    }
+
+    nextHotSeatPlayer(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat') return { error: 'Game not found' };
+
+        // Find next player who hasn't been on hot seat
+        const nextPlayer = game.playerOrder.find(p => !p.hasBeenHotSeat);
+
+        if (!nextPlayer) {
+            // Everyone has been on hot seat - game over
+            game.phase = 'finished';
+            return {
+                finished: true,
+                message: 'All players have been on the hot seat!'
+            };
+        }
+
+        // Set up next round
+        nextPlayer.hasBeenHotSeat = true;
+        game.hotSeatPlayerId = nextPlayer.id;
+        game.hotSeatPlayerName = nextPlayer.name;
+        game.submittedQuestions = {};
+        game.currentQuestionIndex = 0;
+        game.phase = 'submitting';
+        game.round++;
+
+        return {
+            finished: false,
+            hotSeatPlayerId: game.hotSeatPlayerId,
+            hotSeatPlayerName: game.hotSeatPlayerName,
+            round: game.round
+        };
+    }
 }
 
 module.exports = new GameManager();

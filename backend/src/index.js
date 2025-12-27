@@ -238,6 +238,26 @@ io.on("connection", (socket) => {
                 players: room.players
             });
             console.log("Rapid Fire game started successfully");
+        } else if (gameType === "hot-seat") {
+            console.log("Starting Hot Seat game for room:", roomId);
+            const gameState = gameManager.startHotSeatGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to each player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "hot-seat",
+                    gameState: playerState,
+                    players: room.players,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Hot Seat game started successfully");
         }
     });
 
@@ -949,6 +969,66 @@ io.on("connection", (socket) => {
                 }, 1000);
             }, 2000);
         }
+    });
+
+    // Hot Seat game events
+    socket.on("hot-seat-submit-question", ({ roomId, question }) => {
+        console.log("hot-seat-submit-question event received, roomId:", roomId);
+
+        const result = gameManager.submitHotSeatQuestion(roomId, socket.id, question);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("hot-seat-question-submitted", { success: true });
+
+        const room = roomManager.getRoom(roomId);
+
+        // Broadcast updated state to all players
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-state-update", playerState);
+        });
+
+        // If all submitted, notify everyone that answering phase has begun
+        if (result.allSubmitted) {
+            io.to(roomId).emit("hot-seat-answering-started");
+        }
+    });
+
+    socket.on("hot-seat-next-question", ({ roomId }) => {
+        console.log("hot-seat-next-question event received, roomId:", roomId);
+
+        const result = gameManager.nextHotSeatQuestion(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+
+        if (result.finished) {
+            io.to(roomId).emit("hot-seat-game-finished", { message: result.message });
+        } else if (result.hotSeatPlayerId) {
+            // New hot seat player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-new-player", playerState);
+            });
+        } else {
+            // Just next question
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-state-update", playerState);
+            });
+        }
+    });
+
+    socket.on("hot-seat-end-game", ({ roomId }) => {
+        console.log("hot-seat-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("hot-seat-game-finished", { message: "Game ended by host" });
     });
 });
 

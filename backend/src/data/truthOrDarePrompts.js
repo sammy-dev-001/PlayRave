@@ -240,7 +240,14 @@ const truthOrDarePrompts = {
 };
 
 const getRandomTruth = (category = 'normal', usedTruths = []) => {
-    const categoryTruths = truthOrDarePrompts[category]?.truths || truthOrDarePrompts.normal.truths;
+    // Handle mixed category - randomly pick from all categories
+    let effectiveCategory = category;
+    if (category === 'mixed') {
+        const categories = ['normal', 'spicy', 'naughty'];
+        effectiveCategory = categories[Math.floor(Math.random() * categories.length)];
+    }
+
+    const categoryTruths = truthOrDarePrompts[effectiveCategory]?.truths || truthOrDarePrompts.normal.truths;
     const availableTruths = categoryTruths.filter(truth => !usedTruths.includes(truth));
 
     // Reset if all used
@@ -252,7 +259,14 @@ const getRandomTruth = (category = 'normal', usedTruths = []) => {
 };
 
 const getRandomDare = (category = 'normal', usedDares = []) => {
-    const categoryDares = truthOrDarePrompts[category]?.dares || truthOrDarePrompts.normal.dares;
+    // Handle mixed category - randomly pick from all categories
+    let effectiveCategory = category;
+    if (category === 'mixed') {
+        const categories = ['normal', 'spicy', 'naughty'];
+        effectiveCategory = categories[Math.floor(Math.random() * categories.length)];
+    }
+
+    const categoryDares = truthOrDarePrompts[effectiveCategory]?.dares || truthOrDarePrompts.normal.dares;
     const availableDares = categoryDares.filter(dare => !usedDares.includes(dare));
 
     // Reset if all used
