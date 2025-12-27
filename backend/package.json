@@ -10,11 +10,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "PlayRave game server backend",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "nodemon": "^3.1.11",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
 }

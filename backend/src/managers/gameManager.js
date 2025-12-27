@@ -4,6 +4,8 @@ const { getRandomPrompts } = require('../data/whosMostLikelyPrompts');
 const { getRandomTruth, getRandomDare } = require('../data/truthOrDarePrompts');
 const { getRandomPrompt: getNHIEPrompt } = require('../data/neverHaveIEverPrompts');
 const { getRandomQuestion: getRapidFireQ } = require('../data/rapidFirePrompts');
+const { getRandomWordPair } = require('../data/imposterWords');
+const UNPOPULAR_OPINIONS = require('../data/unpopularOpinions');
 
 class GameManager {
     constructor() {
@@ -1257,6 +1259,463 @@ class GameManager {
             playerScores: game.playerScores,
             timePerQuestion: game.timePerQuestion,
             status: game.status
+        };
+    }
+
+    // ==================== CONFESSION ROULETTE ====================
+
+    startConfessionRouletteGame(roomId, room) {
+        const playerOrder = room.players.map(p => p.id);
+
+        const gameState = {
+            type: 'confession-roulette',
+            roomId,
+            confessions: {}, // { playerId: confession }
+            shuffledConfessions: [], // Array of { confession, authorId }
+            currentConfessionIndex: 0,
+            votes: {}, // { confessionIndex: { voterId: votedForPlayerId } }
+            scores: {}, // { playerId: score }
+            playerOrder,
+            phase: 'submission', // submission, voting, results, final
+            submissionTimer: 60,
+            votingTimer: 30,
+            status: 'PLAYING'
+        };
+
+        // Initialize scores
+        playerOrder.forEach(pid => {
+            gameState.scores[pid] = 0;
+        });
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    submitConfession(roomId, playerId, confession) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+        if (game.phase !== 'submission') return { error: 'Not in submission phase' };
+
+        game.confessions[playerId] = confession;
+
+        return {
+            success: true,
+            submittedCount: Object.keys(game.confessions).length,
+            totalPlayers: game.playerOrder.length
+        };
+    }
+
+    endConfessionSubmission(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+
+        // Shuffle confessions
+        const confessionEntries = Object.entries(game.confessions).map(([authorId, confession]) => ({
+            confession,
+            authorId
+        }));
+
+        // Fisher-Yates shuffle
+        for (let i = confessionEntries.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [confessionEntries[i], confessionEntries[j]] = [confessionEntries[j], confessionEntries[i]];
+        }
+
+        game.shuffledConfessions = confessionEntries;
+        game.currentConfessionIndex = 0;
+        game.phase = 'voting';
+
+        return {
+            success: true,
+            totalConfessions: confessionEntries.length,
+            firstConfession: confessionEntries.length > 0 ? confessionEntries[0].confession : null
+        };
+    }
+
+    getCurrentConfession(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return null;
+
+        const current = game.shuffledConfessions[game.currentConfessionIndex];
+        if (!current) return null;
+
+        return {
+            confession: current.confession,
+            index: game.currentConfessionIndex,
+            total: game.shuffledConfessions.length
+        };
+    }
+
+    submitConfessionVote(roomId, voterId, votedForPlayerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+        if (game.phase !== 'voting') return { error: 'Not in voting phase' };
+
+        const confessionIndex = game.currentConfessionIndex;
+
+        if (!game.votes[confessionIndex]) {
+            game.votes[confessionIndex] = {};
+        }
+
+        game.votes[confessionIndex][voterId] = votedForPlayerId;
+
+        return {
+            success: true,
+            votedCount: Object.keys(game.votes[confessionIndex]).length
+        };
+    }
+
+    getConfessionResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return null;
+
+        const confessionIndex = game.currentConfessionIndex;
+        const currentConfession = game.shuffledConfessions[confessionIndex];
+        if (!currentConfession) return null;
+
+        const votes = game.votes[confessionIndex] || {};
+        const correctGuessers = [];
+
+        // Calculate points
+        Object.entries(votes).forEach(([voterId, votedFor]) => {
+            if (votedFor === currentConfession.authorId) {
+                correctGuessers.push(voterId);
+                game.scores[voterId] = (game.scores[voterId] || 0) + 100; // Points for correct guess
+            }
+        });
+
+        // Points for fooling others
+        const fooledCount = Object.keys(votes).length - correctGuessers.length;
+        game.scores[currentConfession.authorId] = (game.scores[currentConfession.authorId] || 0) + (fooledCount * 50);
+
+        return {
+            confession: currentConfession.confession,
+            author: currentConfession.authorId,
+            correctGuessers,
+            fooledCount,
+            scores: game.scores,
+            isLastConfession: confessionIndex >= game.shuffledConfessions.length - 1
+        };
+    }
+
+    nextConfession(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+
+        game.currentConfessionIndex++;
+
+        if (game.currentConfessionIndex >= game.shuffledConfessions.length) {
+            game.phase = 'final';
+            game.status = 'FINISHED';
+            return { finished: true, finalScores: game.scores };
+        }
+
+        game.phase = 'voting';
+        return {
+            finished: false,
+            nextConfession: this.getCurrentConfession(roomId)
+        };
+    }
+
+    getConfessionScores(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return null;
+        return game.scores;
+    }
+
+    // Imposter Game Methods
+
+    startImposterGame(roomId, room) {
+        // Assign imposter randomly
+        const imposterIndex = Math.floor(Math.random() * room.players.length);
+        const imposter = room.players[imposterIndex];
+
+        // Get word pair
+        const wordPair = getRandomWordPair();
+
+        const gameState = {
+            type: 'imposter',
+            phase: 'waiting', // waiting, word_reveal, discussion, voting, results
+            round: 1,
+            imposterId: imposter.id,
+            imposterName: imposter.name,
+            normalWord: wordPair.normalWord,
+            imposterWord: wordPair.imposterWord,
+            category: wordPair.category,
+            votes: {}, // voterId -> votedForPlayerName
+            startTime: Date.now()
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    getImposterState(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'imposter') return null;
+
+        const isImposter = game.imposterId === playerId;
+
+        return {
+            phase: game.phase,
+            myWord: isImposter ? game.imposterWord : game.normalWord,
+            isImposter,
+            category: game.category,
+            timer: game.timer
+        };
+    }
+
+    startImposterDiscussion(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'imposter') return null;
+
+        game.phase = 'discussion';
+        return game;
+    }
+
+    startImposterVoting(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'imposter') return null;
+
+        game.phase = 'voting';
+        game.votes = {};
+        return game;
+    }
+
+    submitImposterVote(roomId, voterId, votedForName) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'imposter') return { error: 'Game not found' };
+        if (game.phase !== 'voting') return { error: 'Not in voting phase' };
+
+        // Prevent multiple votes if you want, but allow changing vote for now
+        game.votes[voterId] = votedForName;
+
+        return {
+            votedCount: Object.keys(game.votes).length
+        };
+    }
+
+    getImposterResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'imposter') return null;
+
+        const votes = game.votes;
+        const voteCounts = {};
+        let totalVotes = 0;
+
+        Object.values(votes).forEach(votedName => {
+            voteCounts[votedName] = (voteCounts[votedName] || 0) + 1;
+            totalVotes++;
+        });
+
+        // Find who got most votes
+        let mostVotedName = null;
+        let maxVotes = -1;
+
+        Object.entries(voteCounts).forEach(([name, count]) => {
+            if (count > maxVotes) {
+                maxVotes = count;
+                mostVotedName = name;
+            }
+        });
+
+        // Check if imposter was caught
+        const imposterCaught = mostVotedName === game.imposterName;
+
+        game.phase = 'results';
+
+        return {
+            imposterName: game.imposterName,
+            imposterWord: game.imposterWord,
+            normalWord: game.normalWord,
+            imposterCaught,
+            mostVotedName,
+            voteCounts
+        };
+    }
+
+    // Unpopular Opinions Game Methods
+
+    startUnpopularOpinionsGame(roomId, room) {
+        // Shuffle opinions
+        const shuffled = [...UNPOPULAR_OPINIONS].sort(() => 0.5 - Math.random());
+
+        // Initialize scores
+        const scores = {};
+        room.players.forEach(p => scores[p.name] = 0);
+
+        const gameState = {
+            type: 'unpopular-opinions',
+            phase: 'waiting', // waiting, opinion, results, final
+            opinions: shuffled,
+            currentIndex: 0,
+            currentOpinion: shuffled[0],
+            votes: {}, // playerId -> 'agree'/'disagree'
+            scores: scores,
+            round: 1,
+            maxRounds: 10
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    getOpinionState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'unpopular-opinions') return null;
+
+        return {
+            phase: game.phase,
+            currentOpinion: game.currentOpinion,
+            round: game.round,
+            scores: game.scores
+        };
+    }
+
+    startOpinionRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'unpopular-opinions') return null;
+
+        game.phase = 'opinion';
+        game.votes = {};
+
+        return game.currentOpinion;
+    }
+
+    submitOpinionVote(roomId, playerId, vote) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'unpopular-opinions') return { error: 'Game not found' };
+
+        game.votes[playerId] = vote;
+
+        return {
+            voteCount: Object.keys(game.votes).length
+        };
+    }
+
+    getOpinionResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'unpopular-opinions') return null;
+
+        const votes = game.votes;
+        let agreeCount = 0;
+        let disagreeCount = 0;
+
+        Object.values(votes).forEach(vote => {
+            if (vote === 'agree') agreeCount++;
+            else if (vote === 'disagree') disagreeCount++;
+        });
+
+        // Determine if unpopular opinion (minority wins points)
+        // If it's a tie, no one gets points or everyone does? Let's say tie = popular (majority rule applies broadly)
+        // Actually, "Unpopular Opinions" game usually means you get points for predicting, OR 
+        // the standard party game version is: You get points for being in the minority? Or just seeing stats?
+        // Let's go with: Points for being in the MINORITY (Unpopular Opinion).
+
+        const isUnpopular = agreeCount !== disagreeCount; // Just to see if there is a minority
+        let minorityVote = null;
+
+        if (agreeCount < disagreeCount && agreeCount > 0) minorityVote = 'agree';
+        else if (disagreeCount < agreeCount && disagreeCount > 0) minorityVote = 'disagree';
+
+        // Update scores
+        if (minorityVote) {
+            Object.entries(votes).forEach(([playerId, vote]) => {
+                if (vote === minorityVote) {
+                    // Find player name from room logic or just store IDs in scores? 
+                    // Previously we stored names in scores. Let's fix that inconsistency.
+                    // Ideally we map ID to name.
+                    // For now, let's assume we can get name or just modify how we stored scores.
+                    // In start: room.players.forEach(p => scores[p.name] = 0);
+                    // So we need player name here.
+                }
+            });
+        }
+
+        // Wait, GameManager doesn't easily have player mapping here unless passed or stored.
+        // Let's return the raw voting data and let the frontend/controller handle score calculation?
+        // Or better, let's just make sure we can access players.
+        // For simplicity, let's just return the counts and calc scores in a separate method or here if we had room context.
+        // To keep it simple, I'll calculate scores here if (game.activeGames has it? No).
+
+        // REFACTOR: Store player map in gameState for easy score updates
+        // Since I can't easily access room.players without passing it, I will skip detailed score update here 
+        // OR better: I will just use IDs in scores, then map to names at the end/frontend.
+
+        // Let's rely on IDs for internal logic.
+        // Re-init scores as IDs in startUnpopularOpinionsGame
+
+        return {
+            agreeCount,
+            disagreeCount,
+            isUnpopular: !!minorityVote,
+            minorityVote
+        };
+    }
+
+    updateOpinionScores(roomId, room) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'unpopular-opinions') return null;
+
+        const results = this.getOpinionResults(roomId);
+        const minorityVote = results.minorityVote;
+
+        if (minorityVote) {
+            Object.entries(game.votes).forEach(([playerId, vote]) => {
+                const player = room.players.find(p => p.id === playerId);
+                if (player && vote === minorityVote) {
+                    game.scores[player.name] = (game.scores[player.name] || 0) + 10;
+                }
+            });
+        } else {
+            // Majority wins? Or Tie?
+            // If tie, maybe everyone gets points? Or no one.
+            // Let's say if it's a popular opinion (Majority wins), majority gets points?
+            // The game is called "Unpopular Opinions", implying being unique is good?
+            // OR "Do you agree with this unpopular opinion?".
+            // Let's stick to: MINORITY gets points (Unpopular).
+            // If tie or everyone agrees, no points for "Unpopular".
+            // Actually, let's award MAJORITY points if no minority exists (everyone agreed).
+
+            if (!minorityVote) {
+                // Determine majority
+                let majorityVote = null;
+                if (results.agreeCount > results.disagreeCount) majorityVote = 'agree';
+                else if (results.disagreeCount > results.agreeCount) majorityVote = 'disagree';
+
+                if (majorityVote) {
+                    Object.entries(game.votes).forEach(([playerId, vote]) => {
+                        const player = room.players.find(p => p.id === playerId);
+                        if (player && vote === majorityVote) {
+                            game.scores[player.name] = (game.scores[player.name] || 0) + 5;
+                        }
+                    });
+                }
+            }
+        }
+
+        game.phase = 'results';
+        return { ...results, scores: game.scores };
+    }
+
+    nextOpinion(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'unpopular-opinions') return { error: 'Game not found' };
+
+        game.currentIndex++;
+
+        if (game.currentIndex >= Math.min(game.opinions.length, game.maxRounds)) {
+            game.phase = 'final';
+            return { finished: true, finalScores: game.scores };
+        }
+
+        game.currentOpinion = game.opinions[game.currentIndex];
+        game.round++;
+        game.phase = 'waiting'; // Set to waiting, trigger 'opinion' start separately or auto
+
+        return {
+            finished: false,
+            opinion: game.currentOpinion
         };
     }
 }
