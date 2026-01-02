@@ -5,6 +5,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
+import VoiceToggle from '../components/VoiceToggle';
 import { COLORS } from '../constants/theme';
 
 const LobbyScreen = ({ route, navigation }) => {
@@ -134,6 +135,73 @@ const LobbyScreen = ({ route, navigation }) => {
                     initialGameState: gameState,
                     players
                 });
+            } else if (gameType === 'confession-roulette') {
+                navigation.navigate('ConfessionRoulette', {
+                    room,
+                    playerName,
+                    isHost
+                });
+            } else if (gameType === 'imposter') {
+                navigation.navigate('Imposter', {
+                    room,
+                    playerName,
+                    isHost
+                });
+            } else if (gameType === 'unpopular-opinions') {
+                navigation.navigate('UnpopularOpinions', {
+                    room,
+                    playerName,
+                    isHost
+                });
+            } else if (gameType === 'hot-seat') {
+                navigation.navigate('HotSeat', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
+            } else if (gameType === 'button-mash') {
+                navigation.navigate('ButtonMash', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
+            } else if (gameType === 'type-race') {
+                navigation.navigate('TypeRace', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
+            } else if (gameType === 'math-blitz') {
+                navigation.navigate('MathBlitz', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
+            } else if (gameType === 'color-rush') {
+                navigation.navigate('ColorRush', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
+            } else if (gameType === 'tic-tac-toe') {
+                navigation.navigate('TicTacToe', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
+            } else if (gameType === 'draw-battle') {
+                navigation.navigate('DrawBattle', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
             }
         };
 
@@ -227,7 +295,7 @@ const LobbyScreen = ({ route, navigation }) => {
     // Generate join link - using the deployed URL
     const getJoinLink = () => {
         // Use the current deployed URL
-        const baseUrl = 'https://playrave-lx34.vercel.app';
+        const baseUrl = 'https://play-rave.vercel.app';
         return `${baseUrl}?join=${room.id}`;
     };
 
@@ -285,32 +353,95 @@ const LobbyScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer showMuteButton showBackButton>
-            <View style={styles.header}>
-                <NeonText size={14} color={COLORS.hotPink}>ROOM CODE</NeonText>
-                <NeonText size={48} weight="bold" glow color={COLORS.neonCyan}>
-                    {room.id}
-                </NeonText>
-                {selectedGame && (
-                    <View style={styles.gameNameContainer}>
-                        <NeonText size={16} color={COLORS.limeGlow}>
-                            {selectedGame === 'trivia' ? '🧠 Quick Trivia' : selectedGame}
-                        </NeonText>
-                    </View>
-                )}
-                {/* Share Buttons */}
-                <View style={styles.shareButtons}>
-                    <TouchableOpacity style={styles.shareBtn} onPress={handleShareLink}>
-                        <NeonText size={20}>📤</NeonText>
-                        <NeonText size={12} color={COLORS.neonCyan}>Share</NeonText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.shareBtn} onPress={() => setShowShareModal(true)}>
-                        <NeonText size={20}>📱</NeonText>
-                        <NeonText size={12} color={COLORS.neonCyan}>QR Code</NeonText>
-                    </TouchableOpacity>
-                </View>
-            </View>
+            {/* QR Code Modal moved outside or kept here */}
 
-            {/* QR Code Modal */}
+            <FlatList
+                data={room.players}
+                keyExtractor={item => item.id}
+                renderItem={renderPlayer}
+                contentContainerStyle={styles.list}
+                ListHeaderComponent={
+                    <>
+                        <View style={styles.header}>
+                            <NeonText size={14} color={COLORS.hotPink}>ROOM CODE</NeonText>
+                            <NeonText size={48} weight="bold" glow color={COLORS.neonCyan}>
+                                {room.id}
+                            </NeonText>
+                            {selectedGame && (
+                                <View style={styles.gameNameContainer}>
+                                    <NeonText size={16} color={COLORS.limeGlow}>
+                                        {selectedGame === 'trivia' ? '🧠 Quick Trivia' : selectedGame}
+                                    </NeonText>
+                                </View>
+                            )}
+                            {/* Share Buttons */}
+                            <View style={styles.shareButtons}>
+                                <TouchableOpacity style={styles.shareBtn} onPress={handleShareLink}>
+                                    <NeonText size={20}>📤</NeonText>
+                                    <NeonText size={12} color={COLORS.neonCyan}>Share</NeonText>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.shareBtn} onPress={() => setShowShareModal(true)}>
+                                    <NeonText size={20}>📱</NeonText>
+                                    <NeonText size={12} color={COLORS.neonCyan}>QR Code</NeonText>
+                                </TouchableOpacity>
+                                <VoiceToggle roomId={room.id} style={styles.voiceToggle} />
+                            </View>
+                        </View>
+
+                        <NeonText size={20} style={styles.sectionTitle}>PLAYERS IN LOBBY</NeonText>
+                    </>
+                }
+                ListFooterComponent={
+                    <View style={{ paddingBottom: 50 }}>
+                        {isHost && !fromGame && (
+                            <View style={styles.toggleContainer}>
+                                <NeonText size={16}>Host Participates</NeonText>
+                                <Switch
+                                    value={hostParticipates}
+                                    onValueChange={setHostParticipates}
+                                    trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
+                                    thumbColor={hostParticipates ? COLORS.limeGlow : '#f4f3f4'}
+                                    ios_backgroundColor="#3e3e3e"
+                                />
+                            </View>
+                        )}
+
+                        {!isHost && !fromGame && (
+                            <View style={styles.readyContainer}>
+                                <NeonButton
+                                    title={myReadyStatus ? "✓ READY" : "READY UP"}
+                                    onPress={handleToggleReady}
+                                    variant={myReadyStatus ? "primary" : "secondary"}
+                                    style={{ backgroundColor: myReadyStatus ? COLORS.limeGlow : undefined }}
+                                />
+                            </View>
+                        )}
+
+                        {isHost ? (
+                            <>
+                                <NeonButton title="START GAME" onPress={handleStartGame} />
+                                <NeonButton
+                                    title="LEAVE LOBBY"
+                                    onPress={handleLeaveLobby}
+                                    variant="secondary"
+                                    style={styles.leaveButton}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <NeonText style={styles.waiting}>Waiting for host to start...</NeonText>
+                                <NeonButton
+                                    title="LEAVE LOBBY"
+                                    onPress={handleLeaveLobby}
+                                    variant="secondary"
+                                    style={styles.leaveButton}
+                                />
+                            </>
+                        )}
+                    </View>
+                }
+            />
+
             <Modal
                 visible={showShareModal}
                 transparent
@@ -348,61 +479,6 @@ const LobbyScreen = ({ route, navigation }) => {
                     </View>
                 </TouchableOpacity>
             </Modal>
-
-            <NeonText size={20} style={styles.sectionTitle}>PLAYERS IN LOBBY</NeonText>
-
-            <FlatList
-                data={room.players}
-                keyExtractor={item => item.id}
-                renderItem={renderPlayer}
-                contentContainerStyle={styles.list}
-            />
-
-            {isHost && !fromGame && (
-                <View style={styles.toggleContainer}>
-                    <NeonText size={16}>Host Participates</NeonText>
-                    <Switch
-                        value={hostParticipates}
-                        onValueChange={setHostParticipates}
-                        trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
-                        thumbColor={hostParticipates ? COLORS.limeGlow : '#f4f3f4'}
-                        ios_backgroundColor="#3e3e3e"
-                    />
-                </View>
-            )}
-
-            {!isHost && !fromGame && (
-                <View style={styles.readyContainer}>
-                    <NeonButton
-                        title={myReadyStatus ? "✓ READY" : "READY UP"}
-                        onPress={handleToggleReady}
-                        variant={myReadyStatus ? "primary" : "secondary"}
-                        style={{ backgroundColor: myReadyStatus ? COLORS.limeGlow : undefined }}
-                    />
-                </View>
-            )}
-
-            {isHost ? (
-                <>
-                    <NeonButton title="START GAME" onPress={handleStartGame} />
-                    <NeonButton
-                        title="LEAVE LOBBY"
-                        onPress={handleLeaveLobby}
-                        variant="secondary"
-                        style={styles.leaveButton}
-                    />
-                </>
-            ) : (
-                <>
-                    <NeonText style={styles.waiting}>Waiting for host to start...</NeonText>
-                    <NeonButton
-                        title="LEAVE LOBBY"
-                        onPress={handleLeaveLobby}
-                        variant="secondary"
-                        style={styles.leaveButton}
-                    />
-                </>
-            )}
         </NeonContainer>
     );
 };
@@ -533,7 +609,10 @@ const styles = StyleSheet.create({
     },
     qrShareBtn: {
         marginBottom: 15,
-    }
+    },
+    voiceToggle: {
+        marginLeft: 5,
+    },
 });
 
 export default LobbyScreen;

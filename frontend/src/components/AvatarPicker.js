@@ -156,68 +156,76 @@ const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
                                 </TouchableOpacity>
                             </View>
 
-                            {/* Preview */}
-                            <View style={[styles.previewContainer, !customPhoto && { backgroundColor: selectedColor }]}>
-                                {customPhoto ? (
-                                    <Image source={{ uri: customPhoto }} style={styles.previewImage} />
-                                ) : (
-                                    <>
-                                        <NeonText size={64}>{selectedAvatar?.emoji}</NeonText>
-                                        <NeonText size={14} color="#fff" style={styles.previewName}>
-                                            {selectedAvatar?.name}
-                                        </NeonText>
-                                    </>
-                                )}
-                            </View>
-
-                            {/* Custom Photo Upload */}
-                            <TouchableOpacity
-                                style={styles.uploadButton}
-                                onPress={pickCustomPhoto}
-                                disabled={isUploading}
+                            <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={styles.scrollContent}
                             >
-                                <NeonText size={14} color={COLORS.neonCyan}>
-                                    {isUploading ? '⏳ UPLOADING...' : '📸 UPLOAD CUSTOM PHOTO'}
-                                </NeonText>
-                            </TouchableOpacity>
+                                {/* Preview */}
+                                <View style={[styles.previewContainer, !customPhoto && { backgroundColor: selectedColor }]}>
+                                    {customPhoto ? (
+                                        <Image source={{ uri: customPhoto }} style={styles.previewImage} />
+                                    ) : (
+                                        <>
+                                            <NeonText size={64}>{selectedAvatar?.emoji}</NeonText>
+                                            <NeonText size={14} color="#fff" style={styles.previewName}>
+                                                {selectedAvatar?.name}
+                                            </NeonText>
+                                        </>
+                                    )}
+                                </View>
 
-                            {customPhoto && (
+                                {/* Custom Photo Upload */}
                                 <TouchableOpacity
-                                    style={styles.clearPhotoButton}
-                                    onPress={() => setCustomPhoto(null)}
+                                    style={styles.uploadButton}
+                                    onPress={pickCustomPhoto}
+                                    disabled={isUploading}
                                 >
-                                    <NeonText size={12} color={COLORS.hotPink}>
-                                        ✕ REMOVE PHOTO
+                                    <NeonText size={14} color={COLORS.neonCyan}>
+                                        {isUploading ? '⏳ UPLOADING...' : '📸 UPLOAD CUSTOM PHOTO'}
                                     </NeonText>
                                 </TouchableOpacity>
-                            )}
 
-                            {/* Avatar Grid */}
-                            <NeonText size={12} color="#888" style={styles.sectionLabel}>
-                                SELECT AVATAR
-                            </NeonText>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={styles.avatarScroll}
-                                contentContainerStyle={styles.avatarGrid}
-                            >
-                                {AVATARS.map(renderAvatarOption)}
+                                {customPhoto && (
+                                    <TouchableOpacity
+                                        style={styles.clearPhotoButton}
+                                        onPress={() => setCustomPhoto(null)}
+                                    >
+                                        <NeonText size={12} color={COLORS.hotPink}>
+                                            ✕ REMOVE PHOTO
+                                        </NeonText>
+                                    </TouchableOpacity>
+                                )}
+
+                                {/* Avatar Grid */}
+                                <NeonText size={12} color="#888" style={styles.sectionLabel}>
+                                    SELECT AVATAR
+                                </NeonText>
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={styles.avatarScroll}
+                                    contentContainerStyle={styles.avatarGrid}
+                                >
+                                    {AVATARS.map(renderAvatarOption)}
+                                </ScrollView>
+
+                                {/* Color Grid */}
+                                <NeonText size={12} color="#888" style={styles.sectionLabel}>
+                                    SELECT COLOR
+                                </NeonText>
+                                <View style={styles.colorGrid}>
+                                    {AVATAR_COLORS.map(renderColorOption)}
+                                </View>
+
+                                <NeonButton
+                                    title="CONFIRM"
+                                    onPress={handleConfirm}
+                                    style={styles.confirmButton}
+                                />
+
+                                {/* Extra space for safe area */}
+                                <View style={{ height: 30 }} />
                             </ScrollView>
-
-                            {/* Color Grid */}
-                            <NeonText size={12} color="#888" style={styles.sectionLabel}>
-                                SELECT COLOR
-                            </NeonText>
-                            <View style={styles.colorGrid}>
-                                {AVATAR_COLORS.map(renderColorOption)}
-                            </View>
-
-                            <NeonButton
-                                title="CONFIRM"
-                                onPress={handleConfirm}
-                                style={styles.confirmButton}
-                            />
                         </View>
                     </TouchableWithoutFeedback>
                 </View>
@@ -268,11 +276,14 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 20,
-        paddingBottom: 40,
-        maxHeight: '80%',
+        paddingBottom: 20,
+        maxHeight: '85%',
         borderWidth: 2,
         borderColor: COLORS.electricPurple,
         borderBottomWidth: 0,
+    },
+    scrollContent: {
+        paddingBottom: 20,
     },
     header: {
         flexDirection: 'row',

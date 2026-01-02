@@ -93,6 +93,13 @@ const LOCAL_GAMES = [
         icon: '🔥',
         color: COLORS.hotPink,
         comingSoon: true
+    },
+    {
+        id: 'memory-match',
+        name: 'Memory Match',
+        description: 'Find matching pairs - test your memory!',
+        icon: '🧠',
+        color: COLORS.neonCyan
     }
 ];
 
@@ -121,6 +128,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('AuctionBluff', { players });
         } else if (gameId === 'memory-chain') {
             navigation.navigate('MemoryChain', { players });
+        } else if (gameId === 'memory-match') {
+            navigation.navigate('MemoryMatch', { players });
         }
     };
 

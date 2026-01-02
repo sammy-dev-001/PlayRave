@@ -31,7 +31,21 @@ const truthOrDarePrompts = {
             "What's the most embarrassing thing in your room?",
             "Have you ever pretended to know something you didn't?",
             "What's your worst habit?",
-            "Have you ever been caught singing in the shower?"
+            "Have you ever been caught singing in the shower?",
+            "What's the grossest food you've ever eaten?",
+            "Who is your favorite family member?",
+            "What is your biggest fear involving animals?",
+            "Have you ever peed in a pool?",
+            "What is the most annoying habit you have?",
+            "If you could trade lives with anyone here for a day, who would it be?",
+            "What is a secret you’ve never told anyone?",
+            "Who was your first celebrity crush?",
+            "What is the most embarrassing thing your parents have caught you doing?",
+            "Have you ever cheated on a test?",
+            "What is the meanest thing you’ve ever said to someone?",
+            "What is your worst habit?",
+            "When was the last time you cried?",
+            "What is the scariest dream you've ever had?"
         ],
         dares: [
             "Do 20 pushups right now",
@@ -63,7 +77,21 @@ const truthOrDarePrompts = {
             "Act like a monkey for 1 minute",
             "Do your best opera singing",
             "Walk backwards for the next 2 rounds",
-            "Do 25 jumping jacks while singing"
+            "Do 25 jumping jacks while singing",
+            "Speak in an accent for the next 3 rounds",
+            "Let someone tickle you for 30 seconds",
+            "Try to lick your elbow",
+            "Let someone draw a mustache on your face",
+            "Eat a spoonful of mustard or hot sauce",
+            "Do your best chicken impression",
+            "Let the group style your hair",
+            "Talk without closing your mouth for the next round",
+            "Do 10 pushups while someone sits on your back",
+            "Serenade the person to your right",
+            "Do an interpretive dance of your life",
+            "Let someone give you a unibrow with a marker",
+            "Walk on your knees for the next round",
+            "Act like a dog and fetch something"
         ]
     },
     spicy: {
@@ -112,7 +140,21 @@ const truthOrDarePrompts = {
             "Have you ever fallen for someone you shouldn't have?",
             "What's the most spontaneous romantic thing you've done?",
             "Have you ever written a love letter?",
-            "What's the weirdest thing that turns you on?"
+            "What's the weirdest thing that turns you on?",
+            "Have you ever sent a risky text and regretted it immediately?",
+            "What is your biggest turn-on?",
+            "Have you ever practiced kissing on your hand?",
+            "Who in this room would you most likely date?",
+            "What is your favorite body part on a partner?",
+            "Have you ever had a crush on a teacher?",
+            "What is the most romantic thing someone has done for you?",
+            "Have you ever had a dream about someone in this room inappropriately?",
+            "What is your idea of a perfect date?",
+            "Have you ever been caught checking someone out?",
+            "What is your biggest deal-breaker in a relationship?",
+            "Have you ever lied about your relationship status?",
+            "What is your favorite thing to wear on a date?",
+            "Have you ever kissed someone within 5 minutes of meeting them?"
         ],
         dares: [
             "Slow dance with someone for 1 minute",
@@ -154,7 +196,21 @@ const truthOrDarePrompts = {
             "Pose for a romantic photo with someone",
             "Do a romantic scene from a movie with someone",
             "Let someone lead you around blindfolded for 1 minute",
-            "Give someone butterfly kisses on their cheek"
+            "Give someone butterfly kisses on their cheek",
+            "Let someone sit on your lap for one round",
+            "Give the person to your left a genuine compliment",
+            "Hold hands with the person to your right for the next round",
+            "Whisper a secret in the ear of the person to your left",
+            "Let someone give you a gentle face massage",
+            "Stare into the eyes of the person across from you for one minute",
+            "Give someone a piggyback ride around the room",
+            "Let someone feed you a snack",
+            "Share a piece of clothing with someone",
+            "Slow dance with the person of your choice (no music needed)",
+            "Let someone write a word on your arm with their finger and guess what it is",
+            "Hug the person you find most attractive in the room",
+            "Let someone fix your hair",
+            "Give someone a hand massage"
         ]
     },
     naughty: {
@@ -203,7 +259,21 @@ const truthOrDarePrompts = {
             "Have you ever had sex during your period?",
             "What's your favorite type of foreplay?",
             "Have you ever paid for sex or been paid?",
-            "What's the oldest/youngest person you've been with?"
+            "What's the oldest/youngest person you've been with?",
+            "Have you ever had sex in a car?",
+            "What is your favorite time of day to have sex?",
+            "Have you ever used a blindfold during sex?",
+            "What is the absolute weirdest place you've done it?",
+            "Have you ever had a quickie in a public restroom?",
+            "What is your favorite lingerie/underwear to see on a partner?",
+            "Have you ever been loud enough for neighbors to hear?",
+            "Have you ever done it in a pool or hot tub?",
+            "What is the most times you've done it in one night?",
+            "Have you ever had a 'friends with benefits' arrangement?",
+            "What is your biggest fantasy involving a stranger?",
+            "Have you ever sent a nude picture to the wrong person?",
+            "What is the most daring place you would want to try it?",
+            "Have you ever had sex on a beach?"
         ],
         dares: [
             "Give someone here a lap dance for 30 seconds",
@@ -250,7 +320,21 @@ const truthOrDarePrompts = {
             "Let someone take a body shot off you",
             "Demonstrate your favorite position with a pillow",
             "Let someone blindfold you and kiss you",
-            "Send a nude to the last person you texted (or chicken out)"
+            "Send a nude to the last person you texted (or chicken out)",
+            "Perform a sexy crawl across the floor",
+            "Let someone spank you",
+            "Give someone a lap dance",
+            "Make out with your hand for 30 seconds",
+            "Let someone search your browser history",
+            "Take off one piece of clothing (accessories don't count)",
+            "Demonstrate your favorite sex position (clothed)",
+            "Let someone massage your shoulders sensually",
+            "Kiss the neck of the person to your right",
+            "Let someone whisper something dirty in your ear",
+            "Eat a banana or popsicle seductively",
+            "Using only your mouth, undo someone's button or zipper (if appropriate)",
+            "Let someone blindly pick a contact in your phone and text them 'I miss you'",
+            "Pose for a risqué photo (don't have to send it)"
         ]
     }
 };

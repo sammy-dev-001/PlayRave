@@ -155,6 +155,126 @@ export const CAPTION_PROMPTS = [
         description: "A huge line outside a popular restaurant while an empty one sits next door",
         category: "food",
         emoji: "🍽️📊"
+    },
+    {
+        id: 26,
+        description: "A cat staring intensely at a blank wall",
+        category: "animals",
+        emoji: "🐱🧱"
+    },
+    {
+        id: 27,
+        description: "Someone holding a 'Free Hugs' sign but looking angry",
+        category: "social",
+        emoji: "😠🤗"
+    },
+    {
+        id: 28,
+        description: "A pigeon riding on top of a turtle",
+        category: "animals",
+        emoji: "🐦🐢"
+    },
+    {
+        id: 29,
+        description: "A person trying to eat a taco without spilling it",
+        category: "food",
+        emoji: "🌮😰"
+    },
+    {
+        id: 30,
+        description: "A dog sitting in a human chair like a person",
+        category: "animals",
+        emoji: "🐕🪑"
+    },
+    {
+        id: 31,
+        description: "Someone dropping their ice cream cone exactly as they take a photo",
+        category: "food",
+        emoji: "🍦😭"
+    },
+    {
+        id: 32,
+        description: "A baby crying because their banana broke in half",
+        category: "daily-life",
+        emoji: "🍌👶"
+    },
+    {
+        id: 33,
+        description: "A raccoon washing cotton candy in water and it dissolves",
+        category: "animals",
+        emoji: "🦝🍬"
+    },
+    {
+        id: 34,
+        description: "Someone struggling to fold a fitted sheet",
+        category: "daily-life",
+        emoji: "🛏️🤯"
+    },
+    {
+        id: 35,
+        description: "A person high-fiving themselves in a mirror",
+        category: "weird",
+        emoji: "✋🪞"
+    },
+    {
+        id: 36,
+        description: "A cat sleeping inside a pizza box",
+        category: "animals",
+        emoji: "🍕😺"
+    },
+    {
+        id: 37,
+        description: "Someone wearing sunglasses indoors at night",
+        category: "social",
+        emoji: "😎🌙"
+    },
+    {
+        id: 38,
+        description: "A toddler drawing on the wall with permanent marker",
+        category: "daily-life",
+        emoji: "🖍️😱"
+    },
+    {
+        id: 39,
+        description: "A person trying to open a bag of chips quietly in a library",
+        category: "social",
+        emoji: "🤫🥔"
+    },
+    {
+        id: 40,
+        description: "A dog chasing its own tail and actually catching it",
+        category: "animals",
+        emoji: "🐕🌀"
+    },
+    {
+        id: 41,
+        description: "Someone mistaking a mannequin for a real person",
+        category: "weird",
+        emoji: "👗😳"
+    },
+    {
+        id: 42,
+        description: "A bird stealing glasses off someone's face",
+        category: "animals",
+        emoji: "🦅👓"
+    },
+    {
+        id: 43,
+        description: "Someone trying to hold 10 coffees at once",
+        category: "work",
+        emoji: "☕☕"
+    },
+    {
+        id: 44,
+        description: "A person tripping over nothing on a flat sidewalk",
+        category: "daily-life",
+        emoji: "🚶⚠️"
+    },
+    {
+        id: 45,
+        description: "A cat knocking a glass off a table while making eye contact",
+        category: "animals",
+        emoji: "😼🥛"
     }
 ];
 

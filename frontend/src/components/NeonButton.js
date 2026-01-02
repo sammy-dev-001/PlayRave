@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, StyleSheet, View, Platform, Vibration, Animated } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Animated } from 'react-native';
 import { COLORS, SHADOWS } from '../constants/theme';
 import NeonText from './NeonText';
+import HapticService from '../services/HapticService';
 
 const NeonButton = ({
     title,
@@ -62,9 +63,9 @@ const NeonButton = ({
     };
 
     const handlePress = () => {
-        // Trigger haptic feedback on mobile platforms
-        if (haptic && Platform.OS !== 'web') {
-            Vibration.vibrate(10); // Short 10ms vibration
+        // Trigger haptic feedback
+        if (haptic) {
+            HapticService.buttonTap();
         }
         if (onPress && !loading) {
             onPress();
@@ -147,4 +148,3 @@ const styles = StyleSheet.create({
 });
 
 export default NeonButton;
-

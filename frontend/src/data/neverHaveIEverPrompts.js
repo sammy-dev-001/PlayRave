@@ -30,7 +30,21 @@ const neverHaveIEverPrompts = {
         "Never have I ever used someone else's toothbrush",
         "Never have I ever eaten breakfast for dinner",
         "Never have I ever stayed in my pajamas all day",
-        "Never have I ever talked to an animal like it was a person"
+        "Never have I ever talked to an animal like it was a person",
+        "Never have I ever accidentally walked into the wrong bathroom",
+        "Never have I ever forgotten where I parked my car",
+        "Never have I ever dropped my phone on my face while lying down",
+        "Never have I ever tried to cut my own hair",
+        "Never have I ever eaten something past the expiration date",
+        "Never have I ever pretended to be on the phone to avoid someone",
+        "Never have I ever locked myself out of my house/car",
+        "Never have I ever stalked someone on social media by accident (liked an old photo)",
+        "Never have I ever used a fake name at a coffee shop",
+        "Never have I ever tripped in public and played it off",
+        "Never have I ever laughed so hard I peed a little",
+        "Never have I ever worn socks with sandals",
+        "Never have I ever cheated during a board game",
+        "Never have I ever Googled myself"
     ],
     spicy: [
         "Never have I ever had a crush on my friend's sibling",
@@ -62,7 +76,21 @@ const neverHaveIEverPrompts = {
         "Never have I ever lied on a dating app",
         "Never have I ever gotten back with an ex",
         "Never have I ever had a vacation fling",
-        "Never have I ever been in a long-distance relationship"
+        "Never have I ever been in a long-distance relationship",
+        "Never have I ever hooked up with a co-worker",
+        "Never have I ever had a crush on a teacher/professor",
+        "Never have I ever lied about my number of past partners",
+        "Never have I ever snooped through a partner's phone",
+        "Never have I ever been the 'other person' in a relationship",
+        "Never have I ever had a rebound relationship",
+        "Never have I ever kissed someone of the same gender",
+        "Never have I ever flashed someone",
+        "Never have I ever gone commando in public",
+        "Never have I ever had a crush on a friend's parent",
+        "Never have I ever danced on a table/bar",
+        "Never have I ever sent a risky text and immediately deleted it",
+        "Never have I ever had a romantic dream about someone here",
+        "Never have I ever been caught making out"
     ],
     naughty: [
         "Never have I ever sent a dirty text",
@@ -94,7 +122,21 @@ const neverHaveIEverPrompts = {
         "Never have I ever been intimate with a friend's ex",
         "Never have I ever been intimate in a parent's house",
         "Never have I ever had an affair",
-        "Never have I ever been intimate in an airplane"
+        "Never have I ever been intimate in an airplane",
+        "Never have I ever had sex in a public park",
+        "Never have I ever owned a vibrator/sex toy",
+        "Never have I ever watched porn with a partner",
+        "Never have I ever filmed a sex tape",
+        "Never have I ever had sex while other people were in the house (and awake)",
+        "Never have I ever participated in roleplay",
+        "Never have I ever tried edible underwear or body paint",
+        "Never have I ever had a one-night stand with a total stranger",
+        "Never have I ever faked an orgasm",
+        "Never have I ever used handcuffs or restraints",
+        "Never have I ever had sex in a pool or hot tub",
+        "Never have I ever been to a strip club",
+        "Never have I ever had sex in a car",
+        "Never have I ever received a lap dance"
     ]
 };
 

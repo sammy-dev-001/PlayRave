@@ -249,6 +249,106 @@ const wouldYouRatherQuestions = [
         id: 50,
         optionA: "Have a clone of yourself",
         optionB: "Have a robot assistant"
+    },
+    {
+        id: 51,
+        optionA: "Be able to control the weather",
+        optionB: "Be able to control traffic"
+    },
+    {
+        id: 52,
+        optionA: "Never have to do laundry again",
+        optionB: "Never have to do dishes again"
+    },
+    {
+        id: 53,
+        optionA: "Have a pause button in your life",
+        optionB: "Have a rewind button in your life"
+    },
+    {
+        id: 54,
+        optionA: "Lose your keys every day",
+        optionB: "Lose your phone every day"
+    },
+    {
+        id: 55,
+        optionA: "Live in a house made of candy",
+        optionB: "Live in a house made of clouds"
+    },
+    {
+        id: 56,
+        optionA: "Be able to change your appearance at will",
+        optionB: "Be able to change your personality at will"
+    },
+    {
+        id: 57,
+        optionA: "Have the power of flight",
+        optionB: "Have the power of teleportation"
+    },
+    {
+        id: 58,
+        optionA: "Always be dressed for winter in summer",
+        optionB: "Always be dressed for summer in winter"
+    },
+    {
+        id: 59,
+        optionA: "Be a famous rock star",
+        optionB: "Be a famous scientist"
+    },
+    {
+        id: 60,
+        optionA: "Have unlimited free travel",
+        optionB: "Have unlimited free food"
+    },
+    {
+        id: 61,
+        optionA: "Be able to breathe underwater",
+        optionB: "Be able to survive in space"
+    },
+    {
+        id: 62,
+        optionA: "Have a tail",
+        optionB: "Have wings"
+    },
+    {
+        id: 63,
+        optionA: "Always feel like you have to sneeze",
+        optionB: "Always have a hidden itch"
+    },
+    {
+        id: 64,
+        optionA: "Live in a world without internet",
+        optionB: "Live in a world without music"
+    },
+    {
+        id: 65,
+        optionA: "Be the smartest person in the room",
+        optionB: "Be the funniest person in the room"
+    },
+    {
+        id: 66,
+        optionA: "Never get stuck in traffic",
+        optionB: "Never get a cold"
+    },
+    {
+        id: 67,
+        optionA: "Have to sing everything you say",
+        optionB: "Have to dance every time you walk"
+    },
+    {
+        id: 68,
+        optionA: "Be able to see ghosts",
+        optionB: "Be able to see aliens"
+    },
+    {
+        id: 69,
+        optionA: "Always know when someone is lying",
+        optionB: "Always get away with lying"
+    },
+    {
+        id: 70,
+        optionA: "Be a master of every musical instrument",
+        optionB: "Be fluent in every language"
     }
 ];
 

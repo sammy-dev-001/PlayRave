@@ -65,14 +65,6 @@ const AVAILABLE_GAMES = [
         color: COLORS.limeGlow
     },
     {
-        id: 'two-truths',
-        name: 'Two Truths One Lie',
-        description: 'Guess which statement is the lie',
-        icon: '🎭',
-        color: COLORS.neonCyan,
-        comingSoon: true
-    },
-    {
         id: 'rapid-fire',
         name: 'Rapid Fire',
         description: 'Quick questions, faster answers!',
@@ -80,28 +72,74 @@ const AVAILABLE_GAMES = [
         color: COLORS.limeGlow
     },
     {
-        id: 'emoji-charades',
-        name: 'Emoji Charades',
-        description: 'Guess the phrase from emojis',
-        icon: '😎',
-        color: COLORS.electricPurple,
-        comingSoon: true
+        id: 'confession-roulette',
+        name: 'Confession Roulette',
+        description: 'Anonymous confessions - guess who wrote it!',
+        icon: '🎰',
+        color: COLORS.hotPink
     },
     {
-        id: 'drawing',
-        name: 'Doodle Dash',
-        description: 'Draw and guess in this creative challenge',
+        id: 'imposter',
+        name: 'Imposter',
+        description: 'Find the player with the different word!',
+        icon: '🕵️',
+        color: COLORS.electricPurple
+    },
+    {
+        id: 'unpopular-opinions',
+        name: 'Unpopular Opinions',
+        description: 'Hot takes - agree or disagree?',
+        icon: '🔥',
+        color: COLORS.limeGlow
+    },
+    {
+        id: 'hot-seat',
+        name: 'Hot Seat',
+        description: 'Ask anything - custom questions for the hot seat player!',
+        icon: '🪑',
+        color: COLORS.hotPink
+    },
+    {
+        id: 'button-mash',
+        name: 'Button Mash',
+        description: 'Tap as fast as you can! Highest taps wins!',
+        icon: '⚡',
+        color: COLORS.limeGlow
+    },
+    {
+        id: 'type-race',
+        name: 'Type Race',
+        description: 'Race to type sentences the fastest!',
+        icon: '⌨️',
+        color: COLORS.neonCyan
+    },
+    {
+        id: 'math-blitz',
+        name: 'Math Blitz',
+        description: 'Quick math problems - first correct answer wins!',
+        icon: '🧮',
+        color: COLORS.hotPink
+    },
+    {
+        id: 'color-rush',
+        name: 'Color Rush',
+        description: 'Tap the matching color - don\'t get tricked!',
         icon: '🎨',
-        color: COLORS.limeGlow,
-        comingSoon: true
+        color: COLORS.electricPurple
     },
     {
-        id: 'music',
-        name: 'Beat Battle',
-        description: 'Guess the song from short clips',
-        icon: '🎵',
-        color: COLORS.neonCyan,
-        comingSoon: true
+        id: 'tic-tac-toe',
+        name: 'Tic-Tac-Toe Tournament',
+        description: 'Bracket-style tournament - last one standing wins!',
+        icon: '⭕',
+        color: COLORS.neonCyan
+    },
+    {
+        id: 'draw-battle',
+        name: 'Draw Battle',
+        description: 'Draw the prompt and vote for the best!',
+        icon: '🎨',
+        color: COLORS.hotPink
     }
 ];
 
@@ -239,7 +277,11 @@ const GameSelectionScreen = ({ route, navigation }) => {
     );
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer
+            showBackButton
+            scrollable
+            style={{ paddingBottom: 100 }}
+        >
             <View style={styles.header}>
                 <NeonText size={14} color={COLORS.hotPink}>ROOM CODE</NeonText>
                 <NeonText size={28} weight="bold" glow color={COLORS.neonCyan}>
@@ -293,12 +335,14 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 </View>
             )}
 
-            <NeonButton
-                title={selectedGame === 'trivia' && useCustomQuestions ? "CREATE QUESTIONS" : "CONTINUE TO LOBBY"}
-                onPress={handleContinue}
-                disabled={!selectedGame}
-                style={styles.continueButton}
-            />
+            <View style={styles.buttonContainer}>
+                <NeonButton
+                    title={selectedGame === 'trivia' && useCustomQuestions ? "CREATE QUESTIONS" : "CONTINUE TO LOBBY"}
+                    onPress={handleContinue}
+                    disabled={!selectedGame}
+                    style={styles.continueButton}
+                />
+            </View>
         </NeonContainer>
     );
 };
@@ -401,9 +445,17 @@ const styles = StyleSheet.create({
     continueButton: {
         marginBottom: 30, // Extra bottom margin for safe area
     },
+    buttonContainer: {
+        position: 'absolute',
+        bottom: 30,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
     disabledButton: {
         opacity: 0.5,
-    }
+    },
 });
 
 export default GameSelectionScreen;

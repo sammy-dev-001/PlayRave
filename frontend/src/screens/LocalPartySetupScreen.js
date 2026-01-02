@@ -133,12 +133,14 @@ const LocalPartySetupScreen = ({ navigation }) => {
                 )}
             </View>
 
-            <NeonButton
-                title={`START PARTY (${players.length} players)`}
-                onPress={startParty}
-                disabled={players.length < 2}
-                style={styles.startButton}
-            />
+            <View style={styles.buttonContainer}>
+                <NeonButton
+                    title={`START PARTY (${players.length} players)`}
+                    onPress={startParty}
+                    disabled={players.length < 2}
+                    style={styles.startButton}
+                />
+            </View>
         </NeonContainer>
     );
 };
@@ -229,7 +231,11 @@ const styles = StyleSheet.create({
         borderColor: COLORS.limeGlow,
         borderWidth: 2,
         backgroundColor: 'rgba(198, 255, 74, 0.1)',
-    }
+    },
+    buttonContainer: {
+        paddingBottom: 20,
+        marginTop: 10,
+    },
 });
 
 export default LocalPartySetupScreen;

@@ -12,6 +12,13 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
 
     const categories = [
         {
+            id: 'mixed',
+            name: 'MIXED',
+            description: 'Random mix of all categories',
+            color: COLORS.neonCyan,
+            icon: '🎲'
+        },
+        {
             id: 'normal',
             name: 'NORMAL',
             description: 'Fun and friendly questions and dares',

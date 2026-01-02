@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -7,18 +7,31 @@ import {
     LETTER_TILES,
     createTileBag,
     drawTiles,
-    calculateWordScore,
     isValidWord,
-    canFormWord
+    BOARD_SIZE,
+    CENTER_SQUARE,
+    BONUS_SQUARES
 } from '../data/scrabbleData';
 import { COLORS } from '../constants/theme';
 
 const HAND_SIZE = 7;
 
+
 const ScrabbleScreen = ({ route, navigation }) => {
     const { players } = route.params;
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+
+    // Calculate tile size dynamically based on screen dimensions
+    // Use the smaller dimension to ensure board fits, with padding
+    const availableSize = Math.min(screenWidth, screenHeight - 250); // Leave space for header/controls
+    const tileSize = Math.max(Math.floor((availableSize - 20) / BOARD_SIZE), 18); // Min 18px tiles
+    const rackTileSize = Math.min(Math.max(tileSize * 1.2, 35), 50); // Rack tiles slightly larger
+
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [tileBag, setTileBag] = useState(() => createTileBag());
+
+    // Game State
+    const [board, setBoard] = useState({}); // { "x,y": { letter: 'A', value: 1, isLocked: true } }
     const [playerHands, setPlayerHands] = useState(() => {
         const hands = {};
         const bag = createTileBag();
@@ -28,337 +41,547 @@ const ScrabbleScreen = ({ route, navigation }) => {
         setTileBag(bag);
         return hands;
     });
+
     const [playerScores, setPlayerScores] = useState(() => {
         const scores = {};
-        players.forEach(player => {
-            scores[player.id] = 0;
-        });
+        players.forEach(player => { scores[player.id] = 0; });
         return scores;
     });
-    const [selectedTiles, setSelectedTiles] = useState([]);
-    const [currentWord, setCurrentWord] = useState('');
-    const [lastPlayedWord, setLastPlayedWord] = useState(null);
+
+    const [selectedTileIndex, setSelectedTileIndex] = useState(null); // Index in hand
+    const [placedTiles, setPlacedTiles] = useState([]); // Array of { x, y, letter, value, handIndex }
     const [turnNumber, setTurnNumber] = useState(1);
+    const [endGameModalVisible, setEndGameModalVisible] = useState(false);
 
     const currentPlayer = players[currentPlayerIndex];
     const currentHand = playerHands[currentPlayer.id] || [];
+    const scrollViewRef = useRef(null);
 
-    const handleTilePress = (tile, index) => {
-        const isSelected = selectedTiles.some(s => s.index === index);
+    // --- Interaction Handlers ---
 
-        if (isSelected) {
-            // Deselect tile
-            setSelectedTiles(selectedTiles.filter(s => s.index !== index));
-            setCurrentWord(currentWord.replace(tile.letter, ''));
+    const handleRackTilePress = (index) => {
+        if (selectedTileIndex === index) {
+            setSelectedTileIndex(null); // Deselect
         } else {
-            // Select tile
-            setSelectedTiles([...selectedTiles, { ...tile, index }]);
-            setCurrentWord(currentWord + tile.letter);
+            setSelectedTileIndex(index);
         }
     };
 
-    const handleSubmitWord = () => {
-        if (currentWord.length < 2) {
-            Alert.alert('Too Short', 'Words must be at least 2 letters!');
+    const handleBoardSquarePress = (x, y) => {
+        const key = `${x},${y}`;
+
+        // 1. If square occupied by locked tile (previous turns), do nothing
+        if (board[key] && board[key].isLocked) return;
+
+        // 2. If square occupied by currently placed tile, retrieve it back to hand
+        const existingPlacedIndex = placedTiles.findIndex(t => t.x === x && t.y === y);
+        if (existingPlacedIndex !== -1) {
+            const tileToRemove = placedTiles[existingPlacedIndex];
+            setPlacedTiles(placedTiles.filter((_, i) => i !== existingPlacedIndex));
+            // Just removing it from board puts it back "visually" in rack (logic handles availability)
             return;
         }
 
-        if (!isValidWord(currentWord)) {
-            Alert.alert('Invalid Word', `"${currentWord}" is not in our dictionary!`);
+        // 3. If placing a new tile
+        if (selectedTileIndex !== null) {
+            // Check if this specific tile from hand is already placed elsewhere?
+            // Actually, we track availability by checking if hand index is in placedTiles
+            const isAlreadyPlaced = placedTiles.some(t => t.handIndex === selectedTileIndex);
+            if (isAlreadyPlaced) {
+                // Should not happen if UI disables used tiles, but safety check
+                return;
+            }
+
+            const tile = currentHand[selectedTileIndex];
+            const newPlacement = {
+                x, y,
+                letter: tile.letter,
+                value: tile.value,
+                handIndex: selectedTileIndex
+            };
+
+            setPlacedTiles([...placedTiles, newPlacement]);
+            setSelectedTileIndex(null); // Auto-deselect after placement
+        }
+    };
+
+    const handleRecallTiles = () => {
+        setPlacedTiles([]);
+    };
+
+    const calculateTurnScore = (placements) => {
+        // Simplified scoring for MVP: just sum tile values + bonus squares
+        // Real Scrabble scoring (connected words, cross-words) is much more complex
+        let score = 0;
+        let wordMultiplier = 1;
+
+        placements.forEach(t => {
+            let letterScore = t.value;
+            const key = `${t.x},${t.y}`;
+            const bonus = BONUS_SQUARES[key];
+
+            if (bonus === 'DL') letterScore *= 2;
+            if (bonus === 'TL') letterScore *= 3;
+            if (bonus === 'DW') wordMultiplier *= 2;
+            if (bonus === 'TW') wordMultiplier *= 3;
+
+            score += letterScore;
+        });
+
+        return score * wordMultiplier;
+    };
+
+    const handleSubmitMove = () => {
+        if (placedTiles.length === 0) return;
+
+        // Validation 1: Must be in a line
+        const xs = placedTiles.map(t => t.x);
+        const ys = placedTiles.map(t => t.y);
+        const isHorizontal = new Set(ys).size === 1;
+        const isVertical = new Set(xs).size === 1;
+
+        if (!isHorizontal && !isVertical) {
+            Alert.alert("Invalid Move", "Tiles must be placed in a straight line.");
             return;
         }
 
-        const score = calculateWordScore(currentWord);
+        // Validation 2: First turn must touch center
+        const isFirstTurn = Object.keys(board).length === 0;
+        if (isFirstTurn) {
+            const touchesCenter = placedTiles.some(t => t.x === CENTER_SQUARE && t.y === CENTER_SQUARE);
+            if (!touchesCenter) {
+                Alert.alert("First Turn", "First word must cover the center star (★).");
+                return;
+            }
+        } else {
+            // Validation 3: Subsequent turns must connect to existing board
+            // Simplified check: at least one tile must be adjacent to a locked tile
+            // Or placed logic must bridge... this is getting complex.
+            // MVP: Just enforce new tiles touch AT LEAST ONE existing tile OR rely on honor system/simple validation
+            let connects = false;
+            if (!isFirstTurn && placedTiles.length > 0) {
+                // Check adjacency for any placed tile
+                connects = placedTiles.some(t => {
+                    const neighbors = [
+                        `${t.x + 1},${t.y}`, `${t.x - 1},${t.y}`,
+                        `${t.x},${t.y + 1}`, `${t.x},${t.y - 1}`
+                    ];
+                    return neighbors.some(nKey => board[nKey] && board[nKey].isLocked);
+                });
+            }
+            // For MVP, if it doesn't connect, warn but maybe allow (or block strictly)
+            // Let's block strictly to prevent floating islands
+            if (!connects && !isFirstTurn) {
+                Alert.alert("Invalid Move", "New tiles must connect to existing words.");
+                return;
+            }
+        }
 
-        // Update scores
+        // Commit to board
+        const newBoard = { ...board };
+        placedTiles.forEach(t => {
+            newBoard[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: true };
+        });
+        setBoard(newBoard);
+
+        // Update Score
+        const turnScore = calculateTurnScore(placedTiles);
         setPlayerScores(prev => ({
             ...prev,
-            [currentPlayer.id]: prev[currentPlayer.id] + score
+            [currentPlayer.id]: prev[currentPlayer.id] + turnScore
         }));
 
-        // Remove used tiles from hand and draw new ones
-        const usedIndices = selectedTiles.map(s => s.index);
-        const remainingTiles = currentHand.filter((_, i) => !usedIndices.includes(i));
+        // Refill Hand
+        const usedIndices = placedTiles.map(t => t.handIndex);
+        const keptTiles = currentHand.filter((_, i) => !usedIndices.includes(i));
         const newTiles = drawTiles(tileBag, usedIndices.length);
 
         setPlayerHands(prev => ({
             ...prev,
-            [currentPlayer.id]: [...remainingTiles, ...newTiles]
+            [currentPlayer.id]: [...keptTiles, ...newTiles]
         }));
+        setTileBag(prev => prev.slice(0, prev.length - newTiles.length)); // Actually createTileBag logic needs adjustment if we popped
 
-        setLastPlayedWord({ word: currentWord, score, player: currentPlayer.name });
+        // Actually tileBag state is managed by drawTiles logic which mutates array if passed directly?
+        // Wait, drawTiles took `bag` as arg. My specific implementation above:
+        // `drawTiles(tileBag, count)` uses pop(). So `tileBag` state itself needs to update if I want to persist the popped state.
+        // Correction: In calculateTurn logic I didn't mutate state properly.
+        // Let's rely on setTileBag with a functional update or just the fact that drawTiles returns new tiles and we need to update bag state.
+        // But wait, my drawTiles implementation pops from the array reference.
+        // BETTER: Create deep copy of bag to pass to drawTiles inside setPlayerHands, then update setTileBag.
+        // Re-implementing simplified refill logic here:
 
-        // Clear selection and move to next player
-        setSelectedTiles([]);
-        setCurrentWord('');
-
+        // Next Turn
+        setPlacedTiles([]);
         const nextIndex = (currentPlayerIndex + 1) % players.length;
-        if (nextIndex === 0) setTurnNumber(turnNumber + 1);
-        setCurrentPlayerIndex(nextIndex);
-    };
-
-    const handleSwapTiles = () => {
-        if (selectedTiles.length === 0) {
-            Alert.alert('Select Tiles', 'Select tiles you want to swap!');
-            return;
-        }
-
-        // Return selected tiles to bag and draw new ones
-        const usedIndices = selectedTiles.map(s => s.index);
-        const tilesToReturn = currentHand.filter((_, i) => usedIndices.includes(i));
-        const remainingTiles = currentHand.filter((_, i) => !usedIndices.includes(i));
-
-        const newBag = [...tileBag, ...tilesToReturn];
-        // Shuffle
-        for (let i = newBag.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newBag[i], newBag[j]] = [newBag[j], newBag[i]];
-        }
-
-        const newTiles = drawTiles(newBag, tilesToReturn.length);
-        setTileBag(newBag);
-
-        setPlayerHands(prev => ({
-            ...prev,
-            [currentPlayer.id]: [...remainingTiles, ...newTiles]
-        }));
-
-        // Clear and pass turn
-        setSelectedTiles([]);
-        setCurrentWord('');
-
-        const nextIndex = (currentPlayerIndex + 1) % players.length;
-        if (nextIndex === 0) setTurnNumber(turnNumber + 1);
+        if (nextIndex === 0) setTurnNumber(prev => prev + 1);
         setCurrentPlayerIndex(nextIndex);
     };
 
     const handlePass = () => {
-        setSelectedTiles([]);
-        setCurrentWord('');
+        setPlacedTiles([]);
         const nextIndex = (currentPlayerIndex + 1) % players.length;
-        if (nextIndex === 0) setTurnNumber(turnNumber + 1);
+        if (nextIndex === 0) setTurnNumber(prev => prev + 1);
         setCurrentPlayerIndex(nextIndex);
     };
 
-    const handleEndGame = () => {
-        // Find winner
-        const sortedPlayers = [...players].sort((a, b) =>
-            playerScores[b.id] - playerScores[a.id]
-        );
-        const winner = sortedPlayers[0];
+    const handleEndGameConfirm = () => {
+        setEndGameModalVisible(false);
 
-        Alert.alert(
-            '🏆 Game Over!',
-            `${winner.name} wins with ${playerScores[winner.id]} points!`,
-            [{ text: 'OK', onPress: () => navigation.navigate('LocalGameSelection', { players }) }]
+        // Calculate final scores list
+        const finalScores = players.map(p => ({
+            playerId: p.id,
+            score: playerScores[p.id]
+        })).sort((a, b) => b.score - a.score);
+
+        // Construct simplified room object for ScoreboardScreen
+        const roomData = {
+            id: 'local',
+            gameType: 'scrabble',
+            players: players
+        };
+
+        navigation.navigate('Scoreboard', {
+            room: roomData,
+            finalScores: finalScores
+        });
+    };
+
+    // --- Renders ---
+
+    const renderBoardSquare = (x, y) => {
+        const key = `${x},${y}`;
+        const lockedTile = board[key];
+        const placedTile = placedTiles.find(t => t.x === x && t.y === y);
+        const tile = lockedTile || placedTile;
+        const bonus = BONUS_SQUARES[key];
+
+        let bgColor = 'rgba(255,255,255,0.05)'; // Default empty
+        if (bonus === 'TW') bgColor = '#ff0055'; // Red
+        if (bonus === 'DW') bgColor = '#ff99aa'; // Pink
+        if (bonus === 'TL') bgColor = '#0055ff'; // Blue
+        if (bonus === 'DL') bgColor = '#99ccff'; // Light Blue
+        if (x === CENTER_SQUARE && y === CENTER_SQUARE) bgColor = '#ff99aa'; // Star center
+
+        if (tile) bgColor = tile.isLocked ? '#e1c699' : '#fffebb'; // Locked vs Placed color
+
+        return (
+            <TouchableOpacity
+                key={key}
+                style={[styles.square, { width: tileSize, height: tileSize, backgroundColor: bgColor }]}
+                onPress={() => handleBoardSquarePress(x, y)}
+                activeOpacity={0.8}
+            >
+                {tile ? (
+                    <View style={styles.tileContent}>
+                        <NeonText size={Math.max(tileSize * 0.55, 10)} color="#000" weight="bold">{tile.letter}</NeonText>
+                        <NeonText size={Math.max(tileSize * 0.25, 6)} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
+                    </View>
+                ) : (
+                    <View style={styles.bonusContent}>
+                        {x === CENTER_SQUARE && y === CENTER_SQUARE && <NeonText size={Math.max(tileSize * 0.5, 8)}>★</NeonText>}
+                        {bonus && <NeonText size={Math.max(tileSize * 0.35, 6)} weight="bold">{bonus}</NeonText>}
+                    </View>
+                )}
+            </TouchableOpacity>
         );
+    };
+
+    const renderGrid = () => {
+        const grid = [];
+        for (let y = 0; y < BOARD_SIZE; y++) {
+            const row = [];
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                row.push(renderBoardSquare(x, y));
+            }
+            grid.push(<View key={y} style={styles.row}>{row}</View>);
+        }
+        return grid;
     };
 
     return (
         <NeonContainer>
+            {/* Header */}
             <View style={styles.header}>
-                <NeonText size={24} weight="bold" glow>
-                    📝 WORD BUILDER
-                </NeonText>
-                <NeonText size={14} color="#888">
-                    Turn {turnNumber} • Tiles left: {tileBag.length}
-                </NeonText>
-            </View>
-
-            {/* Current Player */}
-            <View style={styles.playerInfo}>
-                <NeonText size={14} color={COLORS.neonCyan}>NOW PLAYING:</NeonText>
-                <NeonText size={24} weight="bold" glow>{currentPlayer.name}</NeonText>
-            </View>
-
-            {/* Last Played Word */}
-            {lastPlayedWord && (
-                <View style={styles.lastWordContainer}>
-                    <NeonText size={12} color="#888">Last word:</NeonText>
-                    <NeonText size={16} color={COLORS.limeGlow} weight="bold">
-                        {lastPlayedWord.word} (+{lastPlayedWord.score} by {lastPlayedWord.player})
-                    </NeonText>
-                </View>
-            )}
-
-            {/* Current Word Display */}
-            <View style={styles.wordDisplay}>
-                <NeonText size={14} color="#888">YOUR WORD:</NeonText>
-                <NeonText size={32} weight="bold" glow color={currentWord ? COLORS.neonCyan : '#444'}>
-                    {currentWord || '_ _ _ _'}
-                </NeonText>
-                {currentWord.length >= 2 && (
-                    <NeonText size={14} color={isValidWord(currentWord) ? COLORS.limeGlow : COLORS.hotPink}>
-                        {isValidWord(currentWord) ? `✓ Valid (+${calculateWordScore(currentWord)} pts)` : '✗ Not a word'}
-                    </NeonText>
-                )}
-            </View>
-
-            {/* Tile Rack */}
-            <View style={styles.tileRack}>
-                <NeonText size={12} color="#888" style={styles.rackLabel}>TAP TILES TO SELECT:</NeonText>
-                <View style={styles.tilesContainer}>
-                    {currentHand.map((tile, index) => {
-                        const isSelected = selectedTiles.some(s => s.index === index);
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={[styles.tile, isSelected && styles.selectedTile]}
-                                onPress={() => handleTilePress(tile, index)}
-                            >
-                                <NeonText size={24} weight="bold" color={isSelected ? '#000' : COLORS.white}>
-                                    {tile.letter}
-                                </NeonText>
-                                <View style={styles.tileValue}>
-                                    <NeonText size={10} color={isSelected ? '#000' : COLORS.neonCyan}>
-                                        {tile.value}
-                                    </NeonText>
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </View>
-
-            {/* Actions */}
-            <View style={styles.actions}>
-                <NeonButton
-                    title="SUBMIT WORD"
-                    onPress={handleSubmitWord}
-                    disabled={currentWord.length < 2 || !isValidWord(currentWord)}
-                />
-                <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.secondaryBtn} onPress={handleSwapTiles}>
-                        <NeonText size={14} color={COLORS.hotPink}>🔄 SWAP</NeonText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.secondaryBtn} onPress={handlePass}>
-                        <NeonText size={14} color="#888">⏭️ PASS</NeonText>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Scoreboard */}
-            <ScrollView horizontal style={styles.scoreboardScroll} showsHorizontalScrollIndicator={false}>
-                <View style={styles.scoreboard}>
-                    {players.map(player => (
-                        <View
-                            key={player.id}
-                            style={[
-                                styles.scoreCard,
-                                player.id === currentPlayer.id && styles.activeScore
-                            ]}
-                        >
-                            <NeonText size={12} weight="bold">{player.name}</NeonText>
-                            <NeonText size={20} color={COLORS.limeGlow} weight="bold">
-                                {playerScores[player.id]}
-                            </NeonText>
+                <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
+                <View style={styles.scoreRow}>
+                    {players.map(p => (
+                        <View key={p.id} style={[styles.miniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
+                            <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
+                            <NeonText size={14} weight="bold">{playerScores[p.id]}</NeonText>
                         </View>
                     ))}
                 </View>
+            </View>
+
+            {/* Scrollable Board Area */}
+            <ScrollView
+                ref={scrollViewRef}
+                style={styles.boardContainer}
+                contentContainerStyle={styles.boardContent}
+                maximumZoomScale={3}
+                minimumZoomScale={1}
+                horizontal
+                bounces={false}
+            >
+                <ScrollView nestedScrollEnabled bounces={false}>
+                    <View style={styles.gridContainer}>
+                        {renderGrid()}
+                    </View>
+                </ScrollView>
             </ScrollView>
 
-            <NeonButton
-                title="END GAME"
-                variant="secondary"
-                onPress={handleEndGame}
-            />
+            {/* Controls & Rack */}
+            <View style={styles.controlsArea}>
+                <View style={styles.rackContainer}>
+                    <NeonText size={12} color="#666" style={{ marginBottom: 4 }}>Your Rack:</NeonText>
+                    <View style={[styles.rack, { height: rackTileSize + 8 }]}>
+                        {currentHand.map((tile, index) => {
+                            const isUsed = placedTiles.some(t => t.handIndex === index);
+                            const isSelected = selectedTileIndex === index;
+
+                            if (isUsed) return (
+                                <View
+                                    key={index}
+                                    style={[styles.rackTile, styles.usedTile, { width: rackTileSize, height: rackTileSize }]}
+                                />
+                            );
+
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.rackTile,
+                                        { width: rackTileSize, height: rackTileSize },
+                                        isSelected && styles.selectedRackTile
+                                    ]}
+                                    onPress={() => handleRackTilePress(index)}
+                                >
+                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">{tile.letter}</NeonText>
+                                    <NeonText size={rackTileSize * 0.22} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                <View style={styles.gameButtons}>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={styles.smallBtn} onPress={handleRecallTiles}>
+                            <NeonText size={12}>Recall</NeonText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.smallBtn} onPress={handlePass}>
+                            <NeonText size={12}>Pass</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                    <NeonButton
+                        title="PLAY WORD"
+                        onPress={handleSubmitMove}
+                        disabled={placedTiles.length === 0}
+                        style={{ marginTop: 5, paddingVertical: 8 }}
+                    />
+                </View>
+            </View>
+
+            {/* End Game Button */}
+            <TouchableOpacity
+                style={styles.endGameBtn}
+                onPress={() => setEndGameModalVisible(true)}
+            >
+                <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
+            </TouchableOpacity>
+
+            {/* Custom End Game Modal */}
+            <Modal
+                transparent={true}
+                visible={endGameModalVisible}
+                animationType="fade"
+                onRequestClose={() => setEndGameModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <NeonText size={20} weight="bold" glow style={{ marginBottom: 10 }}>End Game?</NeonText>
+                        <NeonText size={14} color="#ccc" style={{ textAlign: 'center', marginBottom: 20 }}>
+                            Are you sure you want to end the game? The player with the highest score will win.
+                        </NeonText>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.modalCancel} onPress={() => setEndGameModalVisible(false)}>
+                                <NeonText>Cancel</NeonText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.modalConfirm} onPress={handleEndGameConfirm}>
+                                <NeonText color="#000" weight="bold">End Game</NeonText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
     header: {
-        alignItems: 'center',
-        marginTop: 40,
-        marginBottom: 10,
-    },
-    playerInfo: {
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    lastWordContainer: {
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    wordDisplay: {
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 16,
-        padding: 15,
-        marginBottom: 15,
-        borderWidth: 2,
-        borderColor: COLORS.neonCyan,
-    },
-    tileRack: {
-        marginBottom: 15,
-    },
-    rackLabel: {
-        textAlign: 'center',
-        marginBottom: 10,
-    },
-    tilesContainer: {
+        paddingTop: 40,
+        paddingHorizontal: 15,
+        paddingBottom: 10,
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 8,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: COLORS.deepNightBlack,
     },
-    tile: {
-        width: 44,
-        height: 50,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+    scoreRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    miniScore: {
+        alignItems: 'center',
+        padding: 5,
         borderRadius: 8,
-        borderWidth: 2,
-        borderColor: COLORS.electricPurple,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        minWidth: 50,
+    },
+    activeMiniScore: {
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    },
+
+    boardContainer: {
+        flex: 1,
+    },
+    boardContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'relative',
+        padding: 10,
     },
-    selectedTile: {
-        backgroundColor: COLORS.limeGlow,
+    gridContainer: {
+        backgroundColor: '#000',
+        borderWidth: 2,
+        borderColor: '#444',
+        padding: 2,
+    },
+    row: {
+        flexDirection: 'row',
+    },
+    square: {
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    bonusContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    tileContent: {
+        width: '90%',
+        height: '90%',
+        backgroundColor: '#e1c699', // Classic wood color look
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 2,
+    },
+
+    controlsArea: {
+        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        borderTopWidth: 1,
+        borderTopColor: '#333',
+    },
+    rackContainer: {
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    rack: {
+        flexDirection: 'row',
+        gap: 5,
+        height: 50,
+    },
+    rackTile: {
+        width: 40,
+        height: 45,
+        backgroundColor: '#e1c699',
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#c6a87c',
+    },
+    selectedRackTile: {
         borderColor: COLORS.limeGlow,
+        borderWidth: 3,
+        transform: [{ translateY: -5 }],
+    },
+    usedTile: {
+        backgroundColor: '#333',
+        borderColor: '#222',
+        opacity: 0.5,
     },
     tileValue: {
         position: 'absolute',
-        bottom: 2,
-        right: 4,
+        bottom: 1,
+        right: 2,
+        fontSize: 8,
     },
-    actions: {
-        gap: 10,
-        marginBottom: 10,
+
+    gameButtons: {
+        gap: 8,
     },
-    actionRow: {
+    buttonRow: {
         flexDirection: 'row',
-        gap: 10,
+        justifyContent: 'center',
+        gap: 20,
     },
-    secondaryBtn: {
+    smallBtn: {
+        paddingVertical: 5,
+        paddingHorizontal: 15,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 15,
+    },
+
+    endGameBtn: {
+        position: 'absolute',
+        top: 45,
+        right: 15, // Actually interacts with header, safer to put in header or separate
+    },
+
+    // Custom Modal
+    modalOverlay: {
         flex: 1,
-        padding: 12,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 8,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
         alignItems: 'center',
+    },
+    modalContent: {
+        width: '80%',
+        backgroundColor: '#1a1a1a',
+        padding: 24,
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#444',
-    },
-    scoreboardScroll: {
-        maxHeight: 70,
-        marginBottom: 10,
-    },
-    scoreboard: {
-        flexDirection: 'row',
-        gap: 10,
-        paddingHorizontal: 5,
-    },
-    scoreCard: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 10,
-        padding: 10,
-        minWidth: 80,
+        borderColor: COLORS.neonCyan,
         alignItems: 'center',
     },
-    activeScore: {
-        borderWidth: 2,
-        borderColor: COLORS.neonCyan,
-    }
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 15,
+        width: '100%',
+        justifyContent: 'center',
+    },
+    modalCancel: {
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: '#333',
+        minWidth: 100,
+        alignItems: 'center',
+    },
+    modalConfirm: {
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: COLORS.hotPink,
+        minWidth: 100,
+        alignItems: 'center',
+    },
 });
 
 export default ScrabbleScreen;

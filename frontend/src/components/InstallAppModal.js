@@ -4,6 +4,7 @@ import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import { COLORS } from '../constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HapticService from '../services/HapticService';
 
 const INSTALL_PROMPT_KEY = '@playrave_install_prompt_dismissed';
 
@@ -11,18 +12,38 @@ const InstallAppModal = () => {
     const [visible, setVisible] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
     const [isStandalone, setIsStandalone] = useState(false);
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     useEffect(() => {
         checkInstallPrompt();
+
+        // Listen for beforeinstallprompt
+        if (typeof window !== 'undefined') {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevent the mini-infobar from appearing on mobile
+                e.preventDefault();
+                // Stash the event so it can be triggered later.
+                setDeferredPrompt(e);
+                // Update UI notify the user they can install the PWA
+                checkInstallPrompt();
+            });
+        }
     }, []);
 
     const checkInstallPrompt = async () => {
         // Only show on web
         if (Platform.OS !== 'web') return;
 
-        // Check if already dismissed
+        // Check if already dismissed locally
         try {
             const dismissed = await AsyncStorage.getItem(INSTALL_PROMPT_KEY);
+            // If already dismissed, we generally don't show it, 
+            // BUT if we have a deferredPrompt (meaning the browser thinks it's installable),
+            // we might want to show a subtle button somewhere else, 
+            // but for this modal, we respect the dismissal.
+
+            // However, let's allow re-prompting if it's been a long time or if we really want to push it.
+            // For now, strict dismissal.
             if (dismissed === 'true') return;
         } catch (e) {
             console.log('AsyncStorage error:', e);
@@ -40,14 +61,39 @@ const InstallAppModal = () => {
             const isiOS = /iphone|ipad|ipod/.test(userAgent);
             setIsIOS(isiOS);
 
-            // Show prompt after 3 seconds
-            setTimeout(() => {
-                setVisible(true);
-            }, 3000);
+            // Show prompt after delay if not standalone
+            if (!standalone) {
+                setTimeout(() => {
+                    setVisible(true);
+                    HapticService.notification('success');
+                }, 3000);
+            }
+        }
+    };
+
+    const handleInstallClick = async () => {
+        HapticService.selection();
+
+        if (deferredPrompt) {
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+
+            // We've used the prompt, and can't use it again, throw it away
+            setDeferredPrompt(null);
+            setVisible(false);
+        } else {
+            // No deferred prompt (likely iOS or not triggered yet), invoke instructions
+            // For iOS the instructions are already visible.
+            // Ideally we wouldn't show the "INSTALL NOW" button for iOS if we can't trigger it,
+            // but the UI design has it.
         }
     };
 
     const handleDismiss = async () => {
+        HapticService.selection();
         setVisible(false);
         try {
             await AsyncStorage.setItem(INSTALL_PROMPT_KEY, 'true');
@@ -57,6 +103,7 @@ const InstallAppModal = () => {
     };
 
     const handleRemindLater = () => {
+        HapticService.selection();
         setVisible(false);
         // Don't save to storage - will show again next visit
     };
@@ -121,28 +168,52 @@ const InstallAppModal = () => {
                                             Tap <NeonText size={14} weight="bold" color={COLORS.limeGlow}>Add</NeonText> to confirm
                                         </NeonText>
                                     </View>
+                                    <View style={styles.buttons}>
+                                        <NeonButton
+                                            title="GOT IT!"
+                                            onPress={handleDismiss}
+                                            style={styles.primaryButton}
+                                        />
+                                    </View>
                                 </View>
                             ) : (
-                                // Android/Desktop - would use beforeinstallprompt
-                                <View style={styles.androidNotice}>
-                                    <NeonText size={14} color="#888">
-                                        Look for the install prompt in your browser's address bar or menu.
-                                    </NeonText>
+                                // Android/Desktop
+                                <View style={styles.androidContent}>
+                                    {deferredPrompt && (
+                                        <View style={styles.androidNotice}>
+                                            <NeonText size={14} color="#ccc" style={{ textAlign: 'center', marginBottom: 10 }}>
+                                                Install PlayRave to play offline and get faster performance!
+                                            </NeonText>
+                                        </View>
+                                    )}
+
+                                    <View style={styles.buttons}>
+                                        {deferredPrompt ? (
+                                            <NeonButton
+                                                title="INSTALL NOW"
+                                                onPress={handleInstallClick}
+                                                style={styles.primaryButton}
+                                                glow
+                                            />
+                                        ) : (
+                                            <NeonText size={14} color="#888" style={{ textAlign: 'center', marginBottom: 10 }}>
+                                                Check your browser menu to install the app.
+                                            </NeonText>
+                                        )}
+
+                                        <TouchableOpacity onPress={handleDismiss} style={styles.laterButton}>
+                                            <NeonText size={14} color="#888">
+                                                No thanks
+                                            </NeonText>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={handleRemindLater} style={styles.laterButton}>
+                                            <NeonText size={14} color="#888">
+                                                Remind me later
+                                            </NeonText>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             )}
-
-                            <View style={styles.buttons}>
-                                <NeonButton
-                                    title="GOT IT!"
-                                    onPress={handleDismiss}
-                                    style={styles.primaryButton}
-                                />
-                                <TouchableOpacity onPress={handleRemindLater} style={styles.laterButton}>
-                                    <NeonText size={14} color="#888">
-                                        Remind me later
-                                    </NeonText>
-                                </TouchableOpacity>
-                            </View>
                         </View>
                     </TouchableWithoutFeedback>
                 </View>
@@ -183,6 +254,9 @@ const styles = StyleSheet.create({
         padding: 15,
         marginBottom: 20,
     },
+    androidContent: {
+        width: '100%',
+    },
     stepTitle: {
         marginBottom: 15,
         textAlign: 'center',
@@ -219,6 +293,7 @@ const styles = StyleSheet.create({
     buttons: {
         alignItems: 'center',
         gap: 10,
+        width: '100%',
     },
     primaryButton: {
         width: '100%',

@@ -40,7 +40,21 @@ const rapidFirePrompts = {
         "Camping or hotel?",
         "Read minds or be invisible?",
         "Time travel or teleport?",
-        "Fame or fortune?"
+        "Fame or fortune?",
+        "Texting or talking?",
+        "Working alone or in a team?",
+        "Spender or saver?",
+        "Messy or organized?",
+        "Passenger or driver?",
+        "Big party or small gathering?",
+        "Rich friend or loyal friend?",
+        "Sneakers or dress shoes?",
+        "Watch sports or play sports?",
+        "Museum or amusement park?",
+        "Fiction or non-fiction?",
+        "Coffee black or with milk?",
+        "Online shopping or in-store?",
+        "Glass half full or half empty?"
     ],
     spicy: [
         "First date kiss - yes or no?",
@@ -82,7 +96,21 @@ const rapidFirePrompts = {
         "Physical touch or words?",
         "Clingy or independent?",
         "Plan dates or spontaneous?",
-        "Say I love you first?"
+        "Say I love you first?",
+        "Exes can be friends?",
+        "Believe in ghosts?",
+        "Believe in aliens?",
+        "Kiss on the first date?",
+        "Talk about feelings?",
+        "Public displays of affection?",
+        "Jealous type?",
+        "Dealbreaker: Smoking?",
+        "Dealbreaker: Bad tipper?",
+        "Dealbreaker: Messy?",
+        "Love at first sight?",
+        "Soulmates?",
+        "Destiny or free will?",
+        "Heart or head?"
     ],
     naughty: [
         "Tried toys?",
@@ -124,7 +152,21 @@ const rapidFirePrompts = {
         "Received dirty talk?",
         "Lingerie matters?",
         "First date intimacy?",
-        "Shower together?"
+        "Shower together?",
+        "Massage or cuddle?",
+        "Feathers or ice?",
+        "Blindfold or handcuffs?",
+        "Loud or quiet?",
+        "Rough or gentle?",
+        "Top or bottom?",
+        "Lights on or off?",
+        "Music or silence?",
+        "Morning or night?",
+        "Spontaneous or planned?",
+        "Dominant or submissive?",
+        "Talk dirty or stay quiet?",
+        "Roleplay or real life?",
+        "Experiment or stick to basics?"
     ]
 };
 
