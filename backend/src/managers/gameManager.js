@@ -6,6 +6,8 @@ const { getRandomPrompt: getNHIEPrompt } = require('../data/neverHaveIEverPrompt
 const { getRandomQuestion: getRapidFireQ } = require('../data/rapidFirePrompts');
 const { getRandomWordPair } = require('../data/imposterWords');
 const UNPOPULAR_OPINIONS = require('../data/unpopularOpinions');
+const { getRandomSentences } = require('../data/typeRaceSentences');
+
 
 class GameManager {
     constructor() {
@@ -1877,6 +1879,506 @@ class GameManager {
             hotSeatPlayerId: game.hotSeatPlayerId,
             hotSeatPlayerName: game.hotSeatPlayerName,
             round: game.round
+        };
+    }
+
+    // ==================== BUTTON MASH GAME ====================
+    // Players tap as fast as possible for 10 seconds. Highest count wins.
+
+    startButtonMashGame(roomId, room, hostParticipates = true) {
+        const players = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            players.push({
+                id: player.id,
+                name: player.name,
+                tapCount: 0,
+                finished: false
+            });
+        });
+
+        const gameState = {
+            type: 'button-mash',
+            roomId,
+            players,
+            duration: 10000, // 10 seconds
+            startTime: null,
+            phase: 'countdown', // countdown, playing, results
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startButtonMashRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'button-mash') return { error: 'Game not found' };
+
+        game.phase = 'playing';
+        game.startTime = Date.now();
+
+        // Reset tap counts
+        game.players.forEach(p => {
+            p.tapCount = 0;
+            p.finished = false;
+        });
+
+        return { startTime: game.startTime };
+    }
+
+    submitButtonMashTap(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'button-mash') return { error: 'Game not found' };
+        if (game.phase !== 'playing') return { error: 'Game not in playing phase' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+        if (player.finished) return { error: 'Player already finished' };
+
+        // Check if time is up
+        const elapsed = Date.now() - game.startTime;
+        if (elapsed >= game.duration) {
+            player.finished = true;
+            return { tapCount: player.tapCount, finished: true };
+        }
+
+        player.tapCount++;
+        return { tapCount: player.tapCount, finished: false };
+    }
+
+    finishButtonMashPlayer(roomId, playerId, finalCount) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'button-mash') return { error: 'Game not found' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+
+        player.tapCount = finalCount;
+        player.finished = true;
+
+        // Check if all players finished
+        const allFinished = game.players.every(p => p.finished);
+
+        return {
+            allFinished,
+            playerCount: player.tapCount
+        };
+    }
+
+    getButtonMashResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'button-mash') return { error: 'Game not found' };
+
+        game.phase = 'results';
+
+        // Sort by tap count descending
+        const rankings = [...game.players].sort((a, b) => b.tapCount - a.tapCount);
+
+        return {
+            rankings,
+            winner: rankings[0]
+        };
+    }
+
+    getButtonMashLeaderboard(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'button-mash') return [];
+
+        return game.players
+            .map(p => ({ id: p.id, name: p.name, tapCount: p.tapCount }))
+            .sort((a, b) => b.tapCount - a.tapCount);
+    }
+
+    // ==================== TYPE RACE GAME ====================
+    // Players race to type sentences correctly. Fastest accurate typist wins.
+
+    startTypeRaceGame(roomId, room, hostParticipates = true) {
+        const players = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            players.push({
+                id: player.id,
+                name: player.name,
+                score: 0,
+                currentProgress: 0,
+                finished: false,
+                finishTime: null
+            });
+        });
+
+        const sentences = getRandomSentences(5); // 5 rounds
+
+        const gameState = {
+            type: 'type-race',
+            roomId,
+            players,
+            sentences,
+            currentRound: 0,
+            totalRounds: sentences.length,
+            currentSentence: sentences[0],
+            roundStartTime: null,
+            phase: 'waiting', // waiting, playing, results
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startTypeRaceRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'type-race') return { error: 'Game not found' };
+
+        // Reset player states for new round
+        game.players.forEach(p => {
+            p.currentProgress = 0;
+            p.finished = false;
+            p.finishTime = null;
+        });
+
+        game.phase = 'playing';
+        game.roundStartTime = Date.now();
+
+        return {
+            sentence: game.currentSentence,
+            round: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    updateTypeRaceProgress(roomId, playerId, progress, accuracy) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'type-race') return { error: 'Game not found' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+
+        player.currentProgress = progress;
+        player.accuracy = accuracy;
+
+        return {
+            progress,
+            playerId,
+            playerName: player.name
+        };
+    }
+
+    finishTypeRaceRound(roomId, playerId, typed, timeTaken) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'type-race') return { error: 'Game not found' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player || player.finished) return { error: 'Player not found or already finished' };
+
+        player.finished = true;
+        player.finishTime = timeTaken;
+
+        // Calculate accuracy
+        const targetSentence = game.currentSentence;
+        let correctChars = 0;
+        for (let i = 0; i < Math.min(typed.length, targetSentence.length); i++) {
+            if (typed[i] === targetSentence[i]) correctChars++;
+        }
+        const accuracy = Math.round((correctChars / targetSentence.length) * 100);
+        player.accuracy = accuracy;
+
+        // Award points based on speed and accuracy
+        // Must have at least 80% accuracy to score
+        if (accuracy >= 80) {
+            const finishedPlayers = game.players.filter(p => p.finished && p.accuracy >= 80);
+            const position = finishedPlayers.length;
+
+            // Points: 1st = 100, 2nd = 75, 3rd = 50, others = 25
+            const points = position === 1 ? 100 : position === 2 ? 75 : position === 3 ? 50 : 25;
+            player.score += points;
+            player.roundPoints = points;
+        } else {
+            player.roundPoints = 0;
+        }
+
+        // Check if all players finished
+        const allFinished = game.players.every(p => p.finished);
+
+        return {
+            finished: true,
+            accuracy,
+            timeTaken,
+            points: player.roundPoints,
+            allFinished,
+            position: game.players.filter(p => p.finished).length
+        };
+    }
+
+    getTypeRaceRoundResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'type-race') return { error: 'Game not found' };
+
+        const roundResults = game.players
+            .filter(p => p.finished)
+            .sort((a, b) => (a.finishTime || 99999) - (b.finishTime || 99999))
+            .map((p, index) => ({
+                id: p.id,
+                name: p.name,
+                time: p.finishTime,
+                accuracy: p.accuracy,
+                points: p.roundPoints,
+                position: index + 1
+            }));
+
+        return {
+            roundResults,
+            currentRound: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    nextTypeRaceRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'type-race') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            // Game over
+            game.phase = 'finished';
+
+            const finalRankings = [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, index) => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score,
+                    position: index + 1
+                }));
+
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        // Set up next round
+        game.currentSentence = game.sentences[game.currentRound];
+        game.phase = 'waiting';
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1
+        };
+    }
+
+    getTypeRaceState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'type-race') return null;
+
+        return {
+            currentRound: game.currentRound + 1,
+            totalRounds: game.totalRounds,
+            players: game.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                score: p.score,
+                progress: p.currentProgress
+            }))
+        };
+    }
+
+    // ==================== MATH BLITZ GAME ====================
+    // Fast math problems. First to answer correctly wins the round.
+
+    generateMathProblem(difficulty = 'medium') {
+        const operations = ['+', '-', '*'];
+        const op = operations[Math.floor(Math.random() * operations.length)];
+
+        let num1, num2, answer;
+
+        switch (difficulty) {
+            case 'easy':
+                num1 = Math.floor(Math.random() * 10) + 1;
+                num2 = Math.floor(Math.random() * 10) + 1;
+                break;
+            case 'hard':
+                num1 = Math.floor(Math.random() * 50) + 10;
+                num2 = Math.floor(Math.random() * 30) + 5;
+                break;
+            default: // medium
+                num1 = Math.floor(Math.random() * 20) + 5;
+                num2 = Math.floor(Math.random() * 15) + 2;
+        }
+
+        // For subtraction, make sure result is positive
+        if (op === '-' && num2 > num1) {
+            [num1, num2] = [num2, num1];
+        }
+
+        // For multiplication, use smaller numbers
+        if (op === '*') {
+            num1 = Math.floor(Math.random() * 12) + 2;
+            num2 = Math.floor(Math.random() * 12) + 2;
+        }
+
+        switch (op) {
+            case '+': answer = num1 + num2; break;
+            case '-': answer = num1 - num2; break;
+            case '*': answer = num1 * num2; break;
+        }
+
+        return {
+            display: `${num1} ${op} ${num2}`,
+            answer,
+            num1,
+            num2,
+            operation: op
+        };
+    }
+
+    startMathBlitzGame(roomId, room, hostParticipates = true) {
+        const players = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            players.push({
+                id: player.id,
+                name: player.name,
+                score: 0,
+                answered: false,
+                correct: false
+            });
+        });
+
+        const totalRounds = 10;
+        const problems = [];
+        for (let i = 0; i < totalRounds; i++) {
+            problems.push(this.generateMathProblem('medium'));
+        }
+
+        const gameState = {
+            type: 'math-blitz',
+            roomId,
+            players,
+            problems,
+            currentRound: 0,
+            totalRounds,
+            currentProblem: problems[0],
+            roundStartTime: null,
+            roundWinner: null,
+            phase: 'waiting',
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startMathBlitzRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'math-blitz') return { error: 'Game not found' };
+
+        // Reset player states
+        game.players.forEach(p => {
+            p.answered = false;
+            p.correct = false;
+        });
+
+        game.phase = 'playing';
+        game.roundStartTime = Date.now();
+        game.roundWinner = null;
+
+        return {
+            problem: game.currentProblem.display,
+            round: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    submitMathBlitzAnswer(roomId, playerId, answer) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'math-blitz') return { error: 'Game not found' };
+        if (game.phase !== 'playing') return { error: 'Round not active' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+        if (player.answered) return { error: 'Already answered' };
+
+        player.answered = true;
+        const isCorrect = parseInt(answer) === game.currentProblem.answer;
+        player.correct = isCorrect;
+
+        if (isCorrect && !game.roundWinner) {
+            // First correct answer wins!
+            game.roundWinner = playerId;
+            player.score += 100;
+
+            return {
+                correct: true,
+                isWinner: true,
+                answer: game.currentProblem.answer,
+                playerName: player.name
+            };
+        }
+
+        return {
+            correct: isCorrect,
+            isWinner: false,
+            correctAnswer: game.currentProblem.answer
+        };
+    }
+
+    getMathBlitzRoundResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'math-blitz') return { error: 'Game not found' };
+
+        const winner = game.players.find(p => p.id === game.roundWinner);
+
+        return {
+            correctAnswer: game.currentProblem.answer,
+            problem: game.currentProblem.display,
+            winner: winner ? { id: winner.id, name: winner.name } : null,
+            standings: [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score,
+                    position: i + 1
+                })),
+            currentRound: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    nextMathBlitzRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'math-blitz') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+
+            const finalRankings = [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score,
+                    position: i + 1
+                }));
+
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        game.currentProblem = game.problems[game.currentRound];
+        game.phase = 'waiting';
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1
         };
     }
 }

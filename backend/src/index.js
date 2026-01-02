@@ -258,6 +258,63 @@ io.on("connection", (socket) => {
                 });
             });
             console.log("Hot Seat game started successfully");
+        } else if (gameType === "button-mash") {
+            console.log("Starting Button Mash game for room:", roomId);
+            const gameState = gameManager.startButtonMashGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "button-mash",
+                gameState: {
+                    duration: gameState.duration,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Button Mash game started successfully");
+        } else if (gameType === "type-race") {
+            console.log("Starting Type Race game for room:", roomId);
+            const gameState = gameManager.startTypeRaceGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "type-race",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Type Race game started successfully");
+        } else if (gameType === "math-blitz") {
+            console.log("Starting Math Blitz game for room:", roomId);
+            const gameState = gameManager.startMathBlitzGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "math-blitz",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Math Blitz game started successfully");
         }
     });
 
@@ -1029,6 +1086,179 @@ io.on("connection", (socket) => {
         console.log("hot-seat-end-game event received, roomId:", roomId);
         gameManager.endGame(roomId);
         io.to(roomId).emit("hot-seat-game-finished", { message: "Game ended by host" });
+    });
+
+    // ==================== BUTTON MASH EVENTS ====================
+    socket.on("button-mash-start", ({ roomId }) => {
+        console.log("button-mash-start event received, roomId:", roomId);
+
+        const result = gameManager.startButtonMashRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("button-mash-go", { startTime: result.startTime });
+    });
+
+    socket.on("button-mash-tap", ({ roomId }) => {
+        const result = gameManager.submitButtonMashTap(roomId, socket.id);
+        if (result.error) return;
+
+        // Send back tap count to the player
+        socket.emit("button-mash-tap-ack", { tapCount: result.tapCount });
+
+        // Broadcast leaderboard update to all players
+        const leaderboard = gameManager.getButtonMashLeaderboard(roomId);
+        io.to(roomId).emit("button-mash-leaderboard", { leaderboard });
+    });
+
+    socket.on("button-mash-finish", ({ roomId, finalCount }) => {
+        console.log("button-mash-finish event received, roomId:", roomId, "finalCount:", finalCount);
+
+        const result = gameManager.finishButtonMashPlayer(roomId, socket.id, finalCount);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.allFinished) {
+            const results = gameManager.getButtonMashResults(roomId);
+            io.to(roomId).emit("button-mash-results", results);
+        }
+    });
+
+    socket.on("button-mash-end-game", ({ roomId }) => {
+        console.log("button-mash-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("button-mash-game-ended", { room });
+    });
+
+    // ==================== TYPE RACE EVENTS ====================
+    socket.on("type-race-start-round", ({ roomId }) => {
+        console.log("type-race-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startTypeRaceRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("type-race-round-start", result);
+    });
+
+    socket.on("type-race-progress", ({ roomId, progress, accuracy }) => {
+        const result = gameManager.updateTypeRaceProgress(roomId, socket.id, progress, accuracy);
+        if (result.error) return;
+
+        io.to(roomId).emit("type-race-progress-update", result);
+    });
+
+    socket.on("type-race-finish", ({ roomId, typed, timeTaken }) => {
+        console.log("type-race-finish event received, roomId:", roomId);
+
+        const result = gameManager.finishTypeRaceRound(roomId, socket.id, typed, timeTaken);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("type-race-finish-ack", result);
+
+        if (result.allFinished) {
+            const roundResults = gameManager.getTypeRaceRoundResults(roomId);
+            io.to(roomId).emit("type-race-round-results", roundResults);
+        }
+    });
+
+    socket.on("type-race-next-round", ({ roomId }) => {
+        console.log("type-race-next-round event received, roomId:", roomId);
+
+        const result = gameManager.nextTypeRaceRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("type-race-game-finished", result);
+        } else {
+            io.to(roomId).emit("type-race-next-round-ready", result);
+        }
+    });
+
+    socket.on("type-race-end-game", ({ roomId }) => {
+        console.log("type-race-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("type-race-game-ended", { room });
+    });
+
+    // ==================== MATH BLITZ EVENTS ====================
+    socket.on("math-blitz-start-round", ({ roomId }) => {
+        console.log("math-blitz-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startMathBlitzRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("math-blitz-round-start", result);
+    });
+
+    socket.on("math-blitz-answer", ({ roomId, answer }) => {
+        console.log("math-blitz-answer event received, roomId:", roomId, "answer:", answer);
+
+        const result = gameManager.submitMathBlitzAnswer(roomId, socket.id, answer);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("math-blitz-answer-result", result);
+
+        // If someone won, notify everyone
+        if (result.isWinner) {
+            io.to(roomId).emit("math-blitz-round-won", {
+                winnerId: socket.id,
+                winnerName: result.playerName,
+                correctAnswer: result.answer
+            });
+
+            // Auto-advance to results after a short delay
+            setTimeout(() => {
+                const roundResults = gameManager.getMathBlitzRoundResults(roomId);
+                io.to(roomId).emit("math-blitz-round-results", roundResults);
+            }, 1500);
+        }
+    });
+
+    socket.on("math-blitz-next-round", ({ roomId }) => {
+        console.log("math-blitz-next-round event received, roomId:", roomId);
+
+        const result = gameManager.nextMathBlitzRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("math-blitz-game-finished", result);
+        } else {
+            io.to(roomId).emit("math-blitz-next-round-ready", result);
+        }
+    });
+
+    socket.on("math-blitz-end-game", ({ roomId }) => {
+        console.log("math-blitz-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("math-blitz-game-ended", { room });
     });
 });
 
