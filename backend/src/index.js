@@ -315,6 +315,68 @@ io.on("connection", (socket) => {
                 hostParticipates: hostParticipates || false
             });
             console.log("Math Blitz game started successfully");
+        } else if (gameType === "color-rush") {
+            console.log("Starting Color Rush game for room:", roomId);
+            const gameState = gameManager.startColorRushGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "color-rush",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Color Rush game started successfully");
+        } else if (gameType === "tic-tac-toe") {
+            console.log("Starting Tic-Tac-Toe Tournament for room:", roomId);
+            const gameState = gameManager.startTicTacToeTournament(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "tic-tac-toe",
+                gameState: {
+                    players: gameState.players,
+                    matches: gameState.matches.map(m => ({
+                        player1: m.player1.name,
+                        player2: m.player2?.name || 'BYE',
+                        isBye: m.isBye
+                    })),
+                    roundNumber: gameState.roundNumber
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Tic-Tac-Toe Tournament started successfully");
+        } else if (gameType === "draw-battle") {
+            console.log("Starting Draw Battle game for room:", roomId);
+            const gameState = gameManager.startDrawBattleGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "draw-battle",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Draw Battle game started successfully");
         }
     });
 
@@ -1259,6 +1321,193 @@ io.on("connection", (socket) => {
 
         const room = roomManager.getRoom(roomId);
         io.to(roomId).emit("math-blitz-game-ended", { room });
+    });
+
+    // ==================== COLOR RUSH EVENTS ====================
+    socket.on("color-rush-start-round", ({ roomId }) => {
+        console.log("color-rush-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startColorRushRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("color-rush-round-start", result);
+    });
+
+    socket.on("color-rush-answer", ({ roomId, colorName }) => {
+        const result = gameManager.submitColorRushAnswer(roomId, socket.id, colorName);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("color-rush-answer-result", result);
+
+        if (result.isWinner) {
+            io.to(roomId).emit("color-rush-round-won", {
+                winnerId: socket.id,
+                winnerName: result.playerName
+            });
+
+            setTimeout(() => {
+                const roundResults = gameManager.getColorRushRoundResults(roomId);
+                io.to(roomId).emit("color-rush-round-results", roundResults);
+            }, 1000);
+        }
+    });
+
+    socket.on("color-rush-next-round", ({ roomId }) => {
+        const result = gameManager.nextColorRushRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("color-rush-game-finished", result);
+        } else {
+            io.to(roomId).emit("color-rush-next-round-ready", result);
+        }
+    });
+
+    socket.on("color-rush-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("color-rush-game-ended", { room });
+    });
+
+    // ==================== TIC-TAC-TOE TOURNAMENT EVENTS ====================
+    socket.on("ttt-start-match", ({ roomId }) => {
+        console.log("ttt-start-match event received, roomId:", roomId);
+
+        const result = gameManager.startTicTacToeMatch(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("ttt-match-started", result);
+    });
+
+    socket.on("ttt-make-move", ({ roomId, position }) => {
+        const result = gameManager.makeTicTacToeMove(roomId, socket.id, position);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("ttt-move-made", result);
+
+        if (result.gameOver) {
+            // Auto-emit match result after a delay
+            setTimeout(() => {
+                io.to(roomId).emit("ttt-match-ended", {
+                    winner: result.winner,
+                    isDraw: result.isDraw,
+                    board: result.board
+                });
+            }, 1500);
+        }
+    });
+
+    socket.on("ttt-next-match", ({ roomId }) => {
+        const result = gameManager.nextTicTacToeMatch(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("ttt-tournament-finished", result);
+        } else if (result.roundComplete) {
+            io.to(roomId).emit("ttt-round-complete", result);
+        } else {
+            io.to(roomId).emit("ttt-next-match-ready", result);
+        }
+    });
+
+    socket.on("ttt-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("ttt-game-ended", { room });
+    });
+
+    // ==================== DRAW BATTLE EVENTS ====================
+    socket.on("draw-battle-start-round", ({ roomId }) => {
+        console.log("draw-battle-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startDrawBattleRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("draw-battle-round-started", result);
+    });
+
+    socket.on("draw-battle-submit-drawing", ({ roomId, drawingData }) => {
+        const result = gameManager.submitDrawing(roomId, socket.id, drawingData);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("draw-battle-drawing-submitted", result);
+        io.to(roomId).emit("draw-battle-submission-update", {
+            submittedCount: result.submittedCount,
+            totalPlayers: result.totalPlayers
+        });
+
+        if (result.allSubmitted) {
+            const votingData = gameManager.startVotingPhase(roomId);
+            io.to(roomId).emit("draw-battle-voting-started", votingData);
+        }
+    });
+
+    socket.on("draw-battle-start-voting", ({ roomId }) => {
+        const result = gameManager.startVotingPhase(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        io.to(roomId).emit("draw-battle-voting-started", result);
+    });
+
+    socket.on("draw-battle-vote", ({ roomId, votedPlayerId }) => {
+        const result = gameManager.submitVote(roomId, socket.id, votedPlayerId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("draw-battle-vote-submitted", result);
+
+        if (result.allVoted) {
+            const roundResults = gameManager.getDrawBattleRoundResults(roomId);
+            io.to(roomId).emit("draw-battle-round-results", roundResults);
+        }
+    });
+
+    socket.on("draw-battle-next-round", ({ roomId }) => {
+        const result = gameManager.nextDrawBattleRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("draw-battle-game-finished", result);
+        } else {
+            io.to(roomId).emit("draw-battle-next-round-ready", result);
+        }
+    });
+
+    socket.on("draw-battle-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("draw-battle-game-ended", { room });
     });
 });
 

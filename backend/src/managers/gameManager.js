@@ -2381,6 +2381,597 @@ class GameManager {
             nextRound: game.currentRound + 1
         };
     }
+
+    // ==================== COLOR RUSH GAME ====================
+    // A color name appears (possibly in a different color - Stroop effect)
+    // Players race to tap the button matching the color NAME
+
+    generateColorChallenge() {
+        const colors = [
+            { name: 'RED', hex: '#ff3366' },
+            { name: 'BLUE', hex: '#3366ff' },
+            { name: 'GREEN', hex: '#33ff66' },
+            { name: 'YELLOW', hex: '#ffff33' },
+            { name: 'PURPLE', hex: '#9933ff' },
+            { name: 'ORANGE', hex: '#ff9933' }
+        ];
+
+        const targetColor = colors[Math.floor(Math.random() * colors.length)];
+        // Display color might be different (Stroop effect) - 50% chance
+        const displayColor = Math.random() > 0.5
+            ? colors[Math.floor(Math.random() * colors.length)]
+            : targetColor;
+
+        return {
+            targetColorName: targetColor.name,
+            displayColorHex: displayColor.hex,
+            buttons: colors.map(c => ({ name: c.name, hex: c.hex }))
+        };
+    }
+
+    startColorRushGame(roomId, room, hostParticipates = true) {
+        const players = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            players.push({
+                id: player.id,
+                name: player.name,
+                score: 0,
+                answered: false,
+                correct: false
+            });
+        });
+
+        const totalRounds = 15;
+        const challenges = [];
+        for (let i = 0; i < totalRounds; i++) {
+            challenges.push(this.generateColorChallenge());
+        }
+
+        const gameState = {
+            type: 'color-rush',
+            roomId,
+            players,
+            challenges,
+            currentRound: 0,
+            totalRounds,
+            currentChallenge: challenges[0],
+            roundStartTime: null,
+            roundWinner: null,
+            phase: 'waiting',
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startColorRushRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'color-rush') return { error: 'Game not found' };
+
+        game.players.forEach(p => {
+            p.answered = false;
+            p.correct = false;
+        });
+
+        game.phase = 'playing';
+        game.roundStartTime = Date.now();
+        game.roundWinner = null;
+
+        return {
+            targetColorName: game.currentChallenge.targetColorName,
+            displayColorHex: game.currentChallenge.displayColorHex,
+            buttons: game.currentChallenge.buttons,
+            round: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    submitColorRushAnswer(roomId, playerId, colorName) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'color-rush') return { error: 'Game not found' };
+        if (game.phase !== 'playing') return { error: 'Round not active' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+        if (player.answered) return { error: 'Already answered' };
+
+        player.answered = true;
+        const isCorrect = colorName === game.currentChallenge.targetColorName;
+        player.correct = isCorrect;
+
+        if (isCorrect && !game.roundWinner) {
+            game.roundWinner = playerId;
+            player.score += 100;
+
+            return {
+                correct: true,
+                isWinner: true,
+                playerName: player.name
+            };
+        } else if (!isCorrect) {
+            // Wrong answer penalty
+            player.score = Math.max(0, player.score - 25);
+        }
+
+        return {
+            correct: isCorrect,
+            isWinner: false,
+            correctColor: game.currentChallenge.targetColorName
+        };
+    }
+
+    getColorRushRoundResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'color-rush') return { error: 'Game not found' };
+
+        const winner = game.players.find(p => p.id === game.roundWinner);
+
+        return {
+            correctColor: game.currentChallenge.targetColorName,
+            winner: winner ? { id: winner.id, name: winner.name } : null,
+            standings: [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score,
+                    position: i + 1
+                })),
+            currentRound: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    nextColorRushRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'color-rush') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+
+            const finalRankings = [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score,
+                    position: i + 1
+                }));
+
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        game.currentChallenge = game.challenges[game.currentRound];
+        game.phase = 'waiting';
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1
+        };
+    }
+
+    // ==================== TIC-TAC-TOE TOURNAMENT ====================
+    // Bracket-style tournament with 1v1 matches
+
+    startTicTacToeTournament(roomId, room, hostParticipates = true) {
+        const allPlayers = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            allPlayers.push({
+                id: player.id,
+                name: player.name,
+                eliminated: false,
+                wins: 0
+            });
+        });
+
+        // Shuffle players for random bracket
+        const shuffledPlayers = [...allPlayers].sort(() => Math.random() - 0.5);
+
+        // Create initial matches (pair up players)
+        const matches = this.createTournamentMatches(shuffledPlayers);
+
+        const gameState = {
+            type: 'tic-tac-toe',
+            roomId,
+            players: allPlayers,
+            activePlayers: shuffledPlayers,
+            matches,
+            currentMatchIndex: 0,
+            currentMatch: matches[0] || null,
+            board: Array(9).fill(null),
+            currentTurn: null,
+            roundNumber: 1,
+            phase: 'lobby', // lobby, playing, matchResult, roundComplete, finished
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    createTournamentMatches(players) {
+        const matches = [];
+        for (let i = 0; i < players.length; i += 2) {
+            if (players[i + 1]) {
+                matches.push({
+                    player1: players[i],
+                    player2: players[i + 1],
+                    board: Array(9).fill(null),
+                    currentTurn: players[i].id, // Player 1 starts
+                    winner: null,
+                    completed: false
+                });
+            } else {
+                // Bye - auto-advance
+                players[i].wins++;
+                matches.push({
+                    player1: players[i],
+                    player2: null,
+                    board: null,
+                    winner: players[i],
+                    completed: true,
+                    isBye: true
+                });
+            }
+        }
+        return matches;
+    }
+
+    startTicTacToeMatch(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'tic-tac-toe') return { error: 'Game not found' };
+
+        const match = game.matches[game.currentMatchIndex];
+        if (!match || match.completed) return { error: 'No active match' };
+
+        game.phase = 'playing';
+        game.board = Array(9).fill(null);
+        game.currentTurn = match.player1.id;
+        match.board = Array(9).fill(null);
+        match.currentTurn = match.player1.id;
+
+        return {
+            player1: { id: match.player1.id, name: match.player1.name, symbol: 'X' },
+            player2: { id: match.player2.id, name: match.player2.name, symbol: 'O' },
+            currentTurn: match.currentTurn,
+            board: match.board,
+            matchNumber: game.currentMatchIndex + 1,
+            totalMatches: game.matches.filter(m => !m.isBye).length,
+            roundNumber: game.roundNumber
+        };
+    }
+
+    makeTicTacToeMove(roomId, playerId, position) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'tic-tac-toe') return { error: 'Game not found' };
+        if (game.phase !== 'playing') return { error: 'Match not in progress' };
+
+        const match = game.matches[game.currentMatchIndex];
+        if (!match || match.completed) return { error: 'No active match' };
+        if (match.currentTurn !== playerId) return { error: 'Not your turn' };
+        if (match.board[position] !== null) return { error: 'Position taken' };
+
+        // Make the move
+        const symbol = playerId === match.player1.id ? 'X' : 'O';
+        match.board[position] = symbol;
+
+        // Check for winner
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // cols
+            [0, 4, 8], [2, 4, 6] // diagonals
+        ];
+
+        let winner = null;
+        for (const pattern of winPatterns) {
+            const [a, b, c] = pattern;
+            if (match.board[a] && match.board[a] === match.board[b] && match.board[a] === match.board[c]) {
+                winner = match.board[a] === 'X' ? match.player1 : match.player2;
+                break;
+            }
+        }
+
+        // Check for draw
+        const isDraw = !winner && match.board.every(cell => cell !== null);
+
+        if (winner || isDraw) {
+            match.completed = true;
+            match.winner = winner;
+            if (winner) {
+                winner.wins++;
+            }
+            game.phase = 'matchResult';
+
+            return {
+                board: match.board,
+                position,
+                symbol,
+                gameOver: true,
+                winner: winner ? { id: winner.id, name: winner.name } : null,
+                isDraw
+            };
+        }
+
+        // Switch turn
+        match.currentTurn = playerId === match.player1.id ? match.player2.id : match.player1.id;
+
+        return {
+            board: match.board,
+            position,
+            symbol,
+            gameOver: false,
+            currentTurn: match.currentTurn
+        };
+    }
+
+    nextTicTacToeMatch(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'tic-tac-toe') return { error: 'Game not found' };
+
+        game.currentMatchIndex++;
+
+        // Check if all matches in this round are complete
+        const allMatchesComplete = game.matches.every(m => m.completed);
+
+        if (allMatchesComplete) {
+            // Get winners for next round
+            const winners = game.matches
+                .filter(m => m.winner)
+                .map(m => m.winner);
+
+            if (winners.length === 1) {
+                // Tournament over!
+                game.phase = 'finished';
+                return {
+                    finished: true,
+                    champion: winners[0],
+                    allPlayers: game.players.sort((a, b) => b.wins - a.wins)
+                };
+            }
+
+            // Create next round
+            game.roundNumber++;
+            game.matches = this.createTournamentMatches(winners);
+            game.currentMatchIndex = 0;
+            game.phase = 'roundComplete';
+
+            return {
+                finished: false,
+                roundComplete: true,
+                nextRound: game.roundNumber,
+                remainingPlayers: winners.length,
+                nextMatches: game.matches.map(m => ({
+                    player1: m.player1.name,
+                    player2: m.player2?.name || 'BYE'
+                }))
+            };
+        }
+
+        // More matches in current round
+        game.currentMatch = game.matches[game.currentMatchIndex];
+        game.phase = 'lobby';
+
+        return {
+            finished: false,
+            roundComplete: false,
+            nextMatchIndex: game.currentMatchIndex,
+            hasNextMatch: game.currentMatchIndex < game.matches.length
+        };
+    }
+
+    getTicTacToeTournamentState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'tic-tac-toe') return null;
+
+        return {
+            phase: game.phase,
+            roundNumber: game.roundNumber,
+            currentMatch: game.matches[game.currentMatchIndex],
+            matches: game.matches,
+            players: game.players
+        };
+    }
+
+    // ==================== DRAW BATTLE GAME ====================
+    // Players draw based on prompts, others vote on best drawing
+
+    startDrawBattleGame(roomId, room, hostParticipates = true) {
+        const { getRandomDrawPrompts } = require('../data/drawBattlePrompts');
+
+        const players = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            players.push({
+                id: player.id,
+                name: player.name,
+                score: 0,
+                drawing: null,
+                hasSubmitted: false,
+                votes: 0
+            });
+        });
+
+        const prompts = getRandomDrawPrompts(5);
+
+        const gameState = {
+            type: 'draw-battle',
+            roomId,
+            players,
+            prompts,
+            currentRound: 0,
+            totalRounds: prompts.length,
+            currentPrompt: prompts[0],
+            drawingTimeSeconds: 60,
+            phase: 'waiting', // waiting, drawing, voting, results, finished
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startDrawBattleRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'draw-battle') return { error: 'Game not found' };
+
+        // Reset player states
+        game.players.forEach(p => {
+            p.drawing = null;
+            p.hasSubmitted = false;
+            p.votes = 0;
+            p.hasVoted = false;
+        });
+
+        game.phase = 'drawing';
+
+        return {
+            prompt: game.currentPrompt,
+            drawingTime: game.drawingTimeSeconds,
+            round: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    submitDrawing(roomId, playerId, drawingData) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'draw-battle') return { error: 'Game not found' };
+        if (game.phase !== 'drawing') return { error: 'Not in drawing phase' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+
+        player.drawing = drawingData; // Base64 or path data
+        player.hasSubmitted = true;
+
+        const allSubmitted = game.players.every(p => p.hasSubmitted);
+
+        return {
+            submitted: true,
+            allSubmitted,
+            submittedCount: game.players.filter(p => p.hasSubmitted).length,
+            totalPlayers: game.players.length
+        };
+    }
+
+    startVotingPhase(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'draw-battle') return { error: 'Game not found' };
+
+        game.phase = 'voting';
+
+        // Return all drawings (anonymized for voting)
+        const drawings = game.players
+            .filter(p => p.drawing)
+            .map(p => ({
+                playerId: p.id,
+                drawing: p.drawing
+            }));
+
+        return {
+            drawings,
+            prompt: game.currentPrompt
+        };
+    }
+
+    submitVote(roomId, voterId, votedPlayerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'draw-battle') return { error: 'Game not found' };
+        if (game.phase !== 'voting') return { error: 'Not in voting phase' };
+
+        const voter = game.players.find(p => p.id === voterId);
+        if (!voter) return { error: 'Voter not found' };
+        if (voter.hasVoted) return { error: 'Already voted' };
+        if (voterId === votedPlayerId) return { error: 'Cannot vote for yourself' };
+
+        const votedPlayer = game.players.find(p => p.id === votedPlayerId);
+        if (!votedPlayer) return { error: 'Invalid vote target' };
+
+        voter.hasVoted = true;
+        votedPlayer.votes++;
+
+        const allVoted = game.players.every(p => p.hasVoted);
+
+        return {
+            voted: true,
+            allVoted,
+            votedCount: game.players.filter(p => p.hasVoted).length,
+            totalPlayers: game.players.length
+        };
+    }
+
+    getDrawBattleRoundResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'draw-battle') return { error: 'Game not found' };
+
+        game.phase = 'results';
+
+        // Award points based on votes
+        game.players.forEach(p => {
+            p.score += p.votes * 50; // 50 points per vote
+        });
+
+        const roundWinner = [...game.players]
+            .filter(p => p.drawing)
+            .sort((a, b) => b.votes - a.votes)[0];
+
+        return {
+            prompt: game.currentPrompt,
+            results: game.players
+                .filter(p => p.drawing)
+                .sort((a, b) => b.votes - a.votes)
+                .map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    drawing: p.drawing,
+                    votes: p.votes,
+                    points: p.votes * 50
+                })),
+            winner: roundWinner ? { id: roundWinner.id, name: roundWinner.name } : null,
+            standings: [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({ id: p.id, name: p.name, score: p.score, position: i + 1 })),
+            currentRound: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    nextDrawBattleRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'draw-battle') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+
+            const finalRankings = [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({ id: p.id, name: p.name, score: p.score, position: i + 1 }));
+
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        game.currentPrompt = game.prompts[game.currentRound];
+        game.phase = 'waiting';
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1
+        };
+    }
 }
 
 module.exports = new GameManager();
