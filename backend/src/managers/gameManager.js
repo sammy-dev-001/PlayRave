@@ -2972,6 +2972,163 @@ class GameManager {
             nextRound: game.currentRound + 1
         };
     }
+
+    // ==================== LIE DETECTOR GAME ====================
+    // One player answers, others guess if it's truth or lie
+
+    startLieDetectorGame(roomId, room, hostParticipates = true) {
+        const { getRandomQuestions } = require('../data/lieDetectorQuestions');
+
+        const players = hostParticipates
+            ? room.players
+            : room.players.filter(p => !p.isHost);
+
+        const questions = getRandomQuestions(players.length * 2);
+
+        const gameState = {
+            type: 'lie-detector',
+            roomId,
+            questions,
+            players: players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar })),
+            currentPlayerIndex: 0,
+            currentQuestionIndex: 0,
+            phase: 'answering', // answering, voting, reveal
+            currentAnswer: null,
+            isLie: null, // true if current player chose to lie
+            votes: {}, // { voterId: 'truth' | 'lie' }
+            scores: {},
+            roundsPlayed: 0,
+            totalRounds: Math.min(players.length * 2, 10)
+        };
+
+        players.forEach(p => { gameState.scores[p.id] = 0; });
+        this.activeGames.set(roomId, gameState);
+
+        return {
+            gameState: this.getLieDetectorPublicState(gameState),
+            currentPlayer: gameState.players[0],
+            question: questions[0]
+        };
+    }
+
+    getLieDetectorPublicState(game) {
+        return {
+            type: game.type,
+            phase: game.phase,
+            currentPlayer: game.players[game.currentPlayerIndex],
+            question: game.questions[game.currentQuestionIndex],
+            roundsPlayed: game.roundsPlayed,
+            totalRounds: game.totalRounds,
+            scores: game.scores,
+            voteCount: Object.keys(game.votes).length,
+            totalVoters: game.players.length - 1
+        };
+    }
+
+    submitLieDetectorAnswer(roomId, playerId, answer, isLie) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'lie-detector') return null;
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id !== playerId) return null;
+
+        game.currentAnswer = answer;
+        game.isLie = isLie;
+        game.phase = 'voting';
+        game.votes = {};
+
+        return this.getLieDetectorPublicState(game);
+    }
+
+    submitLieDetectorVote(roomId, voterId, vote) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'lie-detector') return null;
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id === voterId) return null; // Can't vote for yourself
+
+        game.votes[voterId] = vote; // 'truth' or 'lie'
+
+        // Check if all votes are in
+        const expectedVotes = game.players.length - 1;
+        if (Object.keys(game.votes).length >= expectedVotes) {
+            return this.revealLieDetectorResult(roomId);
+        }
+
+        return { waiting: true, voteCount: Object.keys(game.votes).length };
+    }
+
+    revealLieDetectorResult(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return null;
+
+        game.phase = 'reveal';
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        const actualAnswer = game.isLie ? 'lie' : 'truth';
+
+        // Calculate scores
+        let fooledCount = 0;
+        Object.entries(game.votes).forEach(([voterId, vote]) => {
+            if (vote === actualAnswer) {
+                // Correct guess - voter gets 100 points
+                game.scores[voterId] = (game.scores[voterId] || 0) + 100;
+            } else {
+                // Wrong guess - subject fooled them
+                fooledCount++;
+            }
+        });
+
+        // Subject gets points for fooling players (50 per player fooled)
+        if (fooledCount > 0) {
+            game.scores[currentPlayer.id] = (game.scores[currentPlayer.id] || 0) + (fooledCount * 50);
+        }
+        // Bonus for fooling everyone
+        if (fooledCount === game.players.length - 1) {
+            game.scores[currentPlayer.id] = (game.scores[currentPlayer.id] || 0) + 100;
+        }
+
+        return {
+            phase: 'reveal',
+            currentPlayer,
+            answer: game.currentAnswer,
+            wasLie: game.isLie,
+            votes: game.votes,
+            fooledCount,
+            scores: game.scores
+        };
+    }
+
+    nextLieDetectorRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return null;
+
+        game.roundsPlayed++;
+        game.currentQuestionIndex++;
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+
+        if (game.roundsPlayed >= game.totalRounds) {
+            // Game finished
+            const rankings = Object.entries(game.scores)
+                .map(([id, score]) => {
+                    const player = game.players.find(p => p.id === id);
+                    return { ...player, score };
+                })
+                .sort((a, b) => b.score - a.score);
+
+            this.activeGames.delete(roomId);
+            return { finished: true, rankings, winner: rankings[0] };
+        }
+
+        game.phase = 'answering';
+        game.currentAnswer = null;
+        game.isLie = null;
+        game.votes = {};
+
+        return {
+            finished: false,
+            gameState: this.getLieDetectorPublicState(game)
+        };
+    }
 }
 
 module.exports = new GameManager();

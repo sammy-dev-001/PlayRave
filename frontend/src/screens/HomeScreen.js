@@ -10,10 +10,12 @@ import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
+import { useAuth } from '../context/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
+    const { user, isAuthenticated } = useAuth();
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -117,9 +119,20 @@ const HomeScreen = ({ navigation }) => {
 
     return (
         <NeonContainer style={styles.container} showMuteButton scrollable>
-            {/* Connection Status Indicator */}
-            <View style={styles.connectionContainer}>
+            {/* Header with Connection Status and Profile */}
+            <View style={styles.headerRow}>
                 <ConnectionStatus showLabel={true} size="small" />
+                <TouchableOpacity
+                    style={styles.profileButton}
+                    onPress={() => navigation.navigate(isAuthenticated ? 'Profile' : 'Auth')}
+                >
+                    <NeonText size={24}>{user?.avatar || '👤'}</NeonText>
+                    {isAuthenticated && (
+                        <View style={styles.levelBadge}>
+                            <NeonText size={10} color="#000" weight="bold">{user?.level || 1}</NeonText>
+                        </View>
+                    )}
+                </TouchableOpacity>
             </View>
 
             {/* Logo */}
@@ -165,6 +178,12 @@ const HomeScreen = ({ navigation }) => {
                     onPress={handleLocalParty}
                     icon="🎲"
                     style={{ marginTop: 20 }}
+                />
+                <NeonButton
+                    title="📡 LAN MODE (No Internet)"
+                    variant="secondary"
+                    onPress={() => navigation.navigate('LANMode')}
+                    style={{ marginTop: 10 }}
                 />
             </View>
 
@@ -241,9 +260,24 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     profileButton: {
+        width: 50, height: 50, borderRadius: 25,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center', alignItems: 'center',
+        position: 'relative',
+    },
+    levelBadge: {
+        position: 'absolute', bottom: -2, right: -2,
+        backgroundColor: COLORS.limeGlow,
+        width: 18, height: 18, borderRadius: 9,
+        justifyContent: 'center', alignItems: 'center',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 15,
-        marginTop: 20,
+        position: 'absolute',
+        top: 50, left: 20, right: 20,
+        zIndex: 10,
     },
     spectateButton: {
         alignItems: 'center',

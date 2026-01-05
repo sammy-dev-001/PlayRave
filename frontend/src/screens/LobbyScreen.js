@@ -202,6 +202,13 @@ const LobbyScreen = ({ route, navigation }) => {
                     isHost,
                     gameState
                 });
+            } else if (gameType === 'lie-detector') {
+                navigation.navigate('LieDetector', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
             }
         };
 

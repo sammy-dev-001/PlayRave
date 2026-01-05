@@ -140,6 +140,13 @@ const AVAILABLE_GAMES = [
         description: 'Draw the prompt and vote for the best!',
         icon: '🎨',
         color: COLORS.hotPink
+    },
+    {
+        id: 'lie-detector',
+        name: 'Lie Detector',
+        description: 'Answer questions - others guess if you\'re lying!',
+        icon: '🔍',
+        color: COLORS.electricPurple
     }
 ];
 

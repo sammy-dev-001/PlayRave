@@ -1,14 +1,21 @@
 import io from 'socket.io-client';
 import Constants from 'expo-constants';
+import LANService from './LANService';
 
-// Auto-detect the server IP from Expo's manifest
+// Auto-detect the server IP from Expo's manifest or LAN mode
 const getServerUrl = () => {
+    // Check if LAN mode is enabled (synchronous check for initial connection)
+    if (LANService.isLANMode && LANService.lanServerUrl) {
+        console.log('Using LAN server URL:', LANService.lanServerUrl);
+        return LANService.lanServerUrl;
+    }
+
     // For web deployment (Vercel), use the production backend URL
     if (typeof window !== 'undefined' && window.location &&
         (window.location.hostname.includes('vercel.app') ||
             window.location.hostname.includes('playrave'))) {
         console.log('Using production backend URL for web deployment');
-        return 'https://playrave.onrender.com';
+        return 'https://playrave-59ud.onrender.com';
     }
 
     // Check for production backend URL from environment variable
@@ -38,7 +45,7 @@ const getServerUrl = () => {
     return 'http://localhost:4000';
 };
 
-const SOCKET_URL = getServerUrl();
+let SOCKET_URL = getServerUrl();
 console.log('Socket connecting to:', SOCKET_URL);
 
 // Connection states

@@ -15,6 +15,207 @@ const io = new Server(server, {
 // basic socket flow
 const roomManager = require("./managers/roomManager");
 const gameManager = require("./managers/gameManager");
+const authManager = require("./managers/authManager");
+
+// Health check endpoint for LAN mode
+app.get("/health", (req, res) => {
+    res.json({ status: "ok", mode: "playrave-server", timestamp: Date.now() });
+});
+
+// ==================== AUTH REST API ====================
+app.post("/api/auth/register", async (req, res) => {
+    try {
+        const { email, password, username } = req.body;
+        if (!email || !password || !username) {
+            return res.status(400).json({ error: "All fields required" });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+        const result = await authManager.register(email, password, username);
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
+        }
+        res.json(result);
+    } catch (e) {
+        console.error("Register error:", e);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password required" });
+        }
+        const result = await authManager.login(email, password);
+        if (result.error) {
+            return res.status(401).json({ error: result.error });
+        }
+        res.json(result);
+    } catch (e) {
+        console.error("Login error:", e);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+app.get("/api/auth/me", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+        return res.status(401).json({ error: "No token provided" });
+    }
+    const user = authManager.getUserByToken(token);
+    if (!user) {
+        return res.status(401).json({ error: "Invalid token" });
+    }
+    res.json({ user });
+});
+
+app.get("/api/users/:id", (req, res) => {
+    const user = authManager.getUserById(req.params.id);
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+    res.json({ user });
+});
+
+app.get("/api/leaderboard", (req, res) => {
+    const leaderboard = authManager.getLeaderboard(50);
+    res.json({ leaderboard });
+});
+
+app.post("/api/stats/update", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+        return res.status(401).json({ error: "No token" });
+    }
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) {
+        return res.status(401).json({ error: "Invalid token" });
+    }
+    const { gameType, stats } = req.body;
+    const result = authManager.updateStats(decoded.id, gameType, stats);
+    res.json(result);
+});
+
+// ==================== CUSTOM PACK API ====================
+const customPackManager = require("./managers/customPackManager");
+
+// Create pack
+app.post("/api/packs", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.createPack(decoded.id, req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Get user's packs
+app.get("/api/packs/mine", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const packs = customPackManager.getUserPacks(decoded.id);
+    res.json({ packs });
+});
+
+// Get public packs
+app.get("/api/packs/public", (req, res) => {
+    const { type, limit } = req.query;
+    const packs = customPackManager.getPublicPacks(type, parseInt(limit) || 50);
+    res.json({ packs });
+});
+
+// Get single pack
+app.get("/api/packs/:id", (req, res) => {
+    const pack = customPackManager.getPack(req.params.id);
+    if (!pack) return res.status(404).json({ error: "Pack not found" });
+    res.json({ pack });
+});
+
+// Update pack
+app.put("/api/packs/:id", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.updatePack(req.params.id, decoded.id, req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Delete pack
+app.delete("/api/packs/:id", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.deletePack(req.params.id, decoded.id);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Add item to pack
+app.post("/api/packs/:id/items", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.addItem(req.params.id, decoded.id, req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Like/unlike pack
+app.post("/api/packs/:id/like", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.toggleLike(req.params.id, decoded.id);
+    res.json(result);
+});
+
+// ==================== CHALLENGES API ====================
+const challengeManager = require("./managers/challengeManager");
+
+// Get user's challenges
+app.get("/api/challenges", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const challenges = challengeManager.getUserChallenges(decoded.id);
+    res.json(challenges);
+});
+
+// Claim challenge reward
+app.post("/api/challenges/:id/claim", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = challengeManager.claimReward(decoded.id, req.params.id);
+    if (result.error) return res.status(400).json({ error: result.error });
+
+    // Add XP to user
+    if (result.xp) {
+        authManager.updateStats(decoded.id, 'challenge', { xp: result.xp });
+    }
+    res.json(result);
+});
 
 io.on("connection", (socket) => {
     console.log("socket connected:", socket.id);
@@ -377,6 +578,24 @@ io.on("connection", (socket) => {
                 hostParticipates: hostParticipates || false
             });
             console.log("Draw Battle game started successfully");
+        } else if (gameType === "lie-detector") {
+            console.log("Starting Lie Detector game for room:", roomId);
+            const result = gameManager.startLieDetectorGame(roomId, room, hostParticipates);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "lie-detector",
+                gameState: result.gameState,
+                currentPlayer: result.currentPlayer,
+                question: result.question,
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Lie Detector game started successfully");
         }
     });
 
@@ -1508,6 +1727,48 @@ io.on("connection", (socket) => {
         gameManager.endGame(roomId);
         const room = roomManager.getRoom(roomId);
         io.to(roomId).emit("draw-battle-game-ended", { room });
+    });
+
+    // ==================== LIE DETECTOR GAME EVENTS ====================
+    socket.on("lie-detector-submit-answer", ({ roomId, answer, isLie }) => {
+        console.log("lie-detector-submit-answer:", roomId, "isLie:", isLie);
+        const result = gameManager.submitLieDetectorAnswer(roomId, socket.id, answer, isLie);
+        if (result) {
+            io.to(roomId).emit("lie-detector-voting-started", {
+                gameState: result,
+                answer
+            });
+        }
+    });
+
+    socket.on("lie-detector-submit-vote", ({ roomId, vote }) => {
+        console.log("lie-detector-submit-vote:", roomId, "vote:", vote);
+        const result = gameManager.submitLieDetectorVote(roomId, socket.id, vote);
+        if (!result) return;
+
+        if (result.waiting) {
+            io.to(roomId).emit("lie-detector-vote-received", { voteCount: result.voteCount });
+        } else {
+            io.to(roomId).emit("lie-detector-reveal", result);
+        }
+    });
+
+    socket.on("lie-detector-next-round", ({ roomId }) => {
+        console.log("lie-detector-next-round:", roomId);
+        const result = gameManager.nextLieDetectorRound(roomId);
+        if (!result) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("lie-detector-game-finished", result);
+        } else {
+            io.to(roomId).emit("lie-detector-next-round-ready", result);
+        }
+    });
+
+    socket.on("lie-detector-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("lie-detector-game-ended", { room });
     });
 });
 
