@@ -490,19 +490,49 @@ const ScrabbleScreen = ({ route, navigation }) => {
         const tile = lockedTile || placedTile;
         const bonus = BONUS_SQUARES[key];
 
-        let bgColor = 'rgba(255,255,255,0.05)'; // Default empty
-        if (bonus === 'TW') bgColor = '#ff0055'; // Red
-        if (bonus === 'DW') bgColor = '#ff99aa'; // Pink
-        if (bonus === 'TL') bgColor = '#0055ff'; // Blue
-        if (bonus === 'DL') bgColor = '#99ccff'; // Light Blue
-        if (x === CENTER_SQUARE && y === CENTER_SQUARE) bgColor = '#ff99aa'; // Star center
+        // Enhanced bonus square colors
+        let bgColor = 'rgba(20,30,40,0.9)';
+        let bonusTextColor = '#fff';
+        let borderColor = 'rgba(255,255,255,0.1)';
 
-        if (tile) bgColor = tile.isLocked ? '#e1c699' : '#fffebb'; // Locked vs Placed color
+        if (bonus === 'TW') {
+            bgColor = '#d10000'; // Vibrant red
+            borderColor = '#ff0000';
+        } else if (bonus === 'DW') {
+            bgColor = '#ff6b93'; // Pink
+            borderColor = '#ff99aa';
+        } else if (bonus === 'TL') {
+            bgColor = '#0044cc'; // Deep blue
+            borderColor = '#0066ff';
+        } else if (bonus === 'DL') {
+            bgColor = '#00aaff'; // Bright cyan
+            bonusTextColor = '#000';
+            borderColor = '#33bbff';
+        }
+
+        if (x === CENTER_SQUARE && y === CENTER_SQUARE) {
+            bgColor = '#ff1493'; // Deep pink
+            borderColor = '#ff69b4';
+        }
+
+        if (tile) {
+            bgColor = tile.isLocked ? '#d4a574' : '#ffee99';
+            borderColor = tile.isLocked ? '#b8935a' : '#ffd700';
+        }
 
         return (
             <TouchableOpacity
                 key={key}
-                style={[styles.square, { width: tileSize, height: tileSize, backgroundColor: bgColor }]}
+                style={[
+                    styles.square,
+                    {
+                        width: tileSize,
+                        height: tileSize,
+                        backgroundColor: bgColor,
+                        borderColor: borderColor,
+                        borderWidth: bonus || (x === CENTER_SQUARE && y === CENTER_SQUARE) ? 1.5 : 0.5,
+                    }
+                ]}
                 onPress={() => handleBoardSquarePress(x, y)}
                 activeOpacity={0.8}
             >
@@ -513,8 +543,14 @@ const ScrabbleScreen = ({ route, navigation }) => {
                     </View>
                 ) : (
                     <View style={styles.bonusContent}>
-                        {x === CENTER_SQUARE && y === CENTER_SQUARE && <NeonText size={Math.max(tileSize * 0.5, 8)}>★</NeonText>}
-                        {bonus && <NeonText size={Math.max(tileSize * 0.35, 6)} weight="bold">{bonus}</NeonText>}
+                        {x === CENTER_SQUARE && y === CENTER_SQUARE && (
+                            <NeonText size={Math.max(tileSize * 0.5, 8)} color={bonusTextColor}>★</NeonText>
+                        )}
+                        {bonus && (
+                            <NeonText size={Math.max(tileSize * 0.35, 6)} weight="bold" color={bonusTextColor}>
+                                {bonus}
+                            </NeonText>
+                        )}
                     </View>
                 )}
             </TouchableOpacity>
