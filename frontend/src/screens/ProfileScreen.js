@@ -55,10 +55,17 @@ const ProfileScreen = ({ navigation }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
-                {/* Profile Header */}
                 <View style={styles.header}>
                     <View style={styles.avatarContainer}>
-                        <NeonText size={64}>{user.avatar || '👤'}</NeonText>
+                        {user.profilePicture ? (
+                            <img
+                                src={user.profilePicture}
+                                alt="Profile"
+                                style={{ width: '100%', height: '100%', borderRadius: 60, objectFit: 'cover' }}
+                            />
+                        ) : (
+                            <NeonText size={64}>{user.avatar || '👤'}</NeonText>
+                        )}
                     </View>
                     <NeonText size={28} weight="bold" glow style={styles.username}>
                         {user.username}

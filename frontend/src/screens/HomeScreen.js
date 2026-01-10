@@ -23,6 +23,19 @@ const HomeScreen = ({ navigation }) => {
     const [selectedColor, setSelectedColor] = useState(getRandomColor());
     const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
 
+    // Auto-fill name if user is authenticated
+    useEffect(() => {
+        if (isAuthenticated && user?.username && !name) {
+            setName(user.username);
+        }
+        if (isAuthenticated && user?.avatar) {
+            setSelectedAvatar(user.avatar);
+        }
+        if (isAuthenticated && user?.avatarColor) {
+            setSelectedColor(user.avatarColor);
+        }
+    }, [isAuthenticated, user]);
+
     // Start music on user interaction (required for web audio policy)
     const startMusicOnInteraction = async () => {
         if (musicStarted) return;
