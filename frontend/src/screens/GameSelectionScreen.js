@@ -147,6 +147,13 @@ const AVAILABLE_GAMES = [
         description: 'Answer questions - others guess if you\'re lying!',
         icon: '🔍',
         color: COLORS.electricPurple
+    },
+    {
+        id: 'scrabble',
+        name: 'Word Scrabble',
+        description: 'Form words on the board - highest score wins!',
+        icon: '🔤',
+        color: COLORS.neonCyan
     }
 ];
 

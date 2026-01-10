@@ -1,5 +1,7 @@
+const { SCRABBLE_WORDS } = require('./scrabbleWords');
+
 // Scrabble-style letter tiles and scoring
-export const LETTER_TILES = {
+const LETTER_TILES = {
     A: { value: 1, count: 9 },
     B: { value: 3, count: 2 },
     C: { value: 3, count: 2 },
@@ -29,12 +31,11 @@ export const LETTER_TILES = {
     '_': { value: 0, count: 2 } // Blank tiles
 };
 
-export const BOARD_SIZE = 15;
-export const CENTER_SQUARE = 7; // 0-indexed (8th square)
+const BOARD_SIZE = 15;
+const CENTER_SQUARE = 7; // 0-indexed (8th square)
 
 // Bonus squares
-// TW: Triple Word, DW: Double Word, TL: Triple Letter, DL: Double Letter
-export const BONUS_SQUARES = {
+const BONUS_SQUARES = {
     '0,0': 'TW', '0,7': 'TW', '0,14': 'TW',
     '7,0': 'TW', '7,14': 'TW',
     '14,0': 'TW', '14,7': 'TW', '14,14': 'TW',
@@ -43,8 +44,7 @@ export const BONUS_SQUARES = {
     '1,13': 'DW', '2,12': 'DW', '3,11': 'DW', '4,10': 'DW',
     '10,4': 'DW', '11,3': 'DW', '12,2': 'DW', '13,1': 'DW',
     '10,10': 'DW', '11,11': 'DW', '12,12': 'DW', '13,13': 'DW',
-    // Center star is typically DW
-    '7,7': 'DW',
+    '7,7': 'DW', // Center star
 
     '1,5': 'TL', '1,9': 'TL',
     '5,1': 'TL', '5,5': 'TL', '5,9': 'TL', '5,13': 'TL',
@@ -62,16 +62,8 @@ export const BONUS_SQUARES = {
     '14,3': 'DL', '14,11': 'DL'
 };
 
-// Valid Words Dictionary - Comprehensive TWL06 Scrabble Dictionary (178,691 words)
-import { SCRABBLE_WORDS } from './scrabbleWords';
-
-// Word validation helper
-export const isValidWord = (word) => {
-    return SCRABBLE_WORDS.has(word.toLowerCase());
-};
-
 // Create a tile bag with all tiles
-export const createTileBag = () => {
+const createTileBag = () => {
     const bag = [];
     Object.entries(LETTER_TILES).forEach(([letter, data]) => {
         for (let i = 0; i < data.count; i++) {
@@ -87,7 +79,7 @@ export const createTileBag = () => {
 };
 
 // Draw tiles from the bag
-export const drawTiles = (bag, count) => {
+const drawTiles = (bag, count) => {
     const drawn = [];
     for (let i = 0; i < count && bag.length > 0; i++) {
         drawn.push(bag.pop());
@@ -95,27 +87,17 @@ export const drawTiles = (bag, count) => {
     return drawn;
 };
 
-// Valid helper based on set
-export const isValidWord = (word) => {
-    return VALID_WORDS.has(word.toLowerCase());
+// Word validation
+const isValidWord = (word) => {
+    return SCRABBLE_WORDS.has(word.toLowerCase());
 };
 
-// Board validation: check if move is valid
-export const isValidMove = (playedTiles, board) => {
-    // Basic checks only for MVP
-    if (playedTiles.length === 0) return false;
-
-    // Check logical placement (same row or col)
-    const rows = playedTiles.map(t => t.y);
-    const cols = playedTiles.map(t => t.x);
-
-    // Check if horizontal or vertical
-    const isHorizontal = new Set(rows).size === 1;
-    const isVertical = new Set(cols).size === 1;
-
-    if (!isHorizontal && !isVertical) return false;
-
-    // Check gaps? (Need checks for existing tiles to bridge gaps)
-    // For now, simplify to just checking direction
-    return true;
+module.exports = {
+    LETTER_TILES,
+    BOARD_SIZE,
+    CENTER_SQUARE,
+    BONUS_SQUARES,
+    createTileBag,
+    drawTiles,
+    isValidWord
 };

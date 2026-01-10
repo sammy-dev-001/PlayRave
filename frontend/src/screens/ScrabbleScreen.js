@@ -109,6 +109,124 @@ const ScrabbleScreen = ({ route, navigation }) => {
         setPlacedTiles([]);
     };
 
+    // Helper function to extract word from board at position in direction
+    const extractWord = (tempBoard, x, y, isHorizontal) => {
+        let word = '';
+        let tiles = [];
+
+        if (isHorizontal) {
+            // Find start of word
+            let startX = x;
+            while (startX > 0 && tempBoard[`${startX - 1},${y}`]) {
+                startX--;
+            }
+            // Extract word from start
+            let currentX = startX;
+            while (currentX < BOARD_SIZE && tempBoard[`${currentX},${y}`]) {
+                const tile = tempBoard[`${currentX},${y}`];
+                word += tile.letter;
+                tiles.push({ x: currentX, y, ...tile });
+                currentX++;
+            }
+        } else {
+            // Find start of word
+            let startY = y;
+            while (startY > 0 && tempBoard[`${x},${startY - 1}`]) {
+                startY--;
+            }
+            // Extract word from start
+            let currentY = startY;
+            while (currentY < BOARD_SIZE && tempBoard[`${x},${currentY}`]) {
+                const tile = tempBoard[`${x},${currentY}`];
+                word += tile.letter;
+                tiles.push({ x, y: currentY, ...tile });
+                currentY++;
+            }
+        }
+
+        return { word, tiles };
+    };
+
+    // Extract all words formed by the placed tiles
+    const extractFormedWords = (tempBoard, newlyPlacedTiles) => {
+        const words = [];
+        const wordSet = new Set(); // To avoid duplicates
+
+        // Determine main direction
+        const xs = newlyPlacedTiles.map(t => t.x);
+        const ys = newlyPlacedTiles.map(t => t.y);
+        const isHorizontal = new Set(ys).size === 1;
+        const isVertical = new Set(xs).size === 1;
+
+        if (isHorizontal) {
+            // Main word is horizontal
+            const y = ys[0];
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+
+            // Extract main horizontal word
+            const mainWord = extractWord(tempBoard, minX, y, true);
+            if (mainWord.word.length > 1) {
+                const key = `${mainWord.word}-H-${mainWord.tiles[0].x},${mainWord.tiles[0].y}`;
+                if (!wordSet.has(key)) {
+                    wordSet.add(key);
+                    words.push(mainWord);
+                }
+            }
+
+            // Check for perpendicular cross-words at each placed tile
+            newlyPlacedTiles.forEach(tile => {
+                const crossWord = extractWord(tempBoard, tile.x, tile.y, false);
+                if (crossWord.word.length > 1) {
+                    const key = `${crossWord.word}-V-${crossWord.tiles[0].x},${crossWord.tiles[0].y}`;
+                    if (!wordSet.has(key)) {
+                        wordSet.add(key);
+                        words.push(crossWord);
+                    }
+                }
+            });
+        } else if (isVertical) {
+            // Main word is vertical
+            const x = xs[0];
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+
+            // Extract main vertical word
+            const mainWord = extractWord(tempBoard, x, minY, false);
+            if (mainWord.word.length > 1) {
+                const key = `${mainWord.word}-V-${mainWord.tiles[0].x},${mainWord.tiles[0].y}`;
+                if (!wordSet.has(key)) {
+                    wordSet.add(key);
+                    words.push(mainWord);
+                }
+            }
+
+            // Check for perpendicular cross-words at each placed tile
+            newlyPlacedTiles.forEach(tile => {
+                const crossWord = extractWord(tempBoard, tile.x, tile.y, true);
+                if (crossWord.word.length > 1) {
+                    const key = `${crossWord.word}-H-${crossWord.tiles[0].x},${crossWord.tiles[0].y}`;
+                    if (!wordSet.has(key)) {
+                        wordSet.add(key);
+                        words.push(crossWord);
+                    }
+                }
+            });
+        }
+
+        // If only one tile placed and no main word, still check cross-words
+        if (newlyPlacedTiles.length === 1 && words.length === 0) {
+            const tile = newlyPlacedTiles[0];
+            const hWord = extractWord(tempBoard, tile.x, tile.y, true);
+            const vWord = extractWord(tempBoard, tile.x, tile.y, false);
+
+            if (hWord.word.length > 1) words.push(hWord);
+            if (vWord.word.length > 1) words.push(vWord);
+        }
+
+        return words;
+    };
+
     const calculateTurnScore = (placements) => {
         // Simplified scoring for MVP: just sum tile values + bonus squares
         // Real Scrabble scoring (connected words, cross-words) is much more complex
@@ -155,9 +273,6 @@ const ScrabbleScreen = ({ route, navigation }) => {
             }
         } else {
             // Validation 3: Subsequent turns must connect to existing board
-            // Simplified check: at least one tile must be adjacent to a locked tile
-            // Or placed logic must bridge... this is getting complex.
-            // MVP: Just enforce new tiles touch AT LEAST ONE existing tile OR rely on honor system/simple validation
             let connects = false;
             if (!isFirstTurn && placedTiles.length > 0) {
                 // Check adjacency for any placed tile
@@ -169,13 +284,40 @@ const ScrabbleScreen = ({ route, navigation }) => {
                     return neighbors.some(nKey => board[nKey] && board[nKey].isLocked);
                 });
             }
-            // For MVP, if it doesn't connect, warn but maybe allow (or block strictly)
-            // Let's block strictly to prevent floating islands
             if (!connects && !isFirstTurn) {
                 Alert.alert("Invalid Move", "New tiles must connect to existing words.");
                 return;
             }
         }
+
+        // Validation 4: Dictionary - Check all formed words are valid
+        // Create temporary board with placed tiles
+        const tempBoard = { ...board };
+        placedTiles.forEach(t => {
+            tempBoard[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: false };
+        });
+
+        // Extract all words formed by this move
+        const formedWords = extractFormedWords(tempBoard, placedTiles);
+
+        if (formedWords.length === 0) {
+            Alert.alert("Invalid Move", "You must form at least one valid word.");
+            return;
+        }
+
+        // Validate each word against dictionary
+        const invalidWords = formedWords.filter(w => !isValidWord(w.word));
+        if (invalidWords.length > 0) {
+            const wordList = invalidWords.map(w => w.word).join(', ');
+            Alert.alert(
+                "Invalid Word(s)",
+                `The following ${invalidWords.length === 1 ? 'word is' : 'words are'} not in the dictionary:\n\n${wordList}\n\nPlease try a different word.`
+            );
+            return;
+        }
+
+        // All words are valid!
+        console.log('Valid words formed:', formedWords.map(w => w.word).join(', '));
 
         // Commit to board
         const newBoard = { ...board };

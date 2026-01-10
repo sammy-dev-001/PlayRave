@@ -209,6 +209,13 @@ const LobbyScreen = ({ route, navigation }) => {
                     isHost,
                     gameState
                 });
+            } else if (gameType === 'scrabble') {
+                navigation.navigate('OnlineScrabble', {
+                    room,
+                    playerName,
+                    isHost,
+                    gameState
+                });
             }
         };
 

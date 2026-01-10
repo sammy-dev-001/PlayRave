@@ -596,7 +596,122 @@ io.on("connection", (socket) => {
                 hostParticipates: hostParticipates || false
             });
             console.log("Lie Detector game started successfully");
+        } else if (gameType === "scrabble") {
+            console.log("Starting Scrabble game for room:", roomId);
+            const gameState = gameManager.startScrabbleGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to each player with their own hand
+            room.players.forEach(player => {
+                const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "scrabble",
+                    gameState: playerState,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Scrabble game started successfully");
         }
+    });
+
+    // ==================== SCRABBLE GAME EVENTS ====================
+
+    socket.on("scrabble-place-tiles", ({ roomId, tiles }) => {
+        console.log("scrabble-place-tiles event received, roomId:", roomId, "tiles:", tiles?.length);
+        const result = gameManager.scrabblePlaceTiles(roomId, socket.id, tiles);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast to all players that tiles were placed (for real-time updates)
+        io.to(roomId).emit("scrabble-tiles-placed", {
+            playerId: socket.id,
+            tiles: result.tiles
+        });
+    });
+
+    socket.on("scrabble-recall-tiles", ({ roomId }) => {
+        console.log("scrabble-recall-tiles event received, roomId:", roomId);
+        const result = gameManager.scrabbleRecallTiles(roomId, socket.id);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Notify all players
+        io.to(roomId).emit("scrabble-tiles-recalled", {
+            playerId: socket.id
+        });
+    });
+
+    socket.on("scrabble-submit-move", ({ roomId, tiles }) => {
+        console.log("scrabble-submit-move event received, roomId:", roomId, "tiles:", tiles?.length);
+        const result = gameManager.scrabbleSubmitMove(roomId, socket.id, tiles);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error, invalidWords: result.invalidWords });
+            return;
+        }
+
+        // Get updated game state for all players
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+            io.to(player.id).emit("scrabble-move-submitted", {
+                success: true,
+                score: result.score,
+                formedWords: result.formedWords,
+                gameState: playerState,
+                gameEnded: result.gameEnded,
+                finalScores: result.finalScores
+            });
+        });
+
+        console.log("Scrabble move submitted successfully, score:", result.score, "words:", result.formedWords);
+    });
+
+    socket.on("scrabble-pass-turn", ({ roomId }) => {
+        console.log("scrabble-pass-turn event received, roomId:", roomId);
+        const result = gameManager.scrabblePassTurn(roomId, socket.id);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Get updated game state for all players
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+            io.to(player.id).emit("scrabble-turn-passed", {
+                gameState: playerState,
+                gameEnded: result.gameEnded,
+                finalScores: result.finalScores
+            });
+        });
+    });
+
+    socket.on("scrabble-end-game", ({ roomId }) => {
+        console.log("scrabble-end-game event received, roomId:", roomId);
+        const result = gameManager.endScrabbleGame(roomId);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("scrabble-game-ended", {
+            finished: true,
+            finalScores: result.finalScores,
+            winner: result.winner
+        });
     });
 
     socket.on("submit-answer", ({ roomId, answerIndex }) => {

@@ -54,6 +54,7 @@ const RapidFireScreen = lazy(() => import('../screens/RapidFireScreen'));
 const OnlineRapidFireCategoryScreen = lazy(() => import('../screens/OnlineRapidFireCategoryScreen'));
 const OnlineRapidFireScreen = lazy(() => import('../screens/OnlineRapidFireScreen'));
 const ScrabbleScreen = lazy(() => import('../screens/ScrabbleScreen'));
+const OnlineScrabbleScreen = lazy(() => import('../screens/OnlineScrabbleScreen'));
 const MVPVotingScreen = lazy(() => import('../screens/MVPVotingScreen'));
 const TeamSetupScreen = lazy(() => import('../screens/TeamSetupScreen'));
 const PlaylistSetupScreen = lazy(() => import('../screens/PlaylistSetupScreen'));
@@ -108,6 +109,7 @@ const LazyRapidFireScreen = withSuspense(RapidFireScreen);
 const LazyOnlineRapidFireCategoryScreen = withSuspense(OnlineRapidFireCategoryScreen);
 const LazyOnlineRapidFireScreen = withSuspense(OnlineRapidFireScreen);
 const LazyScrabbleScreen = withSuspense(ScrabbleScreen);
+const LazyOnlineScrabbleScreen = withSuspense(OnlineScrabbleScreen);
 const LazyMVPVotingScreen = withSuspense(MVPVotingScreen);
 const LazyTeamSetupScreen = withSuspense(TeamSetupScreen);
 const LazyPlaylistSetupScreen = withSuspense(PlaylistSetupScreen);
@@ -176,6 +178,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="OnlineRapidFireCategory" component={LazyOnlineRapidFireCategoryScreen} />
                             <Stack.Screen name="OnlineRapidFire" component={LazyOnlineRapidFireScreen} />
                             <Stack.Screen name="Scrabble" component={LazyScrabbleScreen} />
+                            <Stack.Screen name="OnlineScrabble" component={LazyOnlineScrabbleScreen} />
                             <Stack.Screen name="MVPVoting" component={LazyMVPVotingScreen} />
                             <Stack.Screen name="TeamSetup" component={LazyTeamSetupScreen} />
                             <Stack.Screen name="PlaylistSetup" component={LazyPlaylistSetupScreen} />

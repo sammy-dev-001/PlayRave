@@ -3129,6 +3129,382 @@ class GameManager {
             gameState: this.getLieDetectorPublicState(game)
         };
     }
+
+    // ==================== SCRABBLE GAME ====================
+    // Turn-based word game with board, tiles, and dictionary validation
+
+    startScrabbleGame(roomId, room, hostParticipates = true) {
+        const { createTileBag, drawTiles, BOARD_SIZE, CENTER_SQUARE } = require('../data/scrabbleData');
+
+        const players = [];
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            players.push({
+                id: player.id,
+                name: player.name,
+                score: 0,
+                hand: [],
+                isActive: true
+            });
+        });
+
+        const tileBag = createTileBag();
+
+        // Deal initial hands
+        players.forEach(player => {
+            player.hand = drawTiles(tileBag, 7);
+        });
+
+        const gameState = {
+            type: 'scrabble',
+            roomId,
+            players,
+            tileBag,
+            board: {}, // { "x,y": { letter, value, isLocked: true} }
+            currentPlayerIndex: 0,
+            phase: 'playing',
+            placedTiles: {}, // Temporary placements before submission: { playerId: [{x, y, letter, value}] }
+            turnNumber: 1,
+            passCount: 0,
+            hostParticipates
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    getScrabbleGameState(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return null;
+
+        const player = game.players.find(p => p.id === playerId);
+        const currentPlayer = game.players[game.currentPlayerIndex];
+
+        return {
+            board: game.board,
+            myHand: player ? player.hand : [],
+            players: game.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                score: p.score,
+                handSize: p.hand.length,
+                isActive: p.isActive
+            })),
+            currentPlayerId: currentPlayer.id,
+            currentPlayerName: currentPlayer.name,
+            isMyTurn: playerId === currentPlayer.id,
+            turnNumber: game.turnNumber,
+            tilesInBag: game.tileBag.length,
+            phase: game.phase
+        };
+    }
+
+    scrabblePlaceTiles(roomId, playerId, tiles) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id !== playerId) return { error: 'Not your turn' };
+
+        // Store temporarily placed tiles
+        game.placedTiles[playerId] = tiles;
+
+        return { success: true, tiles };
+    }
+
+    scrabbleRecallTiles(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id !== playerId) return { error: 'Not your turn' };
+
+        game.placedTiles[playerId] = [];
+        return { success: true };
+    }
+
+    scrabbleSubmitMove(roomId, playerId, tiles) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id !== playerId) return { error: 'Not your turn' };
+        if (!tiles || tiles.length === 0) return { error: 'No tiles placed' };
+
+        const { isValidWord, BONUS_SQUARES, BOARD_SIZE, CENTER_SQUARE } = require('../data/scrabbleData');
+
+        // Validation 1: Must be in a straight line
+        const xs = tiles.map(t => t.x);
+        const ys = tiles.map(t => t.y);
+        const isHorizontal = new Set(ys).size === 1;
+        const isVertical = new Set(xs).size === 1;
+
+        if (!isHorizontal && !isVertical) {
+            return { error: 'Tiles must be placed in a straight line' };
+        }
+
+        // Validation 2: First turn must touch center
+        const isFirstTurn = Object.keys(game.board).length === 0;
+        if (isFirstTurn) {
+            const touchesCenter = tiles.some(t => t.x === CENTER_SQUARE && t.y === CENTER_SQUARE);
+            if (!touchesCenter) {
+                return { error: 'First word must cover the center square' };
+            }
+        } else {
+            // Validation 3: Must connect to existing words
+            const connects = tiles.some(t => {
+                const neighbors = [
+                    `${t.x + 1},${t.y}`, `${t.x - 1},${t.y}`,
+                    `${t.x},${t.y + 1}`, `${t.x},${t.y - 1}`
+                ];
+                return neighbors.some(nKey => game.board[nKey] && game.board[nKey].isLocked);
+            });
+            if (!connects) {
+                return { error: 'New tiles must connect to existing words' };
+            }
+        }
+
+        // Create temporary board with placed tiles
+        const tempBoard = { ...game.board };
+        tiles.forEach(t => {
+            tempBoard[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: false };
+        });
+
+        // Extract and validate all formed words
+        const formedWords = this.extractScrabbleWords(tempBoard, tiles);
+
+        if (formedWords.length === 0) {
+            return { error: 'You must form at least one valid word' };
+        }
+
+        const invalidWords = formedWords.filter(w => !isValidWord(w.word));
+        if (invalidWords.length > 0) {
+            return {
+                error: 'Invalid words',
+                invalidWords: invalidWords.map(w => w.word)
+            };
+        }
+
+        // Calculate score
+        let score = 0;
+        let wordMultiplier = 1;
+        tiles.forEach(t => {
+            let letterScore = t.value;
+            const key = `${t.x},${t.y}`;
+            const bonus = BONUS_SQUARES[key];
+
+            if (bonus === 'DL') letterScore *= 2;
+            if (bonus === 'TL') letterScore *= 3;
+            if (bonus === 'DW') wordMultiplier *= 2;
+            if (bonus === 'TW') wordMultiplier *= 3;
+
+            score += letterScore;
+        });
+        score *= wordMultiplier;
+
+        // Bonus for using all 7 tiles
+        if (tiles.length === 7) score += 50;
+
+        // Commit tiles to board
+        tiles.forEach(t => {
+            game.board[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: true };
+        });
+
+        // Update player score
+        currentPlayer.score += score;
+
+        // Refill hand
+        const { drawTiles } = require('../data/scrabbleData');
+        const newTiles = drawTiles(game.tileBag, tiles.length);
+
+        // Remove used tiles from hand and add new ones
+        const tileLetters = tiles.map(t => t.letter);
+        let remainingHand = [...currentPlayer.hand];
+        tileLetters.forEach(letter => {
+            const idx = remainingHand.findIndex(t => t.letter === letter);
+            if (idx !== -1) remainingHand.splice(idx, 1);
+        });
+        currentPlayer.hand = [...remainingHand, ...newTiles];
+
+        // Clear placed tiles
+        game.placedTiles[playerId] = [];
+        game.passCount = 0;
+
+        // Next turn
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+        if (game.currentPlayerIndex === 0) game.turnNumber++;
+
+        // Check if game should end
+        if (game.tileBag.length === 0 && currentPlayer.hand.length === 0) {
+            game.phase = 'finished';
+            return {
+                success: true,
+                score,
+                formedWords: formedWords.map(w => w.word),
+                gameEnded: true,
+                finalScores: this.getScrabbleFinalScores(game)
+            };
+        }
+
+        return {
+            success: true,
+            score,
+            formedWords: formedWords.map(w => w.word),
+            nextPlayerId: game.players[game.currentPlayerIndex].id
+        };
+    }
+
+    extractScrabbleWords(tempBoard, newlyPlacedTiles) {
+        const { BOARD_SIZE } = require('../data/scrabbleData');
+        const words = [];
+        const wordSet = new Set();
+
+        const extractWord = (x, y, isHorizontal) => {
+            let word = '';
+            let tiles = [];
+
+            if (isHorizontal) {
+                let startX = x;
+                while (startX > 0 && tempBoard[`${startX - 1},${y}`]) startX--;
+                let currentX = startX;
+                while (currentX < BOARD_SIZE && tempBoard[`${currentX},${y}`]) {
+                    const tile = tempBoard[`${currentX},${y}`];
+                    word += tile.letter;
+                    tiles.push({ x: currentX, y });
+                    currentX++;
+                }
+            } else {
+                let startY = y;
+                while (startY > 0 && tempBoard[`${x},${startY - 1}`]) startY--;
+                let currentY = startY;
+                while (currentY < BOARD_SIZE && tempBoard[`${x},${currentY}`]) {
+                    const tile = tempBoard[`${x},${currentY}`];
+                    word += tile.letter;
+                    tiles.push({ x, y: currentY });
+                    currentY++;
+                }
+            }
+
+            return { word, tiles };
+        };
+
+        const xs = newlyPlacedTiles.map(t => t.x);
+        const ys = newlyPlacedTiles.map(t => t.y);
+        const isHorizontal = new Set(ys).size === 1;
+        const isVertical = new Set(xs).size === 1;
+
+        if (isHorizontal) {
+            const y = ys[0];
+            const minX = Math.min(...xs);
+            const mainWord = extractWord(minX, y, true);
+            if (mainWord.word.length > 1) {
+                const key = `${mainWord.word}-H-${mainWord.tiles[0].x},${mainWord.tiles[0].y}`;
+                if (!wordSet.has(key)) {
+                    wordSet.add(key);
+                    words.push(mainWord);
+                }
+            }
+
+            newlyPlacedTiles.forEach(tile => {
+                const crossWord = extractWord(tile.x, tile.y, false);
+                if (crossWord.word.length > 1) {
+                    const key = `${crossWord.word}-V-${crossWord.tiles[0].x},${crossWord.tiles[0].y}`;
+                    if (!wordSet.has(key)) {
+                        wordSet.add(key);
+                        words.push(crossWord);
+                    }
+                }
+            });
+        } else if (isVertical) {
+            const x = xs[0];
+            const minY = Math.min(...ys);
+            const mainWord = extractWord(x, minY, false);
+            if (mainWord.word.length > 1) {
+                const key = `${mainWord.word}-V-${mainWord.tiles[0].x},${mainWord.tiles[0].y}`;
+                if (!wordSet.has(key)) {
+                    wordSet.add(key);
+                    words.push(mainWord);
+                }
+            }
+
+            newlyPlacedTiles.forEach(tile => {
+                const crossWord = extractWord(tile.x, tile.y, true);
+                if (crossWord.word.length > 1) {
+                    const key = `${crossWord.word}-H-${crossWord.tiles[0].x},${crossWord.tiles[0].y}`;
+                    if (!wordSet.has(key)) {
+                        wordSet.add(key);
+                        words.push(crossWord);
+                    }
+                }
+            });
+        }
+
+        if (newlyPlacedTiles.length === 1 && words.length === 0) {
+            const tile = newlyPlacedTiles[0];
+            const hWord = extractWord(tile.x, tile.y, true);
+            const vWord = extractWord(tile.x, tile.y, false);
+
+            if (hWord.word.length > 1) words.push(hWord);
+            if (vWord.word.length > 1) words.push(vWord);
+        }
+
+        return words;
+    }
+
+    scrabblePassTurn(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id !== playerId) return { error: 'Not your turn' };
+
+        game.passCount++;
+        game.placedTiles[playerId] = [];
+
+        // If all players pass twice in a row, end game
+        if (game.passCount >= game.players.length * 2) {
+            game.phase = 'finished';
+            return {
+                success: true,
+                gameEnded: true,
+                finalScores: this.getScrabbleFinalScores(game)
+            };
+        }
+
+        // Next turn
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+        if (game.currentPlayerIndex === 0) game.turnNumber++;
+
+        return {
+            success: true,
+            nextPlayerId: game.players[game.currentPlayerIndex].id
+        };
+    }
+
+    getScrabbleFinalScores(game) {
+        return game.players
+            .map(p => ({
+                playerId: p.id,
+                playerName: p.name,
+                score: p.score
+            }))
+            .sort((a, b) => b.score - a.score);
+    }
+
+    endScrabbleGame(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        game.phase = 'finished';
+        const finalScores = this.getScrabbleFinalScores(game);
+
+        return {
+            finished: true,
+            finalScores,
+            winner: finalScores[0]
+        };
+    }
+}
 }
 
 module.exports = new GameManager();
