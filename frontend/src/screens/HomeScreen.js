@@ -21,6 +21,7 @@ const HomeScreen = ({ navigation }) => {
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
     const [selectedAvatar, setSelectedAvatar] = useState(getRandomAvatar());
     const [selectedColor, setSelectedColor] = useState(getRandomColor());
+    const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
 
     // Start music on user interaction (required for web audio policy)
     const startMusicOnInteraction = async () => {
@@ -116,6 +117,18 @@ const HomeScreen = ({ navigation }) => {
             SocketService.off('room-created', onRoomCreated);
         };
     }, [navigation, name]);
+
+    // Show auth modal on first load if not authenticated
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!isAuthenticated && !hasShownAuthModal) {
+                setHasShownAuthModal(true);
+                navigation.navigate('Auth');
+            }
+        }, 1000); // 1 second delay for better UX
+
+        return () => clearTimeout(timer);
+    }, []); // Only run once on mount
 
     return (
         <NeonContainer style={styles.container} showMuteButton scrollable>
