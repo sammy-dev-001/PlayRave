@@ -3459,10 +3459,13 @@ class GameManager {
         if (currentPlayer.id !== playerId) return { error: 'Not your turn' };
 
         game.passCount++;
-        game.placedTiles[playerId] = [];
 
-        // If all players pass twice in a row, end game
-        if (game.passCount >= game.players.length * 2) {
+        // Next turn
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+        if (game.currentPlayerIndex === 0) game.turnNumber++;
+
+        // If all players pass consecutively, end game
+        if (game.passCount >= game.players.length) {
             game.phase = 'finished';
             return {
                 success: true,
@@ -3471,12 +3474,57 @@ class GameManager {
             };
         }
 
-        // Next turn
+        return { success: true, gameEnded: false };
+    }
+
+    scrabbleExchangeTiles(roomId, playerId, tileIndices) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.id !== playerId) return { error: 'Not your turn' };
+
+        if (!tileIndices || tileIndices.length === 0) {
+            return { error: 'No tiles selected for exchange' };
+        }
+
+        if (game.tileBag.length < tileIndices.length) {
+            return { error: 'Not enough tiles in bag to exchange' };
+        }
+
+        const { drawTiles } = require('../data/scrabbleData');
+
+        // Get tiles to return from hand
+        const tilesToReturn = tileIndices.map(idx => currentPlayer.hand[idx]).filter(Boolean);
+
+        if (tilesToReturn.length !== tileIndices.length) {
+            return { error: 'Invalid tile indices' };
+        }
+
+        // Remove exchanged tiles from hand
+        const newHand = currentPlayer.hand.filter((_, idx) => !tileIndices.includes(idx));
+
+        // Return tiles to bag and shuffle
+        game.tileBag.push(...tilesToReturn);
+        for (let i = game.tileBag.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [game.tileBag[i], game.tileBag[j]] = [game.tileBag[j], game.tileBag[i]];
+        }
+
+        // Draw new tiles
+        const newTiles = drawTiles(game.tileBag, tileIndices.length);
+        currentPlayer.hand = [...newHand, ...newTiles];
+
+        // Reset pass count on exchange
+        game.passCount = 0;
+
+        // Advance turn
         game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
         if (game.currentPlayerIndex === 0) game.turnNumber++;
 
         return {
             success: true,
+            exchangedCount: tileIndices.length,
             nextPlayerId: game.players[game.currentPlayerIndex].id
         };
     }

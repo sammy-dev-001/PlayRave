@@ -27,7 +27,12 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     // Local UI state
     const [selectedTileIndex, setSelectedTileIndex] = useState(null);
     const [placedTiles, setPlacedTiles] = useState([]);
+    const [placementHistory, setPlacementHistory] = useState([]); // Track for undo
     const [endGameModalVisible, setEndGameModalVisible] = useState(false);
+
+    // Tile exchange state
+    const [exchangeMode, setExchangeMode] = useState(false);
+    const [selectedTilesForExchange, setSelectedTilesForExchange] = useState([]);
     const scrollViewRef = useRef(null);
 
     useEffect(() => {
@@ -90,10 +95,21 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             }
         };
 
+        // Listen for tile exchange
+        const handleTilesExchanged = (data) => {
+            console.log('Tiles exchanged:', data);
+            if (data.success) {
+                updateGameState(data.gameState);
+                setExchangeMode(false);
+                setSelectedTilesForExchange([]);
+            }
+        };
+
         SocketService.on('game-started', handleGameStarted);
         SocketService.on('scrabble-move-submitted', handleMoveSubmitted);
         SocketService.on('scrabble-turn-passed', handleTurnPassed);
         SocketService.on('scrabble-game-ended', handleGameEnded);
+        SocketService.on('scrabble-tiles-exchanged', handleTilesExchanged);
         SocketService.on('error', handleError);
 
         return () => {
@@ -101,6 +117,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             SocketService.off('scrabble-move-submitted', handleMoveSubmitted);
             SocketService.off('scrabble-turn-passed', handleTurnPassed);
             SocketService.off('scrabble-game-ended', handleGameEnded);
+            SocketService.off('scrabble-tiles-exchanged', handleTilesExchanged);
             SocketService.off('error', handleError);
         };
     }, [navigation, room]);
@@ -123,10 +140,20 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             return;
         }
 
-        if (selectedTileIndex === index) {
-            setSelectedTileIndex(null);
+        if (exchangeMode) {
+            // Exchange mode: toggle selection
+            if (selectedTilesForExchange.includes(index)) {
+                setSelectedTilesForExchange(selectedTilesForExchange.filter(i => i !== index));
+            } else {
+                setSelectedTilesForExchange([...selectedTilesForExchange, index]);
+            }
         } else {
-            setSelectedTileIndex(index);
+            // Normal placement mode
+            if (selectedTileIndex === index) {
+                setSelectedTileIndex(null);
+            } else {
+                setSelectedTileIndex(index);
+            }
         }
     };
 
@@ -161,14 +188,25 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 handIndex: selectedTileIndex
             };
 
-            setPlacedTiles([...placedTiles, newPlacement]);
+            const updatedPlacedTiles = [...placedTiles, newPlacement];
+            setPlacementHistory([...placementHistory, placedTiles]); // Save for undo
+            setPlacedTiles(updatedPlacedTiles);
             setSelectedTileIndex(null);
         }
     };
 
     const handleRecallTiles = () => {
         setPlacedTiles([]);
+        setPlacementHistory([]);
         SocketService.emit('scrabble-recall-tiles', { roomId: room.id });
+    };
+
+    const handleUndo = () => {
+        if (placementHistory.length > 0) {
+            const previousState = placementHistory[placementHistory.length - 1];
+            setPlacedTiles(previousState);
+            setPlacementHistory(placementHistory.slice(0, -1));
+        }
     };
 
     const handleSubmitMove = () => {
@@ -209,6 +247,37 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 }
             ]
         );
+    };
+
+    const handleToggleExchangeMode = () => {
+        if (!isMyTurn) {
+            Alert.alert('Not Your Turn', 'Please wait for your turn');
+            return;
+        }
+
+        if (exchangeMode) {
+            setExchangeMode(false);
+            setSelectedTilesForExchange([]);
+        } else {
+            if (placedTiles.length > 0) {
+                Alert.alert("Cannot Exchange", "Recall your placed tiles first.");
+                return;
+            }
+            setExchangeMode(true);
+            setSelectedTileIndex(null);
+        }
+    };
+
+    const handleConfirmExchange = () => {
+        if (selectedTilesForExchange.length === 0) {
+            Alert.alert("No Tiles Selected", "Please select tiles to exchange.");
+            return;
+        }
+
+        SocketService.emit('scrabble-exchange-tiles', {
+            roomId: room.id,
+            tileIndices: selectedTilesForExchange
+        });
     };
 
     const handleEndGameConfirm = () => {
@@ -322,6 +391,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         {myHand.map((tile, index) => {
                             const isUsed = placedTiles.some(t => t.handIndex === index);
                             const isSelected = selectedTileIndex === index;
+                            const isSelectedForExchange = selectedTilesForExchange.includes(index);
 
                             if (isUsed) return (
                                 <View
@@ -336,7 +406,8 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                                     style={[
                                         styles.rackTile,
                                         { width: rackTileSize, height: rackTileSize },
-                                        isSelected && styles.selectedRackTile
+                                        isSelected && !exchangeMode && styles.selectedRackTile,
+                                        isSelectedForExchange && styles.exchangeSelectedTile
                                     ]}
                                     onPress={() => handleRackTilePress(index)}
                                     disabled={!isMyTurn}
@@ -350,28 +421,63 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.gameButtons}>
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity
-                            style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
-                            onPress={handleRecallTiles}
-                            disabled={!isMyTurn}
-                        >
-                            <NeonText size={12}>Recall</NeonText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
-                            onPress={handlePass}
-                            disabled={!isMyTurn}
-                        >
-                            <NeonText size={12}>Pass</NeonText>
-                        </TouchableOpacity>
-                    </View>
-                    <NeonButton
-                        title="PLAY WORD"
-                        onPress={handleSubmitMove}
-                        disabled={placedTiles.length === 0 || !isMyTurn}
-                        style={{ marginTop: 5, paddingVertical: 8 }}
-                    />
+                    {!exchangeMode ? (
+                        <>
+                            <View style={styles.buttonRow}>
+                                <TouchableOpacity
+                                    style={[styles.smallBtn, (!isMyTurn || placementHistory.length === 0) && styles.disabledBtn]}
+                                    onPress={handleUndo}
+                                    disabled={!isMyTurn || placementHistory.length === 0}
+                                >
+                                    <NeonText size={12}>↶ Undo</NeonText>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
+                                    onPress={handleRecallTiles}
+                                    disabled={!isMyTurn}
+                                >
+                                    <NeonText size={12}>Recall</NeonText>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
+                                    onPress={handlePass}
+                                    disabled={!isMyTurn}
+                                >
+                                    <NeonText size={12}>Pass</NeonText>
+                                </TouchableOpacity>
+                            </View>
+                            <NeonButton
+                                title="PLAY WORD"
+                                onPress={handleSubmitMove}
+                                disabled={placedTiles.length === 0 || !isMyTurn}
+                                style={{ marginTop: 5, paddingVertical: 8 }}
+                            />
+                            <TouchableOpacity
+                                style={[styles.exchangeBtn, !isMyTurn && styles.disabledBtn]}
+                                onPress={handleToggleExchangeMode}
+                                disabled={!isMyTurn}
+                            >
+                                <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 8 }}>
+                                Select tiles to exchange ({selectedTilesForExchange.length} selected)
+                            </NeonText>
+                            <View style={styles.buttonRow}>
+                                <TouchableOpacity style={styles.cancelExchangeBtn} onPress={handleToggleExchangeMode}>
+                                    <NeonText size={12}>Cancel</NeonText>
+                                </TouchableOpacity>
+                                <NeonButton
+                                    title={`EXCHANGE (${selectedTilesForExchange.length})`}
+                                    onPress={handleConfirmExchange}
+                                    disabled={selectedTilesForExchange.length === 0}
+                                    style={{ marginTop: 0, paddingVertical: 8, flex: 1 }}
+                                />
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
 
@@ -540,6 +646,27 @@ const styles = StyleSheet.create({
     },
     disabledBtn: {
         opacity: 0.3,
+    },
+    exchangeSelectedTile: {
+        borderColor: COLORS.neonCyan,
+        borderWidth: 3,
+        backgroundColor: '#a0e0ff',
+    },
+    exchangeBtn: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    cancelExchangeBtn: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 15,
     },
     endGameBtn: {
         position: 'absolute',

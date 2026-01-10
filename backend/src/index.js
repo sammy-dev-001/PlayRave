@@ -698,6 +698,37 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on("scrabble-exchange-tiles", ({ roomId, tileIndices }) => {
+        console.log("scrabble-exchange-tiles event received, roomId:", roomId, "tiles:", tileIndices?.length);
+        const result = gameManager.scrabbleExchangeTiles(roomId, socket.id, tileIndices);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Get updated game state for the player who exchanged tiles
+        const playerState = gameManager.getScrabbleGameState(roomId, socket.id);
+        socket.emit("scrabble-tiles-exchanged", {
+            success: true,
+            gameState: playerState
+        });
+
+        // Notify other players that tiles were exchanged (turn passed)
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            if (player.id !== socket.id) {
+                const otherPlayerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("scrabble-turn-passed", {
+                    gameState: otherPlayerState,
+                    gameEnded: result.gameEnded,
+                    finalScores: result.finalScores
+                });
+            }
+        });
+        console.log("Scrabble tiles exchanged successfully.");
+    });
+
     socket.on("scrabble-end-game", ({ roomId }) => {
         console.log("scrabble-end-game event received, roomId:", roomId);
         const result = gameManager.endScrabbleGame(roomId);

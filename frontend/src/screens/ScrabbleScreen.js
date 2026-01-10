@@ -50,8 +50,13 @@ const ScrabbleScreen = ({ route, navigation }) => {
 
     const [selectedTileIndex, setSelectedTileIndex] = useState(null); // Index in hand
     const [placedTiles, setPlacedTiles] = useState([]); // Array of { x, y, letter, value, handIndex }
+    const [placementHistory, setPlacementHistory] = useState([]); // Track for undo
     const [turnNumber, setTurnNumber] = useState(1);
     const [endGameModalVisible, setEndGameModalVisible] = useState(false);
+
+    // Tile exchange state
+    const [exchangeMode, setExchangeMode] = useState(false);
+    const [selectedTilesForExchange, setSelectedTilesForExchange] = useState([]); // Indices in hand
 
     const currentPlayer = players[currentPlayerIndex];
     const currentHand = playerHands[currentPlayer.id] || [];
@@ -60,10 +65,20 @@ const ScrabbleScreen = ({ route, navigation }) => {
     // --- Interaction Handlers ---
 
     const handleRackTilePress = (index) => {
-        if (selectedTileIndex === index) {
-            setSelectedTileIndex(null); // Deselect
+        if (exchangeMode) {
+            // In exchange mode, toggle tile selection for exchange
+            if (selectedTilesForExchange.includes(index)) {
+                setSelectedTilesForExchange(selectedTilesForExchange.filter(i => i !== index));
+            } else {
+                setSelectedTilesForExchange([...selectedTilesForExchange, index]);
+            }
         } else {
-            setSelectedTileIndex(index);
+            // Normal placement mode
+            if (selectedTileIndex === index) {
+                setSelectedTileIndex(null); // Deselect
+            } else {
+                setSelectedTileIndex(index);
+            }
         }
     };
 
@@ -78,6 +93,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
         if (existingPlacedIndex !== -1) {
             const tileToRemove = placedTiles[existingPlacedIndex];
             setPlacedTiles(placedTiles.filter((_, i) => i !== existingPlacedIndex));
+            setPlacementHistory([...placementHistory, placedTiles]); // Save previous state for undo
             // Just removing it from board puts it back "visually" in rack (logic handles availability)
             return;
         }
@@ -100,13 +116,86 @@ const ScrabbleScreen = ({ route, navigation }) => {
                 handIndex: selectedTileIndex
             };
 
-            setPlacedTiles([...placedTiles, newPlacement]);
+            const updatedPlacedTiles = [...placedTiles, newPlacement];
+            setPlacementHistory([...placementHistory, placedTiles]); // Save for undo
+            setPlacedTiles(updatedPlacedTiles);
             setSelectedTileIndex(null); // Auto-deselect after placement
         }
     };
 
     const handleRecallTiles = () => {
         setPlacedTiles([]);
+        setPlacementHistory([]);
+    };
+
+    const handleUndo = () => {
+        if (placementHistory.length > 0) {
+            const previousState = placementHistory[placementHistory.length - 1];
+            setPlacedTiles(previousState);
+            setPlacementHistory(placementHistory.slice(0, -1));
+        }
+    };
+
+    const handleToggleExchangeMode = () => {
+        if (exchangeMode) {
+            // Cancel exchange mode
+            setExchangeMode(false);
+            setSelectedTilesForExchange([]);
+        } else {
+            // Enter exchange mode - can't exchange if tiles are placed
+            if (placedTiles.length > 0) {
+                Alert.alert("Cannot Exchange", "Recall your placed tiles first before exchanging.");
+                return;
+            }
+            setExchangeMode(true);
+            setSelectedTileIndex(null); // Clear any selected tile for placement
+        }
+    };
+
+    const handleConfirmExchange = () => {
+        if (selectedTilesForExchange.length === 0) {
+            Alert.alert("No Tiles Selected", "Please select tiles to exchange.");
+            return;
+        }
+
+        if (tileBag.length < selectedTilesForExchange.length) {
+            Alert.alert("Not Enough Tiles", "There aren't enough tiles left in the bag to exchange.");
+            return;
+        }
+
+        // Remove selected tiles from hand and return to bag
+        const newHand = currentHand.filter((_, index) => !selectedTilesForExchange.includes(index));
+        const returnedTiles = selectedTilesForExchange.map(index => currentHand[index]);
+
+        // Add returned tiles back to bag and shuffle
+        const newBag = [...tileBag, ...returnedTiles];
+        // Simple shuffle
+        for (let i = newBag.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newBag[i], newBag[j]] = [newBag[j], newBag[i]];
+        }
+
+        // Draw new tiles
+        const drawnTiles = newBag.splice(0, selectedTilesForExchange.length);
+        const finalHand = [...newHand, ...drawnTiles];
+
+        // Update state
+        setPlayerHands(prev => ({
+            ...prev,
+            [currentPlayer.id]: finalHand
+        }));
+        setTileBag(newBag);
+        setExchangeMode(false);
+        setSelectedTilesForExchange([]);
+
+        // Advance turn
+        const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        setCurrentPlayerIndex(nextPlayerIndex);
+        if (nextPlayerIndex === 0) {
+            setTurnNumber(prev => prev + 1);
+        }
+
+        Alert.alert("Tiles Exchanged", `You exchanged ${selectedTilesForExchange.length} tile(s).`);
     };
 
     // Helper function to extract word from board at position in direction
@@ -326,6 +415,9 @@ const ScrabbleScreen = ({ route, navigation }) => {
         });
         setBoard(newBoard);
 
+        // Clear undo history after successful move
+        setPlacementHistory([]);
+
         // Update Score
         const turnScore = calculateTurnScore(placedTiles);
         setPlayerScores(prev => ({
@@ -481,6 +573,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                         {currentHand.map((tile, index) => {
                             const isUsed = placedTiles.some(t => t.handIndex === index);
                             const isSelected = selectedTileIndex === index;
+                            const isSelectedForExchange = selectedTilesForExchange.includes(index);
 
                             if (isUsed) return (
                                 <View
@@ -495,7 +588,8 @@ const ScrabbleScreen = ({ route, navigation }) => {
                                     style={[
                                         styles.rackTile,
                                         { width: rackTileSize, height: rackTileSize },
-                                        isSelected && styles.selectedRackTile
+                                        isSelected && !exchangeMode && styles.selectedRackTile,
+                                        isSelectedForExchange && styles.exchangeSelectedTile
                                     ]}
                                     onPress={() => handleRackTilePress(index)}
                                 >
@@ -508,20 +602,55 @@ const ScrabbleScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.gameButtons}>
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.smallBtn} onPress={handleRecallTiles}>
-                            <NeonText size={12}>Recall</NeonText>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.smallBtn} onPress={handlePass}>
-                            <NeonText size={12}>Pass</NeonText>
-                        </TouchableOpacity>
-                    </View>
-                    <NeonButton
-                        title="PLAY WORD"
-                        onPress={handleSubmitMove}
-                        disabled={placedTiles.length === 0}
-                        style={{ marginTop: 5, paddingVertical: 8 }}
-                    />
+                    {!exchangeMode ? (
+                        <>
+                            <View style={styles.buttonRow}>
+                                <TouchableOpacity
+                                    style={[styles.smallBtn, placementHistory.length === 0 && styles.disabledBtn]}
+                                    onPress={handleUndo}
+                                    disabled={placementHistory.length === 0}
+                                >
+                                    <NeonText size={12}>↶ Undo</NeonText>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.smallBtn} onPress={handleRecallTiles}>
+                                    <NeonText size={12}>Recall</NeonText>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.smallBtn} onPress={handlePassTurn}>
+                                    <NeonText size={12}>Pass</NeonText>
+                                </TouchableOpacity>
+                            </View>
+                            <NeonButton
+                                title="PLAY WORD"
+                                onPress={handleSubmitMove}
+                                disabled={placedTiles.length === 0}
+                                style={{ marginTop: 5, paddingVertical: 8 }}
+                            />
+                            <TouchableOpacity
+                                style={[styles.exchangeBtn, tileBag.length === 0 && styles.disabledBtn]}
+                                onPress={handleToggleExchangeMode}
+                                disabled={tileBag.length === 0}
+                            >
+                                <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 8 }}>
+                                Select tiles to exchange ({selectedTilesForExchange.length} selected)
+                            </NeonText>
+                            <View style={styles.buttonRow}>
+                                <TouchableOpacity style={styles.cancelExchangeBtn} onPress={handleToggleExchangeMode}>
+                                    <NeonText size={12}>Cancel</NeonText>
+                                </TouchableOpacity>
+                                <NeonButton
+                                    title={`EXCHANGE (${selectedTilesForExchange.length})`}
+                                    onPress={handleConfirmExchange}
+                                    disabled={selectedTilesForExchange.length === 0}
+                                    style={{ marginTop: 0, paddingVertical: 8, flex: 1 }}
+                                />
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
 
@@ -655,6 +784,11 @@ const styles = StyleSheet.create({
         borderWidth: 3,
         transform: [{ translateY: -5 }],
     },
+    exchangeSelectedTile: {
+        borderColor: COLORS.neonCyan,
+        borderWidth: 3,
+        backgroundColor: '#a0e0ff',
+    },
     usedTile: {
         backgroundColor: '#333',
         borderColor: '#222',
@@ -678,6 +812,25 @@ const styles = StyleSheet.create({
     smallBtn: {
         paddingVertical: 5,
         paddingHorizontal: 15,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 15,
+    },
+    disabledBtn: {
+        opacity: 0.3,
+    },
+    exchangeBtn: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    cancelExchangeBtn: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 15,
     },

@@ -95,11 +95,6 @@ export const drawTiles = (bag, count) => {
     return drawn;
 };
 
-// Valid helper based on set
-export const isValidWord = (word) => {
-    return VALID_WORDS.has(word.toLowerCase());
-};
-
 // Board validation: check if move is valid
 export const isValidMove = (playedTiles, board) => {
     // Basic checks only for MVP
