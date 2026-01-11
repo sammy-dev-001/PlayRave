@@ -108,7 +108,9 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('normal');
 
     // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['scrabble'];
+    // scrabble = vs AI opponent
+    // memory-match, memory-chain, speed-categories = solo challenge modes
+    const AI_COMPATIBLE_GAMES = ['scrabble', 'memory-match', 'memory-chain', 'speed-categories'];
 
     // Filter games based on single-player mode
     const availableGames = isSinglePlayer
