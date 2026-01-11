@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { COLORS } from '../constants/theme';
+import ErrorService, { ErrorSeverity } from '../services/ErrorService';
 
 /**
  * Error Boundary component that catches JavaScript errors anywhere in the child
@@ -22,9 +23,12 @@ class ErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
-        // Log error to console (could be sent to analytics service)
-        console.error('ErrorBoundary caught an error:', error);
-        console.error('Error Info:', errorInfo);
+        // Log error through centralized ErrorService
+        ErrorService.logError(error, {
+            severity: ErrorSeverity.CRITICAL,
+            component: this.props.name || 'Unknown',
+            errorInfo: errorInfo?.componentStack,
+        });
 
         this.setState({ errorInfo });
 
