@@ -37,12 +37,16 @@ const LocalPartySetupScreen = ({ navigation }) => {
     };
 
     const startParty = () => {
-        if (players.length < 2) {
-            Alert.alert('Need More Players', 'Add at least 2 players to start');
+        if (players.length < 1) {
+            Alert.alert('Need Players', 'Add at least 1 player to start');
             return;
         }
 
-        navigation.navigate('LocalGameSelection', { players });
+        // Pass single-player flag for AI mode
+        navigation.navigate('LocalGameSelection', {
+            players,
+            isSinglePlayer: players.length === 1
+        });
     };
 
     const renderPlayer = ({ item, index }) => {
@@ -135,9 +139,9 @@ const LocalPartySetupScreen = ({ navigation }) => {
 
             <View style={styles.buttonContainer}>
                 <NeonButton
-                    title={`START PARTY (${players.length} players)`}
+                    title={players.length === 1 ? `PLAY VS AI` : `START PARTY (${players.length} players)`}
                     onPress={startParty}
-                    disabled={players.length < 2}
+                    disabled={players.length < 1}
                     style={styles.startButton}
                 />
             </View>

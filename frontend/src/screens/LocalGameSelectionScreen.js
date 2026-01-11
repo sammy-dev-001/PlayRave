@@ -104,8 +104,16 @@ const LOCAL_GAMES = [
 ];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
-    const { players } = route.params;
+    const { players, isSinglePlayer = false } = route.params;
     const [selectedCategory, setSelectedCategory] = useState('normal');
+
+    // AI-compatible games (only these show in single-player mode)
+    const AI_COMPATIBLE_GAMES = ['scrabble'];
+
+    // Filter games based on single-player mode
+    const availableGames = isSinglePlayer
+        ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
+        : LOCAL_GAMES;
 
     const handleSelectGame = (gameId) => {
         if (gameId === 'truth-or-dare') {
@@ -119,7 +127,12 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         } else if (gameId === 'rapid-fire') {
             navigation.navigate('RapidFireCategory', { players });
         } else if (gameId === 'scrabble') {
-            navigation.navigate('Scrabble', { players });
+            // For single player, go to difficulty selection first
+            if (isSinglePlayer) {
+                navigation.navigate('ScrabbleDifficulty', { players });
+            } else {
+                navigation.navigate('Scrabble', { players });
+            }
         } else if (gameId === 'caption-this') {
             navigation.navigate('CaptionThis', { players });
         } else if (gameId === 'speed-categories') {
@@ -189,15 +202,15 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={SCREEN_WIDTH < 375 ? 26 : 32} weight="bold" glow>
-                    CHOOSE GAME
+                    {isSinglePlayer ? 'VS AI MODE' : 'CHOOSE GAME'}
                 </NeonText>
                 <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                    {players.length} players ready 🎮
+                    {isSinglePlayer ? '1 player vs AI 🤖' : `${players.length} players ready 🎮`}
                 </NeonText>
             </View>
 
             <ScrollView contentContainerStyle={styles.gamesContainer}>
-                {LOCAL_GAMES.map(renderGame)}
+                {availableGames.map(renderGame)}
             </ScrollView>
         </NeonContainer>
     );
