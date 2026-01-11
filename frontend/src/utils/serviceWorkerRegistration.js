@@ -1,9 +1,6 @@
 // Service Worker Registration
 // This file registers the service worker for offline support
 
-// Flag to prevent repeated update notifications
-let updateNotified = false;
-
 export const register = async () => {
     if ('serviceWorker' in navigator) {
         try {
@@ -13,42 +10,27 @@ export const register = async () => {
 
             console.log('[SW] Service Worker registered successfully:', registration.scope);
 
-            // Check for updates
+            // Check for updates - update silently without prompting user
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 console.log('[SW] New service worker found, installing...');
 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // Only show notification once
-                        if (!updateNotified) {
-                            updateNotified = true;
-                            console.log('[SW] New content available, please refresh');
-
-                            // Store that we've already notified
-                            sessionStorage.setItem('sw-update-notified', 'true');
-
-                            // Notify user of update
-                            if (window.confirm('New version available! Refresh to update?')) {
-                                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                window.location.reload();
-                            }
-                            // If user cancels, don't show again in this session
-                        }
+                        console.log('[SW] New content available - updating silently');
+                        // Skip waiting and activate new service worker immediately
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
                     }
                 });
             });
 
-            // Check if already notified in this session
-            if (sessionStorage.getItem('sw-update-notified') === 'true') {
-                updateNotified = true;
-            }
-
-            // Listen for controlling service worker change
+            // Listen for controlling service worker change - reload only when needed
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (!refreshing) {
                     refreshing = true;
+                    // Silent reload after controller change
+                    console.log('[SW] Controller changed, reloading...');
                     window.location.reload();
                 }
             });
