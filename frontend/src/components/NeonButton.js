@@ -3,6 +3,7 @@ import { TouchableOpacity, StyleSheet, View, Animated } from 'react-native';
 import { COLORS, SHADOWS } from '../constants/theme';
 import NeonText from './NeonText';
 import HapticService from '../services/HapticService';
+import { responsive, TOUCH_TARGET_SIZE } from '../utils/responsive';
 
 const NeonButton = ({
     title,
@@ -23,11 +24,23 @@ const NeonButton = ({
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const glowAnim = useRef(new Animated.Value(1)).current;
 
-    // Size configurations
+    // Responsive size configurations with minimum touch targets
     const sizeConfig = {
-        small: { paddingVertical: 8, paddingHorizontal: 16, fontSize: 14 },
-        medium: { paddingVertical: 12, paddingHorizontal: 24, fontSize: 18 },
-        large: { paddingVertical: 16, paddingHorizontal: 32, fontSize: 20 },
+        small: {
+            paddingVertical: Math.max(responsive(6, 8, 10), (TOUCH_TARGET_SIZE - 14) / 2),
+            paddingHorizontal: responsive(12, 16, 20),
+            fontSize: responsive(12, 14, 16)
+        },
+        medium: {
+            paddingVertical: Math.max(responsive(10, 12, 14), (TOUCH_TARGET_SIZE - 18) / 2),
+            paddingHorizontal: responsive(20, 24, 28),
+            fontSize: responsive(16, 18, 20)
+        },
+        large: {
+            paddingVertical: Math.max(responsive(14, 16, 18), (TOUCH_TARGET_SIZE - 20) / 2),
+            paddingHorizontal: responsive(28, 32, 40),
+            fontSize: responsive(18, 20, 24)
+        },
     };
     const currentSize = sizeConfig[size] || sizeConfig.medium;
 

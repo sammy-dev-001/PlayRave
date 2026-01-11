@@ -1,11 +1,15 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { COLORS, FONTS } from '../constants/theme';
+import { scaleFontSize } from '../utils/responsive';
 
 const NeonText = ({ children, style, glow = false, color = COLORS.white, size = 16, weight = 'regular' }) => {
+    // Apply responsive font scaling
+    const scaledSize = scaleFontSize(size);
+
     const textStyles = [
         styles.text,
-        { color: color, fontSize: size, fontWeight: weight === 'bold' ? '700' : '400' },
+        { color: color, fontSize: scaledSize, fontWeight: weight === 'bold' ? '700' : '400' },
         glow && styles.glow,
         style,
     ];
