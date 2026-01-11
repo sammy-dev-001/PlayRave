@@ -20,7 +20,7 @@ const HAND_SIZE = 7;
 
 
 const ScrabbleScreen = ({ route, navigation }) => {
-    const { players, difficulty = null } = route.params;
+    const { players = [], difficulty = null } = route.params || {};
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Check if this is AI mode (single player with difficulty)
