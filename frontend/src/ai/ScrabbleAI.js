@@ -1,4 +1,4 @@
-import { isValidWord } from './scrabbleData';
+import { isValidWord } from '../data/scrabbleData';
 
 /**
  * ScrabbleAI - AI opponent for single-player Scrabble
