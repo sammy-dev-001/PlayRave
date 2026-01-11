@@ -17,23 +17,13 @@ export const register = async () => {
 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[SW] New content available - updating silently');
-                        // Skip waiting and activate new service worker immediately
-                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        console.log('[SW] New content available - will apply on next visit');
+                        // Don't auto-reload, let the new version activate on next page load
                     }
                 });
             });
 
-            // Listen for controlling service worker change - reload only when needed
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    // Silent reload after controller change
-                    console.log('[SW] Controller changed, reloading...');
-                    window.location.reload();
-                }
-            });
+            // No auto-reload - updates will apply on next page visit
 
             return registration;
         } catch (error) {
