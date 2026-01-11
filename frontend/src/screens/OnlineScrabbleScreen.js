@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindow
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import ScorePopup from '../components/ScorePopup';
 import SocketService from '../services/socket';
 import { BOARD_SIZE, CENTER_SQUARE, BONUS_SQUARES } from '../data/scrabbleData';
 import { COLORS } from '../constants/theme';
@@ -33,6 +34,11 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     // Tile exchange state
     const [exchangeMode, setExchangeMode] = useState(false);
     const [selectedTilesForExchange, setSelectedTilesForExchange] = useState([]);
+
+    // Score popup state
+    const [showScorePopup, setShowScorePopup] = useState(false);
+    const [lastScore, setLastScore] = useState(0);
+    const [lastWords, setLastWords] = useState([]);
     const scrollViewRef = useRef(null);
 
     useEffect(() => {
@@ -49,6 +55,13 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             console.log('Move submitted:', data);
             if (data.success) {
                 updateGameState(data.gameState);
+
+                // Show score popup
+                if (data.score) {
+                    setLastScore(data.score);
+                    setLastWords(data.formedWords || []);
+                    setShowScorePopup(true);
+                }
 
                 if (data.gameEnded) {
                     // Navigate to scoreboard
@@ -480,6 +493,15 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     )}
                 </View>
             </View>
+
+            {/* Score Popup */}
+            <ScorePopup
+                score={lastScore}
+                words={lastWords}
+                visible={showScorePopup}
+                onComplete={() => setShowScorePopup(false)}
+                position="center"
+            />
 
             {/* End Game Button */}
             <TouchableOpacity
