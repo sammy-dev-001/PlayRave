@@ -461,11 +461,12 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         position: 'absolute',
-        bottom: 30,
+        bottom: 80, // Extra space for mobile browser nav bars (Samsung Internet, etc)
         left: 0,
         right: 0,
         alignItems: 'center',
         paddingHorizontal: 20,
+        paddingBottom: 20, // Additional safety padding
     },
     disabledButton: {
         opacity: 0.5,
