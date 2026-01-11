@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindow
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import ScorePopup from '../components/ScorePopup';
 import {
     LETTER_TILES,
     createTileBag,
@@ -57,6 +58,11 @@ const ScrabbleScreen = ({ route, navigation }) => {
     // Tile exchange state
     const [exchangeMode, setExchangeMode] = useState(false);
     const [selectedTilesForExchange, setSelectedTilesForExchange] = useState([]); // Indices in hand
+
+    // Score popup state
+    const [showScorePopup, setShowScorePopup] = useState(false);
+    const [lastScore, setLastScore] = useState(0);
+    const [lastWords, setLastWords] = useState([]);
 
     const currentPlayer = players[currentPlayerIndex];
     const currentHand = playerHands[currentPlayer.id] || [];
@@ -408,7 +414,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
         // All words are valid!
         console.log('Valid words formed:', formedWords.map(w => w.word).join(', '));
 
-        // Commit to board
+        // Lock placed tiles on the board
         const newBoard = { ...board };
         placedTiles.forEach(t => {
             newBoard[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: true };
@@ -418,12 +424,17 @@ const ScrabbleScreen = ({ route, navigation }) => {
         // Clear undo history after successful move
         setPlacementHistory([]);
 
-        // Update Score
+        // Calculate and update score
         const turnScore = calculateTurnScore(placedTiles);
         setPlayerScores(prev => ({
             ...prev,
             [currentPlayer.id]: prev[currentPlayer.id] + turnScore
         }));
+
+        // Show score popup with animation
+        setLastScore(turnScore);
+        setLastWords(formedWords.map(w => w.word));
+        setShowScorePopup(true);
 
         // Refill Hand
         const usedIndices = placedTiles.map(t => t.handIndex);
@@ -434,16 +445,6 @@ const ScrabbleScreen = ({ route, navigation }) => {
             ...prev,
             [currentPlayer.id]: [...keptTiles, ...newTiles]
         }));
-        setTileBag(prev => prev.slice(0, prev.length - newTiles.length)); // Actually createTileBag logic needs adjustment if we popped
-
-        // Actually tileBag state is managed by drawTiles logic which mutates array if passed directly?
-        // Wait, drawTiles took `bag` as arg. My specific implementation above:
-        // `drawTiles(tileBag, count)` uses pop(). So `tileBag` state itself needs to update if I want to persist the popped state.
-        // Correction: In calculateTurn logic I didn't mutate state properly.
-        // Let's rely on setTileBag with a functional update or just the fact that drawTiles returns new tiles and we need to update bag state.
-        // But wait, my drawTiles implementation pops from the array reference.
-        // BETTER: Create deep copy of bag to pass to drawTiles inside setPlayerHands, then update setTileBag.
-        // Re-implementing simplified refill logic here:
 
         // Next Turn
         setPlacedTiles([]);
@@ -689,6 +690,15 @@ const ScrabbleScreen = ({ route, navigation }) => {
                     )}
                 </View>
             </View>
+
+            {/* Score Popup */}
+            <ScorePopup
+                score={lastScore}
+                words={lastWords}
+                visible={showScorePopup}
+                onComplete={() => setShowScorePopup(false)}
+                position="center"
+            />
 
             {/* End Game Button */}
             <TouchableOpacity
