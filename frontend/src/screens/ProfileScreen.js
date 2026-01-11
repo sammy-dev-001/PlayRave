@@ -9,6 +9,7 @@ import {
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import StatsDisplay from '../components/StatsDisplay';
 import { COLORS } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -126,6 +127,12 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
+                {/* Detailed Game Stats & Achievements */}
+                <View style={styles.detailedStats}>
+                    <NeonText size={18} weight="bold" style={styles.sectionTitle}>Game Details</NeonText>
+                    <StatsDisplay />
+                </View>
+
                 {/* Actions */}
                 <View style={styles.actions}>
                     {isGuest && (
@@ -186,6 +193,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 15, padding: 20, alignItems: 'center'
     },
+    detailedStats: { marginBottom: 30 },
     actions: { alignItems: 'center', marginTop: 20, marginBottom: 40 },
     actionButton: { marginBottom: 20, width: '100%' },
     leaderboardButton: { padding: 15, marginBottom: 15 },
