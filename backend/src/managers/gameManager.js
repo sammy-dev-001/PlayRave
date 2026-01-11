@@ -3529,14 +3529,50 @@ class GameManager {
         };
     }
 
+    // Check if scrabble game is finished
+    isScrabbleGameFinished(game) {
+        // Game ends when all tiles are gone and one player has no tiles
+        if (game.tileBag.length === 0) {
+            const hasEmptyHand = game.players.some(p => p.hand.length === 0);
+            if (hasEmptyHand) return true;
+        }
+
+        // Game also ends if all players pass consecutively
+        if (game.passCount >= game.players.length * 2) {
+            return true;
+        }
+
+        return false; // Game is not finished yet
+    }
+
     getScrabbleFinalScores(game) {
-        return game.players
-            .map(p => ({
+        // Calculate final scores by deducting points for unplayed tiles
+        const finalScores = game.players.map(p => {
+            const unplayedTileScore = p.hand.reduce((sum, tile) => sum + tile.score, 0);
+            return {
                 playerId: p.id,
                 playerName: p.name,
-                score: p.score
-            }))
-            .sort((a, b) => b.score - a.score);
+                score: p.score - unplayedTileScore
+            };
+        });
+
+        // If one player emptied their hand, add remaining tile scores from other players to their score
+        const playerWithEmptyHand = game.players.find(p => p.hand.length === 0);
+        if (playerWithEmptyHand) {
+            const totalUnplayedTilesScore = game.players.reduce((sum, p) => {
+                if (p.id !== playerWithEmptyHand.id) {
+                    return sum + p.hand.reduce((tileSum, tile) => tileSum + tile.score, 0);
+                }
+                return sum;
+            }, 0);
+
+            const playerWithEmptyHandScoreEntry = finalScores.find(fs => fs.playerId === playerWithEmptyHand.id);
+            if (playerWithEmptyHandScoreEntry) {
+                playerWithEmptyHandScoreEntry.score += totalUnplayedTilesScore;
+            }
+        }
+
+        return finalScores.sort((a, b) => b.score - a.score);
     }
 
     endScrabbleGame(roomId) {
@@ -3552,7 +3588,6 @@ class GameManager {
             winner: finalScores[0]
         };
     }
-}
 }
 
 module.exports = new GameManager();
