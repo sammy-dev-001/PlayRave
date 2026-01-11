@@ -1,6 +1,9 @@
 // Service Worker Registration
 // This file registers the service worker for offline support
 
+// Flag to prevent repeated update notifications
+let updateNotified = false;
+
 export const register = async () => {
     if ('serviceWorker' in navigator) {
         try {
@@ -17,15 +20,29 @@ export const register = async () => {
 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[SW] New content available, please refresh');
-                        // Notify user of update
-                        if (window.confirm('New version available! Refresh to update?')) {
-                            newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            window.location.reload();
+                        // Only show notification once
+                        if (!updateNotified) {
+                            updateNotified = true;
+                            console.log('[SW] New content available, please refresh');
+
+                            // Store that we've already notified
+                            sessionStorage.setItem('sw-update-notified', 'true');
+
+                            // Notify user of update
+                            if (window.confirm('New version available! Refresh to update?')) {
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                window.location.reload();
+                            }
+                            // If user cancels, don't show again in this session
                         }
                     }
                 });
             });
+
+            // Check if already notified in this session
+            if (sessionStorage.getItem('sw-update-notified') === 'true') {
+                updateNotified = true;
+            }
 
             // Listen for controlling service worker change
             let refreshing = false;
