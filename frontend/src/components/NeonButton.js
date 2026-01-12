@@ -63,51 +63,77 @@ const NeonButton = ({
 
     const handlePressOut = () => {
         Animated.parallel([
-        }
-};
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                useNativeDriver: true,
+                friction: 5,
+                tension: 100,
+            }),
+            Animated.timing(glowAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
 
-return (
-    <TouchableOpacity
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={1}
-        style={[styles.container, style]}
-        disabled={disabled || loading}
-    >
-        <Animated.View style={[
-            styles.button,
-            {
-                borderColor,
-                paddingVertical: currentSize.paddingVertical,
-                paddingHorizontal: currentSize.paddingHorizontal,
-                transform: [{ scale: scaleAnim }],
-            },
-            glowStyle,
-            disabled && styles.disabled
-        ]}>
-            {loading ? (
-                <Animated.View style={[styles.loader, {
-                    transform: [{
-                        rotate: glowAnim.interpolate({
-                            inputRange: [1, 1.5],
-                            outputRange: ['0deg', '360deg'],
-                        })
-                    }]
-                }]}>
-                    <NeonText size={currentSize.fontSize} color={borderColor}>⏳</NeonText>
-                </Animated.View>
-            ) : (
-                <View style={styles.content}>
-                    {icon && <NeonText size={currentSize.fontSize} style={styles.icon}>{icon}</NeonText>}
-                    <NeonText weight="bold" size={currentSize.fontSize} color={borderColor} glow>
-                        {title.toUpperCase()}
-                    </NeonText>
-                </View>
-            )}
-        </Animated.View>
-    </TouchableOpacity>
-);
+    const handlePress = () => {
+        // Play sound effect
+        if (sound && !disabled && !loading) {
+            SoundService.playButtonClick();
+        }
+
+        // Trigger haptic feedback
+        if (haptic) {
+            HapticService.buttonTap();
+        }
+        if (onPress && !loading) {
+            onPress();
+        }
+    };
+
+    return (
+        <TouchableOpacity
+            onPress={handlePress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={1}
+            style={[styles.container, style]}
+            disabled={disabled || loading}
+        >
+            <Animated.View style={[
+                styles.button,
+                {
+                    borderColor,
+                    paddingVertical: currentSize.paddingVertical,
+                    paddingHorizontal: currentSize.paddingHorizontal,
+                    transform: [{ scale: scaleAnim }],
+                },
+                glowStyle,
+                disabled && styles.disabled
+            ]}>
+                {loading ? (
+                    <Animated.View style={[styles.loader, {
+                        transform: [{
+                            rotate: glowAnim.interpolate({
+                                inputRange: [1, 1.5],
+                                outputRange: ['0deg', '360deg'],
+                            })
+                        }]
+                    }]}>
+                        <NeonText size={currentSize.fontSize} color={borderColor}>⏳</NeonText>
+                    </Animated.View>
+                ) : (
+                    <View style={styles.content}>
+                        {icon && <NeonText size={currentSize.fontSize} style={styles.icon}>{icon}</NeonText>}
+                        <NeonText weight="bold" size={currentSize.fontSize} color={borderColor} glow>
+                            {title.toUpperCase()}
+                        </NeonText>
+                    </View>
+                )}
+            </Animated.View>
+        </TouchableOpacity>
+    );
 };
 
 const styles = StyleSheet.create({
