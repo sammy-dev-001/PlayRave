@@ -72,7 +72,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={32} weight="bold" glow>
                     TRUTH OR DARE

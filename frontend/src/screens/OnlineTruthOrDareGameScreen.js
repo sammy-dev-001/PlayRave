@@ -142,22 +142,36 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
 
             {/* Watching other player's prompt */}
             {!isMyTurn && gameState.status === 'SHOWING_PROMPT' && (
-                <View style={styles.watchingContainer}>
-                    <NeonText
-                        size={24}
-                        weight="bold"
-                        color={gameState.promptType === 'truth' ? COLORS.neonCyan : COLORS.hotPink}
-                        glow
-                    >
-                        {currentPlayerName} is doing a {gameState.promptType?.toUpperCase()}!
-                    </NeonText>
-                    <NeonText size={48} style={styles.watchingEmoji}>
-                        {gameState.promptType === 'truth' ? '💬' : '🎯'}
-                    </NeonText>
-                    <NeonText size={16} color="#888" style={styles.watchingHint}>
-                        Wait for them to complete their turn...
-                    </NeonText>
-                </View>
+                <>
+                    <View style={styles.promptTypeContainer}>
+                        <NeonText
+                            size={32}
+                            weight="bold"
+                            color={gameState.promptType === 'truth' ? COLORS.neonCyan : COLORS.hotPink}
+                            glow
+                        >
+                            {gameState.promptType?.toUpperCase()}
+                        </NeonText>
+                        <NeonText size={14} color="#888" style={{ marginTop: 5 }}>
+                            {currentPlayerName}'s challenge
+                        </NeonText>
+                    </View>
+
+                    <View style={styles.promptContainer}>
+                        <NeonText size={22} weight="bold" style={styles.prompt}>
+                            {gameState.currentPrompt}
+                        </NeonText>
+                    </View>
+
+                    <View style={styles.watchingContainer}>
+                        <NeonText size={48} style={styles.watchingEmoji}>
+                            {gameState.promptType === 'truth' ? '💬' : '🎯'}
+                        </NeonText>
+                        <NeonText size={16} color="#888" style={styles.watchingHint}>
+                            Wait for {currentPlayerName} to complete...
+                        </NeonText>
+                    </View>
+                </>
             )}
 
             {/* My turn - Choose Truth or Dare */}

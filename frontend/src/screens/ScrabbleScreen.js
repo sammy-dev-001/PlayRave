@@ -15,6 +15,7 @@ import {
 } from '../data/scrabbleData';
 import { COLORS } from '../constants/theme';
 import ScrabbleAI from '../ai/ScrabbleAI';
+import PlayerStatsService from '../services/PlayerStatsService';
 
 const HAND_SIZE = 7;
 
@@ -23,19 +24,37 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const { players = [], difficulty = null } = route.params || {};
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
+    // Debug logging
+    console.log('[ScrabbleScreen] Params:', { players, difficulty, paramsExist: !!route.params });
+
+    // Early validation - if no players, show error and go back
+    React.useEffect(() => {
+        if (!players || players.length === 0) {
+            console.error('[ScrabbleScreen] No players provided - navigating back');
+            Alert.alert('Error', 'No players specified', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
+        }
+    }, []);
+
     // Check if this is AI mode (single player with difficulty)
-    const isAIMode = difficulty !== null && players.length === 1;
+    const isAIMode = difficulty !== null && players && players.length === 1;
+
+    console.log('[ScrabbleScreen] Mode:', { isAIMode, playerCount: players?.length });
 
     // Create players array with AI if in AI mode
     const gamePlayers = isAIMode
         ? [...players, { id: 'ai', name: 'AI Opponent 🤖', gender: 'other', isAI: true }]
-        : players;
+        : (players || []);
 
     // Calculate tile size dynamically based on screen dimensions
-    // Use the smaller dimension to ensure board fits, with padding
-    const availableSize = Math.min(screenWidth, screenHeight - 250); // Leave space for header/controls
-    const tileSize = Math.max(Math.floor((availableSize - 20) / BOARD_SIZE), 18); // Min 18px tiles
-    const rackTileSize = Math.min(Math.max(tileSize * 1.2, 35), 50); // Rack tiles slightly larger
+    // For desktop (wider screens), use a larger minimum tile size
+    const isDesktop = screenWidth > 768;
+    const availableSize = Math.min(screenWidth * 0.9, screenHeight - 300); // Use 90% width, leave space for header/controls
+    const minTileSize = isDesktop ? 28 : 18; // Larger minimum on desktop
+    const maxTileSize = isDesktop ? 40 : 30; // Cap tile size
+    const tileSize = Math.min(maxTileSize, Math.max(Math.floor(availableSize / BOARD_SIZE), minTileSize));
+    const rackTileSize = Math.min(Math.max(tileSize * 1.3, 40), 55); // Rack tiles slightly larger
 
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [tileBag, setTileBag] = useState(() => createTileBag());
@@ -62,6 +81,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const [placedTiles, setPlacedTiles] = useState([]); // Array of { x, y, letter, value, handIndex }
     const [placementHistory, setPlacementHistory] = useState([]); // Track for undo
     const [turnNumber, setTurnNumber] = useState(1);
+    const [consecutivePasses, setConsecutivePasses] = useState(0); // Track passes for end game
     const [endGameModalVisible, setEndGameModalVisible] = useState(false);
 
     // Tile exchange state
@@ -76,6 +96,10 @@ const ScrabbleScreen = ({ route, navigation }) => {
     // AI state
     const [isAIThinking, setIsAIThinking] = useState(false);
     const aiRef = useRef(isAIMode ? new ScrabbleAI(difficulty) : null);
+
+    // Blank tile selection modal state
+    const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
+    const [pendingBlankPlacement, setPendingBlankPlacement] = useState(null); // { x, y, handIndex }
 
     const currentPlayer = gamePlayers[currentPlayerIndex];
     const currentHand = playerHands[currentPlayer?.id] || [];
@@ -226,11 +250,21 @@ const ScrabbleScreen = ({ route, navigation }) => {
             }
 
             const tile = currentHand[selectedTileIndex];
+
+            // Check if this is a blank tile - show letter selection modal
+            if (tile.letter === '_') {
+                setPendingBlankPlacement({ x, y, handIndex: selectedTileIndex });
+                setBlankTileModalVisible(true);
+                setSelectedTileIndex(null);
+                return;
+            }
+
             const newPlacement = {
                 x, y,
                 letter: tile.letter,
                 value: tile.value,
-                handIndex: selectedTileIndex
+                handIndex: selectedTileIndex,
+                isBlank: false
             };
 
             const updatedPlacedTiles = [...placedTiles, newPlacement];
@@ -238,6 +272,26 @@ const ScrabbleScreen = ({ route, navigation }) => {
             setPlacedTiles(updatedPlacedTiles);
             setSelectedTileIndex(null); // Auto-deselect after placement
         }
+    };
+
+    // Handle blank tile letter selection
+    const handleBlankLetterSelect = (chosenLetter) => {
+        if (!pendingBlankPlacement) return;
+
+        const { x, y, handIndex } = pendingBlankPlacement;
+        const newPlacement = {
+            x, y,
+            letter: chosenLetter,
+            value: 0, // Blank tiles are worth 0 points
+            handIndex,
+            isBlank: true // Mark as blank so it displays differently
+        };
+
+        const updatedPlacedTiles = [...placedTiles, newPlacement];
+        setPlacementHistory([...placementHistory, placedTiles]);
+        setPlacedTiles(updatedPlacedTiles);
+        setBlankTileModalVisible(false);
+        setPendingBlankPlacement(null);
     };
 
     const handleRecallTiles = () => {
@@ -434,8 +488,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
     };
 
     const calculateTurnScore = (placements) => {
-        // Simplified scoring for MVP: just sum tile values + bonus squares
-        // Real Scrabble scoring (connected words, cross-words) is much more complex
+        // Calculate score with proper bonus squares
         let score = 0;
         let wordMultiplier = 1;
 
@@ -452,7 +505,14 @@ const ScrabbleScreen = ({ route, navigation }) => {
             score += letterScore;
         });
 
-        return score * wordMultiplier;
+        let finalScore = score * wordMultiplier;
+
+        // BINGO BONUS: 50 extra points for using all 7 tiles
+        if (placements.length === 7) {
+            finalScore += 50;
+        }
+
+        return finalScore;
     };
 
     const handleSubmitMove = () => {
@@ -493,6 +553,38 @@ const ScrabbleScreen = ({ route, navigation }) => {
             if (!connects && !isFirstTurn) {
                 Alert.alert("Invalid Move", "New tiles must connect to existing words.");
                 return;
+            }
+        }
+
+        // Validation 4: No gaps - tiles must be contiguous (or bridged by existing tiles)
+        if (placedTiles.length > 1) {
+            const placedKeys = new Set(placedTiles.map(t => `${t.x},${t.y}`));
+
+            if (isHorizontal) {
+                const y = ys[0];
+                const minX = Math.min(...xs);
+                const maxX = Math.max(...xs);
+
+                for (let x = minX; x <= maxX; x++) {
+                    const key = `${x},${y}`;
+                    // Each position must have either a placed tile or an existing locked tile
+                    if (!placedKeys.has(key) && !(board[key] && board[key].isLocked)) {
+                        Alert.alert("Invalid Move", "There are gaps between your tiles. Word must be continuous.");
+                        return;
+                    }
+                }
+            } else if (isVertical) {
+                const x = xs[0];
+                const minY = Math.min(...ys);
+                const maxY = Math.max(...ys);
+
+                for (let y = minY; y <= maxY; y++) {
+                    const key = `${x},${y}`;
+                    if (!placedKeys.has(key) && !(board[key] && board[key].isLocked)) {
+                        Alert.alert("Invalid Move", "There are gaps between your tiles. Word must be continuous.");
+                        return;
+                    }
+                }
             }
         }
 
@@ -557,8 +649,9 @@ const ScrabbleScreen = ({ route, navigation }) => {
             [currentPlayer.id]: [...keptTiles, ...newTiles]
         }));
 
-        // Next Turn
+        // Next Turn - reset consecutive passes on successful move
         setPlacedTiles([]);
+        setConsecutivePasses(0); // Reset pass counter on successful move
         const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
         if (nextIndex === 0) setTurnNumber(prev => prev + 1);
         setCurrentPlayerIndex(nextIndex);
@@ -566,12 +659,63 @@ const ScrabbleScreen = ({ route, navigation }) => {
 
     const handlePass = () => {
         setPlacedTiles([]);
+        const newPassCount = consecutivePasses + 1;
+        setConsecutivePasses(newPassCount);
+
+        // Game ends after all players pass consecutively (2 for 2 players, numPlayers for more)
+        const passThreshold = gamePlayers.length;
+        if (newPassCount >= passThreshold) {
+            // Auto-end game due to consecutive passes
+            handleAutoEndGame();
+            return;
+        }
+
         const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
         if (nextIndex === 0) setTurnNumber(prev => prev + 1);
         setCurrentPlayerIndex(nextIndex);
     };
 
-    const handleEndGameConfirm = () => {
+    // Handle automatic game end (consecutive passes or empty bag + empty hand)
+    const handleAutoEndGame = async () => {
+        // Calculate final scores with tile deduction (official rule)
+        const finalScoresWithDeduction = gamePlayers.map(p => {
+            const baseScore = playerScores[p.id];
+            const hand = playerHands[p.id] || [];
+            // Subtract remaining tile values from score
+            const tileDeduction = hand.reduce((sum, tile) => sum + tile.value, 0);
+            return {
+                playerId: p.id,
+                name: p.name,
+                score: Math.max(0, baseScore - tileDeduction), // Can't go negative
+                tileDeduction
+            };
+        }).sort((a, b) => b.score - a.score);
+
+        // Record stats for human player
+        const humanPlayer = gamePlayers.find(p => !p.isAI);
+        if (humanPlayer) {
+            const playerFinal = finalScoresWithDeduction.find(s => s.playerId === humanPlayer.id);
+            const won = finalScoresWithDeduction[0].playerId === humanPlayer.id;
+
+            try {
+                await PlayerStatsService.recordGame('scrabble', {
+                    won,
+                    score: playerFinal?.score || 0,
+                    players: gamePlayers.map(p => p.name)
+                });
+            } catch (error) {
+                console.error('[Scrabble] Failed to record stats:', error);
+            }
+        }
+
+        navigation.navigate('Scoreboard', {
+            finalScores: finalScoresWithDeduction,
+            players: gamePlayers,
+            gameEnded: 'passes'
+        });
+    };
+
+    const handleEndGameConfirm = async () => {
         setEndGameModalVisible(false);
 
         // Calculate final scores list
@@ -580,11 +724,29 @@ const ScrabbleScreen = ({ route, navigation }) => {
             score: playerScores[p.id]
         })).sort((a, b) => b.score - a.score);
 
+        // Record stats for the player (not AI)
+        const humanPlayer = gamePlayers.find(p => !p.isAI);
+        if (humanPlayer) {
+            const playerScore = playerScores[humanPlayer.id];
+            const won = finalScores[0].playerId === humanPlayer.id;
+
+            try {
+                await PlayerStatsService.recordGame('scrabble', {
+                    won,
+                    score: playerScore,
+                    players: gamePlayers.map(p => p.name)
+                });
+                console.log('[Scrabble] Stats recorded:', { won, score: playerScore });
+            } catch (error) {
+                console.error('[Scrabble] Failed to record stats:', error);
+            }
+        }
+
         // Construct simplified room object for ScoreboardScreen
         const roomData = {
             id: 'local',
             gameType: 'scrabble',
-            players: players
+            players: gamePlayers  // Use gamePlayers to include AI
         };
 
         navigation.navigate('Scoreboard', {
@@ -650,6 +812,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
             >
                 {tile ? (
                     <View style={styles.tileContent}>
+                        {tile.isBlank && <View style={styles.blankTileIndicator} />}
                         <NeonText size={Math.max(tileSize * 0.55, 10)} color="#000" weight="bold">{tile.letter}</NeonText>
                         <NeonText size={Math.max(tileSize * 0.25, 6)} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
                     </View>
@@ -687,7 +850,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
             <View style={styles.header}>
                 <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
                 <View style={styles.scoreRow}>
-                    {players.map(p => (
+                    {gamePlayers.map(p => (
                         <View key={p.id} style={[styles.miniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
                             <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
                             <NeonText size={14} weight="bold">{playerScores[p.id]}</NeonText>
@@ -741,7 +904,9 @@ const ScrabbleScreen = ({ route, navigation }) => {
                                     ]}
                                     onPress={() => handleRackTilePress(index)}
                                 >
-                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">{tile.letter}</NeonText>
+                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">
+                                        {tile.letter === '_' ? '★' : tile.letter}
+                                    </NeonText>
                                     <NeonText size={rackTileSize * 0.22} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
                                 </TouchableOpacity>
                             );
@@ -763,7 +928,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                                 <TouchableOpacity style={styles.smallBtn} onPress={handleRecallTiles}>
                                     <NeonText size={12}>Recall</NeonText>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.smallBtn} onPress={handlePassTurn}>
+                                <TouchableOpacity style={styles.smallBtn} onPress={handlePass}>
                                     <NeonText size={12}>Pass</NeonText>
                                 </TouchableOpacity>
                             </View>
@@ -818,6 +983,50 @@ const ScrabbleScreen = ({ route, navigation }) => {
             >
                 <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
             </TouchableOpacity>
+
+            {/* Blank Tile Letter Selection Modal */}
+            <Modal
+                transparent={true}
+                visible={blankTileModalVisible}
+                animationType="fade"
+                onRequestClose={() => {
+                    setBlankTileModalVisible(false);
+                    setPendingBlankPlacement(null);
+                }}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, styles.blankTileModal]}>
+                        <NeonText size={20} weight="bold" glow style={{ marginBottom: 5 }}>
+                            Choose a Letter
+                        </NeonText>
+                        <NeonText size={12} color="#888" style={{ marginBottom: 15 }}>
+                            Select what letter your blank tile will represent
+                        </NeonText>
+                        <View style={styles.letterGrid}>
+                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+                                <TouchableOpacity
+                                    key={letter}
+                                    style={styles.letterButton}
+                                    onPress={() => handleBlankLetterSelect(letter)}
+                                >
+                                    <NeonText size={18} weight="bold" color={COLORS.limeGlow}>
+                                        {letter}
+                                    </NeonText>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        <TouchableOpacity
+                            style={styles.modalCancel}
+                            onPress={() => {
+                                setBlankTileModalVisible(false);
+                                setPendingBlankPlacement(null);
+                            }}
+                        >
+                            <NeonText>Cancel</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Custom End Game Modal */}
             <Modal
@@ -1033,6 +1242,35 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.hotPink,
         minWidth: 100,
         alignItems: 'center',
+    },
+    blankTileModal: {
+        maxWidth: 350,
+    },
+    letterGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 6,
+        marginBottom: 15,
+    },
+    letterButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(198, 255, 74, 0.15)',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: COLORS.limeGlow,
+    },
+    blankTileIndicator: {
+        position: 'absolute',
+        top: 1,
+        left: 1,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: COLORS.neonCyan,
     },
 });
 

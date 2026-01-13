@@ -138,12 +138,33 @@ const LocalPartySetupScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.buttonContainer}>
-                <NeonButton
-                    title={players.length === 1 ? `PLAY VS AI` : `START PARTY (${players.length} players)`}
-                    onPress={startParty}
-                    disabled={players.length < 1}
-                    style={styles.startButton}
-                />
+                {players.length === 0 ? (
+                    <NeonText size={14} color="#888" style={{ textAlign: 'center', marginBottom: 20 }}>
+                        Add at least 1 player to continue
+                    </NeonText>
+                ) : players.length === 1 ? (
+                    <>
+                        <NeonText size={14} color={COLORS.limeGlow} style={{ textAlign: 'center', marginBottom: 10 }}>
+                            🤖 Single Player Mode - Play against AI
+                        </NeonText>
+                        <NeonButton
+                            title="PLAY VS AI"
+                            onPress={startParty}
+                            style={styles.startButton}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 10 }}>
+                            👥 Multiplayer Mode - {players.length} players
+                        </NeonText>
+                        <NeonButton
+                            title="START PARTY"
+                            onPress={startParty}
+                            style={styles.startButton}
+                        />
+                    </>
+                )}
             </View>
         </NeonContainer>
     );

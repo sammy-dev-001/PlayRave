@@ -38,7 +38,7 @@ const RapidFireCategoryScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}

@@ -129,11 +129,19 @@ class SoundService {
         }
 
         try {
-            // Use preloaded sound if available
+            // Use preloaded sound if available and loaded
             if (this.sounds[soundName]) {
-                await this.sounds[soundName].setPositionAsync(0);
-                await this.sounds[soundName].playAsync();
-                return;
+                try {
+                    const status = await this.sounds[soundName].getStatusAsync();
+                    if (status.isLoaded) {
+                        await this.sounds[soundName].setPositionAsync(0);
+                        await this.sounds[soundName].playAsync();
+                        return;
+                    }
+                } catch (e) {
+                    // Sound not ready, fall through to create new instance
+                    console.log(`Preloaded sound ${soundName} not ready, creating new instance`);
+                }
             }
 
             // Fallback: create and play new sound instance

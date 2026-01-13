@@ -117,6 +117,11 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
         : LOCAL_GAMES;
 
+    // Debug logging
+    console.log('[LocalGameSelection] isSinglePlayer:', isSinglePlayer);
+    console.log('[LocalGameSelection] players:', players?.length);
+    console.log('[LocalGameSelection] availableGames:', availableGames.map(g => g.id));
+
     const handleSelectGame = (gameId) => {
         if (gameId === 'truth-or-dare') {
             navigation.navigate('TruthOrDareCategorySelection', { players });

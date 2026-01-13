@@ -167,4 +167,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default NeonButton;
+export default React.memo(NeonButton);

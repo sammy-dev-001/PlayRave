@@ -4,6 +4,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
+import ConfettiEffect from '../components/ConfettiEffect';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import ProfileService from '../services/ProfileService';
@@ -160,6 +161,7 @@ const ScoreboardScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer showMuteButton showBackButton>
+            <ConfettiEffect show={isWinner} pieceCount={60} />
             <RaveLights trigger={showRaveLights} intensity="high" duration={3000} />
             <View style={styles.header}>
                 <NeonText size={36} weight="bold" glow style={styles.title}>

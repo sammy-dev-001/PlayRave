@@ -28,4 +28,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default NeonText;
+export default React.memo(NeonText);

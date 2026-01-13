@@ -9,13 +9,16 @@ import { BOARD_SIZE, CENTER_SQUARE, BONUS_SQUARES } from '../data/scrabbleData';
 import { COLORS } from '../constants/theme';
 
 const OnlineScrabbleScreen = ({ route, navigation }) => {
-    const { room, playerName } = route.params;
+    const { room, playerName, gameState: initialGameState } = route.params;
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-    // Calculate tile sizes
-    const availableSize = Math.min(screenWidth, screenHeight - 250);
-    const tileSize = Math.max(Math.floor((availableSize - 20) / BOARD_SIZE), 18);
-    const rackTileSize = Math.min(Math.max(tileSize * 1.2, 35), 50);
+    // Calculate tile sizes - improved for desktop
+    const isDesktop = screenWidth > 768;
+    const availableSize = Math.min(screenWidth * 0.9, screenHeight - 300);
+    const minTileSize = isDesktop ? 28 : 18;
+    const maxTileSize = isDesktop ? 40 : 30;
+    const tileSize = Math.min(maxTileSize, Math.max(Math.floor(availableSize / BOARD_SIZE), minTileSize));
+    const rackTileSize = Math.min(Math.max(tileSize * 1.3, 40), 55);
 
     // Game state from server
     const [gameState, setGameState] = useState(null);
@@ -41,8 +44,16 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const [lastWords, setLastWords] = useState([]);
     const scrollViewRef = useRef(null);
 
+    // Initialize from route params if available
     useEffect(() => {
-        // Listen for game start
+        if (initialGameState) {
+            console.log('Initializing from route params:', initialGameState);
+            updateGameState(initialGameState);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Listen for game start (for late joiners or reconnections)
         const handleGameStarted = (data) => {
             if (data.gameType === 'scrabble') {
                 console.log('Scrabble game started:', data.gameState);

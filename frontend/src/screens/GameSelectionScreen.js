@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isDesktop = SCREEN_WIDTH > 768;
 
 const AVAILABLE_GAMES = [
     {
@@ -460,13 +463,16 @@ const styles = StyleSheet.create({
         marginBottom: 30, // Extra bottom margin for safe area
     },
     buttonContainer: {
-        position: 'absolute',
-        bottom: 80, // Extra space for mobile browser nav bars (Samsung Internet, etc)
+        // Use relative positioning on desktop, absolute on mobile
+        position: isDesktop ? 'relative' : 'absolute',
+        bottom: isDesktop ? 0 : 80,
         left: 0,
         right: 0,
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingBottom: 20, // Additional safety padding
+        paddingBottom: 20,
+        paddingTop: isDesktop ? 20 : 0,
+        marginTop: isDesktop ? 20 : 0,
     },
     disabledButton: {
         opacity: 0.5,
