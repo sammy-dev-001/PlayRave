@@ -25,6 +25,10 @@ const HomeScreen = ({ navigation }) => {
     const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Get current screen width for responsive layout
+    const screenWidth = Dimensions.get('window').width;
+    const isDesktop = screenWidth > 768;
+
     // Auto-fill name if user is authenticated
     useEffect(() => {
         if (isAuthenticated && user?.username && !name) {
@@ -215,15 +219,15 @@ const HomeScreen = ({ navigation }) => {
                 <View style={[
                     styles.actionsWrapper,
                     {
-                        flexDirection: SCREEN_WIDTH > 768 ? 'row' : 'column',
-                        maxWidth: SCREEN_WIDTH > 768 ? 1000 : 500,
+                        flexDirection: isDesktop ? 'row' : 'column',
+                        maxWidth: isDesktop ? 1000 : 500,
                     }
                 ]}>
                     <View style={[
                         styles.actionSection,
                         {
-                            flex: SCREEN_WIDTH > 768 ? 1 : 0,
-                            width: SCREEN_WIDTH > 768 ? 'auto' : '100%',
+                            flex: isDesktop ? 1 : 0,
+                            width: isDesktop ? 'auto' : '100%',
                         }
                     ]}>
                         <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
@@ -234,8 +238,8 @@ const HomeScreen = ({ navigation }) => {
                     <View style={[
                         styles.actionSection,
                         {
-                            flex: SCREEN_WIDTH > 768 ? 1 : 0,
-                            width: SCREEN_WIDTH > 768 ? 'auto' : '100%',
+                            flex: isDesktop ? 1 : 0,
+                            width: isDesktop ? 'auto' : '100%',
                         }
                     ]}>
                         <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
