@@ -308,6 +308,12 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     gameCard: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
         gap: 15,
     },
     iconContainer: {

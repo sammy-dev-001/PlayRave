@@ -280,9 +280,9 @@ const GameSelectionScreen = ({ route, navigation }) => {
             setRoom(updatedRoom);
 
             // If we're waiting to navigate after setting game type, navigate now
-            if (waitingForNavigation.current && updatedRoom.gameType) {
+            if (waitingForNavigation && updatedRoom.gameType) {
                 console.log('Navigating to lobby with updated room:', updatedRoom);
-                waitingForNavigation.current = false;
+                setWaitingForNavigation(false);
                 navigation.navigate('Lobby', {
                     room: updatedRoom,
                     isHost: true,
@@ -297,7 +297,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
         return () => {
             SocketService.off('room-updated', onRoomUpdated);
         };
-    }, [navigation, playerName]);
+    }, [navigation, playerName, waitingForNavigation]);
 
     const renderGameCard = (game) => (
         <TouchableOpacity
@@ -401,6 +401,12 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     gameCard: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
         gap: 15,
     },
     iconContainer: {
