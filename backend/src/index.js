@@ -271,6 +271,18 @@ io.on("connection", (socket) => {
         }, DISCONNECT_GRACE_PERIOD);
     });
 
+    // Handle game selection from GameSelectionScreen
+    socket.on("game-selected", ({ roomId, gameId, gameName }) => {
+        console.log("game-selected event received, roomId:", roomId, "gameId:", gameId);
+        const result = roomManager.setGameType(roomId, gameId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        console.log("Game selected, emitting room-updated to room:", roomId, "with gameType:", result.room.gameType);
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
     socket.on("set-game-type", ({ roomId, gameType }) => {
         console.log("set-game-type event received, roomId:", roomId, "gameType:", gameType);
         const result = roomManager.setGameType(roomId, gameType);
