@@ -242,6 +242,8 @@ const HomeScreen = ({ navigation }) => {
                         {
                             flex: isDesktop ? 1 : 0,
                             width: isDesktop ? 'auto' : '100%',
+                            marginBottom: isDesktop ? 0 : 20,
+                            minWidth: isDesktop ? 0 : '100%',
                         }
                     ]}>
                         <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
@@ -254,6 +256,7 @@ const HomeScreen = ({ navigation }) => {
                         {
                             flex: isDesktop ? 1 : 0,
                             width: isDesktop ? 'auto' : '100%',
+                            minWidth: isDesktop ? 0 : '100%',
                         }
                     ]}>
                         <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
