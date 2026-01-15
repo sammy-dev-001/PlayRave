@@ -4,8 +4,17 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
+import GameIcon from '../components/GameIcon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Game categories for organization (Sync with GameSelectionScreen)
+const GAME_CATEGORIES = {
+    party: { name: '🎉 Party Games', color: COLORS.hotPink },
+    competitive: { name: '🏆 Competitive', color: COLORS.neonCyan },
+    trivia: { name: '🧠 Trivia & Knowledge', color: COLORS.limeGlow },
+    speed: { name: '⚡ Speed Games', color: COLORS.electricPurple },
+};
 
 const LOCAL_GAMES = [
     {
@@ -13,21 +22,30 @@ const LOCAL_GAMES = [
         name: 'Truth or Dare',
         description: 'Classic party game - choose truth or dare!',
         icon: '🎭',
-        color: COLORS.hotPink
+        color: COLORS.hotPink,
+        category: 'party',
+        minPlayers: 2,
+        maxPlayers: 10,
     },
     {
         id: 'spin-bottle',
         name: 'Spin the Bottle',
         description: 'Spin to choose who does the dare',
         icon: '🍾',
-        color: COLORS.neonCyan
+        color: COLORS.neonCyan,
+        category: 'party',
+        minPlayers: 2,
+        maxPlayers: 10,
     },
     {
         id: 'never-have-i-local',
         name: 'Never Have I Ever',
         description: 'Put fingers down if you have done it',
         icon: '🤫',
-        color: COLORS.limeGlow
+        color: COLORS.limeGlow,
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 10,
     },
     {
         id: 'kings-cup',
@@ -35,6 +53,9 @@ const LOCAL_GAMES = [
         description: 'Classic drinking game with cards',
         icon: '👑',
         color: COLORS.electricPurple,
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 10,
         comingSoon: true
     },
     {
@@ -42,49 +63,70 @@ const LOCAL_GAMES = [
         name: 'Would You Rather',
         description: 'Choose between two impossible choices',
         icon: '🤔',
-        color: COLORS.hotPink
+        color: COLORS.hotPink,
+        category: 'party',
+        minPlayers: 2,
+        maxPlayers: 10,
     },
     {
         id: 'rapid-fire',
         name: 'Rapid Fire',
         description: 'Quick questions, 5 seconds to answer!',
         icon: '⚡',
-        color: COLORS.limeGlow
+        color: COLORS.limeGlow,
+        category: 'speed',
+        minPlayers: 2,
+        maxPlayers: 8,
     },
     {
         id: 'scrabble',
         name: 'Word Builder',
         description: 'Create words from letter tiles!',
         icon: '📝',
-        color: COLORS.neonCyan
+        color: COLORS.neonCyan,
+        category: 'competitive',
+        minPlayers: 2,
+        maxPlayers: 4,
     },
     {
         id: 'caption-this',
         name: 'Caption This',
         description: 'Write funny captions, vote for the best!',
         icon: '📸',
-        color: COLORS.electricPurple
+        color: COLORS.electricPurple,
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 8,
     },
     {
         id: 'speed-categories',
         name: 'Speed Categories',
         description: 'Name 5 things in 10 seconds!',
         icon: '🏃',
-        color: COLORS.hotPink
+        color: COLORS.hotPink,
+        category: 'speed',
+        minPlayers: 2,
+        maxPlayers: 8,
     },
     {
         id: 'auction-bluff',
         name: 'Auction Bluff',
         description: 'Bid on items - real facts or bluffs?',
         icon: '🔨',
-        color: COLORS.neonCyan
+        color: COLORS.neonCyan,
+        category: 'competitive',
+        minPlayers: 3,
+        maxPlayers: 8,
     },
     {
         id: 'memory-chain',
         name: 'Memory Chain',
         description: 'Remember the growing sequence!',
         icon: '🧠',
-        color: COLORS.limeGlow
+        color: COLORS.limeGlow,
+        category: 'speed',
+        minPlayers: 2,
+        maxPlayers: 8,
     },
     {
         id: 'hot-seat',
@@ -92,35 +134,48 @@ const LOCAL_GAMES = [
         description: 'One person answers all questions',
         icon: '🔥',
         color: COLORS.hotPink,
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 10,
         comingSoon: true
     },
     {
         id: 'memory-match',
         name: 'Memory Match',
         description: 'Find matching pairs - test your memory!',
-        icon: '🧠',
-        color: COLORS.neonCyan
+        icon: '🧩',
+        color: COLORS.electricPurple,
+        category: 'speed',
+        minPlayers: 1,
+        maxPlayers: 4,
     }
 ];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { players, isSinglePlayer = false } = route.params;
-    const [selectedCategory, setSelectedCategory] = useState('normal');
 
     // AI-compatible games (only these show in single-player mode)
-    // scrabble = vs AI opponent
-    // memory-match, memory-chain, speed-categories = solo challenge modes
     const AI_COMPATIBLE_GAMES = ['scrabble', 'memory-match', 'memory-chain', 'speed-categories'];
 
-    // Filter games based on single-player mode
-    const availableGames = isSinglePlayer
-        ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-        : LOCAL_GAMES;
+    // Process games into categories
+    const gamesByCategory = React.useMemo(() => {
+        const grouped = {};
+        Object.keys(GAME_CATEGORIES).forEach(key => {
+            grouped[key] = [];
+        });
 
-    // Debug logging
-    console.log('[LocalGameSelection] isSinglePlayer:', isSinglePlayer);
-    console.log('[LocalGameSelection] players:', players?.length);
-    console.log('[LocalGameSelection] availableGames:', availableGames.map(g => g.id));
+        // Filter available games first
+        const available = isSinglePlayer
+            ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
+            : LOCAL_GAMES;
+
+        available.forEach(game => {
+            if (grouped[game.category]) {
+                grouped[game.category].push(game);
+            }
+        });
+        return grouped;
+    }, [isSinglePlayer]);
 
     const handleSelectGame = (gameId) => {
         if (gameId === 'truth-or-dare') {
@@ -153,56 +208,35 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         }
     };
 
-    const renderCategoryButton = (category, label, color) => (
+    const renderGameCard = (game) => (
         <TouchableOpacity
-            key={category}
-            style={[
-                styles.categoryButton,
-                selectedCategory === category && { borderColor: color, borderWidth: 2 }
-            ]}
-            onPress={() => setSelectedCategory(category)}
-        >
-            <NeonText
-                size={16}
-                weight={selectedCategory === category ? 'bold' : 'normal'}
-                color={selectedCategory === category ? color : COLORS.white}
-            >
-                {label}
-            </NeonText>
-        </TouchableOpacity>
-    );
-
-    const renderGame = (game) => (
-        <View
             key={game.id}
-            style={[
-                styles.gameCard,
-                { borderColor: game.color }
-            ]}
+            style={[styles.gameCard, { borderColor: game.color || COLORS.neonCyan }]}
+            onPress={() => handleSelectGame(game.id)}
+            disabled={game.comingSoon}
         >
-            <View style={styles.gameHeader}>
-                <NeonText size={48}>{game.icon}</NeonText>
-                {game.comingSoon && (
-                    <View style={styles.comingSoonBadge}>
-                        <NeonText size={10} color={COLORS.limeGlow}>
-                            COMING SOON
-                        </NeonText>
-                    </View>
-                )}
+            <View style={[styles.iconContainer, { backgroundColor: `${game.color}20` }]}>
+                <GameIcon gameId={game.id} fallbackIcon={game.icon} size={50} />
             </View>
-            <NeonText size={22} weight="bold" style={styles.gameName}>
-                {game.name}
-            </NeonText>
-            <NeonText size={14} color="#888" style={styles.gameDescription}>
-                {game.description}
-            </NeonText>
-            <NeonButton
-                title={game.comingSoon ? "COMING SOON" : "PLAY"}
-                onPress={() => handleSelectGame(game.id)}
-                disabled={game.comingSoon}
-                style={styles.playButton}
-            />
-        </View>
+            <View style={styles.gameInfo}>
+                <NeonText size={18} weight="bold" color={game.color}>{game.name}</NeonText>
+                <NeonText size={12} color="#AAA" style={styles.description}>{game.description}</NeonText>
+
+                <View style={styles.metaRow}>
+                    <View style={styles.badge}>
+                        <NeonText size={10} color="#FFF">👥 {game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText>
+                    </View>
+                    {game.category === 'speed' && (
+                        <View style={[styles.badge, { backgroundColor: '#FF3FA440' }]}>
+                            <NeonText size={10} color="#FF3FA4">⚡ Fast</NeonText>
+                        </View>
+                    )}
+                </View>
+            </View>
+            <View style={styles.arrowContainer}>
+                <NeonText size={20} color={game.color}>→</NeonText>
+            </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -216,90 +250,100 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 </NeonText>
             </View>
 
-            <ScrollView contentContainerStyle={styles.gamesContainer}>
-                {availableGames.map(renderGame)}
-            </ScrollView>
+            <View style={styles.container}>
+                {Object.entries(GAME_CATEGORIES).map(([key, category]) => {
+                    const categoryGames = gamesByCategory[key];
+                    if (!categoryGames || categoryGames.length === 0) return null;
+
+                    return (
+                        <View key={key} style={styles.categorySection}>
+                            <View style={styles.categoryHeader}>
+                                <NeonText size={20} weight="bold" color={category.color} glow>
+                                    {category.name}
+                                </NeonText>
+                                <View style={[styles.categoryLine, { backgroundColor: category.color }]} />
+                            </View>
+                            <View style={styles.gamesGrid}>
+                                {categoryGames.map(renderGameCard)}
+                            </View>
+                        </View>
+                    );
+                })}
+            </View>
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingHorizontal: 20,
+        paddingBottom: 40,
+    },
     header: {
         alignItems: 'center',
-        marginBottom: 25,
-    },
-    subtitle: {
+        marginBottom: 15,
         marginTop: 10,
     },
-    gamesGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-        paddingBottom: 20,
+    subtitle: {
+        textAlign: 'center',
+        marginBottom: 30,
+        marginTop: 5,
     },
-    gamesContainer: {
-        gap: 20,
-        paddingBottom: 20,
+    categorySection: {
+        marginBottom: 30,
+    },
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+        gap: 15,
+    },
+    categoryLine: {
+        flex: 1,
+        height: 1,
+        opacity: 0.5,
+    },
+    gamesGrid: {
+        gap: 12,
     },
     gameCard: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 16,
-        borderWidth: 2,
-        padding: 20,
-        alignItems: 'center',
-    },
-    gameHeader: {
-        position: 'relative',
-        marginBottom: 15,
-    },
-    comingSoonBadge: {
-        position: 'absolute',
-        top: -5,
-        right: -30,
-        backgroundColor: 'rgba(198, 255, 74, 0.2)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: COLORS.limeGlow,
-    },
-    gameName: {
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    gameDescription: {
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    playButton: {
-        minWidth: 150,
-    },
-    categoryContainer: {
-        marginBottom: 20,
-        padding: 15,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.electricPurple,
-    },
-    categoryLabel: {
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    categoryButtons: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        gap: 10,
-    },
-    categoryButton: {
-        flex: 1,
-        padding: 12,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: COLORS.white,
         alignItems: 'center',
-    }
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        gap: 15,
+    },
+    iconContainer: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    gameInfo: {
+        flex: 1,
+        gap: 4,
+    },
+    description: {
+        lineHeight: 16,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    badge: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    arrowContainer: {
+        opacity: 0.5,
+    },
 });
 
 export default LocalGameSelectionScreen;

@@ -4,6 +4,7 @@ import SocketService from './src/services/socket';
 import AppNavigator from './src/navigation/AppNavigator';
 import OfflineIndicator from './src/components/OfflineIndicator';
 import ErrorToast from './src/components/ErrorToast';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { register as registerServiceWorker } from './src/utils/serviceWorkerRegistration';
 
 export default function App() {
@@ -20,11 +21,11 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <ThemeProvider>
       <AppNavigator />
       <ErrorToast />
       <OfflineIndicator />
       <StatusBar style="light" />
-    </>
+    </ThemeProvider>
   );
 }

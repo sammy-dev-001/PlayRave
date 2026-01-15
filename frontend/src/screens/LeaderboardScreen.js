@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
+import EmptyState from '../components/EmptyState';
 import { COLORS } from '../constants/theme';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -91,12 +92,11 @@ const LeaderboardScreen = () => {
                         <ActivityIndicator size="large" color={COLORS.neonCyan} />
                     </View>
                 ) : leaderboard.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <NeonText size={48}>🎮</NeonText>
-                        <NeonText size={16} color="#888" style={styles.emptyText}>
-                            No players yet. Be the first!
-                        </NeonText>
-                    </View>
+                    <EmptyState
+                        icon="🎮"
+                        title="No Players Yet"
+                        message="Be the first to claim victory!"
+                    />
                 ) : (
                     <FlatList
                         data={leaderboard}
@@ -122,8 +122,6 @@ const styles = StyleSheet.create({
     container: { flex: 1, paddingTop: 20 },
     header: { alignItems: 'center', marginBottom: 25, paddingHorizontal: 20 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyText: { marginTop: 15, textAlign: 'center' },
     list: { paddingHorizontal: 15, paddingBottom: 30 },
     row: {
         flexDirection: 'row', alignItems: 'center',

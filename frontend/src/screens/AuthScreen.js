@@ -14,6 +14,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
+import LoadingOverlay from '../components/LoadingOverlay';
 
 const AuthScreen = ({ navigation }) => {
     const { login, register, continueAsGuest } = useAuth();
@@ -203,6 +204,14 @@ const AuthScreen = ({ navigation }) => {
 
     return (
         <NeonContainer>
+            <LoadingOverlay
+                visible={loading}
+                message={
+                    mode === 'register' ? 'Creating Account...' :
+                        mode === 'login' ? 'Signing In...' :
+                            'Loading...'
+                }
+            />
             {mode === 'welcome' ? renderWelcome() : renderForm()}
         </NeonContainer>
     );

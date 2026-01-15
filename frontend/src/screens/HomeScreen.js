@@ -11,6 +11,7 @@ import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
 import { useAuth } from '../context/AuthContext';
+import LoadingOverlay from '../components/LoadingOverlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -22,6 +23,7 @@ const HomeScreen = ({ navigation }) => {
     const [selectedAvatar, setSelectedAvatar] = useState(getRandomAvatar());
     const [selectedColor, setSelectedColor] = useState(getRandomColor());
     const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Auto-fill name if user is authenticated
     useEffect(() => {
@@ -62,12 +64,16 @@ const HomeScreen = ({ navigation }) => {
         }
         // Start music on first interaction
         await startMusicOnInteraction();
+        setLoading(true); // Start loading
         console.log('Emitting create-room event with playerName:', name, 'avatar:', selectedAvatar);
         SocketService.emit('create-room', {
             playerName: name,
             avatar: selectedAvatar,
             avatarColor: selectedColor
         });
+
+        // Timeout safeguard
+        setTimeout(() => setLoading(false), 10000);
     };
 
     const handleJoin = async () => {
@@ -118,6 +124,7 @@ const HomeScreen = ({ navigation }) => {
     React.useEffect(() => {
         const onRoomCreated = (room) => {
             console.log('Room created event received:', room);
+            setLoading(false); // Stop loading
             // Don't stop music - let it play during game selection/lobby
             navigation.navigate('GameSelection', { room, playerName: name });
         };
@@ -145,20 +152,29 @@ const HomeScreen = ({ navigation }) => {
 
     return (
         <NeonContainer style={styles.container} showMuteButton scrollable>
-            {/* Header with Connection Status and Profile */}
+            <LoadingOverlay visible={loading} message="Creating Party..." />
+            {/* Header with Connection Status, Settings, and Profile */}
             <View style={styles.headerRow}>
                 <ConnectionStatus showLabel={true} size="small" />
-                <TouchableOpacity
-                    style={styles.profileButton}
-                    onPress={() => navigation.navigate(isAuthenticated ? 'Profile' : 'Auth')}
-                >
-                    <NeonText size={24}>{user?.avatar || '👤'}</NeonText>
-                    {isAuthenticated && (
-                        <View style={styles.levelBadge}>
-                            <NeonText size={10} color="#000" weight="bold">{user?.level || 1}</NeonText>
-                        </View>
-                    )}
-                </TouchableOpacity>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity
+                        style={styles.settingsIcon}
+                        onPress={() => navigation.navigate('Settings')}
+                    >
+                        <NeonText size={22}>⚙️</NeonText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.profileButton}
+                        onPress={() => navigation.navigate(isAuthenticated ? 'Profile' : 'Auth')}
+                    >
+                        <NeonText size={24}>{user?.avatar || '👤'}</NeonText>
+                        {isAuthenticated && (
+                            <View style={styles.levelBadge}>
+                                <NeonText size={10} color="#000" weight="bold">{user?.level || 1}</NeonText>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Logo */}
@@ -196,21 +212,28 @@ const HomeScreen = ({ navigation }) => {
 
             {/* Buttons */}
             <View style={styles.actions}>
-                <NeonButton title="HOST ONLINE PARTY" onPress={handleCreate} icon="🎮" />
-                <NeonButton title="JOIN ONLINE PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
-                <NeonButton
-                    title="START LOCAL PARTY"
-                    variant="secondary"
-                    onPress={handleLocalParty}
-                    icon="🎲"
-                    style={{ marginTop: 20 }}
-                />
-                <NeonButton
-                    title="📡 LAN MODE (No Internet)"
-                    variant="secondary"
-                    onPress={() => navigation.navigate('LANMode')}
-                    style={{ marginTop: 10 }}
-                />
+                <View style={styles.actionSection}>
+                    <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
+                    <NeonButton title="HOST PARTY" onPress={handleCreate} icon="🎮" />
+                    <NeonButton title="JOIN PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
+                </View>
+
+                <View style={styles.actionSection}>
+                    <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
+                    <NeonButton
+                        title="LOCAL GAMES"
+                        variant="primary"
+                        onPress={handleLocalParty}
+                        icon="🎲"
+                        style={{ borderColor: COLORS.hotPink }}
+                    />
+                    <NeonButton
+                        title="LAN MODE (No Internet)"
+                        variant="secondary"
+                        onPress={() => navigation.navigate('LANMode')}
+                        icon="📡"
+                    />
+                </View>
             </View>
 
             {/* Profile Button */}
@@ -275,7 +298,19 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     actions: {
-        gap: 15,
+        width: '100%',
+        gap: 30,
+        paddingHorizontal: 20,
+    },
+    actionSection: {
+        gap: 12,
+        width: '100%',
+    },
+    sectionLabel: {
+        marginBottom: 5,
+        textAlign: 'center',
+        letterSpacing: 1,
+        opacity: 0.8,
     },
     avatarSection: {
         alignItems: 'center',
@@ -308,7 +343,20 @@ const styles = StyleSheet.create({
     spectateButton: {
         alignItems: 'center',
         padding: 10,
-    }
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    settingsIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
 
 export default HomeScreen;

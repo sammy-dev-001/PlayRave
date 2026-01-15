@@ -68,6 +68,7 @@ const JoinSpectatorScreen = lazy(() => import('../screens/JoinSpectatorScreen'))
 const ConfessionRouletteScreen = lazy(() => import('../screens/ConfessionRouletteScreen'));
 const ImposterScreen = lazy(() => import('../screens/ImposterScreen'));
 const UnpopularOpinionsScreen = lazy(() => import('../screens/UnpopularOpinionsScreen'));
+const SettingsScreen = lazy(() => import('../screens/SettingsScreen'));
 
 const Stack = createNativeStackNavigator();
 
@@ -149,6 +150,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="LocalPartySetup" component={LocalPartySetupScreen} />
                             <Stack.Screen name="LocalGameSelection" component={LocalGameSelectionScreen} />
                             <Stack.Screen name="Profile" component={ProfileScreen} />
+                            <Stack.Screen name="Settings" component={withSuspense(SettingsScreen)} />
 
                             {/* Lazy-loaded game screens */}
                             <Stack.Screen name="CustomQuestions" component={LazyCustomQuestionsScreen} />

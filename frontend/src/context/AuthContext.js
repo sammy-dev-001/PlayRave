@@ -131,6 +131,53 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Update profile picture (works for both guest and authenticated users)
+    const updateProfilePicture = async (pictureUri) => {
+        if (!user) return;
+
+        const updatedUser = { ...user, profilePicture: pictureUri };
+        setUser(updatedUser);
+
+        if (isGuest) {
+            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+        } else {
+            // For authenticated users, could upload to server
+            // For now, store locally
+            await AsyncStorage.setItem('profilePicture', pictureUri);
+        }
+
+        return updatedUser;
+    };
+
+    // Update avatar emoji
+    const updateAvatar = async (emoji) => {
+        if (!user) return;
+
+        const updatedUser = { ...user, avatar: emoji };
+        setUser(updatedUser);
+
+        if (isGuest) {
+            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+        }
+
+        return updatedUser;
+    };
+
+    const updateUsername = async (newUsername) => {
+        if (!user || !newUsername) return;
+
+        const updatedUser = { ...user, username: newUsername };
+        setUser(updatedUser);
+
+        if (isGuest) {
+            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+        } else {
+            // TODO: Implement API call for registered users
+            // await ApiService.updateProfile({ username: newUsername });
+        }
+        return updatedUser;
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -142,7 +189,10 @@ export const AuthProvider = ({ children }) => {
             logout,
             continueAsGuest,
             updateLocalStats,
-            refreshUser
+            refreshUser,
+            updateProfilePicture,
+            updateAvatar,
+            updateUsername
         }}>
             {children}
         </AuthContext.Provider>

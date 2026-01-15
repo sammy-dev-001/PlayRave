@@ -70,13 +70,13 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         minHeight: '100%',
         paddingTop: 60, // Account for back button
-        paddingBottom: 30, // Safe area for iPhone home indicator
+        paddingBottom: 100, // Extra space for nav bar clearance on all screens
     },
     container: {
         flex: 1,
         height: '100%',
         paddingTop: 60, // Account for back button
-        paddingBottom: Platform.OS === 'ios' ? 20 : 10, // Extra bottom padding for iOS
+        paddingBottom: Platform.OS === 'ios' ? 100 : 80, // Extra bottom padding for nav clearance
     },
 });
 

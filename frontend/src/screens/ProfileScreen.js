@@ -1,11 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Animated
+    Animated,
+    Alert,
+    Platform,
+    Image
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -14,8 +18,9 @@ import { COLORS } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, isGuest, logout } = useAuth();
+    const { user, isGuest, logout, updateProfilePicture } = useAuth();
     const progressAnim = useRef(new Animated.Value(0)).current;
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -41,6 +46,63 @@ const ProfileScreen = ({ navigation }) => {
         navigation.replace('Auth');
     };
 
+    const pickImage = async (useCamera = false) => {
+        try {
+            // Request permissions
+            if (useCamera) {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert('Permission needed', 'Camera access is required to take a photo.');
+                    return;
+                }
+            } else {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert('Permission needed', 'Photo library access is required.');
+                    return;
+                }
+            }
+
+            // Launch picker
+            const result = useCamera
+                ? await ImagePicker.launchCameraAsync({
+                    mediaTypes: 'images',
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.7,
+                })
+                : await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: 'images',
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.7,
+                });
+
+            if (!result.canceled && result.assets?.[0]) {
+                setIsUploadingImage(true);
+                await updateProfilePicture(result.assets[0].uri);
+                setIsUploadingImage(false);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            setIsUploadingImage(false);
+            Alert.alert('Error', 'Failed to update profile picture.');
+        }
+    };
+
+    const showImageOptions = () => {
+        Alert.alert(
+            'Update Profile Picture',
+            'Choose an option',
+            [
+                { text: 'Take Photo', onPress: () => pickImage(true) },
+                { text: 'Choose from Gallery', onPress: () => pickImage(false) },
+                { text: 'Remove Photo', onPress: () => updateProfilePicture(null), style: 'destructive' },
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
+    };
+
     if (!user) return null;
 
     const xpForNext = getXPForLevel(user.level);
@@ -57,17 +119,24 @@ const ProfileScreen = ({ navigation }) => {
         <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <View style={styles.avatarContainer}>
+                    <TouchableOpacity onPress={showImageOptions} style={styles.avatarContainer}>
                         {user.profilePicture ? (
-                            <img
-                                src={user.profilePicture}
-                                alt="Profile"
-                                style={{ width: '100%', height: '100%', borderRadius: 60, objectFit: 'cover' }}
+                            <Image
+                                source={{ uri: user.profilePicture }}
+                                style={styles.profileImage}
                             />
                         ) : (
                             <NeonText size={64}>{user.avatar || '👤'}</NeonText>
                         )}
-                    </View>
+                        <View style={styles.editBadge}>
+                            <NeonText size={16}>📷</NeonText>
+                        </View>
+                        {isUploadingImage && (
+                            <View style={styles.uploadingOverlay}>
+                                <NeonText size={12}>...</NeonText>
+                            </View>
+                        )}
+                    </TouchableOpacity>
                     <NeonText size={28} weight="bold" glow style={styles.username}>
                         {user.username}
                     </NeonText>
@@ -76,6 +145,12 @@ const ProfileScreen = ({ navigation }) => {
                             <NeonText size={12} color={COLORS.hotPink}>GUEST MODE</NeonText>
                         </View>
                     )}
+                    <TouchableOpacity
+                        style={styles.settingsButton}
+                        onPress={() => navigation.navigate('Settings')}
+                    >
+                        <NeonText size={14} color={COLORS.neonCyan}>⚙️ Settings</NeonText>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Level Progress */}
@@ -197,7 +272,40 @@ const styles = StyleSheet.create({
     actions: { alignItems: 'center', marginTop: 20, marginBottom: 40 },
     actionButton: { marginBottom: 20, width: '100%' },
     leaderboardButton: { padding: 15, marginBottom: 15 },
-    logoutButton: { width: '100%' }
+    logoutButton: { width: '100%' },
+    profileImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 60,
+    },
+    editBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: COLORS.neonCyan,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: COLORS.deepNightBlack,
+    },
+    uploadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    settingsButton: {
+        marginTop: 10,
+        padding: 10,
+    },
 });
 
 export default ProfileScreen;

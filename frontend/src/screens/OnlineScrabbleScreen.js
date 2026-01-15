@@ -44,6 +44,10 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const [lastWords, setLastWords] = useState([]);
     const scrollViewRef = useRef(null);
 
+    // Blank tile selection modal state
+    const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
+    const [pendingBlankPlacement, setPendingBlankPlacement] = useState(null); // { x, y, handIndex }
+
     // Initialize from route params if available
     useEffect(() => {
         if (initialGameState) {
@@ -205,11 +209,21 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             if (isAlreadyPlaced) return;
 
             const tile = myHand[selectedTileIndex];
+
+            // Check if this is a blank tile - show letter selection modal
+            if (tile.letter === '_') {
+                setPendingBlankPlacement({ x, y, handIndex: selectedTileIndex });
+                setBlankTileModalVisible(true);
+                setSelectedTileIndex(null);
+                return;
+            }
+
             const newPlacement = {
                 x, y,
                 letter: tile.letter,
                 value: tile.value,
-                handIndex: selectedTileIndex
+                handIndex: selectedTileIndex,
+                isBlank: false
             };
 
             const updatedPlacedTiles = [...placedTiles, newPlacement];
@@ -217,6 +231,26 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             setPlacedTiles(updatedPlacedTiles);
             setSelectedTileIndex(null);
         }
+    };
+
+    // Handle blank tile letter selection
+    const handleBlankLetterSelect = (chosenLetter) => {
+        if (!pendingBlankPlacement) return;
+
+        const { x, y, handIndex } = pendingBlankPlacement;
+        const newPlacement = {
+            x, y,
+            letter: chosenLetter,
+            value: 0, // Blank tiles are worth 0 points
+            handIndex,
+            isBlank: true
+        };
+
+        const updatedPlacedTiles = [...placedTiles, newPlacement];
+        setPlacementHistory([...placementHistory, placedTiles]);
+        setPlacedTiles(updatedPlacedTiles);
+        setBlankTileModalVisible(false);
+        setPendingBlankPlacement(null);
     };
 
     const handleRecallTiles = () => {
@@ -335,6 +369,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             >
                 {tile ? (
                     <View style={styles.tileContent}>
+                        {tile.isBlank && <View style={styles.blankTileIndicator} />}
                         <NeonText size={Math.max(tileSize * 0.55, 10)} color="#000" weight="bold">{tile.letter}</NeonText>
                         <NeonText size={Math.max(tileSize * 0.25, 6)} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
                     </View>
@@ -436,7 +471,9 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                                     onPress={() => handleRackTilePress(index)}
                                     disabled={!isMyTurn}
                                 >
-                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">{tile.letter}</NeonText>
+                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">
+                                        {tile.letter === '_' ? '★' : tile.letter}
+                                    </NeonText>
                                     <NeonText size={rackTileSize * 0.22} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
                                 </TouchableOpacity>
                             );
@@ -521,6 +558,50 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             >
                 <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
             </TouchableOpacity>
+
+            {/* Blank Tile Letter Selection Modal */}
+            <Modal
+                transparent={true}
+                visible={blankTileModalVisible}
+                animationType="fade"
+                onRequestClose={() => {
+                    setBlankTileModalVisible(false);
+                    setPendingBlankPlacement(null);
+                }}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, styles.blankTileModal]}>
+                        <NeonText size={20} weight="bold" glow style={{ marginBottom: 5 }}>
+                            Choose a Letter
+                        </NeonText>
+                        <NeonText size={12} color="#888" style={{ marginBottom: 15 }}>
+                            Select what letter your blank tile will represent
+                        </NeonText>
+                        <View style={styles.letterGrid}>
+                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+                                <TouchableOpacity
+                                    key={letter}
+                                    style={styles.letterButton}
+                                    onPress={() => handleBlankLetterSelect(letter)}
+                                >
+                                    <NeonText size={18} weight="bold" color={COLORS.limeGlow}>
+                                        {letter}
+                                    </NeonText>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        <TouchableOpacity
+                            style={styles.modalCancel}
+                            onPress={() => {
+                                setBlankTileModalVisible(false);
+                                setPendingBlankPlacement(null);
+                            }}
+                        >
+                            <NeonText>Cancel</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {/* End Game Modal */}
             <Modal
@@ -740,6 +821,35 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.hotPink,
         minWidth: 100,
         alignItems: 'center',
+    },
+    blankTileModal: {
+        maxWidth: 350,
+    },
+    letterGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 6,
+        marginBottom: 15,
+    },
+    letterButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(198, 255, 74, 0.15)',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: COLORS.limeGlow,
+    },
+    blankTileIndicator: {
+        position: 'absolute',
+        top: 1,
+        left: 1,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: COLORS.neonCyan,
     },
 });
 

@@ -804,6 +804,14 @@ class GameManager {
     canPlayCard(game, card) {
         const topCard = game.topCard;
 
+        // Check for active attack
+        if (game.attackStack > 0) {
+            const attackCardNumber = topCard.number; // 2 or 5
+            // Must play a card extending the attack (same number)
+            if (card.number === attackCardNumber) return true;
+            return false;
+        }
+
         // Whot card can always be played
         if (card.shape === 'whot') return true;
 
@@ -895,8 +903,14 @@ class GameManager {
                 return 'general-market';
 
             case 'hold-on':
+                // Hold On: Current player plays again
+                // Return 'skip' so playWhotCard doesn't advance turn
+                return 'skip';
+
             case 'suspension':
-                // Skip next player - move twice (current player already moved in playWhotCard)
+                // Suspension: Skip next player
+                // Move twice (skip one person)
+                this.moveToNextPlayer(game);
                 this.moveToNextPlayer(game);
                 return 'skip';
 

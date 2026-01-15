@@ -7,6 +7,7 @@ import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import VoiceToggle from '../components/VoiceToggle';
 import { COLORS } from '../constants/theme';
+import GameIcon from '../components/GameIcon';
 
 const LobbyScreen = ({ route, navigation }) => {
     const [room, setRoom] = useState(route.params.room);
@@ -383,8 +384,9 @@ const LobbyScreen = ({ route, navigation }) => {
                             </NeonText>
                             {selectedGame && (
                                 <View style={styles.gameNameContainer}>
+                                    <GameIcon gameId={selectedGame} size={24} style={{ marginRight: 8 }} />
                                     <NeonText size={16} color={COLORS.limeGlow}>
-                                        {selectedGame === 'trivia' ? '🧠 Quick Trivia' : selectedGame}
+                                        {selectedGame === 'trivia' ? 'Quick Trivia' : selectedGame}
                                     </NeonText>
                                 </View>
                             )}
@@ -511,6 +513,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         borderWidth: 1,
         borderColor: COLORS.limeGlow,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     sectionTitle: {
         marginBottom: 20,
