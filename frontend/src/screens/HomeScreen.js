@@ -25,24 +25,6 @@ const HomeScreen = ({ navigation }) => {
     const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // State-based responsive layout (updates on resize)
-    const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
-    const isDesktop = screenWidth > 600; // Lowered breakpoint for better mobile detection
-
-    // Listen for window resize (important for web)
-    useEffect(() => {
-        const updateWidth = () => {
-            setScreenWidth(Dimensions.get('window').width);
-        };
-
-        // Add resize listener
-        const subscription = Dimensions.addEventListener('change', updateWidth);
-
-        return () => {
-            subscription?.remove();
-        };
-    }, []);
-
     // Auto-fill name if user is authenticated
     useEffect(() => {
         if (isAuthenticated && user?.username && !name) {
@@ -230,50 +212,27 @@ const HomeScreen = ({ navigation }) => {
 
             {/* Buttons */}
             <View style={styles.actions}>
-                <View style={[
-                    styles.actionsWrapper,
-                    {
-                        flexDirection: isDesktop ? 'row' : 'column',
-                        maxWidth: isDesktop ? 1000 : 500,
-                    }
-                ]}>
-                    <View style={[
-                        styles.actionSection,
-                        {
-                            flex: isDesktop ? 1 : 0,
-                            width: isDesktop ? 'auto' : '100%',
-                            marginBottom: isDesktop ? 0 : 20,
-                            minWidth: isDesktop ? 0 : '100%',
-                        }
-                    ]}>
-                        <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
-                        <NeonButton title="HOST PARTY" onPress={handleCreate} icon="🎮" />
-                        <NeonButton title="JOIN PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
-                    </View>
+                <View style={styles.actionSection}>
+                    <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
+                    <NeonButton title="HOST PARTY" onPress={handleCreate} icon="🎮" />
+                    <NeonButton title="JOIN PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
+                </View>
 
-                    <View style={[
-                        styles.actionSection,
-                        {
-                            flex: isDesktop ? 1 : 0,
-                            width: isDesktop ? 'auto' : '100%',
-                            minWidth: isDesktop ? 0 : '100%',
-                        }
-                    ]}>
-                        <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
-                        <NeonButton
-                            title="LOCAL GAMES"
-                            variant="primary"
-                            onPress={handleLocalParty}
-                            icon="🎲"
-                            style={{ borderColor: COLORS.hotPink }}
-                        />
-                        <NeonButton
-                            title="LAN MODE (No Internet)"
-                            variant="secondary"
-                            onPress={() => navigation.navigate('LANMode')}
-                            icon="📡"
-                        />
-                    </View>
+                <View style={styles.actionSection}>
+                    <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
+                    <NeonButton
+                        title="LOCAL GAMES"
+                        variant="primary"
+                        onPress={handleLocalParty}
+                        icon="🎲"
+                        style={{ borderColor: COLORS.hotPink }}
+                    />
+                    <NeonButton
+                        title="LAN MODE (No Internet)"
+                        variant="secondary"
+                        onPress={() => navigation.navigate('LANMode')}
+                        icon="📡"
+                    />
                 </View>
             </View>
 
@@ -345,15 +304,12 @@ const styles = StyleSheet.create({
     },
     actions: {
         width: '100%',
-        paddingHorizontal: 20,
-    },
-    actionsWrapper: {
         gap: 30,
-        alignSelf: 'center',
-        width: '100%',
+        paddingHorizontal: 20,
     },
     actionSection: {
         gap: 12,
+        width: '100%',
     },
     sectionLabel: {
         marginBottom: 5,
