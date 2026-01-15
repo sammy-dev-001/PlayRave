@@ -25,6 +25,7 @@ const gameIcons = {
     'draw-battle': require('../../assets/images/game_art.png'),
     'lie-detector': require('../../assets/images/game_lie_detector.png'),
     'kings-cup': require('../../assets/images/game_kings_cup.png'),
+    'unpopular-opinions': require('../../assets/images/game_unpopular_opinions.png'),
 };
 
 // Aliases for reuse
@@ -37,7 +38,6 @@ const ALIASES = {
     'caption-this': 'draw-battle',
     'spin-bottle': 'truth-or-dare',
     'would-you-rather': 'myth-or-fact', // Reuse Scales
-    'unpopular-opinions': 'hot-seat', // Reuse Flame/Hot
     'auction-bluff': 'kings-cup', // Reuse Cards/Chips vibe
     'memory-chain': 'trivia',
     'memory-match': 'trivia',
