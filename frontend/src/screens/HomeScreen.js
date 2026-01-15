@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
     },
     logoArea: {
         alignItems: 'center',
+        marginTop: 60, // Clear absolute header
         marginBottom: 60,
     },
     inputArea: {

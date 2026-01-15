@@ -307,7 +307,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
             disabled={waitingForNavigation}
         >
             <View style={[styles.iconContainer, { backgroundColor: `${game.color}20` }]}>
-                <GameIcon gameId={game.id} fallbackIcon={game.icon} size={50} />
+                <GameIcon gameId={game.id} fallbackIcon={game.icon} size={80} />
             </View>
             <View style={styles.gameInfo}>
                 <NeonText size={18} weight="bold" color={game.color}>{game.name}</NeonText>
@@ -401,27 +401,24 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     gameCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 12,
-        borderRadius: 16,
-        borderWidth: 1,
         gap: 15,
     },
     iconContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 10,
     },
     gameInfo: {
         flex: 1,
         gap: 4,
+        alignItems: 'center',
     },
     description: {
         lineHeight: 16,
+        textAlign: 'center',
     },
     metaRow: {
         flexDirection: 'row',
