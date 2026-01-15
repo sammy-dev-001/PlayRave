@@ -125,6 +125,7 @@ const LazyJoinSpectatorScreen = withSuspense(JoinSpectatorScreen);
 const LazyConfessionRouletteScreen = withSuspense(ConfessionRouletteScreen);
 const LazyImposterScreen = withSuspense(ImposterScreen);
 const LazyUnpopularOpinionsScreen = withSuspense(UnpopularOpinionsScreen);
+const LazySettingsScreen = withSuspense(SettingsScreen);
 
 const AppNavigator = () => {
     return (
@@ -150,7 +151,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="LocalPartySetup" component={LocalPartySetupScreen} />
                             <Stack.Screen name="LocalGameSelection" component={LocalGameSelectionScreen} />
                             <Stack.Screen name="Profile" component={ProfileScreen} />
-                            <Stack.Screen name="Settings" component={withSuspense(SettingsScreen)} />
+                            <Stack.Screen name="Settings" component={LazySettingsScreen} />
 
                             {/* Lazy-loaded game screens */}
                             <Stack.Screen name="CustomQuestions" component={LazyCustomQuestionsScreen} />
