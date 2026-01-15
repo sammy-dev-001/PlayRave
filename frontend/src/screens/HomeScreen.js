@@ -238,7 +238,7 @@ const HomeScreen = ({ navigation }) => {
 
             {/* Profile Button */}
             <TouchableOpacity
-                style={styles.profileButton}
+                style={styles.profileStatsLink}
                 onPress={() => navigation.navigate('Profile')}
             >
                 <NeonText size={14} color={COLORS.neonCyan}>
@@ -286,6 +286,10 @@ const styles = StyleSheet.create({
     },
     inputArea: {
         marginBottom: 30,
+        width: '100%',
+        maxWidth: 500,
+        alignSelf: 'center',
+        paddingHorizontal: 20,
     },
     input: {
         backgroundColor: 'rgba(255,255,255,0.1)',
@@ -301,6 +305,8 @@ const styles = StyleSheet.create({
         width: '100%',
         gap: 30,
         paddingHorizontal: 20,
+        maxWidth: 500,
+        alignSelf: 'center',
     },
     actionSection: {
         gap: 12,
@@ -326,6 +332,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center', alignItems: 'center',
         position: 'relative',
     },
+    profileStatsLink: {
+        marginTop: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        borderRadius: 20,
+        alignSelf: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+    },
     levelBadge: {
         position: 'absolute', bottom: -2, right: -2,
         backgroundColor: COLORS.limeGlow,
@@ -348,6 +364,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
+        marginRight: 90, // Avoid overlap with MuteButton
     },
     settingsIcon: {
         width: 44,
