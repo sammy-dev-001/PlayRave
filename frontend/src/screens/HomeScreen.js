@@ -25,9 +25,23 @@ const HomeScreen = ({ navigation }) => {
     const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Get current screen width for responsive layout
-    const screenWidth = Dimensions.get('window').width;
-    const isDesktop = screenWidth > 768;
+    // State-based responsive layout (updates on resize)
+    const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+    const isDesktop = screenWidth > 600; // Lowered breakpoint for better mobile detection
+
+    // Listen for window resize (important for web)
+    useEffect(() => {
+        const updateWidth = () => {
+            setScreenWidth(Dimensions.get('window').width);
+        };
+
+        // Add resize listener
+        const subscription = Dimensions.addEventListener('change', updateWidth);
+
+        return () => {
+            subscription?.remove();
+        };
+    }, []);
 
     // Auto-fill name if user is authenticated
     useEffect(() => {
