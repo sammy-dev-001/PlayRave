@@ -261,9 +261,9 @@ const GameSelectionScreen = ({ route, navigation }) => {
         setSelectedGame(game);
 
         try {
-            console.log('Emitting game-selected:', game.id, 'for room:', room.roomId);
+            console.log('Emitting game-selected:', game.id, 'for room:', room.id);
             SocketService.emit('game-selected', {
-                roomId: room.roomId,
+                roomId: room.id,
                 gameId: game.id,
                 gameName: game.name
             });
