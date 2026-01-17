@@ -9,6 +9,7 @@ import {
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import GameOverlay from '../components/GameOverlay';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
 
@@ -384,11 +385,13 @@ const ImposterScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer>
-            <View style={styles.header}>
-                <NeonText size={16} color={COLORS.electricPurple}>IMPOSTER</NeonText>
-                <NeonText size={12} color="#666">Room: {room.id}</NeonText>
-            </View>
-            {renderPhase()}
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <View style={styles.header}>
+                    <NeonText size={16} color={COLORS.electricPurple}>IMPOSTER</NeonText>
+                    <NeonText size={12} color="#666">Room: {room.id}</NeonText>
+                </View>
+                {renderPhase()}
+            </GameOverlay>
         </NeonContainer>
     );
 };

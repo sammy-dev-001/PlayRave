@@ -11,6 +11,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import TournamentBracket from '../components/TournamentBracket';
+import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
 
@@ -189,188 +190,190 @@ const TicTacToeScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer>
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <NeonText size={22} weight="bold" glow color={COLORS.electricPurple}>
-                        🎮 TIC-TAC-TOE TOURNAMENT
-                    </NeonText>
-                    <NeonText size={14} color="#888">Round {roundNumber}</NeonText>
-                </View>
-
-                {/* Bracket View */}
-                {phase === 'bracket' && (
-                    <View style={styles.bracketContainer}>
-                        <NeonText size={18} weight="bold" style={styles.sectionTitle}>
-                            🏆 Tournament Bracket
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <View style={styles.container}>
+                    <View style={styles.header}>
+                        <NeonText size={22} weight="bold" glow color={COLORS.electricPurple}>
+                            🎮 TIC-TAC-TOE TOURNAMENT
                         </NeonText>
+                        <NeonText size={14} color="#888">Round {roundNumber}</NeonText>
+                    </View>
 
-                        {/* Visual Bracket Display */}
-                        <TournamentBracket
-                            rounds={[{ matches: matches }]}
-                            currentMatch={{ round: roundNumber, match: 0 }}
-                            allPlayers={allPlayers}
-                        />
+                    {/* Bracket View */}
+                    {phase === 'bracket' && (
+                        <View style={styles.bracketContainer}>
+                            <NeonText size={18} weight="bold" style={styles.sectionTitle}>
+                                🏆 Tournament Bracket
+                            </NeonText>
 
-                        <NeonText size={14} color="#888" style={{ marginTop: 15, marginBottom: 10 }}>
-                            Upcoming Matches
-                        </NeonText>
-                        {matches.map((match, index) => (
-                            <View key={index} style={styles.matchCard}>
-                                <NeonText size={16} color={COLORS.neonCyan}>
-                                    {match.player1?.isAI ? '🤖 ' : ''}{match.player1?.name || match.player1}
-                                </NeonText>
-                                <NeonText size={14} color="#666">vs</NeonText>
-                                <NeonText size={16} color={COLORS.hotPink}>
-                                    {match.player2?.isAI ? '🤖 ' : ''}{match.player2?.name || match.player2 || 'TBD'}
-                                </NeonText>
-                                {match.isAIMatch && (
-                                    <NeonText size={12} color={COLORS.electricPurple}>(vs AI)</NeonText>
-                                )}
-                            </View>
-                        ))}
-                        {isHost && (
-                            <NeonButton
-                                title="START NEXT MATCH"
-                                onPress={handleStartMatch}
-                                style={styles.actionButton}
+                            {/* Visual Bracket Display */}
+                            <TournamentBracket
+                                rounds={[{ matches: matches }]}
+                                currentMatch={{ round: roundNumber, match: 0 }}
+                                allPlayers={allPlayers}
                             />
-                        )}
-                    </View>
-                )}
 
-                {/* Playing Phase */}
-                {phase === 'playing' && (
-                    <View style={styles.gameContainer}>
-                        <View style={styles.playersRow}>
-                            <View style={[styles.playerTag, currentTurn === player1?.id && styles.activePlayer]}>
-                                <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
-                                    {player1?.isAI ? '🤖 ' : ''}{player1?.name} (X)
-                                </NeonText>
-                            </View>
-                            <NeonText size={16} color="#666">vs</NeonText>
-                            <View style={[styles.playerTag, currentTurn === player2?.id && styles.activePlayer]}>
-                                <NeonText size={14} weight="bold" color={COLORS.hotPink}>
-                                    {player2?.isAI ? '🤖 ' : ''}{player2?.name} (O)
-                                </NeonText>
-                            </View>
-                        </View>
-
-                        {/* AI Thinking Indicator */}
-                        {aiThinking && (
-                            <Animated.View style={[
-                                styles.aiThinkingContainer,
-                                { opacity: thinkingAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }
-                            ]}>
-                                <NeonText size={16} color={COLORS.electricPurple} glow>
-                                    🤖 AI is thinking...
-                                </NeonText>
-                            </Animated.View>
-                        )}
-
-                        {amInMatch && !aiThinking && (
-                            <NeonText size={16} color={isMyTurn ? COLORS.limeGlow : '#888'} style={styles.turnText}>
-                                {isMyTurn ? "Your turn!" : "Opponent's turn..."}
+                            <NeonText size={14} color="#888" style={{ marginTop: 15, marginBottom: 10 }}>
+                                Upcoming Matches
                             </NeonText>
-                        )}
-
-                        {!amInMatch && !aiThinking && (
-                            <NeonText size={14} color="#888" style={styles.turnText}>
-                                Watching match...
-                            </NeonText>
-                        )}
-
-                        <View style={styles.board}>
-                            {[0, 1, 2].map(row => (
-                                <View key={row} style={styles.boardRow}>
-                                    {[0, 1, 2].map(col => renderCell(row * 3 + col))}
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-                )}
-
-                {/* Match Result */}
-                {phase === 'matchResult' && (
-                    <View style={styles.resultContainer}>
-                        {matchResult?.winner ? (
-                            <>
-                                <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
-                                    🏆 {matchResult.winner.name} Wins!
-                                </NeonText>
-                                {matchResult.winner.id === myId && (
-                                    <NeonText size={18} color={COLORS.neonCyan} style={styles.subtitle}>
-                                        You advance to the next round!
+                            {matches.map((match, index) => (
+                                <View key={index} style={styles.matchCard}>
+                                    <NeonText size={16} color={COLORS.neonCyan}>
+                                        {match.player1?.isAI ? '🤖 ' : ''}{match.player1?.name || match.player1}
                                     </NeonText>
-                                )}
-                            </>
-                        ) : (
-                            <NeonText size={28} weight="bold" glow color={COLORS.hotPink}>
-                                It's a Draw!
-                            </NeonText>
-                        )}
-                        {isHost && (
-                            <NeonButton
-                                title="CONTINUE"
-                                onPress={handleNextMatch}
-                                style={styles.actionButton}
-                            />
-                        )}
-                    </View>
-                )}
-
-                {/* Round Complete */}
-                {phase === 'roundComplete' && (
-                    <View style={styles.resultContainer}>
-                        <NeonText size={24} weight="bold" glow>
-                            Round {roundNumber - 1} Complete!
-                        </NeonText>
-                        <NeonText size={16} color="#888" style={styles.subtitle}>
-                            Next Round Matchups:
-                        </NeonText>
-                        {matches.map((match, index) => (
-                            <View key={index} style={styles.matchCard}>
-                                <NeonText size={16}>{match.player1} vs {match.player2 || 'BYE'}</NeonText>
-                            </View>
-                        ))}
-                        {isHost && (
-                            <NeonButton
-                                title="START NEXT ROUND"
-                                onPress={handleStartMatch}
-                                style={styles.actionButton}
-                            />
-                        )}
-                    </View>
-                )}
-
-                {/* Tournament Finished */}
-                {phase === 'finished' && (
-                    <View style={styles.finishedContainer}>
-                        <NeonText size={32} weight="bold" glow color={COLORS.limeGlow}>
-                            🏆 CHAMPION 🏆
-                        </NeonText>
-                        <NeonText size={28} weight="bold" color={COLORS.neonCyan} style={styles.championName}>
-                            {champion?.name}
-                        </NeonText>
-
-                        <View style={styles.standings}>
-                            {allPlayers.map((player, index) => (
-                                <View key={player.id} style={[styles.standingRow, index === 0 && styles.championRow]}>
-                                    <NeonText size={16}>#{index + 1}</NeonText>
-                                    <NeonText size={16} style={styles.standingName}>{player.name}</NeonText>
-                                    <NeonText size={14} color="#888">{player.wins} wins</NeonText>
+                                    <NeonText size={14} color="#666">vs</NeonText>
+                                    <NeonText size={16} color={COLORS.hotPink}>
+                                        {match.player2?.isAI ? '🤖 ' : ''}{match.player2?.name || match.player2 || 'TBD'}
+                                    </NeonText>
+                                    {match.isAIMatch && (
+                                        <NeonText size={12} color={COLORS.electricPurple}>(vs AI)</NeonText>
+                                    )}
                                 </View>
                             ))}
+                            {isHost && (
+                                <NeonButton
+                                    title="START NEXT MATCH"
+                                    onPress={handleStartMatch}
+                                    style={styles.actionButton}
+                                />
+                            )}
                         </View>
+                    )}
 
-                        <NeonButton
-                            title="BACK TO LOBBY"
-                            variant="secondary"
-                            onPress={handleBackToLobby}
-                            style={styles.actionButton}
-                        />
-                    </View>
-                )}
-            </View>
+                    {/* Playing Phase */}
+                    {phase === 'playing' && (
+                        <View style={styles.gameContainer}>
+                            <View style={styles.playersRow}>
+                                <View style={[styles.playerTag, currentTurn === player1?.id && styles.activePlayer]}>
+                                    <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
+                                        {player1?.isAI ? '🤖 ' : ''}{player1?.name} (X)
+                                    </NeonText>
+                                </View>
+                                <NeonText size={16} color="#666">vs</NeonText>
+                                <View style={[styles.playerTag, currentTurn === player2?.id && styles.activePlayer]}>
+                                    <NeonText size={14} weight="bold" color={COLORS.hotPink}>
+                                        {player2?.isAI ? '🤖 ' : ''}{player2?.name} (O)
+                                    </NeonText>
+                                </View>
+                            </View>
+
+                            {/* AI Thinking Indicator */}
+                            {aiThinking && (
+                                <Animated.View style={[
+                                    styles.aiThinkingContainer,
+                                    { opacity: thinkingAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }
+                                ]}>
+                                    <NeonText size={16} color={COLORS.electricPurple} glow>
+                                        🤖 AI is thinking...
+                                    </NeonText>
+                                </Animated.View>
+                            )}
+
+                            {amInMatch && !aiThinking && (
+                                <NeonText size={16} color={isMyTurn ? COLORS.limeGlow : '#888'} style={styles.turnText}>
+                                    {isMyTurn ? "Your turn!" : "Opponent's turn..."}
+                                </NeonText>
+                            )}
+
+                            {!amInMatch && !aiThinking && (
+                                <NeonText size={14} color="#888" style={styles.turnText}>
+                                    Watching match...
+                                </NeonText>
+                            )}
+
+                            <View style={styles.board}>
+                                {[0, 1, 2].map(row => (
+                                    <View key={row} style={styles.boardRow}>
+                                        {[0, 1, 2].map(col => renderCell(row * 3 + col))}
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Match Result */}
+                    {phase === 'matchResult' && (
+                        <View style={styles.resultContainer}>
+                            {matchResult?.winner ? (
+                                <>
+                                    <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
+                                        🏆 {matchResult.winner.name} Wins!
+                                    </NeonText>
+                                    {matchResult.winner.id === myId && (
+                                        <NeonText size={18} color={COLORS.neonCyan} style={styles.subtitle}>
+                                            You advance to the next round!
+                                        </NeonText>
+                                    )}
+                                </>
+                            ) : (
+                                <NeonText size={28} weight="bold" glow color={COLORS.hotPink}>
+                                    It's a Draw!
+                                </NeonText>
+                            )}
+                            {isHost && (
+                                <NeonButton
+                                    title="CONTINUE"
+                                    onPress={handleNextMatch}
+                                    style={styles.actionButton}
+                                />
+                            )}
+                        </View>
+                    )}
+
+                    {/* Round Complete */}
+                    {phase === 'roundComplete' && (
+                        <View style={styles.resultContainer}>
+                            <NeonText size={24} weight="bold" glow>
+                                Round {roundNumber - 1} Complete!
+                            </NeonText>
+                            <NeonText size={16} color="#888" style={styles.subtitle}>
+                                Next Round Matchups:
+                            </NeonText>
+                            {matches.map((match, index) => (
+                                <View key={index} style={styles.matchCard}>
+                                    <NeonText size={16}>{match.player1} vs {match.player2 || 'BYE'}</NeonText>
+                                </View>
+                            ))}
+                            {isHost && (
+                                <NeonButton
+                                    title="START NEXT ROUND"
+                                    onPress={handleStartMatch}
+                                    style={styles.actionButton}
+                                />
+                            )}
+                        </View>
+                    )}
+
+                    {/* Tournament Finished */}
+                    {phase === 'finished' && (
+                        <View style={styles.finishedContainer}>
+                            <NeonText size={32} weight="bold" glow color={COLORS.limeGlow}>
+                                🏆 CHAMPION 🏆
+                            </NeonText>
+                            <NeonText size={28} weight="bold" color={COLORS.neonCyan} style={styles.championName}>
+                                {champion?.name}
+                            </NeonText>
+
+                            <View style={styles.standings}>
+                                {allPlayers.map((player, index) => (
+                                    <View key={player.id} style={[styles.standingRow, index === 0 && styles.championRow]}>
+                                        <NeonText size={16}>#{index + 1}</NeonText>
+                                        <NeonText size={16} style={styles.standingName}>{player.name}</NeonText>
+                                        <NeonText size={14} color="#888">{player.wins} wins</NeonText>
+                                    </View>
+                                ))}
+                            </View>
+
+                            <NeonButton
+                                title="BACK TO LOBBY"
+                                variant="secondary"
+                                onPress={handleBackToLobby}
+                                style={styles.actionButton}
+                            />
+                        </View>
+                    )}
+                </View>
+            </GameOverlay>
         </NeonContainer>
     );
 };

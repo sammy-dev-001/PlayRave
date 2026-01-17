@@ -6,6 +6,7 @@ import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
 import GameIcon from '../components/GameIcon';
+import SmartGameRecommendations from '../components/SmartRecommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isDesktop = SCREEN_WIDTH > 768;
@@ -339,6 +340,15 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 <NeonText size={14} color="#888" style={styles.subtitle}>
                     Room: {room.roomId} • Players: {room.players?.length || 0}
                 </NeonText>
+
+                {/* Smart Recommendations */}
+                <SmartGameRecommendations
+                    playerCount={room.players?.length || 2}
+                    onSelectGame={(gameId) => {
+                        const game = AVAILABLE_GAMES.find(g => g.id === gameId);
+                        if (game) handleGameSelect(game);
+                    }}
+                />
 
                 {Object.entries(GAME_CATEGORIES).map(([key, category]) => {
                     const categoryGames = gamesByCategory[key];

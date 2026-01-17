@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
@@ -95,58 +96,60 @@ const QuestionScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer showMuteButton showBackButton>
-            <View style={styles.header}>
-                <NeonText size={14} color={COLORS.hotPink}>
-                    QUESTION {questionIndex + 1} / {question.totalQuestions}
-                </NeonText>
-                <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
-                    {timeLeft}s
-                </NeonText>
-            </View>
+            <GameOverlay roomId={room.id} playerName={route.params.playerName || 'Player'}>
+                <View style={styles.header}>
+                    <NeonText size={14} color={COLORS.hotPink}>
+                        QUESTION {questionIndex + 1} / {question.totalQuestions}
+                    </NeonText>
+                    <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
+                        {timeLeft}s
+                    </NeonText>
+                </View>
 
-            <View style={styles.questionContainer}>
-                <NeonText size={24} weight="bold" style={styles.question}>
-                    {question.question}
-                </NeonText>
-                {question.category && (
-                    <NeonText size={14} color={COLORS.neonCyan} style={styles.category}>
-                        {question.category}
+                <View style={styles.questionContainer}>
+                    <NeonText size={24} weight="bold" style={styles.question}>
+                        {question.question}
+                    </NeonText>
+                    {question.category && (
+                        <NeonText size={14} color={COLORS.neonCyan} style={styles.category}>
+                            {question.category}
+                        </NeonText>
+                    )}
+                </View>
+
+                <View style={styles.optionsContainer}>
+                    {question.options.map((option, index) => (
+                        <NeonButton
+                            key={index}
+                            title={option}
+                            variant={selectedAnswer === index ? 'primary' : 'secondary'}
+                            onPress={() => handleSelectAnswer(index)}
+                            style={styles.optionButton}
+                            disabled={hasSubmitted}
+                        />
+                    ))}
+                </View>
+
+                {selectedAnswer !== null && !hasSubmitted && canAnswer && (
+                    <NeonButton
+                        title="SUBMIT ANSWER"
+                        onPress={() => handleSubmitAnswer()}
+                        style={styles.submitButton}
+                    />
+                )}
+
+                {hasSubmitted && (
+                    <NeonText style={styles.submittedText}>
+                        Answer submitted! Waiting for others...
                     </NeonText>
                 )}
-            </View>
 
-            <View style={styles.optionsContainer}>
-                {question.options.map((option, index) => (
-                    <NeonButton
-                        key={index}
-                        title={option}
-                        variant={selectedAnswer === index ? 'primary' : 'secondary'}
-                        onPress={() => handleSelectAnswer(index)}
-                        style={styles.optionButton}
-                        disabled={hasSubmitted}
-                    />
-                ))}
-            </View>
-
-            {selectedAnswer !== null && !hasSubmitted && canAnswer && (
-                <NeonButton
-                    title="SUBMIT ANSWER"
-                    onPress={() => handleSubmitAnswer()}
-                    style={styles.submitButton}
-                />
-            )}
-
-            {hasSubmitted && (
-                <NeonText style={styles.submittedText}>
-                    Answer submitted! Waiting for others...
-                </NeonText>
-            )}
-
-            {!canAnswer && !hasSubmitted && (
-                <NeonText style={styles.spectatorText}>
-                    (Spectating - answers disabled)
-                </NeonText>
-            )}
+                {!canAnswer && !hasSubmitted && (
+                    <NeonText style={styles.spectatorText}>
+                        (Spectating - answers disabled)
+                    </NeonText>
+                )}
+            </GameOverlay>
         </NeonContainer>
     );
 };

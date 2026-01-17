@@ -3,6 +3,7 @@ import { View, StyleSheet, TextInput, TouchableOpacity, Animated } from 'react-n
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import GameOverlay from '../components/GameOverlay';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
 
@@ -248,14 +249,16 @@ const LieDetectorScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer scrollable>
-            <View style={styles.container}>
-                <NeonText size={28} weight="bold" glow style={styles.title}>🔍 LIE DETECTOR</NeonText>
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <View style={styles.container}>
+                    <NeonText size={28} weight="bold" glow style={styles.title}>🔍 LIE DETECTOR</NeonText>
 
-                {finished ? renderFinished() :
-                    phase === 'answering' ? renderAnsweringPhase() :
-                        phase === 'voting' ? renderVotingPhase() :
-                            phase === 'reveal' ? renderRevealPhase() : null}
-            </View>
+                    {finished ? renderFinished() :
+                        phase === 'answering' ? renderAnsweringPhase() :
+                            phase === 'voting' ? renderVotingPhase() :
+                                phase === 'reveal' ? renderRevealPhase() : null}
+                </View>
+            </GameOverlay>
         </NeonContainer>
     );
 };
