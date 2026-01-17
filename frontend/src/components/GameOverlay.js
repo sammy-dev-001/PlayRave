@@ -4,7 +4,7 @@ import { ReactionOverlay } from './ReactionSystem';
 import { StreakBadge, StreakMilestonePopup, useWinStreak } from './WinStreakSystem';
 import { Soundboard, SoundNotification, useSoundboard } from './Soundboard';
 import { AchievementPopup, useAchievements } from './AchievementSystem';
-import { DrinkNotification, DrinkCounter, useDrinkingMode } from './DrinkingMode';
+import { AchievementPopup, useAchievements } from './AchievementSystem';
 
 /**
  * GameOverlay - Unified wrapper component that adds all party features to any game screen
@@ -18,7 +18,6 @@ const GameOverlay = ({
     children,
     roomId,
     playerName,
-    drinkingModeEnabled = false,
     showSoundboard = true,
     showReactions = true,
 }) => {
@@ -26,12 +25,6 @@ const GameOverlay = ({
     const { streaks, milestonePopup, clearMilestone, reportWin } = useWinStreak(roomId);
     const { notification: soundNotification, clearNotification: clearSound } = useSoundboard();
     const { popup: achievementPopup, clearPopup: clearAchievement, unlockAchievement } = useAchievements(roomId);
-    const {
-        notification: drinkNotification,
-        clearNotification: clearDrink,
-        drinkCount,
-        triggerDrink
-    } = useDrinkingMode(roomId, playerName);
 
     return (
         <View style={styles.container}>
@@ -73,21 +66,7 @@ const GameOverlay = ({
                 onComplete={clearAchievement}
             />
 
-            {/* Drinking mode notifications */}
-            {drinkingModeEnabled && (
-                <>
-                    <DrinkNotification
-                        playerName={drinkNotification?.playerName}
-                        reason={drinkNotification?.reason}
-                        drinks={drinkNotification?.drinks}
-                        visible={!!drinkNotification}
-                        onComplete={clearDrink}
-                    />
-                    <View style={styles.drinkCounterPosition}>
-                        <DrinkCounter count={drinkCount} />
-                    </View>
-                </>
-            )}
+
         </View>
     );
 };
@@ -109,7 +88,6 @@ export const withGameOverlay = (WrappedComponent) => {
             <GameOverlay
                 roomId={room?.id}
                 playerName={playerName}
-                drinkingModeEnabled={props.drinkingMode}
             >
                 <WrappedComponent {...props} />
             </GameOverlay>

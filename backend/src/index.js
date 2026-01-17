@@ -2120,16 +2120,6 @@ io.on("connection", (socket) => {
         });
     });
 
-    // ==================== DRINKING GAME MODE ====================
-    socket.on("trigger-drink", ({ roomId, playerId, playerName, reason, drinks }) => {
-        io.to(roomId).emit("drink-triggered", {
-            playerId,
-            playerName,
-            reason, // e.g., "Lost the round", "Streak broken", "Last place"
-            drinks, // Number of drinks/sips
-            timestamp: Date.now()
-        });
-    });
 });
 
 const PORT = process.env.PORT || 4000;
