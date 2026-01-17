@@ -1949,6 +1949,187 @@ io.on("connection", (socket) => {
         const room = roomManager.getRoom(roomId);
         io.to(roomId).emit("lie-detector-game-ended", { room });
     });
+
+    // ==================== REAL-TIME REACTIONS ====================
+    const reactionCooldowns = new Map(); // socketId -> lastReactionTime
+
+    socket.on("send-reaction", ({ roomId, emoji, playerName }) => {
+        const now = Date.now();
+        const lastTime = reactionCooldowns.get(socket.id) || 0;
+
+        // Rate limit: 1 reaction per 1.5 seconds
+        if (now - lastTime < 1500) return;
+
+        reactionCooldowns.set(socket.id, now);
+        io.to(roomId).emit("reaction-received", {
+            emoji,
+            playerName,
+            senderId: socket.id,
+            timestamp: now
+        });
+    });
+
+    // ==================== WIN STREAK TRACKING ====================
+    socket.on("report-game-result", ({ roomId, winnerId, winnerName }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        // Find winner and update streak
+        const winner = room.players.find(p => p.id === winnerId);
+        if (winner) {
+            winner.winStreak = (winner.winStreak || 0) + 1;
+            winner.totalWins = (winner.totalWins || 0) + 1;
+
+            // Reset others' streaks
+            room.players.forEach(p => {
+                if (p.id !== winnerId) p.winStreak = 0;
+            });
+
+            io.to(roomId).emit("streak-updated", {
+                winnerId,
+                winnerName,
+                streak: winner.winStreak,
+                isStreakMilestone: [3, 5, 10, 15, 20].includes(winner.winStreak)
+            });
+        }
+    });
+
+    // ==================== SOUNDBOARD ====================
+    socket.on("play-sound", ({ roomId, soundId, playerName }) => {
+        io.to(roomId).emit("sound-played", { soundId, playerName, senderId: socket.id });
+    });
+
+    // ==================== ACHIEVEMENTS ====================
+    socket.on("unlock-achievement", ({ roomId, playerId, achievementId, achievementName }) => {
+        io.to(roomId).emit("achievement-unlocked", {
+            playerId,
+            achievementId,
+            achievementName,
+            timestamp: Date.now()
+        });
+    });
+
+    // ==================== MULTI-GAME TOURNAMENT ====================
+    socket.on("create-tournament", ({ roomId, gamePlaylist, tournamentName }) => {
+        console.log("create-tournament:", roomId, "games:", gamePlaylist);
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        room.tournament = {
+            name: tournamentName || "Party Tournament",
+            games: gamePlaylist, // Array of game IDs
+            currentGameIndex: 0,
+            scores: {}, // playerId -> cumulative score
+            gameResults: [], // Array of results per game
+            status: 'setup', // setup, playing, between_games, finished
+            startedAt: Date.now()
+        };
+
+        // Initialize scores
+        room.players.forEach(p => {
+            room.tournament.scores[p.id] = 0;
+        });
+
+        io.to(roomId).emit("tournament-created", {
+            tournament: room.tournament,
+            room
+        });
+    });
+
+    socket.on("start-tournament", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room || !room.tournament) return;
+
+        room.tournament.status = 'playing';
+        const currentGame = room.tournament.games[0];
+
+        io.to(roomId).emit("tournament-started", {
+            tournament: room.tournament,
+            currentGame,
+            gameNumber: 1,
+            totalGames: room.tournament.games.length
+        });
+    });
+
+    socket.on("tournament-game-complete", ({ roomId, gameResults }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room || !room.tournament) return;
+
+        // Add game results to tournament
+        room.tournament.gameResults.push({
+            gameIndex: room.tournament.currentGameIndex,
+            gameId: room.tournament.games[room.tournament.currentGameIndex],
+            results: gameResults
+        });
+
+        // Update cumulative scores
+        Object.entries(gameResults).forEach(([playerId, score]) => {
+            room.tournament.scores[playerId] = (room.tournament.scores[playerId] || 0) + score;
+        });
+
+        room.tournament.currentGameIndex++;
+
+        // Check if tournament is complete
+        if (room.tournament.currentGameIndex >= room.tournament.games.length) {
+            room.tournament.status = 'finished';
+
+            // Determine champion
+            const sortedScores = Object.entries(room.tournament.scores)
+                .sort((a, b) => b[1] - a[1]);
+
+            const champion = room.players.find(p => p.id === sortedScores[0][0]);
+
+            io.to(roomId).emit("tournament-finished", {
+                tournament: room.tournament,
+                champion,
+                finalStandings: sortedScores.map(([id, score], idx) => ({
+                    rank: idx + 1,
+                    player: room.players.find(p => p.id === id),
+                    score
+                }))
+            });
+        } else {
+            room.tournament.status = 'between_games';
+            io.to(roomId).emit("tournament-next-game", {
+                tournament: room.tournament,
+                nextGame: room.tournament.games[room.tournament.currentGameIndex],
+                gameNumber: room.tournament.currentGameIndex + 1,
+                totalGames: room.tournament.games.length,
+                currentStandings: Object.entries(room.tournament.scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([id, score], idx) => ({
+                        rank: idx + 1,
+                        player: room.players.find(p => p.id === id),
+                        score
+                    }))
+            });
+        }
+    });
+
+    socket.on("tournament-continue", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room || !room.tournament) return;
+
+        room.tournament.status = 'playing';
+        const currentGame = room.tournament.games[room.tournament.currentGameIndex];
+
+        io.to(roomId).emit("tournament-game-starting", {
+            currentGame,
+            gameNumber: room.tournament.currentGameIndex + 1,
+            totalGames: room.tournament.games.length
+        });
+    });
+
+    // ==================== DRINKING GAME MODE ====================
+    socket.on("trigger-drink", ({ roomId, playerId, playerName, reason, drinks }) => {
+        io.to(roomId).emit("drink-triggered", {
+            playerId,
+            playerName,
+            reason, // e.g., "Lost the round", "Streak broken", "Last place"
+            drinks, // Number of drinks/sips
+            timestamp: Date.now()
+        });
+    });
 });
 
 const PORT = process.env.PORT || 4000;

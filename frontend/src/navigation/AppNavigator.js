@@ -70,6 +70,11 @@ const ImposterScreen = lazy(() => import('../screens/ImposterScreen'));
 const UnpopularOpinionsScreen = lazy(() => import('../screens/UnpopularOpinionsScreen'));
 const SettingsScreen = lazy(() => import('../screens/SettingsScreen'));
 
+// Tournament screens
+const TournamentSetupScreen = lazy(() => import('../screens/TournamentSetupScreen'));
+const TournamentLobbyScreen = lazy(() => import('../screens/TournamentLobbyScreen'));
+const TournamentResultsScreen = lazy(() => import('../screens/TournamentResultsScreen'));
+
 const Stack = createNativeStackNavigator();
 
 // Wrapper component for lazy-loaded screens
@@ -126,6 +131,9 @@ const LazyConfessionRouletteScreen = withSuspense(ConfessionRouletteScreen);
 const LazyImposterScreen = withSuspense(ImposterScreen);
 const LazyUnpopularOpinionsScreen = withSuspense(UnpopularOpinionsScreen);
 const LazySettingsScreen = withSuspense(SettingsScreen);
+const LazyTournamentSetupScreen = withSuspense(TournamentSetupScreen);
+const LazyTournamentLobbyScreen = withSuspense(TournamentLobbyScreen);
+const LazyTournamentResultsScreen = withSuspense(TournamentResultsScreen);
 
 const AppNavigator = () => {
     return (
@@ -152,6 +160,11 @@ const AppNavigator = () => {
                             <Stack.Screen name="LocalGameSelection" component={LocalGameSelectionScreen} />
                             <Stack.Screen name="Profile" component={ProfileScreen} />
                             <Stack.Screen name="Settings" component={LazySettingsScreen} />
+
+                            {/* Tournament screens */}
+                            <Stack.Screen name="TournamentSetup" component={LazyTournamentSetupScreen} />
+                            <Stack.Screen name="TournamentLobby" component={LazyTournamentLobbyScreen} />
+                            <Stack.Screen name="TournamentResults" component={LazyTournamentResultsScreen} />
 
                             {/* Lazy-loaded game screens */}
                             <Stack.Screen name="CustomQuestions" component={LazyCustomQuestionsScreen} />

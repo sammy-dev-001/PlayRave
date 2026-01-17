@@ -437,6 +437,16 @@ const LobbyScreen = ({ route, navigation }) => {
                             <>
                                 <NeonButton title="START GAME" onPress={handleStartGame} />
                                 <NeonButton
+                                    title="🏆 TOURNAMENT MODE"
+                                    onPress={() => navigation.navigate('TournamentSetup', {
+                                        room,
+                                        playerName,
+                                        isHost: true
+                                    })}
+                                    variant="secondary"
+                                    style={styles.tournamentButton}
+                                />
+                                <NeonButton
                                     title="LEAVE LOBBY"
                                     onPress={handleLeaveLobby}
                                     variant="secondary"
@@ -630,6 +640,10 @@ const styles = StyleSheet.create({
     },
     voiceToggle: {
         marginLeft: 5,
+    },
+    tournamentButton: {
+        marginTop: 12,
+        borderColor: COLORS.electricPurple,
     },
 });
 
