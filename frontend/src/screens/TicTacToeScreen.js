@@ -10,6 +10,7 @@ import {
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import TournamentBracket from '../components/TournamentBracket';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
 
@@ -26,11 +27,16 @@ const TicTacToeScreen = ({ route, navigation }) => {
     const [matchResult, setMatchResult] = useState(null);
     const [champion, setChampion] = useState(null);
     const [allPlayers, setAllPlayers] = useState(initialGameState?.players || []);
+    const [isAIMatch, setIsAIMatch] = useState(false);
+    const [aiThinking, setAiThinking] = useState(false);
 
     const myId = SocketService.socket?.id;
     const isMyTurn = currentTurn === myId;
     const amInMatch = player1?.id === myId || player2?.id === myId;
     const mySymbol = player1?.id === myId ? 'X' : 'O';
+
+    // Animation for AI thinking
+    const thinkingAnim = useRef(new Animated.Value(0)).current;
 
     const cellAnims = useRef(Array(9).fill(null).map(() => new Animated.Value(0))).current;
 
@@ -41,12 +47,15 @@ const TicTacToeScreen = ({ route, navigation }) => {
             setPlayer2(data.player2);
             setBoard(data.board);
             setCurrentTurn(data.currentTurn);
+            setIsAIMatch(data.isAIMatch || false);
+            setAiThinking(false);
             setPhase('playing');
             // Reset animations
             cellAnims.forEach(anim => anim.setValue(0));
         };
 
         const onMoveMade = (data) => {
+            setAiThinking(false);
             setBoard(data.board);
             if (!data.gameOver) {
                 setCurrentTurn(data.currentTurn);
@@ -63,7 +72,19 @@ const TicTacToeScreen = ({ route, navigation }) => {
             }
         };
 
+        const onAIThinking = () => {
+            setAiThinking(true);
+            // Pulse animation for thinking
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(thinkingAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+                    Animated.timing(thinkingAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+                ])
+            ).start();
+        };
+
         const onMatchEnded = (data) => {
+            setAiThinking(false);
             setMatchResult(data);
             setPhase('matchResult');
         };
@@ -71,6 +92,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
         const onNextMatchReady = () => {
             setPhase('bracket');
             setMatchResult(null);
+            setIsAIMatch(false);
             setBoard(Array(9).fill(null));
         };
 
@@ -92,6 +114,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
 
         SocketService.on('ttt-match-started', onMatchStarted);
         SocketService.on('ttt-move-made', onMoveMade);
+        SocketService.on('ttt-ai-thinking', onAIThinking);
         SocketService.on('ttt-match-ended', onMatchEnded);
         SocketService.on('ttt-next-match-ready', onNextMatchReady);
         SocketService.on('ttt-round-complete', onRoundComplete);
@@ -101,13 +124,14 @@ const TicTacToeScreen = ({ route, navigation }) => {
         return () => {
             SocketService.off('ttt-match-started', onMatchStarted);
             SocketService.off('ttt-move-made', onMoveMade);
+            SocketService.off('ttt-ai-thinking', onAIThinking);
             SocketService.off('ttt-match-ended', onMatchEnded);
             SocketService.off('ttt-next-match-ready', onNextMatchReady);
             SocketService.off('ttt-round-complete', onRoundComplete);
             SocketService.off('ttt-tournament-finished', onTournamentFinished);
             SocketService.off('ttt-game-ended', onGameEnded);
         };
-    }, [navigation, playerName, isHost, cellAnims]);
+    }, [navigation, playerName, isHost, cellAnims, thinkingAnim]);
 
     const handleCellPress = (index) => {
         if (!isMyTurn || board[index] !== null || !amInMatch) return;
@@ -177,17 +201,30 @@ const TicTacToeScreen = ({ route, navigation }) => {
                 {phase === 'bracket' && (
                     <View style={styles.bracketContainer}>
                         <NeonText size={18} weight="bold" style={styles.sectionTitle}>
+                            🏆 Tournament Bracket
+                        </NeonText>
+
+                        {/* Visual Bracket Display */}
+                        <TournamentBracket
+                            rounds={[{ matches: matches }]}
+                            currentMatch={{ round: roundNumber, match: 0 }}
+                            allPlayers={allPlayers}
+                        />
+
+                        <NeonText size={14} color="#888" style={{ marginTop: 15, marginBottom: 10 }}>
                             Upcoming Matches
                         </NeonText>
                         {matches.map((match, index) => (
                             <View key={index} style={styles.matchCard}>
-                                <NeonText size={16} color={COLORS.neonCyan}>{match.player1}</NeonText>
+                                <NeonText size={16} color={COLORS.neonCyan}>
+                                    {match.player1?.isAI ? '🤖 ' : ''}{match.player1?.name || match.player1}
+                                </NeonText>
                                 <NeonText size={14} color="#666">vs</NeonText>
                                 <NeonText size={16} color={COLORS.hotPink}>
-                                    {match.player2 || 'BYE'}
+                                    {match.player2?.isAI ? '🤖 ' : ''}{match.player2?.name || match.player2 || 'TBD'}
                                 </NeonText>
-                                {match.isBye && (
-                                    <NeonText size={12} color={COLORS.limeGlow}>(Auto-advance)</NeonText>
+                                {match.isAIMatch && (
+                                    <NeonText size={12} color={COLORS.electricPurple}>(vs AI)</NeonText>
                                 )}
                             </View>
                         ))}
@@ -207,24 +244,36 @@ const TicTacToeScreen = ({ route, navigation }) => {
                         <View style={styles.playersRow}>
                             <View style={[styles.playerTag, currentTurn === player1?.id && styles.activePlayer]}>
                                 <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
-                                    {player1?.name} (X)
+                                    {player1?.isAI ? '🤖 ' : ''}{player1?.name} (X)
                                 </NeonText>
                             </View>
                             <NeonText size={16} color="#666">vs</NeonText>
                             <View style={[styles.playerTag, currentTurn === player2?.id && styles.activePlayer]}>
                                 <NeonText size={14} weight="bold" color={COLORS.hotPink}>
-                                    {player2?.name} (O)
+                                    {player2?.isAI ? '🤖 ' : ''}{player2?.name} (O)
                                 </NeonText>
                             </View>
                         </View>
 
-                        {amInMatch && (
+                        {/* AI Thinking Indicator */}
+                        {aiThinking && (
+                            <Animated.View style={[
+                                styles.aiThinkingContainer,
+                                { opacity: thinkingAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }
+                            ]}>
+                                <NeonText size={16} color={COLORS.electricPurple} glow>
+                                    🤖 AI is thinking...
+                                </NeonText>
+                            </Animated.View>
+                        )}
+
+                        {amInMatch && !aiThinking && (
                             <NeonText size={16} color={isMyTurn ? COLORS.limeGlow : '#888'} style={styles.turnText}>
                                 {isMyTurn ? "Your turn!" : "Opponent's turn..."}
                             </NeonText>
                         )}
 
-                        {!amInMatch && (
+                        {!amInMatch && !aiThinking && (
                             <NeonText size={14} color="#888" style={styles.turnText}>
                                 Watching match...
                             </NeonText>
@@ -359,6 +408,15 @@ const styles = StyleSheet.create({
     },
     championRow: { backgroundColor: 'rgba(198, 255, 74, 0.15)', borderWidth: 2, borderColor: COLORS.limeGlow },
     standingName: { flex: 1, marginLeft: 15 },
+    aiThinkingContainer: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        backgroundColor: 'rgba(167, 139, 250, 0.15)',
+        borderRadius: 20,
+        borderWidth: 2,
+        borderColor: COLORS.electricPurple,
+        marginBottom: 20,
+    },
 });
 
 export default TicTacToeScreen;

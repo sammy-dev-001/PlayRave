@@ -2612,6 +2612,88 @@ class GameManager {
         return gameState;
     }
 
+    // AI Opponent for odd players
+    createAIPlayer() {
+        return {
+            id: 'AI_BOT_' + Date.now(),
+            name: '🤖 AI Bot',
+            isAI: true,
+            eliminated: false,
+            wins: 0
+        };
+    }
+
+    // Minimax algorithm for optimal AI moves
+    minimax(board, depth, isMaximizing, aiSymbol, humanSymbol) {
+        const winner = this.checkBoardWinner(board);
+        if (winner === aiSymbol) return 10 - depth;
+        if (winner === humanSymbol) return depth - 10;
+        if (board.every(cell => cell !== null)) return 0;
+
+        if (isMaximizing) {
+            let best = -Infinity;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) {
+                    board[i] = aiSymbol;
+                    best = Math.max(best, this.minimax(board, depth + 1, false, aiSymbol, humanSymbol));
+                    board[i] = null;
+                }
+            }
+            return best;
+        } else {
+            let best = Infinity;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) {
+                    board[i] = humanSymbol;
+                    best = Math.min(best, this.minimax(board, depth + 1, true, aiSymbol, humanSymbol));
+                    board[i] = null;
+                }
+            }
+            return best;
+        }
+    }
+
+    checkBoardWinner(board) {
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+        for (const [a, b, c] of winPatterns) {
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                return board[a];
+            }
+        }
+        return null;
+    }
+
+    // Get best AI move (medium difficulty: 60% optimal, 40% random)
+    getAIMove(board, aiSymbol = 'O', humanSymbol = 'X', difficulty = 'medium') {
+        const emptySpots = board.map((v, i) => v === null ? i : null).filter(i => i !== null);
+        if (emptySpots.length === 0) return null;
+
+        // Medium difficulty: 60% optimal, 40% suboptimal
+        const useOptimal = difficulty === 'hard' || (difficulty === 'medium' && Math.random() < 0.6);
+
+        if (useOptimal) {
+            let bestMove = null;
+            let bestScore = -Infinity;
+            for (const i of emptySpots) {
+                board[i] = aiSymbol;
+                const score = this.minimax(board, 0, false, aiSymbol, humanSymbol);
+                board[i] = null;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = i;
+                }
+            }
+            return bestMove;
+        } else {
+            // Random move for easy/suboptimal plays
+            return emptySpots[Math.floor(Math.random() * emptySpots.length)];
+        }
+    }
+
     createTournamentMatches(players) {
         const matches = [];
         for (let i = 0; i < players.length; i += 2) {
@@ -2620,20 +2702,22 @@ class GameManager {
                     player1: players[i],
                     player2: players[i + 1],
                     board: Array(9).fill(null),
-                    currentTurn: players[i].id, // Player 1 starts
+                    currentTurn: players[i].id,
                     winner: null,
-                    completed: false
+                    completed: false,
+                    isAIMatch: players[i].isAI || players[i + 1].isAI
                 });
             } else {
-                // Bye - auto-advance
-                players[i].wins++;
+                // Odd player - pair with AI instead of BYE
+                const aiPlayer = this.createAIPlayer();
                 matches.push({
                     player1: players[i],
-                    player2: null,
-                    board: null,
-                    winner: players[i],
-                    completed: true,
-                    isBye: true
+                    player2: aiPlayer,
+                    board: Array(9).fill(null),
+                    currentTurn: players[i].id, // Human starts
+                    winner: null,
+                    completed: false,
+                    isAIMatch: true
                 });
             }
         }
@@ -2654,13 +2738,14 @@ class GameManager {
         match.currentTurn = match.player1.id;
 
         return {
-            player1: { id: match.player1.id, name: match.player1.name, symbol: 'X' },
-            player2: { id: match.player2.id, name: match.player2.name, symbol: 'O' },
+            player1: { id: match.player1.id, name: match.player1.name, symbol: 'X', isAI: match.player1.isAI || false },
+            player2: { id: match.player2.id, name: match.player2.name, symbol: 'O', isAI: match.player2.isAI || false },
             currentTurn: match.currentTurn,
             board: match.board,
             matchNumber: game.currentMatchIndex + 1,
             totalMatches: game.matches.filter(m => !m.isBye).length,
-            roundNumber: game.roundNumber
+            roundNumber: game.roundNumber,
+            isAIMatch: match.isAIMatch || false
         };
     }
 
@@ -2718,12 +2803,80 @@ class GameManager {
         // Switch turn
         match.currentTurn = playerId === match.player1.id ? match.player2.id : match.player1.id;
 
+        // Check if next turn is AI's
+        const nextPlayer = match.currentTurn === match.player1.id ? match.player1 : match.player2;
+        const isAITurn = nextPlayer.isAI || false;
+
         return {
             board: match.board,
             position,
             symbol,
             gameOver: false,
-            currentTurn: match.currentTurn
+            currentTurn: match.currentTurn,
+            isAITurn
+        };
+    }
+
+    // AI makes a move in Tic-Tac-Toe
+    makeAITicTacToeMove(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'tic-tac-toe') return { error: 'Game not found' };
+        if (game.phase !== 'playing') return { error: 'Match not in progress' };
+
+        const match = game.matches[game.currentMatchIndex];
+        if (!match || match.completed) return { error: 'No active match' };
+
+        // Determine which player is AI
+        const aiPlayer = match.player1.isAI ? match.player1 : (match.player2.isAI ? match.player2 : null);
+        if (!aiPlayer) return { error: 'No AI in this match' };
+        if (match.currentTurn !== aiPlayer.id) return { error: 'Not AI turn' };
+
+        // Get AI's move using medium difficulty
+        const aiSymbol = aiPlayer === match.player1 ? 'X' : 'O';
+        const humanSymbol = aiSymbol === 'X' ? 'O' : 'X';
+        const boardCopy = [...match.board];
+        const position = this.getAIMove(boardCopy, aiSymbol, humanSymbol, 'medium');
+
+        if (position === null) return { error: 'No valid move' };
+
+        // Make the move
+        match.board[position] = aiSymbol;
+
+        // Check for winner
+        const winner = this.checkBoardWinner(match.board);
+        const isDraw = !winner && match.board.every(cell => cell !== null);
+
+        if (winner || isDraw) {
+            match.completed = true;
+            const winningPlayer = winner === 'X' ? match.player1 : (winner === 'O' ? match.player2 : null);
+            match.winner = winningPlayer;
+            if (winningPlayer) {
+                winningPlayer.wins++;
+            }
+            game.phase = 'matchResult';
+
+            return {
+                board: match.board,
+                position,
+                symbol: aiSymbol,
+                gameOver: true,
+                winner: winningPlayer ? { id: winningPlayer.id, name: winningPlayer.name } : null,
+                isDraw,
+                isAIMove: true
+            };
+        }
+
+        // Switch turn back to human
+        match.currentTurn = aiPlayer === match.player1 ? match.player2.id : match.player1.id;
+
+        return {
+            board: match.board,
+            position,
+            symbol: aiSymbol,
+            gameOver: false,
+            currentTurn: match.currentTurn,
+            isAIMove: true,
+            isAITurn: false
         };
     }
 

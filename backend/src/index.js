@@ -1786,6 +1786,27 @@ io.on("connection", (socket) => {
                     board: result.board
                 });
             }, 1500);
+        } else if (result.isAITurn) {
+            // AI's turn - make AI move after realistic "thinking" delay (1-2 seconds)
+            const thinkingTime = 1000 + Math.random() * 1000;
+            io.to(roomId).emit("ttt-ai-thinking", { thinking: true });
+
+            setTimeout(() => {
+                const aiResult = gameManager.makeAITicTacToeMove(roomId);
+                if (!aiResult.error) {
+                    io.to(roomId).emit("ttt-move-made", aiResult);
+
+                    if (aiResult.gameOver) {
+                        setTimeout(() => {
+                            io.to(roomId).emit("ttt-match-ended", {
+                                winner: aiResult.winner,
+                                isDraw: aiResult.isDraw,
+                                board: aiResult.board
+                            });
+                        }, 1500);
+                    }
+                }
+            }, thinkingTime);
         }
     });
 
