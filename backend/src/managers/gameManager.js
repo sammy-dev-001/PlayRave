@@ -12,6 +12,75 @@ const { getRandomSentences } = require('../data/typeRaceSentences');
 class GameManager {
     constructor() {
         this.activeGames = new Map(); // roomId -> gameState
+        this.questionTimers = new Map(); // roomId -> timer reference
+    }
+
+    // Minimum player requirements per game type
+    static MIN_PLAYERS = {
+        'trivia': 2,
+        'myth-or-fact': 2,
+        'whos-most-likely': 3,
+        'imposter': 4,
+        'confession-roulette': 3,
+        'lie-detector': 3,
+        'never-have-i-ever': 2,
+        'rapid-fire': 2,
+        'truth-or-dare': 2,
+        'hot-seat': 3,
+        'tic-tac-toe': 2,
+        'unpopular-opinions': 3,
+    };
+
+    // Check if enough players for a game
+    hasEnoughPlayers(gameType, playerCount) {
+        const minRequired = GameManager.MIN_PLAYERS[gameType] || 2;
+        return playerCount >= minRequired;
+    }
+
+    // Get minimum players for a game
+    getMinPlayers(gameType) {
+        return GameManager.MIN_PLAYERS[gameType] || 2;
+    }
+
+    // Force submit null answers for timed-out players
+    forceTimeoutSubmits(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return null;
+
+        const questionIndex = game.currentQuestionIndex;
+        const playersWhoAnswered = Object.keys(game.playerAnswers || {});
+        const allPlayers = Object.keys(game.scores || {});
+
+        // Auto-submit null for players who haven't answered
+        allPlayers.forEach(playerId => {
+            if (!game.playerAnswers[playerId] || game.playerAnswers[playerId][questionIndex] === undefined) {
+                if (!game.playerAnswers[playerId]) {
+                    game.playerAnswers[playerId] = {};
+                }
+                game.playerAnswers[playerId][questionIndex] = -1; // -1 = timed out
+            }
+        });
+
+        return { timedOut: true, questionIndex };
+    }
+
+    // Clear any active timer for a room
+    clearQuestionTimer(roomId) {
+        const timer = this.questionTimers.get(roomId);
+        if (timer) {
+            clearTimeout(timer);
+            this.questionTimers.delete(roomId);
+        }
+    }
+
+    // Set a question timeout
+    setQuestionTimer(roomId, timeoutMs, callback) {
+        this.clearQuestionTimer(roomId);
+        const timer = setTimeout(() => {
+            this.questionTimers.delete(roomId);
+            callback();
+        }, timeoutMs);
+        this.questionTimers.set(roomId, timer);
     }
 
     startTriviaGame(roomId, room, hostParticipates = true, category = 'All') {
