@@ -257,16 +257,52 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("disconnected:", socket.id);
 
+        // Store socket info before grace period
+        const playerInfo = roomManager.getPlayerBySocketId(socket.id);
+        const roomId = playerInfo?.roomId;
+        const playerName = playerInfo?.name;
+
         // Add a grace period before removing player (helps with mobile reconnects)
         const DISCONNECT_GRACE_PERIOD = 10000; // 10 seconds
 
+        // Track pending disconnects for potential reconnection
+        if (roomId) {
+            if (!global.pendingDisconnects) global.pendingDisconnects = new Map();
+            global.pendingDisconnects.set(socket.id, { roomId, playerName, timestamp: Date.now() });
+        }
+
         setTimeout(() => {
-            // Check if this socket has reconnected (same player might have new socket)
-            // For now, just remove after the grace period
+            // Check if this socket has reconnected
+            const pending = global.pendingDisconnects?.get(socket.id);
+            if (!pending) {
+                console.log("Player already handled (reconnected?):", socket.id);
+                return;
+            }
+            global.pendingDisconnects.delete(socket.id);
+
             const result = roomManager.removePlayer(socket.id);
             if (result && !result.roomDeleted) {
                 console.log("Player removed after grace period:", socket.id);
+
+                // Notify remaining players
+                io.to(result.roomId).emit("player-left", {
+                    playerName: playerName || "A player",
+                    playerId: socket.id,
+                    remainingPlayers: result.room.players.length
+                });
+
                 io.to(result.roomId).emit("room-updated", result.room);
+
+                // Check if game needs to end due to insufficient players
+                const game = gameManager.getGameState(result.roomId);
+                if (game && result.room.players.length < 2) {
+                    console.log("Not enough players, ending game in room:", result.roomId);
+                    io.to(result.roomId).emit("game-ended-insufficient-players", {
+                        message: "Game ended - not enough players remaining",
+                        finalScores: game.scores || {}
+                    });
+                    gameManager.endGame(result.roomId);
+                }
             }
         }, DISCONNECT_GRACE_PERIOD);
     });

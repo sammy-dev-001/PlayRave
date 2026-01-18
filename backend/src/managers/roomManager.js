@@ -46,6 +46,17 @@ class RoomManager {
         return this.rooms.get(roomId);
     }
 
+    // Get player info by socket ID (for disconnect handling)
+    getPlayerBySocketId(socketId) {
+        for (const [roomId, room] of this.rooms.entries()) {
+            const player = room.players.find(p => p.id === socketId);
+            if (player) {
+                return { ...player, roomId };
+            }
+        }
+        return null;
+    }
+
     setGameType(roomId, gameType) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: "Room not found" };
