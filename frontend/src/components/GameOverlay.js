@@ -4,7 +4,6 @@ import { ReactionOverlay } from './ReactionSystem';
 import { StreakBadge, StreakMilestonePopup, useWinStreak } from './WinStreakSystem';
 import { Soundboard, SoundNotification, useSoundboard } from './Soundboard';
 import { AchievementPopup, useAchievements } from './AchievementSystem';
-import { AchievementPopup, useAchievements } from './AchievementSystem';
 
 /**
  * GameOverlay - Unified wrapper component that adds all party features to any game screen
