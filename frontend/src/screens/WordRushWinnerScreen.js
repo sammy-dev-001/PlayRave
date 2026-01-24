@@ -69,7 +69,7 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <RaveLights trigger={isWinner} intensity="high" duration={4000} />
             <View style={styles.container}>
                 <NeonText size={36} weight="bold" glow style={styles.title}>

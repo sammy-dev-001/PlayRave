@@ -45,7 +45,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
 
     if (showResults) {
         return (
-            <NeonContainer showBackButton>
+            <NeonContainer showBackButton scrollable>
                 <View style={styles.header}>
                     <NeonText size={28} weight="bold" glow>
                         RESULTS

@@ -112,7 +112,7 @@ const CustomQuestionsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow>CREATE CUSTOM QUESTIONS</NeonText>

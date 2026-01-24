@@ -42,7 +42,7 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow>
                     NEVER HAVE I EVER

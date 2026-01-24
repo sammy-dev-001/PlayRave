@@ -80,7 +80,7 @@ const LeaderboardScreen = () => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
                 <View style={styles.header}>
                     <NeonText size={28} weight="bold" glow>🏆 LEADERBOARD</NeonText>

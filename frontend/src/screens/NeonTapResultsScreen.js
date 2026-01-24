@@ -87,7 +87,7 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <RaveLights trigger={showRaveLights} intensity="high" />
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow style={styles.title}>

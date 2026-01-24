@@ -127,7 +127,7 @@ const CustomPackEditorScreen = ({ route, navigation }) => {
     const selectedType = PACK_TYPES.find(t => t.id === type);
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
                 <NeonText size={24} weight="bold" glow style={styles.title}>
                     {packId ? 'Edit Pack' : 'Create Pack'}

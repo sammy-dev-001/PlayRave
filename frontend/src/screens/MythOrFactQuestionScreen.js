@@ -85,7 +85,7 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={14} color={COLORS.hotPink}>
                     STATEMENT {statementIndex + 1} / {statement.totalStatements}

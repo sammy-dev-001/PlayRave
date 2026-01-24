@@ -57,7 +57,7 @@ const MythOrFactResultsScreen = ({ route }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <RaveLights trigger={showRaveLights} intensity="medium" />
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow style={styles.title}>

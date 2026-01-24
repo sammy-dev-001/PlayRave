@@ -81,7 +81,7 @@ const CommunityPacksScreen = ({ navigation }) => {
     );
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow>🌐 Community</NeonText>

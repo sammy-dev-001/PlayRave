@@ -92,7 +92,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={14} color={COLORS.hotPink}>
                     PROMPT {promptIndex + 1} / {prompt.totalPrompts}

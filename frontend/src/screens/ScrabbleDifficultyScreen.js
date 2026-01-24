@@ -34,14 +34,14 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
     ];
 
     const handleStartGame = () => {
-        navigation.navigate('ScrabbleAI', {
+        navigation.navigate('Scrabble', {
             players,
             difficulty: selectedDifficulty
         });
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={32} weight="bold" glow>
                     CHOOSE DIFFICULTY

@@ -98,7 +98,7 @@ const RapidFireScreen = ({ route, navigation }) => {
     });
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={24} weight="bold" glow>
                     ⚡ RAPID FIRE

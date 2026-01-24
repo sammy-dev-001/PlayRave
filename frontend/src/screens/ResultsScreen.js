@@ -91,7 +91,7 @@ const ResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <RaveLights trigger={showRaveLights} intensity="medium" />
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow={true} style={styles.title}>
