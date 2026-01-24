@@ -17,12 +17,17 @@ const WhotGameScreen = ({ route, navigation }) => {
     const currentPlayerId = SocketService.socket?.id;
     const isMyTurn = gameState?.currentPlayerId === currentPlayerId;
 
+    // Use ref to avoid stale closures in socket listeners
+    const winnerRef = React.useRef(winner);
+    React.useEffect(() => {
+        winnerRef.current = winner;
+    }, [winner]);
+
     useEffect(() => {
         console.log('WhotGameScreen mounted, setting up listeners');
 
         const onGameStarted = (data) => {
             console.log('game-started event received:', data);
-            // Handle both formats: direct gameState or nested in data
             const initialState = data.gameState || data;
             console.log('Setting game state:', initialState);
             setGameState(initialState);
@@ -34,9 +39,9 @@ const WhotGameScreen = ({ route, navigation }) => {
 
             // Check for winner from both the winner param AND the gameState
             const detectedWinner = gameWinner || newState?.winner;
-            console.log('Detected winner:', detectedWinner, 'current winner state:', winner);
+            console.log('Detected winner:', detectedWinner, 'current winner:', winnerRef.current);
 
-            if (detectedWinner && !winner) {
+            if (detectedWinner && !winnerRef.current) {
                 console.log('*** WINNER DETECTED ON FRONTEND ***:', detectedWinner);
                 setWinner(detectedWinner);
                 setTimeout(() => {
@@ -79,32 +84,6 @@ const WhotGameScreen = ({ route, navigation }) => {
             SocketService.off('whot-card-drawn', onCardDrawn);
         };
     }, [navigation, room, currentPlayerId, isHost]);
-
-    // Handle winner state changes
-    useEffect(() => {
-        if (gameState?.winner && !winner) {
-            console.log('Winner detected from game state:', gameState.winner);
-            setWinner(gameState.winner);
-
-            setTimeout(() => {
-                const winnerPlayer = room.players.find(p => p.id === gameState.winner);
-                const winnerName = winnerPlayer?.name || 'Unknown Player';
-
-                Alert.alert(
-                    'Game Over! 🏆',
-                    `${winnerName} wins the game!`,
-                    [{
-                        text: 'Back to Lobby',
-                        onPress: () => navigation.navigate('Lobby', {
-                            room,
-                            isHost,
-                            playerName: room.players.find(p => p.id === currentPlayerId)?.name
-                        })
-                    }]
-                );
-            }, 500);
-        }
-    }, [gameState, winner, room, navigation, isHost, currentPlayerId]);
 
     const handleCardPress = (card) => {
         if (!isMyTurn || winner) return;
@@ -154,7 +133,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     }
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             {/* Spectator Badge */}
             {isSpectator && (
                 <View style={styles.spectatorBadge}>

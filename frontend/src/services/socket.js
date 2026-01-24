@@ -11,11 +11,12 @@ const getServerUrl = () => {
     }
 
     // For web deployment (Vercel), use the production backend URL
-    if (typeof window !== 'undefined' && window.location &&
-        (window.location.hostname.includes('vercel.app') ||
-            window.location.hostname.includes('playrave'))) {
-        console.log('Using production backend URL for web deployment');
-        return 'https://playrave-59ud.onrender.com';
+    if (typeof window !== 'undefined' && window.location) {
+        const hostname = window.location.hostname;
+        if (hostname && (hostname.includes('vercel.app') || hostname.includes('playrave'))) {
+            console.log('Using production backend URL for web deployment');
+            return 'https://playrave-59ud.onrender.com';
+        }
     }
 
     // Check for production backend URL from environment variable
