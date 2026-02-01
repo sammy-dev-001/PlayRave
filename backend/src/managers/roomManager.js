@@ -116,6 +116,39 @@ class RoomManager {
         }
         return null;
     }
+
+    // Restore host status when original host reconnects
+    restoreHost(roomId, newSocketId, playerName) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: "Room not found" };
+
+        // Remove old player entry if exists (from same name)
+        const oldIndex = room.players.findIndex(p => p.name === playerName);
+        let oldPlayerData = null;
+        if (oldIndex !== -1) {
+            oldPlayerData = room.players.splice(oldIndex, 1)[0];
+        }
+
+        // Remove current host status from whoever has it
+        room.players.forEach(p => {
+            p.isHost = false;
+        });
+
+        // Add restored host player at the beginning
+        room.players.unshift({
+            id: newSocketId,
+            name: playerName,
+            score: oldPlayerData?.score || 0,
+            isHost: true,
+            avatar: oldPlayerData?.avatar,
+            avatarColor: oldPlayerData?.avatarColor,
+            isReady: true
+        });
+
+        room.hostId = newSocketId;
+
+        return { room };
+    }
 }
 
 module.exports = new RoomManager();

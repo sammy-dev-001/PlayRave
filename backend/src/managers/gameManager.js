@@ -3576,7 +3576,7 @@ class GameManager {
             return {
                 success: true,
                 score,
-                formedWords: formedWords.map(w => w.word),
+                formedWords,
                 gameEnded: true,
                 finalScores: this.getScrabbleFinalScores(game)
             };
@@ -3590,99 +3590,126 @@ class GameManager {
         };
     }
 
+    // Check if scrabble game is finished
+    isScrabbleGameFinished(game) {
+        // Game ends when all tiles are gone and one player has no tiles
+        if (game.tileBag.length === 0) {
+            const hasEmptyHand = game.players.some(p => p.hand.length === 0);
+            if (hasEmptyHand) return true;
+        }
+
+        // Game also ends if all players pass consecutively
+        if (game.passCount >= game.players.length * 2) {
+            return true;
+        }
+
+        return false; // Game is not finished yet
+    }
+
     extractScrabbleWords(tempBoard, newlyPlacedTiles) {
         const { BOARD_SIZE } = require('../data/scrabbleData');
-        const words = [];
-        const wordSet = new Set();
+        const words = []; // Array to store all unique words formed
+        const wordKeys = new Set(); // To prevent duplicates: "WORD-StartX,StartY-Orientation"
 
-        const extractWord = (x, y, isHorizontal) => {
+        // Helper to get tile at coordinates from tempBoard
+        const getTile = (x, y) => tempBoard[`${x},${y}`];
+
+        // Helper to extract a full word given a starting position and direction
+        const extractFullWord = (startX, startY, dx, dy) => {
+            let x = startX;
+            let y = startY;
+
+            // Backtrack to find the true start of the word
+            while (getTile(x - dx, y - dy)) {
+                x -= dx;
+                y -= dy;
+            }
+
+            // Move forward to build the word
             let word = '';
             let tiles = [];
+            let currentX = x;
+            let currentY = y;
 
-            if (isHorizontal) {
-                let startX = x;
-                while (startX > 0 && tempBoard[`${startX - 1},${y}`]) startX--;
-                let currentX = startX;
-                while (currentX < BOARD_SIZE && tempBoard[`${currentX},${y}`]) {
-                    const tile = tempBoard[`${currentX},${y}`];
-                    word += tile.letter;
-                    tiles.push({ x: currentX, y });
-                    currentX++;
-                }
-            } else {
-                let startY = y;
-                while (startY > 0 && tempBoard[`${x},${startY - 1}`]) startY--;
-                let currentY = startY;
-                while (currentY < BOARD_SIZE && tempBoard[`${x},${currentY}`]) {
-                    const tile = tempBoard[`${x},${currentY}`];
-                    word += tile.letter;
-                    tiles.push({ x, y: currentY });
-                    currentY++;
-                }
+            while (getTile(currentX, currentY)) {
+                const tile = getTile(currentX, currentY);
+                word += tile.letter;
+                tiles.push({ x: currentX, y: currentY, ...tile });
+                currentX += dx;
+                currentY += dy;
             }
 
-            return { word, tiles };
+            return { word, tiles, startX: x, startY: y };
         };
 
+        // 1. Identify Primary Axis (Horizontal or Vertical)
         const xs = newlyPlacedTiles.map(t => t.x);
         const ys = newlyPlacedTiles.map(t => t.y);
-        const isHorizontal = new Set(ys).size === 1;
-        const isVertical = new Set(xs).size === 1;
+        const isHorizontal = new Set(ys).size === 1 && newlyPlacedTiles.length > 0; // Explicit horizontal logic
+        const isVertical = new Set(xs).size === 1 && newlyPlacedTiles.length > 0; // Explicit vertical logic
 
-        if (isHorizontal) {
-            const y = ys[0];
-            const minX = Math.min(...xs);
-            const mainWord = extractWord(minX, y, true);
-            if (mainWord.word.length > 1) {
-                const key = `${mainWord.word}-H-${mainWord.tiles[0].x},${mainWord.tiles[0].y}`;
-                if (!wordSet.has(key)) {
-                    wordSet.add(key);
-                    words.push(mainWord);
+        // Handling single tile placement (ambiguous orientation, treat as both if neighbors exist)
+        const isSingleTile = newlyPlacedTiles.length === 1;
+
+        const orientation = isHorizontal ? 'H' : (isVertical ? 'V' : (isSingleTile ? 'BOTH' : 'INVALID'));
+
+        if (orientation === 'INVALID') return []; // Should be caught by earlier validation but safe to return empty here
+
+        // 2. Check Primary Word(s)
+        if (orientation === 'H' || (isSingleTile && getTile(newlyPlacedTiles[0].x - 1, newlyPlacedTiles[0].y) || getTile(newlyPlacedTiles[0].x + 1, newlyPlacedTiles[0].y))) {
+            // For single tile, we check H only if there are H neighbors, or just check anyway and see if length > 1
+            const t = newlyPlacedTiles[0];
+            const hWord = extractFullWord(t.x, t.y, 1, 0);
+            if (hWord.word.length > 1) {
+                const key = `H-${hWord.startX},${hWord.startY}`;
+                if (!wordKeys.has(key)) {
+                    wordKeys.add(key);
+                    words.push(hWord);
+                }
+            }
+        }
+
+        if (orientation === 'V' || (isSingleTile && getTile(newlyPlacedTiles[0].x, newlyPlacedTiles[0].y - 1) || getTile(newlyPlacedTiles[0].x, newlyPlacedTiles[0].y + 1))) {
+            const t = newlyPlacedTiles[0];
+            const vWord = extractFullWord(t.x, t.y, 0, 1);
+            if (vWord.word.length > 1) {
+                const key = `V-${vWord.startX},${vWord.startY}`;
+                if (!wordKeys.has(key)) {
+                    wordKeys.add(key);
+                    words.push(vWord);
+                }
+            }
+        }
+
+        // 3. Check Cross Words for EACH placed tile
+        newlyPlacedTiles.forEach(tile => {
+            // If primary was H, check V crosses. If primary was V, check H crosses.
+            // If single tile, we already checked both above, but loops logic handles it fine.
+
+            if (orientation === 'H' || isSingleTile) {
+                // Check Vertical Cross
+                const vWord = extractFullWord(tile.x, tile.y, 0, 1);
+                if (vWord.word.length > 1) {
+                    const key = `V-${vWord.startX},${vWord.startY}`;
+                    if (!wordKeys.has(key)) {
+                        wordKeys.add(key);
+                        words.push(vWord);
+                    }
                 }
             }
 
-            newlyPlacedTiles.forEach(tile => {
-                const crossWord = extractWord(tile.x, tile.y, false);
-                if (crossWord.word.length > 1) {
-                    const key = `${crossWord.word}-V-${crossWord.tiles[0].x},${crossWord.tiles[0].y}`;
-                    if (!wordSet.has(key)) {
-                        wordSet.add(key);
-                        words.push(crossWord);
+            if (orientation === 'V' || isSingleTile) {
+                // Check Horizontal Cross
+                const hWord = extractFullWord(tile.x, tile.y, 1, 0);
+                if (hWord.word.length > 1) {
+                    const key = `H-${hWord.startX},${hWord.startY}`;
+                    if (!wordKeys.has(key)) {
+                        wordKeys.add(key);
+                        words.push(hWord);
                     }
-                }
-            });
-        } else if (isVertical) {
-            const x = xs[0];
-            const minY = Math.min(...ys);
-            const mainWord = extractWord(x, minY, false);
-            if (mainWord.word.length > 1) {
-                const key = `${mainWord.word}-V-${mainWord.tiles[0].x},${mainWord.tiles[0].y}`;
-                if (!wordSet.has(key)) {
-                    wordSet.add(key);
-                    words.push(mainWord);
                 }
             }
-
-            newlyPlacedTiles.forEach(tile => {
-                const crossWord = extractWord(tile.x, tile.y, true);
-                if (crossWord.word.length > 1) {
-                    const key = `${crossWord.word}-H-${crossWord.tiles[0].x},${crossWord.tiles[0].y}`;
-                    if (!wordSet.has(key)) {
-                        wordSet.add(key);
-                        words.push(crossWord);
-                    }
-                }
-            });
-        }
-
-        if (newlyPlacedTiles.length === 1 && words.length === 0) {
-            const tile = newlyPlacedTiles[0];
-            const hWord = extractWord(tile.x, tile.y, true);
-            const vWord = extractWord(tile.x, tile.y, false);
-
-            if (hWord.word.length > 1) words.push(hWord);
-            if (vWord.word.length > 1) words.push(vWord);
-        }
+        });
 
         return words;
     }
@@ -3822,6 +3849,689 @@ class GameManager {
             finished: true,
             finalScores,
             winner: finalScores[0]
+        };
+    }
+
+    // ==================== CAPTION THIS GAME ====================
+    // Players write captions for an image/scenario, then vote for the best one.
+
+    startCaptionThisGame(roomId, room, hostParticipates = true) {
+        const { getRandomPrompts } = require('../data/captionThisPrompts');
+
+        const players = hostParticipates
+            ? room.players
+            : room.players.filter(p => !p.isHost);
+
+        const rounds = Math.min(players.length * 2, 8); // e.g. 2 rounds per player, max 8
+        const prompts = getRandomPrompts(rounds);
+
+        const gameState = {
+            type: 'caption-this',
+            roomId,
+            players: players.map(p => ({
+                id: p.id,
+                name: p.name,
+                avatar: p.avatar,
+                score: 0,
+                caption: null,
+                hasSubmitted: false,
+                votes: 0,
+                hasVoted: false
+            })),
+            prompts,
+            currentRound: 0,
+            totalRounds: rounds,
+            currentPrompt: prompts[0],
+            phase: 'captioning', // captioning, voting, results, finished
+            roundTime: 45 // seconds
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    submitCaption(roomId, playerId, caption) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'caption-this') return { error: 'Game not found' };
+        if (game.phase !== 'captioning') return { error: 'Not in captioning phase' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+
+        player.caption = caption;
+        player.hasSubmitted = true;
+
+        const allSubmitted = game.players.every(p => p.hasSubmitted);
+
+        return {
+            success: true,
+            allSubmitted,
+            submittedCount: game.players.filter(p => p.hasSubmitted).length,
+            totalPlayers: game.players.length
+        };
+    }
+
+    startCaptionVoting(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'caption-this') return { error: 'Game not found' };
+
+        game.phase = 'voting';
+        // Shuffle captions for anonymity (excluding players who didn't submit)
+        const captions = game.players
+            .filter(p => p.hasSubmitted)
+            .map(p => ({ playerId: p.id, caption: p.caption }))
+            .sort(() => 0.5 - Math.random());
+
+        return {
+            phase: 'voting',
+            captions,
+            currentPrompt: game.currentPrompt
+        };
+    }
+
+    submitCaptionVote(roomId, voterId, votedPlayerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'caption-this') return { error: 'Game not found' };
+        if (game.phase !== 'voting') return { error: 'Not in voting phase' };
+
+        const voter = game.players.find(p => p.id === voterId);
+        if (!voter) return { error: 'Voter not found' };
+        if (voter.hasVoted) return { error: 'Already voted' };
+        if (voterId === votedPlayerId) return { error: 'Cannot vote for yourself' };
+
+        const votedPlayer = game.players.find(p => p.id === votedPlayerId);
+        if (!votedPlayer) return { error: 'Invalid vote target' };
+
+        voter.hasVoted = true;
+        votedPlayer.votes++;
+
+        const allVoted = game.players.every(p => p.hasVoted);
+
+        return {
+            success: true,
+            allVoted,
+            votedCount: game.players.filter(p => p.hasVoted).length,
+            totalPlayers: game.players.length
+        };
+    }
+
+    getCaptionRoundResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'caption-this') return { error: 'Game not found' };
+
+        game.phase = 'results';
+
+        // Award points
+        game.players.forEach(p => {
+            if (p.votes > 0) {
+                p.score += p.votes * 100;
+            }
+        });
+
+        // Determine round winner
+        const results = [...game.players]
+            .filter(p => p.hasSubmitted)
+            .sort((a, b) => b.votes - a.votes)
+            .map(p => ({
+                id: p.id,
+                name: p.name,
+                caption: p.caption,
+                votes: p.votes,
+                score: p.score,
+                points: p.votes * 100
+            }));
+
+        const winner = results.length > 0 ? results[0] : null;
+
+        return {
+            results,
+            winner,
+            currentPrompt: game.currentPrompt,
+            prompts: game.prompts,
+            currentRound: game.currentRound + 1,
+            totalRounds: game.totalRounds
+        };
+    }
+
+    nextCaptionRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'caption-this') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+            const finalRankings = [...game.players].sort((a, b) => b.score - a.score);
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        // Reset round state
+        game.currentPrompt = game.prompts[game.currentRound];
+        game.phase = 'captioning';
+        game.players.forEach(p => {
+            p.caption = null;
+            p.hasSubmitted = false;
+            p.votes = 0;
+            p.hasVoted = false;
+        });
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1,
+            currentPrompt: game.currentPrompt
+        };
+    }
+    // ==================== AUCTION BLUFF GAME ====================
+    // detailed logic: Players start with cash. Item shown with a "Fact".
+    // Fact is either REAL or FAKE.
+    // If Item has REAL fact -> Value = baseValue.
+    // If Item has FAKE fact -> Value = 0.
+    // Players bid. Winner pays bid.
+    // If winner bought REAL item -> +Value.
+    // If winner bought FAKE item -> +0 (Lost money).
+
+    startAuctionBluffGame(roomId, room, hostParticipates = true) {
+        const { getRandomAuctionItems } = require('../data/auctionBluffItems');
+
+        const players = hostParticipates
+            ? room.players
+            : room.players.filter(p => !p.isHost);
+
+        const STARTING_CASH = 5000;
+        const rounds = Math.min(players.length * 2, 8); // e.g. 8 rounds max
+        const items = getRandomAuctionItems(rounds);
+
+        const gameState = {
+            type: 'auction-bluff',
+            roomId,
+            players: players.map(p => ({
+                id: p.id,
+                name: p.name,
+                avatar: p.avatar,
+                cash: STARTING_CASH,
+                collectionValue: 0, // Value of items bought
+                itemsBought: [],
+                currentBid: 0,
+                hasBid: false
+            })),
+            items, // The items for the game
+            currentRound: 0,
+            totalRounds: rounds,
+            currentItem: null,
+            currentFact: null, // { text: string, isReal: boolean }
+            phase: 'waiting', // waiting, bidding, results, finished
+            roundTime: 30
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startAuctionRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'auction-bluff') return { error: 'Game not found' };
+
+        const item = game.items[game.currentRound];
+
+        // Decide if we show Real or Fake fact
+        const showReal = Math.random() > 0.5;
+        const factText = showReal ? item.realFact : item.fakeFact;
+
+        game.currentItem = item;
+        game.currentFact = { text: factText, isReal: showReal };
+        game.phase = 'bidding';
+
+        // Reset Bids
+        game.players.forEach(p => {
+            p.currentBid = 0;
+            p.hasBid = false;
+        });
+
+        return {
+            round: game.currentRound + 1,
+            totalRounds: game.totalRounds,
+            item: {
+                name: item.name,
+                description: item.description,
+                baseValue: item.baseValue
+            },
+            fact: factText,
+            cash: game.players.reduce((acc, p) => ({ ...acc, [p.id]: p.cash }), {})
+        };
+    }
+
+    submitAuctionBid(roomId, playerId, amount) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'auction-bluff') return { error: 'Game not found' };
+        if (game.phase !== 'bidding') return { error: 'Not in bidding phase' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+
+        if (amount > player.cash) return { error: 'Insufficient funds' };
+        if (amount < 0) return { error: 'Invalid bid' };
+
+        player.currentBid = amount;
+        player.hasBid = true;
+
+        const allBid = game.players.every(p => p.hasBid);
+
+        return {
+            success: true,
+            allBid,
+            bidCount: game.players.filter(p => p.hasBid).length,
+            totalPlayers: game.players.length
+        };
+    }
+
+    endAuctionRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'auction-bluff') return { error: 'Game not found' };
+
+        game.phase = 'results';
+
+        // Determine winner: Highest Bid
+        // Tie-breaker: Random or First? Let's say Random among max bidders for fairness/chaos.
+        const submittedPlayers = game.players.filter(p => p.hasBid);
+
+        let winner = null;
+        let winningBid = 0;
+
+        if (submittedPlayers.length > 0) {
+            // Sort by bid descending
+            submittedPlayers.sort((a, b) => b.currentBid - a.currentBid);
+            winningBid = submittedPlayers[0].currentBid;
+
+            // Handle ties
+            const topBidders = submittedPlayers.filter(p => p.currentBid === winningBid);
+            winner = topBidders[Math.floor(Math.random() * topBidders.length)];
+        }
+
+        const actualValue = game.currentFact.isReal ? game.currentItem.baseValue : 0;
+        let wonItem = false;
+
+        if (winner && winningBid > 0) {
+            winner.cash -= winningBid;
+            winner.collectionValue += actualValue;
+            winner.itemsBought.push({
+                name: game.currentItem.name,
+                paid: winningBid,
+                actualValue: actualValue,
+                isAuthentic: game.currentFact.isReal
+            });
+            wonItem = true;
+        }
+
+        return {
+            winner: winner ? { id: winner.id, name: winner.name, bid: winningBid } : null,
+            item: game.currentItem,
+            isReal: game.currentFact.isReal,
+            actualValue: actualValue,
+            players: game.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                cash: p.cash,
+                collectionValue: p.collectionValue
+            }))
+        };
+    }
+
+    nextAuctionRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'auction-bluff') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+
+            // Calculate final score = Cash + Collection Value
+            const finalRankings = game.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                cash: p.cash,
+                collectionValue: p.collectionValue,
+                totalScore: p.cash + p.collectionValue
+            })).sort((a, b) => b.totalScore - a.totalScore);
+
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1
+        };
+    }
+    // ==================== SPEED CATEGORIES GAME ====================
+    // 5 Categories, 1 Letter, 60 seconds to type answers.
+
+    startSpeedCategoriesGame(roomId, room, hostParticipates = true) {
+        const { getRandomCategories, getRandomLetter } = require('../data/speedCategoriesData');
+
+        const players = hostParticipates
+            ? room.players
+            : room.players.filter(p => !p.isHost);
+
+        const ROUNDS = 3;
+
+        const gameState = {
+            type: 'speed-categories',
+            roomId,
+            players: players.map(p => ({
+                id: p.id,
+                name: p.name,
+                avatar: p.avatar,
+                score: 0,
+                hasSubmitted: false,
+                answers: {} // { catIndex: "word" }
+            })),
+            currentRound: 0,
+            totalRounds: ROUNDS,
+            currentLetter: null,
+            currentCategories: [],
+            phase: 'waiting', // waiting, playing, results, finished
+            roundTime: 60
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    startCategoryRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'speed-categories') return { error: 'Game not found' };
+
+        const { getRandomCategories, getRandomLetter } = require('../data/speedCategoriesData');
+
+        game.currentLetter = getRandomLetter();
+        game.currentCategories = getRandomCategories(5);
+        game.phase = 'playing';
+
+        // Reset player round state
+        game.players.forEach(p => {
+            p.hasSubmitted = false;
+            p.answers = {};
+        });
+
+        return {
+            round: game.currentRound + 1,
+            totalRounds: game.totalRounds,
+            letter: game.currentLetter,
+            categories: game.currentCategories,
+            roundTime: game.roundTime
+        };
+    }
+
+    submitCategoryAnswers(roomId, playerId, answers) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'speed-categories') return { error: 'Game not found' };
+        if (game.phase !== 'playing') return { error: 'Not in playing phase' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+
+        player.answers = answers;
+        player.hasSubmitted = true;
+
+        const allSubmitted = game.players.every(p => p.hasSubmitted);
+
+        return {
+            success: true,
+            allSubmitted,
+            submittedCount: game.players.filter(p => p.hasSubmitted).length,
+            totalPlayers: game.players.length
+        };
+    }
+
+    calculateCategoryScores(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'speed-categories') return { error: 'Game not found' };
+
+        game.phase = 'results';
+
+        const letter = game.currentLetter.toLowerCase();
+
+        // Calculate scores
+        const roundResults = game.players.map(p => {
+            let roundScore = 0;
+            const validAnswers = {};
+
+            Object.entries(p.answers).forEach(([catIdx, word]) => {
+                if (word && word.trim().toLowerCase().startsWith(letter)) {
+                    validAnswers[catIdx] = true;
+                    roundScore += 10;
+                } else {
+                    validAnswers[catIdx] = false;
+                }
+            });
+
+            p.score += roundScore;
+
+            return {
+                playerId: p.id,
+                playerName: p.name,
+                score: p.score,
+                roundScore,
+                answers: p.answers,
+                validity: validAnswers
+            };
+        });
+
+        return {
+            results: roundResults,
+            letter: game.currentLetter,
+            categories: game.currentCategories
+        };
+    }
+
+    nextCategoryRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'speed-categories') return { error: 'Game not found' };
+
+        game.currentRound++;
+
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+            const finalRankings = [...game.players].sort((a, b) => b.score - a.score);
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        return {
+            finished: false,
+            nextRound: game.currentRound + 1
+        };
+    }
+    // ==================== CONFESSION ROULETTE GAME ====================
+    // Players submit anonymous confessions. Others vote on who they think wrote each one.
+    // Points awarded for correct guesses and for fooling other players.
+
+    startConfessionRouletteGame(roomId, room, hostParticipates = true) {
+        const players = hostParticipates
+            ? room.players
+            : room.players.filter(p => !p.isHost);
+
+        const gameState = {
+            type: 'confession-roulette',
+            roomId,
+            players: players.map(p => ({
+                id: p.id,
+                name: p.name,
+                avatar: p.avatar,
+                score: 0,
+                confession: null,
+                hasSubmitted: false,
+                hasVoted: false,
+                votes: [] // IDs of players who voted for this person
+            })),
+            confessions: [], // Array of { confession: string, authorId: string }
+            currentConfessionIndex: 0,
+            phase: 'submission', // submission, voting, results, finished
+            submissionTime: 60,
+            votingTime: 30
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    submitConfession(roomId, playerId, confession) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+        if (game.phase !== 'submission') return { error: 'Not in submission phase' };
+
+        const player = game.players.find(p => p.id === playerId);
+        if (!player) return { error: 'Player not found' };
+        if (player.hasSubmitted) return { error: 'Already submitted' };
+
+        player.confession = confession;
+        player.hasSubmitted = true;
+
+        // Add to confessions array
+        game.confessions.push({
+            confession,
+            authorId: playerId
+        });
+
+        const submittedCount = game.players.filter(p => p.hasSubmitted).length;
+
+        return {
+            success: true,
+            submittedCount,
+            totalPlayers: game.players.length
+        };
+    }
+
+    endConfessionSubmission(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+
+        // Shuffle confessions for anonymity
+        game.confessions = game.confessions.sort(() => 0.5 - Math.random());
+        game.phase = 'voting';
+        game.currentConfessionIndex = 0;
+
+        return {
+            totalConfessions: game.confessions.length,
+            firstConfession: game.confessions.length > 0 ? game.confessions[0].confession : null
+        };
+    }
+
+    submitConfessionVote(roomId, voterId, votedPlayerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+        if (game.phase !== 'voting') return { error: 'Not in voting phase' };
+
+        const voter = game.players.find(p => p.id === voterId);
+        if (!voter) return { error: 'Voter not found' };
+        if (voter.hasVoted) return { error: 'Already voted' };
+
+        const votedPlayer = game.players.find(p => p.id === votedPlayerId);
+        if (!votedPlayer) return { error: 'Invalid vote target' };
+
+        // Record the vote
+        votedPlayer.votes.push(voterId);
+        voter.hasVoted = true;
+
+        const votedCount = game.players.filter(p => p.hasVoted).length;
+
+        return {
+            success: true,
+            votedCount,
+            totalPlayers: game.players.length
+        };
+    }
+
+    getConfessionResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+
+        const currentConfession = game.confessions[game.currentConfessionIndex];
+        if (!currentConfession) return { error: 'No confession found' };
+
+        const authorId = currentConfession.authorId;
+        const author = game.players.find(p => p.id === authorId);
+
+        // Find who voted correctly (voted for the author)
+        const correctGuessers = author.votes || [];
+        const fooledCount = game.players.length - correctGuessers.length - 1; // -1 to exclude author
+
+        // Award points
+        // Correct guessers get 100 points each
+        correctGuessers.forEach(voterId => {
+            const guesser = game.players.find(p => p.id === voterId);
+            if (guesser) guesser.score += 100;
+        });
+
+        // Author gets 50 points for each person they fooled
+        if (author) {
+            author.score += fooledCount * 50;
+        }
+
+        // Get current scores
+        const scores = {};
+        game.players.forEach(p => {
+            scores[p.id] = p.score;
+        });
+
+        return {
+            confession: currentConfession.confession,
+            author: authorId,
+            correctGuessers,
+            fooledCount,
+            scores
+        };
+    }
+
+    nextConfession(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'confession-roulette') return { error: 'Game not found' };
+
+        // Reset votes for next round
+        game.players.forEach(p => {
+            p.hasVoted = false;
+            p.votes = [];
+        });
+
+        game.currentConfessionIndex++;
+
+        if (game.currentConfessionIndex >= game.confessions.length) {
+            // Game finished
+            game.phase = 'finished';
+            const finalRankings = [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score
+                }));
+
+            return {
+                finished: true,
+                rankings: finalRankings,
+                winner: finalRankings[0]
+            };
+        }
+
+        // Next confession
+        return {
+            finished: false,
+            nextConfession: {
+                confession: game.confessions[game.currentConfessionIndex].confession,
+                index: game.currentConfessionIndex,
+                total: game.confessions.length
+            }
         };
     }
 }

@@ -1,40 +1,41 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
-const path = require('path');
+const { MongoClient } = require('mongodb');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'playrave-secret-key-change-in-production';
-const DATA_FILE = path.join(__dirname, '../data/users.json');
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, '../data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
+// MongoDB connection string - password is URL encoded (& = %26, % = %25)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://samueldaniyan564_db_user:sammy123%26%25@cluster0.0ykmcom.mongodb.net/playrave?retryWrites=true&w=majority&appName=Cluster0';
 
-// Load users from file
-const loadUsers = () => {
+let db = null;
+let usersCollection = null;
+
+// Initialize MongoDB connection
+const initDB = async () => {
+    if (db) return db;
+
     try {
-        if (fs.existsSync(DATA_FILE)) {
-            return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        }
-    } catch (e) {
-        console.error('Error loading users:', e);
+        console.log('Connecting to MongoDB...');
+        const client = new MongoClient(MONGODB_URI);
+        await client.connect();
+        db = client.db('playrave');
+        usersCollection = db.collection('users');
+
+        // Create index on email for faster lookups
+        await usersCollection.createIndex({ email: 1 }, { unique: true });
+        await usersCollection.createIndex({ username: 1 });
+
+        console.log('MongoDB connected successfully!');
+        return db;
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+        throw error;
     }
-    return {};
 };
 
-// Save users to file
-const saveUsers = (users) => {
-    try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
-    } catch (e) {
-        console.error('Error saving users:', e);
-    }
-};
-
-let users = loadUsers();
+// Initialize on module load
+initDB().catch(console.error);
 
 class AuthManager {
     // Generate JWT token
@@ -57,13 +58,21 @@ class AuthManager {
 
     // Register new user
     async register(email, password, username) {
+        await initDB();
+
         email = email.toLowerCase().trim();
 
-        if (Object.values(users).find(u => u.email === email)) {
+        // Check if email already exists
+        const existingEmail = await usersCollection.findOne({ email });
+        if (existingEmail) {
             return { error: 'Email already registered' };
         }
 
-        if (Object.values(users).find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        // Check if username already exists (case-insensitive)
+        const existingUsername = await usersCollection.findOne({
+            username: { $regex: new RegExp(`^${username}$`, 'i') }
+        });
+        if (existingUsername) {
             return { error: 'Username already taken' };
         }
 
@@ -97,8 +106,7 @@ class AuthManager {
             createdAt: new Date().toISOString()
         };
 
-        users[user.id] = user;
-        saveUsers(users);
+        await usersCollection.insertOne(user);
 
         const token = this.generateToken(user);
         return { user: this.sanitizeUser(user), token };
@@ -106,9 +114,11 @@ class AuthManager {
 
     // Login user
     async login(email, password) {
+        await initDB();
+
         email = email.toLowerCase().trim();
 
-        const user = Object.values(users).find(u => u.email === email);
+        const user = await usersCollection.findOne({ email });
         if (!user) {
             return { error: 'Invalid email or password' };
         }
@@ -123,23 +133,27 @@ class AuthManager {
     }
 
     // Get user by token
-    getUserByToken(token) {
+    async getUserByToken(token) {
         const decoded = this.verifyToken(token);
         if (!decoded) return null;
 
-        const user = users[decoded.id];
+        await initDB();
+        const user = await usersCollection.findOne({ id: decoded.id });
         return user ? this.sanitizeUser(user) : null;
     }
 
     // Get user by ID
-    getUserById(id) {
-        const user = users[id];
+    async getUserById(id) {
+        await initDB();
+        const user = await usersCollection.findOne({ id });
         return user ? this.sanitizeUser(user) : null;
     }
 
     // Update user stats after game
-    updateStats(userId, gameType, stats) {
-        const user = users[userId];
+    async updateStats(userId, gameType, stats) {
+        await initDB();
+
+        const user = await usersCollection.findOne({ id: userId });
         if (!user) return null;
 
         user.gamesPlayed++;
@@ -151,14 +165,15 @@ class AuthManager {
         user.totalXp += xpGained;
 
         // Level up check
-        const xpForNextLevel = this.getXPForLevel(user.level);
+        let xpForNextLevel = this.getXPForLevel(user.level);
         while (user.xp >= xpForNextLevel) {
             user.xp -= xpForNextLevel;
             user.level++;
+            xpForNextLevel = this.getXPForLevel(user.level);
         }
 
         // Update game-specific stats
-        if (user.stats[gameType]) {
+        if (user.stats && user.stats[gameType]) {
             user.stats[gameType].played++;
             if (stats.won) user.stats[gameType].won++;
 
@@ -171,7 +186,21 @@ class AuthManager {
             }
         }
 
-        saveUsers(users);
+        // Save updated user to MongoDB
+        await usersCollection.updateOne(
+            { id: userId },
+            {
+                $set: {
+                    gamesPlayed: user.gamesPlayed,
+                    gamesWon: user.gamesWon,
+                    xp: user.xp,
+                    totalXp: user.totalXp,
+                    level: user.level,
+                    stats: user.stats
+                }
+            }
+        );
+
         return { xpGained, newLevel: user.level, newXp: user.xp };
     }
 
@@ -197,23 +226,29 @@ class AuthManager {
 
     // Remove sensitive data
     sanitizeUser(user) {
-        const { password, ...safeUser } = user;
+        const { password, _id, ...safeUser } = user;
         return safeUser;
     }
 
     // Get leaderboard
-    getLeaderboard(limit = 50) {
-        return Object.values(users)
-            .map(u => ({
-                id: u.id,
-                username: u.username,
-                avatar: u.avatar,
-                level: u.level,
-                totalXp: u.totalXp,
-                gamesWon: u.gamesWon
-            }))
-            .sort((a, b) => b.totalXp - a.totalXp)
-            .slice(0, limit);
+    async getLeaderboard(limit = 50) {
+        await initDB();
+
+        const users = await usersCollection
+            .find({})
+            .project({
+                id: 1,
+                username: 1,
+                avatar: 1,
+                level: 1,
+                totalXp: 1,
+                gamesWon: 1
+            })
+            .sort({ totalXp: -1 })
+            .limit(limit)
+            .toArray();
+
+        return users;
     }
 }
 

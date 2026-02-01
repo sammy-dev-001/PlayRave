@@ -60,32 +60,32 @@ app.post("/api/auth/login", async (req, res) => {
     }
 });
 
-app.get("/api/auth/me", (req, res) => {
+app.get("/api/auth/me", async (req, res) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) {
         return res.status(401).json({ error: "No token provided" });
     }
-    const user = authManager.getUserByToken(token);
+    const user = await authManager.getUserByToken(token);
     if (!user) {
         return res.status(401).json({ error: "Invalid token" });
     }
     res.json({ user });
 });
 
-app.get("/api/users/:id", (req, res) => {
-    const user = authManager.getUserById(req.params.id);
+app.get("/api/users/:id", async (req, res) => {
+    const user = await authManager.getUserById(req.params.id);
     if (!user) {
         return res.status(404).json({ error: "User not found" });
     }
     res.json({ user });
 });
 
-app.get("/api/leaderboard", (req, res) => {
-    const leaderboard = authManager.getLeaderboard(50);
+app.get("/api/leaderboard", async (req, res) => {
+    const leaderboard = await authManager.getLeaderboard(50);
     res.json({ leaderboard });
 });
 
-app.post("/api/stats/update", (req, res) => {
+app.post("/api/stats/update", async (req, res) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) {
         return res.status(401).json({ error: "No token" });
@@ -95,7 +95,7 @@ app.post("/api/stats/update", (req, res) => {
         return res.status(401).json({ error: "Invalid token" });
     }
     const { gameType, stats } = req.body;
-    const result = authManager.updateStats(decoded.id, gameType, stats);
+    const result = await authManager.updateStats(decoded.id, gameType, stats);
     res.json(result);
 });
 
@@ -231,6 +231,30 @@ io.on("connection", (socket) => {
 
     socket.on("join-room", ({ roomId, playerName, avatar, avatarColor }) => {
         console.log("join-room event received, roomId:", roomId, "playerName:", playerName, "socketId:", socket.id);
+
+        // Check for pending disconnect with same name (reconnection)
+        if (global.pendingDisconnects) {
+            for (const [oldSocketId, pending] of global.pendingDisconnects.entries()) {
+                if (pending.roomId === roomId && pending.playerName === playerName) {
+                    console.log("Reconnection detected for:", playerName, "was host:", pending.wasHost);
+                    global.pendingDisconnects.delete(oldSocketId);
+
+                    // If this was the host, restore host status
+                    if (pending.wasHost) {
+                        const restoreResult = roomManager.restoreHost(roomId, socket.id, playerName);
+                        if (restoreResult && !restoreResult.error) {
+                            socket.join(roomId);
+                            socket.emit("room-joined", restoreResult.room);
+                            io.to(roomId).emit("room-updated", restoreResult.room);
+                            console.log("Host restored successfully:", playerName);
+                            return;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         const result = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor);
         if (result.error) {
             socket.emit("error", { message: result.error });
@@ -261,14 +285,15 @@ io.on("connection", (socket) => {
         const playerInfo = roomManager.getPlayerBySocketId(socket.id);
         const roomId = playerInfo?.roomId;
         const playerName = playerInfo?.name;
+        const wasHost = playerInfo?.isHost;
 
         // Add a grace period before removing player (helps with mobile reconnects)
-        const DISCONNECT_GRACE_PERIOD = 10000; // 10 seconds
+        const DISCONNECT_GRACE_PERIOD = 30000; // 30 seconds for poor networks
 
         // Track pending disconnects for potential reconnection
         if (roomId) {
             if (!global.pendingDisconnects) global.pendingDisconnects = new Map();
-            global.pendingDisconnects.set(socket.id, { roomId, playerName, timestamp: Date.now() });
+            global.pendingDisconnects.set(socket.id, { roomId, playerName, wasHost, timestamp: Date.now() });
         }
 
         setTimeout(() => {
@@ -1789,6 +1814,153 @@ io.on("connection", (socket) => {
         gameManager.endGame(roomId);
         const room = roomManager.getRoom(roomId);
         io.to(roomId).emit("color-rush-game-ended", { room });
+    });
+
+    // ==================== CAPTION THIS EVENTS ====================
+    socket.on("caption-this-start", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startCaptionThisGame(roomId, room);
+        io.to(roomId).emit("caption-this-started", gameState);
+    });
+
+    socket.on("caption-submit", ({ roomId, caption }) => {
+        const result = gameManager.submitCaption(roomId, socket.id, caption);
+        if (result.error) return;
+
+        io.to(roomId).emit("caption-submission-update", result);
+    });
+
+    socket.on("caption-start-voting", ({ roomId }) => {
+        const result = gameManager.startCaptionVoting(roomId);
+        if (result.error) return;
+
+        io.to(roomId).emit("caption-voting-started", result);
+    });
+
+    socket.on("caption-vote", ({ roomId, votedPlayerId }) => {
+        const result = gameManager.submitCaptionVote(roomId, socket.id, votedPlayerId);
+        if (result.error) return;
+
+        io.to(roomId).emit("caption-vote-update", result);
+
+        if (result.allVoted) {
+            const roundResults = gameManager.getCaptionRoundResults(roomId);
+            io.to(roomId).emit("caption-round-results", roundResults);
+        }
+    });
+
+    socket.on("caption-next-round", ({ roomId }) => {
+        const result = gameManager.nextCaptionRound(roomId);
+        if (result.error) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("caption-game-finished", result);
+        } else {
+            io.to(roomId).emit("caption-next-round-ready", result);
+        }
+    });
+
+    socket.on("caption-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("caption-game-ended", { room });
+    });
+
+    // ==================== AUCTION BLUFF EVENTS ====================
+    socket.on("auction-start", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startAuctionBluffGame(roomId, room);
+        io.to(roomId).emit("auction-started", gameState);
+
+        // Start first round automatically after delay
+        setTimeout(() => {
+            const roundData = gameManager.startAuctionRound(roomId);
+            io.to(roomId).emit("auction-round-start", roundData);
+        }, 3000);
+    });
+
+    socket.on("auction-bid", ({ roomId, amount }) => {
+        const result = gameManager.submitAuctionBid(roomId, socket.id, amount);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("auction-bid-update", result);
+
+        // If everyone has bid, end round immediately? Or wait for timer?
+        // Let's end immediately for smoother flow if all are done
+        if (result.allBid) {
+            const roundResults = gameManager.endAuctionRound(roomId);
+            io.to(roomId).emit("auction-round-results", roundResults);
+        }
+    });
+
+    socket.on("auction-next-round", ({ roomId }) => {
+        const result = gameManager.nextAuctionRound(roomId);
+        if (result.error) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("auction-game-finished", result);
+        } else {
+            // Start next round
+            const roundData = gameManager.startAuctionRound(roomId);
+            io.to(roomId).emit("auction-round-start", roundData);
+        }
+    });
+
+    socket.on("auction-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("auction-game-ended", { room });
+    });
+
+    // ==================== SPEED CATEGORIES EVENTS ====================
+    socket.on("speed-categories-start", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startSpeedCategoriesGame(roomId, room);
+        io.to(roomId).emit("speed-game-started", gameState);
+
+        setTimeout(() => {
+            const roundData = gameManager.startCategoryRound(roomId);
+            io.to(roomId).emit("speed-round-start", roundData);
+        }, 3000);
+    });
+
+    socket.on("speed-responses-submit", ({ roomId, answers }) => {
+        const result = gameManager.submitCategoryAnswers(roomId, socket.id, answers);
+        if (result.error) return;
+
+        io.to(roomId).emit("speed-responses-update", result);
+
+        if (result.allSubmitted) {
+            const roundResults = gameManager.calculateCategoryScores(roomId);
+            io.to(roomId).emit("speed-round-results", roundResults);
+        }
+    });
+
+    socket.on("speed-next-round", ({ roomId }) => {
+        const result = gameManager.nextCategoryRound(roomId);
+        if (result.error) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("speed-game-finished", result);
+        } else {
+            const roundData = gameManager.startCategoryRound(roomId);
+            io.to(roomId).emit("speed-round-start", roundData);
+        }
+    });
+
+    socket.on("speed-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("speed-game-ended", { room });
     });
 
     // ==================== TIC-TAC-TOE TOURNAMENT EVENTS ====================
