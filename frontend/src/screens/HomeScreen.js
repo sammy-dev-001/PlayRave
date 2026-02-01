@@ -155,8 +155,8 @@ const HomeScreen = ({ navigation }) => {
             <LoadingOverlay visible={loading} message="Creating Party..." />
             {/* Header with Connection Status, Settings, and Profile */}
             <View style={styles.headerRow}>
-                <ConnectionStatus showLabel={true} size="small" />
-                <View style={styles.headerRight}>
+                <View style={styles.headerLeft}>
+                    <ConnectionStatus showLabel={true} size="small" />
                     <TouchableOpacity
                         style={styles.settingsIcon}
                         onPress={() => navigation.navigate('Settings')}
@@ -183,8 +183,8 @@ const HomeScreen = ({ navigation }) => {
                 <NeonText size={SCREEN_WIDTH < 375 ? 14 : 16} color={COLORS.limeGlow} style={{ letterSpacing: 2 }}>NEON PARTY</NeonText>
             </View>
 
-            {/* Input Area */}
-            <View style={styles.inputArea}>
+            {/* Profile Card */}
+            <View style={styles.profileCard}>
                 {/* Avatar Selection */}
                 <TouchableOpacity
                     style={styles.avatarSection}
@@ -212,27 +212,32 @@ const HomeScreen = ({ navigation }) => {
 
             {/* Buttons */}
             <View style={styles.actions}>
+                {/* Full-width online buttons */}
                 <View style={styles.actionSection}>
                     <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
                     <NeonButton title="HOST PARTY" onPress={handleCreate} icon="🎮" />
                     <NeonButton title="JOIN PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
                 </View>
 
+                {/* Half-width local/offline buttons */}
                 <View style={styles.actionSection}>
                     <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
-                    <NeonButton
-                        title="LOCAL GAMES"
-                        variant="primary"
-                        onPress={handleLocalParty}
-                        icon="🎲"
-                        style={{ borderColor: COLORS.hotPink }}
-                    />
-                    <NeonButton
-                        title="LAN MODE (No Internet)"
-                        variant="secondary"
-                        onPress={() => navigation.navigate('LANMode')}
-                        icon="📡"
-                    />
+                    <View style={styles.halfButtonRow}>
+                        <NeonButton
+                            title="LOCAL GAMES"
+                            variant="primary"
+                            onPress={handleLocalParty}
+                            icon="🎲"
+                            style={[styles.halfButton, { borderColor: COLORS.hotPink }]}
+                        />
+                        <NeonButton
+                            title="LAN MODE"
+                            variant="secondary"
+                            onPress={() => navigation.navigate('LANMode')}
+                            icon="📡"
+                            style={styles.halfButton}
+                        />
+                    </View>
                 </View>
             </View>
 
@@ -285,12 +290,16 @@ const styles = StyleSheet.create({
         marginTop: 60, // Clear absolute header
         marginBottom: 60,
     },
-    inputArea: {
-        marginBottom: 30,
+    profileCard: {
+        marginBottom: 50, // Increased by 20px (was 30)
         width: '100%',
         maxWidth: 500,
         alignSelf: 'center',
         paddingHorizontal: 20,
+        paddingVertical: 25,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        borderRadius: 16,
+        marginHorizontal: 20,
     },
     input: {
         backgroundColor: 'rgba(255,255,255,0.1)',
@@ -324,6 +333,14 @@ const styles = StyleSheet.create({
     changeAvatarText: {
         marginTop: 8,
         letterSpacing: 1,
+    },
+    halfButtonRow: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    halfButton: {
+        flex: 1,
     },
     profileButton: {
         width: 50, height: 50, borderRadius: 25,
@@ -359,11 +376,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 10,
     },
-    headerRight: {
+    headerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        marginRight: 90, // Avoid overlap with MuteButton
     },
     settingsIcon: {
         width: 44,
