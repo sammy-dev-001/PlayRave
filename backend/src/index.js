@@ -2299,6 +2299,23 @@ io.on("connection", (socket) => {
             gameNumber: 1,
             totalGames: room.tournament.games.length
         });
+
+        // Actually start the first game after a brief delay
+        setTimeout(() => {
+            // For now, we only support trivia in tournaments
+            if (currentGame === 'trivia') {
+                const gameState = gameManager.startTriviaGame(roomId, room, true, 'All');
+                const currentQuestion = gameManager.getCurrentQuestion(roomId);
+
+                if (currentQuestion) {
+                    io.to(roomId).emit("game-started", {
+                        question: currentQuestion,
+                        gameType: 'trivia'
+                    });
+                }
+            }
+            // Other game types would be handled here
+        }, 3500); // 3.5 seconds to allow countdown
     });
 
     socket.on("tournament-game-complete", ({ roomId, gameResults }) => {
