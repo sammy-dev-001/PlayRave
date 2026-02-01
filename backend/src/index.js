@@ -229,10 +229,16 @@ io.on("connection", (socket) => {
         socket.emit("room-created", room);
     });
 
-    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor }) => {
-        console.log("join-room event received, roomId:", roomId, "playerName:", playerName, "socketId:", socket.id);
+    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor, isRejoin }) => {
+        console.log("join-room event received, roomId:", roomId, "playerName:", playerName, "socketId:", socket.id, "isRejoin:", isRejoin);
 
-        // Check for pending disconnect with same name (reconnection)
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+        }
+
+        // Check for pending disconnect with same name (reconnection within grace period)
         if (global.pendingDisconnects) {
             for (const [oldSocketId, pending] of global.pendingDisconnects.entries()) {
                 if (pending.roomId === roomId && pending.playerName === playerName) {
@@ -251,6 +257,42 @@ io.on("connection", (socket) => {
                         }
                     }
                     break;
+                }
+            }
+        }
+
+        // Check if this is a rejoin attempt (even after grace period)
+        // Look for existing player with same name - they might have been replaced as host
+        if (isRejoin) {
+            const existingPlayer = room.players.find(p => p.name === playerName);
+            if (existingPlayer) {
+                console.log("Rejoin attempt for existing player:", playerName, "current host:", room.hostId);
+
+                // Check if this player was originally the host by checking room creation order
+                // The first player in the room is the original host
+                const wasOriginalHost = room.players[0].name === playerName || room.players.find(p => p.name === playerName && p.isHost);
+
+                if (wasOriginalHost) {
+                    console.log("Restoring original host:", playerName);
+                    const restoreResult = roomManager.restoreHost(roomId, socket.id, playerName);
+                    if (restoreResult && !restoreResult.error) {
+                        socket.join(roomId);
+                        socket.emit("room-joined", restoreResult.room);
+                        io.to(roomId).emit("room-updated", restoreResult.room);
+                        console.log("Host restored successfully after grace period:", playerName);
+                        return;
+                    }
+                } else {
+                    // Regular player rejoining - update their socket ID
+                    const index = room.players.findIndex(p => p.name === playerName);
+                    if (index !== -1) {
+                        room.players[index].id = socket.id;
+                        socket.join(roomId);
+                        socket.emit("room-joined", room);
+                        io.to(roomId).emit("room-updated", room);
+                        console.log("Regular player reconnected:", playerName);
+                        return;
+                    }
                 }
             }
         }
