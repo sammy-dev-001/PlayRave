@@ -354,6 +354,15 @@ class SocketService {
         );
     }
 
+    once(event, cb) {
+        const wrapper = (...args) => {
+            cb(...args);
+            this.off(event, wrapper);
+        };
+
+        this.on(event, wrapper);
+    }
+
     getSocketUrl() {
         return SOCKET_URL;
     }

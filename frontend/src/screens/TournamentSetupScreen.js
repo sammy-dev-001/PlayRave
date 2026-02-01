@@ -54,14 +54,9 @@ const TournamentSetupScreen = ({ route, navigation }) => {
         if (selectedGames.length < 2) return;
 
         setIsCreating(true);
-        SocketService.emit('create-tournament', {
-            roomId: room.id,
-            gamePlaylist: selectedGames,
-            tournamentName
-        });
 
-        // Listen for tournament created
-        SocketService.once('tournament-created', ({ tournament }) => {
+        // Listen for tournament created BEFORE emitting (prevents race condition)
+        const handleTournamentCreated = ({ tournament }) => {
             setIsCreating(false);
             navigation.navigate('TournamentLobby', {
                 room,
@@ -69,7 +64,25 @@ const TournamentSetupScreen = ({ route, navigation }) => {
                 isHost,
                 tournament
             });
+        };
+
+        SocketService.once('tournament-created', handleTournamentCreated);
+
+        SocketService.emit('create-tournament', {
+            roomId: room.id,
+            gamePlaylist: selectedGames,
+            tournamentName
         });
+
+        // Add timeout to reset state if no response
+        setTimeout(() => {
+            if (isCreating) {
+                setIsCreating(false);
+                SocketService.off('tournament-created', handleTournamentCreated);
+                // Could show error message here
+                console.error('Tournament creation timed out');
+            }
+        }, 5000);
     };
 
     return (
