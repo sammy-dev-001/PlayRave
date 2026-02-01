@@ -9,7 +9,9 @@ import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 
 const QuestionScreen = ({ route, navigation }) => {
-    const { room, question, questionIndex, hostParticipates, isHost } = route.params;
+    const { room, question: initialQuestion, questionIndex: initialQuestionIndex, hostParticipates, isHost, isTournamentMode } = route.params;
+    const [question, setQuestion] = useState(initialQuestion);
+    const [questionIndex, setQuestionIndex] = useState(initialQuestionIndex || 0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [timeLeft, setTimeLeft] = useState(15);
     const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -18,6 +20,27 @@ const QuestionScreen = ({ route, navigation }) => {
     const canAnswer = !isHost || hostParticipates;
 
     useEffect(() => {
+        // In tournament mode, wait for game to actually start
+        if (isTournamentMode && !question) {
+            const handleGameStarted = ({ question: gameQuestion }) => {
+                setQuestion(gameQuestion);
+                setQuestionIndex(gameQuestion.questionIndex || 0);
+            };
+
+            SocketService.on('game-started', handleGameStarted);
+            SocketService.on('next-question-ready', handleGameStarted);
+
+            return () => {
+                SocketService.off('game-started', handleGameStarted);
+                SocketService.off('next-question-ready', handleGameStarted);
+            };
+        }
+    }, [isTournamentMode, question]);
+
+    useEffect(() => {
+        // Skip timer if no question yet (waiting for tournament to start game)
+        if (!question) return;
+
         // Timer countdown
         const timer = setInterval(() => {
             setTimeLeft(prev => {
@@ -52,18 +75,27 @@ const QuestionScreen = ({ route, navigation }) => {
 
         const onNextQuestionReady = ({ question: nextQuestion }) => {
             console.log('Next question ready:', nextQuestion);
-            navigation.replace('Question', {
-                room,
-                question: nextQuestion,
-                questionIndex: nextQuestion.questionIndex,
-                hostParticipates,
-                isHost
-            });
+            setQuestion(nextQuestion);
+            setQuestionIndex(nextQuestion.questionIndex || 0);
+            setSelectedAnswer(null);
+            setHasSubmitted(false);
+            setTimeLeft(15);
         };
 
         const onGameFinished = ({ finalScores }) => {
             console.log('Game finished:', finalScores);
-            navigation.navigate('Scoreboard', { room, finalScores });
+
+            if (isTournamentMode) {
+                // Return to tournament lobby
+                navigation.navigate('TournamentLobby', {
+                    room,
+                    playerName: route.params.playerName,
+                    isHost,
+                    tournament: room.tournament
+                });
+            } else {
+                navigation.navigate('Scoreboard', { room, finalScores });
+            }
         };
 
         SocketService.on('question-results', onQuestionResults);
@@ -76,7 +108,7 @@ const QuestionScreen = ({ route, navigation }) => {
             SocketService.off('next-question-ready', onNextQuestionReady);
             SocketService.off('game-finished', onGameFinished);
         };
-    }, [navigation, room, hasSubmitted, canAnswer]);
+    }, [navigation, room, hasSubmitted, canAnswer, question, isTournamentMode]);
 
     const handleSelectAnswer = (answerIndex) => {
         if (hasSubmitted || !canAnswer) return;
@@ -94,12 +126,25 @@ const QuestionScreen = ({ route, navigation }) => {
         SocketService.emit('submit-answer', { roomId: room.id, answerIndex: finalAnswer });
     };
 
+    // Show loading state while waiting for question
+    if (!question) {
+        return (
+            <NeonContainer showMuteButton showBackButton>
+                <View style={styles.loadingContainer}>
+                    <NeonText size={20} glow>
+                        Waiting for game to start...
+                    </NeonText>
+                </View>
+            </NeonContainer>
+        );
+    }
+
     return (
         <NeonContainer showMuteButton showBackButton>
             <GameOverlay roomId={room.id} playerName={route.params.playerName || 'Player'}>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
-                        QUESTION {questionIndex + 1} / {question.totalQuestions}
+                        QUESTION {questionIndex + 1} / {question.totalQuestions || '?'}
                     </NeonText>
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
                         {timeLeft}s
@@ -155,6 +200,11 @@ const QuestionScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
