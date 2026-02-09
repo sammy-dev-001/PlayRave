@@ -80,7 +80,7 @@ const LOCAL_GAMES = [
     },
     {
         id: 'scrabble',
-        name: 'Word Builder',
+        name: 'Scrabble',
         description: 'Create words from letter tiles!',
         icon: '📝',
         color: COLORS.neonCyan,

@@ -14,23 +14,32 @@ import { getRandomCategories } from '../data/speedCategories';
 
 const SpeedCategoriesScreen = ({ route, navigation }) => {
     const { players } = route.params;
-    const [categories] = useState(() => getRandomCategories(10, 'all'));
+    // Generate different categories for each player
+    const [playerCategories] = useState(() => {
+        const categories = {};
+        players.forEach((player, index) => {
+            categories[index] = getRandomCategories(10, 'all');
+        });
+        return categories;
+    });
     const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [phase, setPhase] = useState('ready'); // 'ready', 'playing', 'judging', 'results'
     const [countdown, setCountdown] = useState(10);
+    const [autoStartCountdown, setAutoStartCountdown] = useState(10);
     const [scores, setScores] = useState(() =>
         players.reduce((acc, p) => ({ ...acc, [p.name]: 0 }), {})
     );
     const [showWinner, setShowWinner] = useState(false);
 
     const timerRef = useRef(null);
+    const autoStartTimerRef = useRef(null);
     const progressAnim = useRef(new Animated.Value(1)).current;
 
-    const currentCategory = categories[currentCategoryIndex];
+    const currentCategory = playerCategories[currentPlayerIndex]?.[currentCategoryIndex];
     const currentPlayer = players[currentPlayerIndex];
 
-    // Timer logic
+    // Timer logic for playing phase
     useEffect(() => {
         if (phase === 'playing') {
             progressAnim.setValue(1);
@@ -57,7 +66,34 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
         };
     }, [phase]);
 
+    // Auto-start timer for ready phase
+    useEffect(() => {
+        if (phase === 'ready') {
+            setAutoStartCountdown(10);
+
+            autoStartTimerRef.current = setInterval(() => {
+                setAutoStartCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(autoStartTimerRef.current);
+                        handleStart();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (autoStartTimerRef.current) clearInterval(autoStartTimerRef.current);
+        };
+    }, [phase]);
+
     const handleStart = () => {
+        // Clear auto-start timer when manually starting
+        if (autoStartTimerRef.current) {
+            clearInterval(autoStartTimerRef.current);
+            autoStartTimerRef.current = null;
+        }
         setCountdown(10);
         setPhase('playing');
     };
@@ -101,7 +137,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
         // Move to next player or next category
         if (currentPlayerIndex < players.length - 1) {
             setCurrentPlayerIndex(currentPlayerIndex + 1);
-        } else if (currentCategoryIndex < categories.length - 1) {
+        } else if (currentCategoryIndex < playerCategories[0].length - 1) {
             setCurrentCategoryIndex(currentCategoryIndex + 1);
             setCurrentPlayerIndex(0);
         } else {
@@ -165,7 +201,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
             <NeonContainer showBackButton>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
-                        ROUND {currentCategoryIndex + 1} / {categories.length}
+                        ROUND {currentCategoryIndex + 1} / {playerCategories[0]?.length || 10}
                     </NeonText>
                     <NeonText size={28} weight="bold" glow>
                         🏃 SPEED CATEGORIES
@@ -203,8 +239,14 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
                     You have 10 seconds to name 5 things!
                 </NeonText>
 
+                <View style={styles.autoStartContainer}>
+                    <NeonText size={14} color={COLORS.neonCyan}>
+                        ⏱️ Auto-starting in {autoStartCountdown} seconds...
+                    </NeonText>
+                </View>
+
                 <NeonButton
-                    title="I'M READY - START!"
+                    title="I'M READY - START NOW!"
                     onPress={handleStart}
                     style={styles.startBtn}
                 />
@@ -500,6 +542,13 @@ const styles = StyleSheet.create({
     },
     playAgainBtn: {
         marginTop: 30,
+    },
+    autoStartContainer: {
+        alignItems: 'center',
+        marginBottom: 15,
+        padding: 10,
+        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+        borderRadius: 8,
     }
 });
 

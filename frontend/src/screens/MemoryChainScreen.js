@@ -18,7 +18,8 @@ const MemoryChainScreen = ({ route, navigation }) => {
     const { players } = route.params;
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [phase, setPhase] = useState('show'); // 'show', 'input', 'result', 'gameover'
-    const [sequence, setSequence] = useState([]);
+    const [playerSequences, setPlayerSequences] = useState({}); // Store sequences per player
+    const [currentSequence, setCurrentSequence] = useState([]);
     const [playerInput, setPlayerInput] = useState([]);
     const [showingIndex, setShowingIndex] = useState(0);
     const [scores, setScores] = useState(() =>
@@ -32,25 +33,38 @@ const MemoryChainScreen = ({ route, navigation }) => {
     const currentPlayer = players[currentPlayerIndex];
     const activePlayers = players.filter(p => !eliminated.includes(p.name));
 
-    // Initialize game with first item
+    // Initialize game with first sequences for each player
     useEffect(() => {
-        addToSequence();
+        generatePlayerSequence();
     }, []);
 
     // Show sequence animation
     useEffect(() => {
-        if (phase === 'show' && sequence.length > 0) {
+        if (phase === 'show' && currentSequence.length > 0) {
             showSequence();
         }
-    }, [phase, sequence]);
+    }, [phase, currentSequence]);
 
-    const addToSequence = () => {
-        const randomItem = MEMORY_ITEMS[Math.floor(Math.random() * MEMORY_ITEMS.length)];
-        setSequence(prev => [...prev, randomItem]);
+    const generatePlayerSequence = (sequenceLength = 1) => {
+        const currentPlayer = players[currentPlayerIndex];
+        const playerKey = `${currentPlayerIndex}-${currentPlayer.name}`;
+
+        // Generate a random sequence for this player
+        const newSequence = [];
+        for (let i = 0; i < sequenceLength; i++) {
+            const randomItem = MEMORY_ITEMS[Math.floor(Math.random() * MEMORY_ITEMS.length)];
+            newSequence.push(randomItem);
+        }
+
+        setPlayerSequences(prev => ({
+            ...prev,
+            [playerKey]: newSequence
+        }));
+        setCurrentSequence(newSequence);
     };
 
     const showSequence = async () => {
-        for (let i = 0; i < sequence.length; i++) {
+        for (let i = 0; i < currentSequence.length; i++) {
             await new Promise(resolve => setTimeout(resolve, 800));
             setShowingIndex(i);
 
@@ -80,14 +94,14 @@ const MemoryChainScreen = ({ route, navigation }) => {
         setPlayerInput(newInput);
 
         // Check if this is correct so far
-        if (item !== sequence[newInput.length - 1]) {
+        if (item !== currentSequence[newInput.length - 1]) {
             // Wrong! Player eliminated
             handleWrongAnswer();
             return;
         }
 
         // Check if sequence complete
-        if (newInput.length === sequence.length) {
+        if (newInput.length === currentSequence.length) {
             handleCorrectSequence();
         }
     };
@@ -100,7 +114,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
     const handleCorrectSequence = () => {
         // Award points based on sequence length
-        const points = sequence.length * 10;
+        const points = currentSequence.length * 10;
         setScores(prev => ({
             ...prev,
             [currentPlayer.name]: prev[currentPlayer.name] + points
@@ -124,12 +138,12 @@ const MemoryChainScreen = ({ route, navigation }) => {
             nextIndex = (nextIndex + 1) % players.length;
         }
 
-        // If we've gone full circle, add new item and start over
-        if (nextIndex <= currentPlayerIndex || eliminated.length > 0) {
-            addToSequence();
-        }
-
         setCurrentPlayerIndex(nextIndex);
+
+        // Generate new random sequence for next player with increased length
+        const newLength = currentSequence.length + 1;
+        generatePlayerSequence(newLength);
+
         setLastEliminated(null);
         setPhase('show');
     };
@@ -159,7 +173,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                         {winner?.name}
                     </NeonText>
                     <NeonText size={20} color={COLORS.neonCyan}>
-                        Remembered {sequence.length} items!
+                        Remembered {currentSequence.length} items!
                     </NeonText>
                     <NeonText size={16} color="#888">
                         Score: {winnerScore} points
@@ -197,7 +211,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
-                        ROUND {sequence.length}
+                        ROUND {currentSequence.length}
                     </NeonText>
                     <NeonText size={24} weight="bold" glow>
                         🧠 MEMORY CHAIN
@@ -224,13 +238,13 @@ const MemoryChainScreen = ({ route, navigation }) => {
                     ]}>
                         {showingIndex >= 0 && (
                             <NeonText size={80}>
-                                {sequence[showingIndex]}
+                                {currentSequence[showingIndex]}
                             </NeonText>
                         )}
                     </Animated.View>
 
                     <View style={styles.progressDots}>
-                        {sequence.map((_, i) => (
+                        {currentSequence.map((_, i) => (
                             <View
                                 key={i}
                                 style={[
@@ -260,10 +274,10 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
                 <View style={styles.progressBar}>
                     <NeonText size={14}>
-                        {playerInput.length} / {sequence.length}
+                        {playerInput.length} / {currentSequence.length}
                     </NeonText>
                     <View style={styles.inputDots}>
-                        {sequence.map((_, i) => (
+                        {currentSequence.map((_, i) => (
                             <View
                                 key={i}
                                 style={[
@@ -309,7 +323,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                             <View style={styles.correctSequence}>
                                 <NeonText size={12} color="#888">The sequence was:</NeonText>
                                 <View style={styles.sequenceRow}>
-                                    {sequence.map((item, i) => (
+                                    {currentSequence.map((item, i) => (
                                         <NeonText key={i} size={24}>{item}</NeonText>
                                     ))}
                                 </View>
@@ -322,10 +336,10 @@ const MemoryChainScreen = ({ route, navigation }) => {
                                 CORRECT!
                             </NeonText>
                             <NeonText size={18} style={styles.resultText}>
-                                {currentPlayer.name} advances to round {sequence.length + 1}!
+                                {currentPlayer.name} advances to round {currentSequence.length + 1}!
                             </NeonText>
                             <NeonText size={24} color={COLORS.neonCyan}>
-                                +{sequence.length * 10} points
+                                +{currentSequence.length * 10} points
                             </NeonText>
                         </>
                     )}
