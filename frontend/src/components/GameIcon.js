@@ -36,11 +36,8 @@ const ALIASES = {
     'type-race': 'word-rush',
     'color-rush': 'neon-tap',
     'caption-this': 'draw-battle',
-    'spin-bottle': 'truth-or-dare',
     'would-you-rather': 'myth-or-fact', // Reuse Scales
     'auction-bluff': 'kings-cup', // Reuse Cards/Chips vibe
-    'memory-chain': 'trivia',
-    'memory-match': 'trivia',
     'speed-categories': 'word-rush',
 };
 

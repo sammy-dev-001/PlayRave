@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from './NeonText';
 
-const WhotCard = ({ card, onPress, disabled, small }) => {
+const WhotCard = ({ card, onPress, disabled, small, isTopCard }) => {
     // Determine card background and content color
     const isWhot = card.shape === 'whot';
     const cardBgColor = '#FFFFFF';
@@ -56,7 +56,17 @@ const WhotCard = ({ card, onPress, disabled, small }) => {
             style={[
                 cardSize,
                 { backgroundColor: cardBgColor, borderColor: '#ccc' },
-                disabled && styles.disabled
+                disabled && !isTopCard && styles.disabled,
+                isTopCard && {
+                    borderWidth: 3,
+                    borderColor: contentColor,
+                    shadowColor: contentColor,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 12,
+                    elevation: 10,
+                    transform: [{ scale: 1.15 }],
+                }
             ]}
             onPress={onPress}
             disabled={disabled}

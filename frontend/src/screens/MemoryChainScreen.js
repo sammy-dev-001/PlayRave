@@ -45,13 +45,18 @@ const MemoryChainScreen = ({ route, navigation }) => {
         }
     }, [phase, currentSequence]);
 
-    const generatePlayerSequence = (sequenceLength = 1) => {
+    const [currentLevel, setCurrentLevel] = useState(1);
+    const [playersAttemptedLevel, setPlayersAttemptedLevel] = useState([]);
+
+    // ... existing ...
+
+    const generatePlayerSequence = (level = 1) => {
         const currentPlayer = players[currentPlayerIndex];
         const playerKey = `${currentPlayerIndex}-${currentPlayer.name}`;
 
         // Generate a random sequence for this player
         const newSequence = [];
-        for (let i = 0; i < sequenceLength; i++) {
+        for (let i = 0; i < level; i++) {
             const randomItem = MEMORY_ITEMS[Math.floor(Math.random() * MEMORY_ITEMS.length)];
             newSequence.push(randomItem);
         }
@@ -89,47 +94,37 @@ const MemoryChainScreen = ({ route, navigation }) => {
         setPhase('input');
     };
 
-    const handleItemPress = (item) => {
-        const newInput = [...playerInput, item];
-        setPlayerInput(newInput);
-
-        // Check if this is correct so far
-        if (item !== currentSequence[newInput.length - 1]) {
-            // Wrong! Player eliminated
-            handleWrongAnswer();
-            return;
-        }
-
-        // Check if sequence complete
-        if (newInput.length === currentSequence.length) {
-            handleCorrectSequence();
-        }
-    };
-
-    const handleWrongAnswer = () => {
-        setLastEliminated(currentPlayer.name);
-        setEliminated(prev => [...prev, currentPlayer.name]);
-        setPhase('result');
-    };
-
-    const handleCorrectSequence = () => {
-        // Award points based on sequence length
-        const points = currentSequence.length * 10;
-        setScores(prev => ({
-            ...prev,
-            [currentPlayer.name]: prev[currentPlayer.name] + points
-        }));
-        setPhase('result');
-    };
-
     const handleNextTurn = () => {
         setPlayerInput([]);
 
+        // Add current player to attempted list
+        const updatedAttempted = [...playersAttemptedLevel, players[currentPlayerIndex].name];
+        setPlayersAttemptedLevel(updatedAttempted);
+
         // Check if only one player remains
         const remaining = players.filter(p => !eliminated.includes(p.name));
-        if (remaining.length <= 1) {
+        // Note: if current player was just eliminated, they are in 'eliminated'
+
+        if (remaining.length <= 1) { // 1 or 0 (if everyone dead)
+            // If 1 winner
+            if (remaining.length === 1) {
+                setShowWinner(true);
+                return;
+            }
+            // If everyone dead (0), show game over with score
             setShowWinner(true);
             return;
+        }
+
+        // Determine if level is complete
+        // Level is complete if all CURRENTLY active players have attempted it
+        const levelComplete = remaining.every(p => updatedAttempted.includes(p.name));
+
+        let nextLevel = currentLevel;
+        if (levelComplete) {
+            nextLevel = currentLevel + 1;
+            setCurrentLevel(nextLevel);
+            setPlayersAttemptedLevel([]);
         }
 
         // Find next active player
@@ -140,9 +135,8 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
         setCurrentPlayerIndex(nextIndex);
 
-        // Generate new random sequence for next player with increased length
-        const newLength = currentSequence.length + 1;
-        generatePlayerSequence(newLength);
+        // Generate new random sequence for next player
+        generatePlayerSequence(nextLevel);
 
         setLastEliminated(null);
         setPhase('show');
@@ -290,7 +284,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.itemGrid}>
-                    {MEMORY_ITEMS.slice(0, 12).map((item, index) => (
+                    {MEMORY_ITEMS.slice(0, 16).map((item, index) => (
                         <TouchableOpacity
                             key={index}
                             style={styles.itemButton}

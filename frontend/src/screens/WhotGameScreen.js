@@ -146,7 +146,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             {/* Top Card */}
             <View style={styles.topCardContainer}>
                 <NeonText size={16} style={styles.label}>TOP CARD</NeonText>
-                <WhotCard card={gameState.topCard} disabled={true} />
+                <WhotCard card={gameState.topCard} disabled={true} isTopCard={true} />
                 {gameState.calledShape && (
                     <NeonText size={14} color={COLORS.limeGlow} style={styles.calledShape}>
                         Called: {gameState.calledShape.toUpperCase()}

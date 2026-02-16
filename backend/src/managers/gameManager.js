@@ -873,10 +873,12 @@ class GameManager {
     canPlayCard(game, card) {
         const topCard = game.topCard;
 
-        // Check for active attack
+        // Check for active attack (pick2/pick3 only — NOT general market)
         if (game.attackStack > 0) {
             const attackCardNumber = topCard.number; // 2 or 5
-            // Must play a card extending the attack (same number)
+            // General market (14) is NOT defendable — player must draw
+            if (attackCardNumber === 14) return false;
+            // For pick2/pick3, can defend by playing same number
             if (card.number === attackCardNumber) return true;
             return false;
         }
@@ -965,9 +967,22 @@ class GameManager {
                 return 'pick3';
 
             case 'general-market':
-                // All players draw 1 card
+                // All OTHER players draw 1 card (not the player who played it)
+                const currentGMPlayer = game.playerOrder[game.currentPlayerIndex];
                 game.playerOrder.forEach(playerId => {
-                    this.drawWhotCards(game.roomId, playerId, 1);
+                    if (playerId !== currentGMPlayer) {
+                        // Directly draw cards without moving turn
+                        const playerHand = game.playerHands[playerId];
+                        if (game.deck.length === 0) {
+                            const { shuffleDeck } = require('../data/whotCards');
+                            const topCard = game.discardPile.pop();
+                            game.deck = shuffleDeck(game.discardPile);
+                            game.discardPile = [topCard];
+                        }
+                        if (game.deck.length > 0) {
+                            playerHand.push(game.deck.pop());
+                        }
+                    }
                 });
                 return 'general-market';
 

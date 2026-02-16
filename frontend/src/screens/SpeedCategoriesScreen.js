@@ -39,6 +39,14 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
     const currentCategory = playerCategories[currentPlayerIndex]?.[currentCategoryIndex];
     const currentPlayer = players[currentPlayerIndex];
 
+    if (!currentCategory) {
+        return (
+            <NeonContainer>
+                <NeonText>Loading category...</NeonText>
+            </NeonContainer>
+        );
+    }
+
     // Timer logic for playing phase
     useEffect(() => {
         if (phase === 'playing') {
@@ -372,7 +380,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
                     </View>
 
                     <NeonButton
-                        title={currentCategoryIndex < categories.length - 1 || currentPlayerIndex < players.length - 1
+                        title={currentCategoryIndex < playerCategories[0].length - 1 || currentPlayerIndex < players.length - 1
                             ? "NEXT TURN"
                             : "SEE FINAL SCORES"}
                         onPress={handleNextTurn}

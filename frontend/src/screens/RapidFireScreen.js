@@ -26,9 +26,34 @@ const RapidFireScreen = ({ route, navigation }) => {
     });
 
     const timerRef = useRef(null);
-    const progressAnim = useRef(new Animated.Value(1)).current;
+    // Pulse animation for low time
+    const pulseAnim = useRef(new Animated.Value(1)).current;
 
-    const currentPlayer = players[currentPlayerIndex];
+    useEffect(() => {
+        if (timeLeft <= 3 && isTimerRunning) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.2,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 200,
+                        useNativeDriver: true,
+                    })
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [timeLeft, isTimerRunning]);
+
+    // Auto-start on new question
+    useEffect(() => {
+        startTimer();
+    }, [currentQuestion]);
 
     useEffect(() => {
         if (isTimerRunning && timeLeft > 0) {
@@ -80,8 +105,7 @@ const RapidFireScreen = ({ route, navigation }) => {
         setUsedQuestions([...usedQuestions, newQuestion]);
         setCurrentPlayerIndex(nextPlayerIndex);
         if (newRound) setRoundNumber(roundNumber + 1);
-        setTimeLeft(QUESTION_TIME);
-        setShowQuestion(true);
+        // Timer will auto-start via useEffect on currentQuestion change
     };
 
     const getCategoryColor = () => {
@@ -123,9 +147,20 @@ const RapidFireScreen = ({ route, navigation }) => {
                 </NeonText>
             </View>
 
-            {/* Timer Bar */}
-            {isTimerRunning && (
+            {/* Timer and Question */}
+            <View style={styles.gameArea}>
                 <View style={styles.timerContainer}>
+                    <Animated.Text style={{
+                        fontSize: 60,
+                        fontWeight: 'bold',
+                        color: timeLeft <= 2 ? COLORS.hotPink : COLORS.white,
+                        transform: [{ scale: pulseAnim }],
+                        textShadowColor: timeLeft <= 2 ? COLORS.hotPink : COLORS.neonCyan,
+                        textShadowOffset: { width: 0, height: 0 },
+                        textShadowRadius: 20
+                    }}>
+                        {timeLeft}
+                    </Animated.Text>
                     <View style={styles.timerBar}>
                         <Animated.View
                             style={[
@@ -137,55 +172,38 @@ const RapidFireScreen = ({ route, navigation }) => {
                             ]}
                         />
                     </View>
-                    <NeonText size={24} weight="bold" color={timeLeft <= 2 ? COLORS.hotPink : COLORS.white}>
-                        {timeLeft}s
+                </View>
+
+                <View style={styles.questionContainer}>
+                    <NeonText size={32} weight="bold" style={styles.questionText} glow>
+                        {currentQuestion}
                     </NeonText>
                 </View>
-            )}
-
-            {/* Question */}
-            <View style={styles.questionContainer}>
-                <NeonText size={28} weight="bold" style={styles.questionText} glow>
-                    {currentQuestion}
-                </NeonText>
             </View>
 
-            {/* Actions */}
-            {!isTimerRunning ? (
-                <View style={styles.actions}>
-                    <NeonButton
-                        title="START TIMER"
-                        onPress={startTimer}
-                        style={styles.startBtn}
-                    />
-                    <NeonButton
-                        title="SKIP QUESTION"
-                        variant="secondary"
-                        onPress={() => handleNext(false)}
-                    />
-                </View>
-            ) : (
-                <View style={styles.actions}>
-                    <TouchableOpacity
-                        style={[styles.answerBtn, styles.answeredBtn]}
-                        onPress={() => handleNext(true)}
-                    >
-                        <NeonText size={40}>✓</NeonText>
-                        <NeonText size={16} weight="bold" color={COLORS.limeGlow}>
-                            ANSWERED!
-                        </NeonText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.answerBtn, styles.skippedBtn]}
-                        onPress={() => handleNext(false)}
-                    >
-                        <NeonText size={40}>✗</NeonText>
-                        <NeonText size={16} weight="bold" color={COLORS.hotPink}>
-                            SKIP
-                        </NeonText>
-                    </TouchableOpacity>
-                </View>
-            )}
+            {/* Actions - Always show buttons due to auto-start */}
+            <View style={styles.actions}>
+                <TouchableOpacity
+                    style={[styles.answerBtn, styles.answeredBtn]}
+                    onPress={() => handleNext(true)}
+                    activeOpacity={0.7}
+                >
+                    <NeonText size={50}>⚡</NeonText>
+                    <NeonText size={20} weight="bold" color={COLORS.limeGlow}>
+                        GOT IT!
+                    </NeonText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.answerBtn, styles.skippedBtn]}
+                    onPress={() => handleNext(false)}
+                    activeOpacity={0.7}
+                >
+                    <NeonText size={50}>💨</NeonText>
+                    <NeonText size={20} weight="bold" color={COLORS.hotPink}>
+                        PASS
+                    </NeonText>
+                </TouchableOpacity>
+            </View>
 
             {/* Scoreboard */}
             <View style={styles.scoreboard}>
@@ -214,77 +232,97 @@ const RapidFireScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        marginTop: 30,
-        marginBottom: 15,
+        marginTop: 10,
+        marginBottom: 10,
     },
     categoryBadge: {
-        marginTop: 8,
+        marginTop: 5,
         marginBottom: 5,
         paddingHorizontal: 15,
-        paddingVertical: 5,
+        paddingVertical: 4,
         borderRadius: 20,
-        borderWidth: 2,
+        borderWidth: 1,
     },
     playerContainer: {
         alignItems: 'center',
-        marginBottom: 15,
-        padding: 15,
+        marginBottom: 20,
+        padding: 10,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)'
+    },
+    gameArea: {
+        marginBottom: 20,
+        alignItems: 'center',
     },
     timerContainer: {
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 20,
+        width: '100%',
     },
     timerBar: {
-        width: '100%',
-        height: 8,
+        width: '80%',
+        height: 10,
         backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 4,
+        borderRadius: 5,
         overflow: 'hidden',
-        marginBottom: 10,
+        marginTop: 10,
     },
     timerProgress: {
         height: '100%',
-        borderRadius: 4,
+        borderRadius: 5,
     },
     questionContainer: {
-        flex: 1,
+        width: '100%',
+        minHeight: 150,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 16,
+        borderRadius: 24,
         borderWidth: 2,
         borderColor: COLORS.neonCyan,
-        padding: 25,
-        marginBottom: 15,
+        padding: 20,
+        shadowColor: COLORS.neonCyan,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
     },
     questionText: {
         textAlign: 'center',
-        lineHeight: 36,
+        lineHeight: 40,
     },
     actions: {
         flexDirection: 'row',
-        gap: 10,
-        marginBottom: 15,
-    },
-    startBtn: {
-        flex: 1,
+        gap: 15,
+        marginBottom: 20,
+        height: 140, // Fixed height for big buttons
     },
     answerBtn: {
         flex: 1,
-        padding: 15,
-        borderRadius: 12,
+        padding: 10,
+        borderRadius: 20,
         alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 2,
+        backgroundColor: 'rgba(0,0,0,0.3)',
     },
     answeredBtn: {
-        backgroundColor: 'rgba(198, 255, 74, 0.1)',
         borderColor: COLORS.limeGlow,
+        shadowColor: COLORS.limeGlow,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
     },
     skippedBtn: {
-        backgroundColor: 'rgba(255, 63, 164, 0.1)',
         borderColor: COLORS.hotPink,
+        shadowColor: COLORS.hotPink,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
     },
     scoreboard: {
         flexDirection: 'row',
@@ -297,11 +335,12 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 8,
         padding: 8,
-        minWidth: 70,
+        minWidth: 60,
         alignItems: 'center',
     },
     endBtn: {
-        marginTop: 'auto',
+        marginTop: 10,
+        marginBottom: 20
     }
 });
 
