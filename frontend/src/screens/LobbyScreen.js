@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Switch, Share, Modal, TouchableOpacity, Image, Linking, Platform, Alert } from 'react-native';
-import NeonContainer from '../components/NeonContainer';
+import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Image, Share, Alert, StatusBar, Platform, SafeAreaView } from 'react-native';
+import NeonBackground from '../components/NeonBackground';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import HeaderIcons from '../components/lobby/HeaderIcons';
+import RoomCodeBanner from '../components/lobby/RoomCodeBanner';
+import CurrentGameCard from '../components/lobby/CurrentGameCard';
+import PlayerList from '../components/lobby/PlayerList';
+import SettingsToggle from '../components/lobby/SettingsToggle';
+import ActionFooter from '../components/lobby/ActionFooter';
 import SocketService from '../services/socket';
-import SoundService from '../services/SoundService';
-import VoiceToggle from '../components/VoiceToggle';
 import { COLORS } from '../constants/theme';
-import GameIcon from '../components/GameIcon';
 
 const LobbyScreen = ({ route, navigation }) => {
     const [room, setRoom] = useState(route.params.room);
@@ -24,11 +27,7 @@ const LobbyScreen = ({ route, navigation }) => {
     const currentPlayerIsHost = () => {
         const currentId = getCurrentPlayerId();
         if (!currentId || !room) return false;
-
-        // Check if current player matches room hostId
         if (room.hostId === currentId) return true;
-
-        // Also check player's isHost flag in players array
         const currentPlayer = room.players.find(p => p.id === currentId);
         return currentPlayer?.isHost || false;
     };
@@ -42,14 +41,11 @@ const LobbyScreen = ({ route, navigation }) => {
 
         checkConnection();
 
-        // Music is already playing from HomeScreen - no need to start again
-
         const onRoomUpdated = (updatedRoom) => {
             setRoom(updatedRoom);
             if (updatedRoom.gameType) {
                 setSelectedGame(updatedRoom.gameType);
             }
-            // Update my ready status when room updates
             const currentId = getCurrentPlayerId();
             const me = updatedRoom.players.find(p => p.id === currentId);
             if (me) {
@@ -61,162 +57,53 @@ const LobbyScreen = ({ route, navigation }) => {
             Alert.alert(
                 'Kicked from Lobby',
                 'You have been removed from this lobby by the host.',
-                [{
-                    text: 'OK',
-                    onPress: () => navigation.navigate('Home')
-                }]
+                [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
             );
         };
 
         const onGameStarted = ({ gameType, question, statement, prompt, players, hostParticipates: hostPlays, gameState }) => {
             if (gameType === 'trivia') {
-                navigation.navigate('Question', {
-                    room,
-                    question,
-                    questionIndex: 0,
-                    hostParticipates: hostPlays,
-                    isHost
-                });
+                navigation.navigate('Question', { room, question, questionIndex: 0, hostParticipates: hostPlays, isHost });
             } else if (gameType === 'myth-or-fact') {
-                navigation.navigate('MythOrFactQuestion', {
-                    room,
-                    statement,
-                    statementIndex: 0,
-                    hostParticipates: hostPlays,
-                    isHost
-                });
+                navigation.navigate('MythOrFactQuestion', { room, statement, statementIndex: 0, hostParticipates: hostPlays, isHost });
             } else if (gameType === 'whos-most-likely') {
-                navigation.navigate('WhosMostLikelyQuestion', {
-                    room,
-                    prompt,
-                    promptIndex: 0,
-                    players,
-                    hostParticipates: hostPlays,
-                    isHost
-                });
+                navigation.navigate('WhosMostLikelyQuestion', { room, prompt, promptIndex: 0, players, hostParticipates: hostPlays, isHost });
             } else if (gameType === 'neon-tap') {
-                navigation.navigate('NeonTapGame', {
-                    room,
-                    hostParticipates: hostPlays,
-                    isHost
-                });
+                navigation.navigate('NeonTapGame', { room, hostParticipates: hostPlays, isHost });
             } else if (gameType === 'word-rush') {
-                navigation.navigate('WordRushGame', {
-                    room,
-                    hostParticipates: hostPlays,
-                    isHost
-                });
+                navigation.navigate('WordRushGame', { room, hostParticipates: hostPlays, isHost });
             } else if (gameType === 'whot') {
-                navigation.navigate('WhotGame', {
-                    room,
-                    hostParticipates: hostPlays,
-                    isHost,
-                    initialGameState: gameState // Pass initial game state
-                });
+                navigation.navigate('WhotGame', { room, hostParticipates: hostPlays, isHost, initialGameState: gameState });
             } else if (gameType === 'truth-or-dare') {
-                navigation.navigate('OnlineTruthOrDareGame', {
-                    room,
-                    hostParticipates: hostPlays,
-                    isHost,
-                    gameState,
-                    players,
-                    category: gameState?.category || 'normal'
-                });
+                navigation.navigate('OnlineTruthOrDareGame', { room, hostParticipates: hostPlays, isHost, gameState, players, category: gameState?.category || 'normal' });
             } else if (gameType === 'never-have-i-ever') {
-                navigation.navigate('OnlineNeverHaveIEver', {
-                    room,
-                    isHost,
-                    initialGameState: gameState,
-                    players
-                });
+                navigation.navigate('OnlineNeverHaveIEver', { room, isHost, initialGameState: gameState, players });
             } else if (gameType === 'rapid-fire') {
-                navigation.navigate('OnlineRapidFire', {
-                    room,
-                    isHost,
-                    initialGameState: gameState,
-                    players
-                });
+                navigation.navigate('OnlineRapidFire', { room, isHost, initialGameState: gameState, players });
             } else if (gameType === 'confession-roulette') {
-                navigation.navigate('ConfessionRoulette', {
-                    room,
-                    playerName,
-                    isHost
-                });
+                navigation.navigate('ConfessionRoulette', { room, playerName, isHost });
             } else if (gameType === 'imposter') {
-                navigation.navigate('Imposter', {
-                    room,
-                    playerName,
-                    isHost
-                });
+                navigation.navigate('Imposter', { room, playerName, isHost });
             } else if (gameType === 'unpopular-opinions') {
-                navigation.navigate('UnpopularOpinions', {
-                    room,
-                    playerName,
-                    isHost
-                });
+                navigation.navigate('UnpopularOpinions', { room, playerName, isHost });
             } else if (gameType === 'hot-seat') {
-                navigation.navigate('HotSeat', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('HotSeat', { room, playerName, isHost, gameState });
             } else if (gameType === 'button-mash') {
-                navigation.navigate('ButtonMash', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('ButtonMash', { room, playerName, isHost, gameState });
             } else if (gameType === 'type-race') {
-                navigation.navigate('TypeRace', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('TypeRace', { room, playerName, isHost, gameState });
             } else if (gameType === 'math-blitz') {
-                navigation.navigate('MathBlitz', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('MathBlitz', { room, playerName, isHost, gameState });
             } else if (gameType === 'color-rush') {
-                navigation.navigate('ColorRush', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('ColorRush', { room, playerName, isHost, gameState });
             } else if (gameType === 'tic-tac-toe') {
-                navigation.navigate('TicTacToe', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('TicTacToe', { room, playerName, isHost, gameState });
             } else if (gameType === 'draw-battle') {
-                navigation.navigate('DrawBattle', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('DrawBattle', { room, playerName, isHost, gameState });
             } else if (gameType === 'lie-detector') {
-                navigation.navigate('LieDetector', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('LieDetector', { room, playerName, isHost, gameState });
             } else if (gameType === 'scrabble') {
-                navigation.navigate('OnlineScrabble', {
-                    room,
-                    playerName,
-                    isHost,
-                    gameState
-                });
+                navigation.navigate('OnlineScrabble', { room, playerName, isHost, gameState });
             }
         };
 
@@ -236,41 +123,22 @@ const LobbyScreen = ({ route, navigation }) => {
             SocketService.off('room-updated', onRoomUpdated);
             SocketService.off('game-started', onGameStarted);
             SocketService.off('player-kicked', onPlayerKicked);
-            // Don't stop music here - let it continue or stop when game starts
         };
     }, [navigation, room]);
 
     const handleStartGame = () => {
-        // For Truth or Dare, navigate to category selection first
         if (selectedGame === 'truth-or-dare') {
-            navigation.navigate('OnlineTruthOrDareCategory', {
-                room,
-                isHost,
-                playerName
-            });
+            navigation.navigate('OnlineTruthOrDareCategory', { room, isHost, playerName });
             return;
         }
-
-        // For Never Have I Ever, navigate to category selection
-        if (selectedGame === 'never-have-i') {
-            navigation.navigate('OnlineNHIECategory', {
-                room,
-                isHost,
-                playerName
-            });
+        if (selectedGame === 'never-have-i-ever') {
+            navigation.navigate('OnlineNHIECategory', { room, isHost, playerName });
             return;
         }
-
-        // For Rapid Fire, navigate to category selection
         if (selectedGame === 'rapid-fire') {
-            navigation.navigate('OnlineRapidFireCategory', {
-                room,
-                isHost,
-                playerName
-            });
+            navigation.navigate('OnlineRapidFireCategory', { room, isHost, playerName });
             return;
         }
-
         SocketService.emit('start-game', {
             roomId: room.id,
             gameType: selectedGame,
@@ -284,19 +152,17 @@ const LobbyScreen = ({ route, navigation }) => {
         navigation.navigate('Home');
     };
 
-    const handleKickPlayer = (playerId, playerName) => {
+    const handleKickPlayer = (playerId, name) => {
         Alert.alert(
             'Kick Player',
-            `Are you sure you want to remove ${playerName} from the lobby?`,
+            `Are you sure you want to remove ${name} from the lobby?`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Kick',
                     style: 'destructive',
-                    onPress: () => {
-                        SocketService.emit('kick-player', { roomId: room.id, playerIdToKick: playerId });
-                    }
-                }
+                    onPress: () => SocketService.emit('kick-player', { roomId: room.id, playerIdToKick: playerId }),
+                },
             ]
         );
     };
@@ -307,9 +173,7 @@ const LobbyScreen = ({ route, navigation }) => {
         SocketService.emit('player-ready', { roomId: room.id, isReady: newReadyStatus });
     };
 
-    // Generate join link - using the deployed URL
     const getJoinLink = () => {
-        // Use the current deployed URL
         const baseUrl = 'https://play-rave.vercel.app';
         return `${baseUrl}?join=${room.id}`;
     };
@@ -330,144 +194,78 @@ const LobbyScreen = ({ route, navigation }) => {
         return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${joinLink}&bgcolor=1a1a2e&color=00f0ff`;
     };
 
-    const renderPlayer = ({ item }) => {
-        const isBase64Image = item.avatar && typeof item.avatar === 'string' && item.avatar.startsWith('data:image');
-        const currentPlayerId = getCurrentPlayerId();
-        const isMe = item.id === currentPlayerId;
-
-        return (
-            <View style={styles.playerRow}>
-                <View style={styles.avatar}>
-                    {isBase64Image ? (
-                        <Image source={{ uri: item.avatar }} style={styles.avatarImage} />
-                    ) : item.avatar?.emoji ? (
-                        <NeonText size={20}>{item.avatar.emoji}</NeonText>
-                    ) : (
-                        <NeonText size={20}>👤</NeonText>
-                    )}
-                </View>
-                <View style={styles.playerInfo}>
-                    <NeonText size={18} style={styles.playerName}>
-                        {item.name} {item.isHost ? '👑' : ''} {isMe ? '(You)' : ''}
-                    </NeonText>
-                    {item.isReady && !item.isHost && (
-                        <NeonText size={12} color={COLORS.limeGlow}>✓ Ready</NeonText>
-                    )}
-                </View>
-                {isHost && !item.isHost && (
-                    <TouchableOpacity
-                        style={styles.kickButton}
-                        onPress={() => handleKickPlayer(item.id, item.name)}
-                    >
-                        <NeonText size={12} color={COLORS.hotPink}>KICK</NeonText>
-                    </TouchableOpacity>
-                )}
-            </View>
-        );
-    };
-
     return (
-        <NeonContainer showMuteButton showBackButton>
-            {/* QR Code Modal moved outside or kept here */}
+        <View style={styles.screen}>
+            <StatusBar barStyle="light-content" backgroundColor="#05050A" />
+            <NeonBackground />
 
-            <FlatList
-                data={room.players}
-                keyExtractor={item => item.id}
-                renderItem={renderPlayer}
-                contentContainerStyle={styles.list}
-                ListHeaderComponent={
-                    <>
-                        <View style={styles.header}>
-                            <NeonText size={14} color={COLORS.hotPink}>ROOM CODE</NeonText>
-                            <NeonText size={48} weight="bold" glow color={COLORS.neonCyan}>
-                                {room.id}
-                            </NeonText>
-                            {selectedGame && (
-                                <View style={styles.gameNameContainer}>
-                                    <GameIcon gameId={selectedGame} size={24} style={{ marginRight: 8 }} />
-                                    <NeonText size={16} color={COLORS.limeGlow}>
-                                        {selectedGame === 'trivia' ? 'Quick Trivia' : selectedGame}
-                                    </NeonText>
-                                </View>
-                            )}
-                            {/* Share Buttons */}
-                            <View style={styles.shareButtons}>
-                                <TouchableOpacity style={styles.shareBtn} onPress={handleShareLink}>
-                                    <NeonText size={20}>📤</NeonText>
-                                    <NeonText size={12} color={COLORS.neonCyan}>Share</NeonText>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.shareBtn} onPress={() => setShowShareModal(true)}>
-                                    <NeonText size={20}>📱</NeonText>
-                                    <NeonText size={12} color={COLORS.neonCyan}>QR Code</NeonText>
-                                </TouchableOpacity>
-                                <VoiceToggle roomId={room.id} style={styles.voiceToggle} />
-                            </View>
-                        </View>
+            <SafeAreaView style={styles.safeArea}>
+                {/* FIXED: Header */}
+                <HeaderIcons
+                    onBackPress={handleLeaveLobby}
+                    roomId={room.id}
+                />
 
-                        <NeonText size={20} style={styles.sectionTitle}>PLAYERS IN LOBBY</NeonText>
-                    </>
-                }
-                ListFooterComponent={
-                    <View style={{ paddingBottom: 50 }}>
-                        {isHost && !fromGame && (
-                            <View style={styles.toggleContainer}>
-                                <NeonText size={16}>Host Participates</NeonText>
-                                <Switch
-                                    value={hostParticipates}
-                                    onValueChange={setHostParticipates}
-                                    trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
-                                    thumbColor={hostParticipates ? COLORS.limeGlow : '#f4f3f4'}
-                                    ios_backgroundColor="#3e3e3e"
-                                />
-                            </View>
-                        )}
+                {/* SCROLLABLE: Middle */}
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <RoomCodeBanner
+                        roomCode={room.id}
+                        onSharePress={handleShareLink}
+                        onQRPress={() => setShowShareModal(true)}
+                    />
 
-                        {!isHost && !fromGame && (
-                            <View style={styles.readyContainer}>
-                                <NeonButton
-                                    title={myReadyStatus ? "✓ READY" : "READY UP"}
-                                    onPress={handleToggleReady}
-                                    variant={myReadyStatus ? "primary" : "secondary"}
-                                    style={{ backgroundColor: myReadyStatus ? COLORS.limeGlow : undefined }}
-                                />
-                            </View>
-                        )}
+                    <CurrentGameCard
+                        gameId={selectedGame}
+                        isHost={isHost}
+                        onChangeGame={() =>
+                            navigation.navigate('GameSelection', { room, playerName })
+                        }
+                    />
 
-                        {isHost ? (
-                            <>
-                                <NeonButton title="START GAME" onPress={handleStartGame} />
-                                <NeonButton
-                                    title="🏆 TOURNAMENT MODE"
-                                    onPress={() => navigation.navigate('TournamentSetup', {
-                                        room,
-                                        playerName,
-                                        isHost: true
-                                    })}
-                                    variant="secondary"
-                                    style={styles.tournamentButton}
-                                />
-                                <NeonButton
-                                    title="LEAVE LOBBY"
-                                    onPress={handleLeaveLobby}
-                                    variant="secondary"
-                                    style={styles.leaveButton}
-                                />
-                            </>
-                        ) : (
-                            <>
-                                <NeonText style={styles.waiting}>Waiting for host to start...</NeonText>
-                                <NeonButton
-                                    title="LEAVE LOBBY"
-                                    onPress={handleLeaveLobby}
-                                    variant="secondary"
-                                    style={styles.leaveButton}
-                                />
-                            </>
-                        )}
-                    </View>
-                }
-            />
+                    <PlayerList
+                        players={room.players}
+                        currentPlayerId={getCurrentPlayerId()}
+                        isHost={isHost}
+                        maxPlayers={8}
+                        onKick={handleKickPlayer}
+                    />
 
+                    {isHost && !fromGame && (
+                        <SettingsToggle
+                            value={hostParticipates}
+                            onValueChange={setHostParticipates}
+                            label="Host Participates"
+                            subtitle="Allow host to be part of the game turns"
+                        />
+                    )}
+
+                    {/* Bottom spacing for scroll content */}
+                    <View style={{ height: 20 }} />
+                </ScrollView>
+
+                {/* FIXED: Bottom actions */}
+                <ActionFooter
+                    isHost={isHost}
+                    onStartGame={handleStartGame}
+                    onTournament={() =>
+                        navigation.navigate('TournamentSetup', {
+                            room,
+                            playerName,
+                            isHost: true,
+                        })
+                    }
+                    onLeave={handleLeaveLobby}
+                    onReadyUp={handleToggleReady}
+                    isReady={myReadyStatus}
+                />
+            </SafeAreaView>
+
+            {/* QR Code Modal */}
             <Modal
                 visible={showShareModal}
                 transparent
@@ -505,109 +303,27 @@ const LobbyScreen = ({ route, navigation }) => {
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </NeonContainer>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    header: {
-        alignItems: 'center',
-        marginBottom: 40,
-        marginTop: 20,
+    screen: {
+        flex: 1,
+        height: '100%',
+        minHeight: '100vh',
+        backgroundColor: '#05050A',
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
-    gameNameContainer: {
-        marginTop: 10,
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        backgroundColor: 'rgba(0, 255, 0, 0.1)',
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: COLORS.limeGlow,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    sectionTitle: {
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    list: {
-        paddingBottom: 20,
-    },
-    playerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(177, 78, 255, 0.3)',
-    },
-    avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 15,
-        overflow: 'hidden',
-    },
-    avatarImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-    },
-    playerInfo: {
+    safeArea: {
         flex: 1,
     },
-    playerName: {
-        color: 'white',
+    scrollView: {
+        flex: 1,
     },
-    kickButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: 'rgba(255,0,102,0.2)',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.hotPink,
-    },
-    readyContainer: {
-        marginBottom: 20,
-    },
-    toggleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: COLORS.electricPurple,
-    },
-    waiting: {
-        textAlign: 'center',
-        fontStyle: 'italic',
-        color: '#888',
-        marginTop: 20,
-    },
-    leaveButton: {
-        marginTop: 10,
-    },
-    shareButtons: {
-        flexDirection: 'row',
-        gap: 20,
-        marginTop: 15,
-    },
-    shareBtn: {
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.neonCyan,
-        minWidth: 70,
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: 20,
     },
     modalOverlay: {
         flex: 1,
@@ -637,13 +353,6 @@ const styles = StyleSheet.create({
     },
     qrShareBtn: {
         marginBottom: 15,
-    },
-    voiceToggle: {
-        marginLeft: 5,
-    },
-    tournamentButton: {
-        marginTop: 12,
-        borderColor: COLORS.electricPurple,
     },
 });
 

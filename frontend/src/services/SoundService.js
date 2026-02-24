@@ -19,14 +19,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Sound effects - currently using CDN, ideally should be local
 const SOUNDS = {
-    tick: { uri: 'https://cdn.freesound.org/previews/263/263133_4939433-lq.mp3' },
+    tick: { uri: '' },
     correct: { uri: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3' },
-    wrong: { uri: 'https://cdn.freesound.org/previews/350/350985_4502520-lq.mp3' },
+    wrong: { uri: '' },
     gameStart: { uri: 'https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3' },
-    winner: { uri: 'https://cdn.freesound.org/previews/387/387232_7255534-lq.mp3' },
-    elimination: { uri: 'https://cdn.freesound.org/previews/351/351565_5121236-lq.mp3' },
-    buttonClick: { uri: 'https://cdn.freesound.org/previews/242/242501_434738-lq.mp3' },
-    countdown: { uri: 'https://cdn.freesound.org/previews/417/417847_5121236-lq.mp3' },
+    winner: { uri: '' },
+    elimination: { uri: '' },
+    // buttonClick: { uri: 'https://cdn.freesound.org/previews/242/242501_434738-lq.mp3' },
+    countdown: { uri: '' },
 };
 
 // Local audio assets
@@ -230,13 +230,23 @@ class SoundService {
                 audio.loop = loop;
                 audio.volume = this.musicVolume;
 
+                // Early registration so stopMusic can catch it
+                this.currentMusic = audio;
+                this.currentMusicName = trackName;
+
                 audio.oncanplaythrough = () => console.log('Audio can play through');
                 audio.onerror = (e) => console.error('Audio error:', e);
                 audio.onplay = () => console.log('Audio playing!');
 
+                // Final check before playback start
+                if (this.isMusicMuted) {
+                    console.log('Muted during load, stopping web audio');
+                    audio.pause();
+                    this.currentMusic = null;
+                    return;
+                }
+
                 await audio.play();
-                this.currentMusic = audio;
-                this.currentMusicName = trackName;
                 console.log('Web audio started successfully!');
             } else {
                 // Native playback via expo-av
@@ -251,13 +261,28 @@ class SoundService {
                     audioSource = { uri: asset.localUri || asset.uri };
                 }
 
+                // Final check before creation
+                if (this.isMusicMuted) {
+                    console.log('Muted during load, skipping native creation');
+                    return;
+                }
+
                 const { sound } = await Audio.Sound.createAsync(
                     audioSource,
                     { shouldPlay: true, volume: this.musicVolume, isLooping: loop }
                 );
                 this.currentMusic = sound;
                 this.currentMusicName = trackName;
-                console.log('Native audio started');
+
+                // Final check after creation (some time might have passed)
+                if (this.isMusicMuted) {
+                    console.log('Muted during native creation, stopping');
+                    await sound.stopAsync();
+                    await sound.unloadAsync();
+                    this.currentMusic = null;
+                } else {
+                    console.log('Native audio started');
+                }
             }
         } catch (error) {
             console.log(`Error playing music ${trackName}:`, error);
@@ -284,7 +309,6 @@ class SoundService {
                 console.log('Error stopping music:', error);
             }
             this.currentMusic = null;
-            this.currentMusicName = null;
         }
     }
 
@@ -366,6 +390,9 @@ class SoundService {
 
         if (this.isMusicMuted) {
             await this.stopMusic();
+        } else if (this.currentMusicName) {
+            // Resume the last track if unmuting
+            await this.playMusic(this.currentMusicName, true);
         }
         return this.isMusicMuted;
     }

@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 // Guest user template for local storage
 const createGuestUser = () => ({
     id: 'guest-' + Date.now(),
-    username: 'Guest',
+    username: '',
     avatar: '👤',
     level: 1,
     xp: 0,

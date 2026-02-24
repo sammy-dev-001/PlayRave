@@ -730,6 +730,59 @@ io.on("connection", (socket) => {
                 });
             });
             console.log("Scrabble game started successfully");
+        } else if (gameType === "unpopular-opinions") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startUnpopularOpinionsGame(roomId, room);
+                io.to(roomId).emit("game-started", {
+                    gameType: "unpopular-opinions",
+                    hostParticipates: hostParticipates || false
+                });
+            }
+        } else if (gameType === "confession-roulette") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startConfessionRouletteGame(roomId, room);
+                io.to(roomId).emit("game-started", {
+                    gameType: "confession-roulette",
+                    hostParticipates: hostParticipates || false
+                });
+            }
+        } else if (gameType === "imposter") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startImposterGame(roomId, room);
+
+                // Send generic game-started event to everyone
+                io.to(roomId).emit("game-started", {
+                    gameType: "imposter",
+                    hostParticipates: hostParticipates || false
+                });
+
+                // Helper to send individual setup data (can be reused)
+                const sendImposterSetup = (rId, r) => {
+                    r.players.forEach(player => {
+                        const playerState = gameManager.getImposterState(rId, player.id);
+                        if (playerState) {
+                            io.to(player.id).emit("imposter-phase-changed", {
+                                phase: 'word_reveal'
+                            });
+                            io.to(player.id).emit("imposter-word-assigned", {
+                                word: playerState.myWord,
+                                isImposter: playerState.isImposter
+                            });
+                        }
+                    });
+                };
+
+                // Delay individual setup slightly to ensure clients have navigated and mounted
+                setTimeout(() => {
+                    sendImposterSetup(roomId, room);
+                }, 1000);
+            }
         }
     });
 
@@ -937,6 +990,14 @@ io.on("connection", (socket) => {
             socket.emit("error", { message: result.error });
         } else {
             socket.emit("vote-submitted", { success: true });
+
+            // Check if all players have voted
+            const room = roomManager.getRoom(roomId);
+            if (room && result.voteCount >= room.players.length) {
+                console.log("Everyone has voted, showing results early");
+                const results = gameManager.getWhosMostLikelyResults(roomId);
+                io.to(roomId).emit("whos-most-likely-results", results);
+            }
         }
     });
 
@@ -1385,21 +1446,62 @@ io.on("connection", (socket) => {
             return;
         }
 
-        const gameState = gameManager.startImposterGame(roomId, room);
+        // Check if an imposter game already exists (prevent double-start)
+        const existingState = gameManager.getImposterState(roomId, socket.id);
+        if (existingState && existingState.phase !== 'waiting') {
+            console.log("Imposter game already active, re-sending state to all players");
+            room.players.forEach(player => {
+                const playerState = gameManager.getImposterState(roomId, player.id);
+                if (playerState) {
+                    io.to(player.id).emit("imposter-phase-changed", {
+                        phase: playerState.phase
+                    });
+                    io.to(player.id).emit("imposter-word-assigned", {
+                        word: playerState.myWord,
+                        isImposter: playerState.isImposter
+                    });
+                }
+            });
+            return;
+        }
 
-        // Notify players individually of their words
-        room.players.forEach(player => {
-            const playerState = gameManager.getImposterState(roomId, player.id);
-            if (playerState) {
-                io.to(player.socketId).emit("imposter-phase-changed", {
-                    phase: 'word_reveal'
-                });
-                io.to(player.socketId).emit("imposter-word-assigned", {
-                    word: playerState.myWord,
-                    isImposter: playerState.isImposter
-                });
-            }
+        room.gameState = "PLAYING";
+        gameManager.startImposterGame(roomId, room);
+
+        // Notify ALL players to ensure they are on the right screen
+        io.to(roomId).emit("game-started", {
+            gameType: "imposter",
+            hostParticipates: true
         });
+
+        // Send setup data to each player after short delay for navigation
+        setTimeout(() => {
+            room.players.forEach(player => {
+                const playerState = gameManager.getImposterState(roomId, player.id);
+                if (playerState) {
+                    io.to(player.id).emit("imposter-phase-changed", {
+                        phase: 'word_reveal'
+                    });
+                    io.to(player.id).emit("imposter-word-assigned", {
+                        word: playerState.myWord,
+                        isImposter: playerState.isImposter
+                    });
+                }
+            });
+        }, 800);
+    });
+
+    socket.on("imposter-get-state", ({ roomId }) => {
+        console.log("imposter-get-state event received, roomId:", roomId, "player:", socket.id);
+        const playerState = gameManager.getImposterState(roomId, socket.id);
+        if (playerState) {
+            socket.emit("imposter-phase-changed", { phase: playerState.phase });
+            socket.emit("imposter-word-assigned", {
+                word: playerState.myWord,
+                isImposter: playerState.isImposter
+            });
+            console.log("Sent state recovery to player:", socket.id);
+        }
     });
 
     socket.on("imposter-start-discussion", ({ roomId }) => {

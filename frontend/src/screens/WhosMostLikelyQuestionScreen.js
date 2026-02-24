@@ -9,7 +9,7 @@ import { COLORS } from '../constants/theme';
 const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
     const { room, prompt, promptIndex, players, hostParticipates, isHost } = route.params;
     const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [timeLeft, setTimeLeft] = useState(20);
+    const [timeLeft, setTimeLeft] = useState(10);
     const [hasSubmitted, setHasSubmitted] = useState(false);
 
     const canVote = !isHost || hostParticipates;

@@ -13,12 +13,14 @@ import { COLORS, SHADOWS } from '../constants/theme';
 import { getRandomAuctionItems } from '../data/auctionItems';
 
 const formatMoney = (amount) => {
-    if (amount >= 1000000) {
-        return `$${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000000000) {
+        return `₦${(amount / 1000000000).toFixed(1)}B`;
+    } else if (amount >= 1000000) {
+        return `₦${(amount / 1000000).toFixed(1)}M`;
     } else if (amount >= 1000) {
-        return `$${(amount / 1000).toFixed(0)}K`;
+        return `₦${(amount / 1000).toFixed(0)}K`;
     }
-    return `$${amount}`;
+    return `₦${amount}`;
 };
 
 const AuctionBluffScreen = ({ route, navigation }) => {
@@ -26,18 +28,24 @@ const AuctionBluffScreen = ({ route, navigation }) => {
     const [items] = useState(() => getRandomAuctionItems(5));
     const [currentItemIndex, setCurrentItemIndex] = useState(0);
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-    const [phase, setPhase] = useState('present'); // 'present', 'choose', 'bid', 'reveal', 'results'
-    const [showRealFact, setShowRealFact] = useState(Math.random() > 0.5);
+    const [phase, setPhase] = useState('present'); // 'present', 'vote', 'vote-results', 'bid', 'reveal', 'results'
+    const [showRealFact, setShowRealFact] = useState(() => Math.random() > 0.5);
     const [currentBid, setCurrentBid] = useState(0);
     const [highestBidder, setHighestBidder] = useState(null);
     const [playerBudgets, setPlayerBudgets] = useState(() =>
-        players.reduce((acc, p) => ({ ...acc, [p.name]: 10000000 }), {}) // $10M budget each
+        players.reduce((acc, p) => ({ ...acc, [p.name]: 500000000 }), {}) // ₦500M budget each
     );
     const [playerItems, setPlayerItems] = useState(() =>
         players.reduce((acc, p) => ({ ...acc, [p.name]: [] }), {})
     );
+    const [playerVotes, setPlayerVotes] = useState({}); // { playerName: 'real' | 'bluff' }
+    const [votingPlayerIndex, setVotingPlayerIndex] = useState(0);
+    const [bonusPoints, setBonusPoints] = useState(() =>
+        players.reduce((acc, p) => ({ ...acc, [p.name]: 0 }), {})
+    );
     const [countdown, setCountdown] = useState(10);
     const [showWinner, setShowWinner] = useState(false);
+    const [passedPlayers, setPassedPlayers] = useState([]); // Track who passed in bidding
 
     const currentItem = items[currentItemIndex];
     const currentPlayer = players[currentPlayerIndex];
@@ -61,10 +69,32 @@ const AuctionBluffScreen = ({ route, navigation }) => {
         return () => clearInterval(timer);
     }, [phase]);
 
+    const handleStartVoting = () => {
+        setPhase('vote');
+        setPlayerVotes({});
+        setVotingPlayerIndex(0);
+    };
+
+    const handleVote = (vote) => {
+        const voterName = players[votingPlayerIndex].name;
+        const newVotes = { ...playerVotes, [voterName]: vote };
+        setPlayerVotes(newVotes);
+
+        if (votingPlayerIndex < players.length - 1) {
+            setVotingPlayerIndex(votingPlayerIndex + 1);
+        } else {
+            // All voted — show vote results briefly, then move to bidding
+            setPlayerVotes(newVotes);
+            setPhase('vote-results');
+        }
+    };
+
     const handleStartBidding = () => {
         setPhase('bid');
-        setCountdown(15);
+        setCountdown(20);
+        setPassedPlayers([]);
         setCurrentBid(Math.floor(currentItem.realValue * 0.1)); // Start at 10% of real value
+        setCurrentPlayerIndex(0);
     };
 
     const handleBid = (amount) => {
@@ -74,19 +104,40 @@ const AuctionBluffScreen = ({ route, navigation }) => {
         if (newBid <= playerBudget) {
             setCurrentBid(newBid);
             setHighestBidder(currentPlayer.name);
-            // Move to next player
-            setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
+            // Move to next active bidder
+            moveToNextBidder(currentPlayerIndex);
         }
     };
 
-    const handlePass = () => {
-        // Move to next player
-        const nextIndex = (currentPlayerIndex + 1) % players.length;
-        setCurrentPlayerIndex(nextIndex);
+    const moveToNextBidder = (fromIndex) => {
+        let nextIndex = (fromIndex + 1) % players.length;
+        let checked = 0;
+        while (checked < players.length) {
+            if (!passedPlayers.includes(players[nextIndex].name) &&
+                players[nextIndex].name !== highestBidder) {
+                setCurrentPlayerIndex(nextIndex);
+                return;
+            }
+            nextIndex = (nextIndex + 1) % players.length;
+            checked++;
+        }
+        // Everyone passed or only highest bidder remains
+        handleBiddingEnd();
+    };
 
-        // If we've gone around and back to the highest bidder, end bidding
-        if (players[nextIndex].name === highestBidder) {
+    const handlePass = () => {
+        const newPassed = [...passedPlayers, currentPlayer.name];
+        setPassedPlayers(newPassed);
+
+        // Check if only one active bidder remains
+        const activeBidders = players.filter(p =>
+            !newPassed.includes(p.name) && p.name !== highestBidder
+        );
+
+        if (activeBidders.length === 0) {
             handleBiddingEnd();
+        } else {
+            moveToNextBidder(currentPlayerIndex);
         }
     };
 
@@ -95,10 +146,11 @@ const AuctionBluffScreen = ({ route, navigation }) => {
     };
 
     const handleRevealComplete = () => {
+        const isRealFact = showRealFact;
+
         if (highestBidder) {
             // Award item to highest bidder
-            const isRealFact = showRealFact;
-            const value = isRealFact ? currentItem.realValue : Math.floor(currentItem.realValue * 0.1); // Bluff = 10% value
+            const value = isRealFact ? currentItem.realValue : Math.floor(currentItem.realValue * 0.1);
 
             setPlayerItems(prev => ({
                 ...prev,
@@ -111,6 +163,17 @@ const AuctionBluffScreen = ({ route, navigation }) => {
             }));
         }
 
+        // Award bonus points for correct guesses
+        const newBonusPoints = { ...bonusPoints };
+        players.forEach(p => {
+            const vote = playerVotes[p.name];
+            const correct = (vote === 'real' && isRealFact) || (vote === 'bluff' && !isRealFact);
+            if (correct) {
+                newBonusPoints[p.name] = (newBonusPoints[p.name] || 0) + 5000000; // ₦5M bonus
+            }
+        });
+        setBonusPoints(newBonusPoints);
+
         // Move to next item or end game
         if (currentItemIndex < items.length - 1) {
             setCurrentItemIndex(currentItemIndex + 1);
@@ -118,6 +181,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
             setHighestBidder(null);
             setShowRealFact(Math.random() > 0.5);
             setCurrentBid(0);
+            setPassedPlayers([]);
             setPhase('present');
         } else {
             setShowWinner(true);
@@ -128,13 +192,14 @@ const AuctionBluffScreen = ({ route, navigation }) => {
         navigation.navigate('LocalGameSelection', { players });
     };
 
-    // Calculate final scores (budget remaining + item values - purchase prices)
+    // Calculate final scores
     const calculateScores = () => {
         return players.map(p => {
             const items = playerItems[p.name] || [];
             const itemValue = items.reduce((sum, item) => sum + item.actualValue, 0);
             const spent = items.reduce((sum, item) => sum + item.purchasePrice, 0);
             const profit = itemValue - spent;
+            const bonus = bonusPoints[p.name] || 0;
             return {
                 name: p.name,
                 budget: playerBudgets[p.name],
@@ -142,7 +207,8 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                 itemValue,
                 spent,
                 profit,
-                total: playerBudgets[p.name] + profit
+                bonus,
+                total: playerBudgets[p.name] + profit + bonus
             };
         }).sort((a, b) => b.total - a.total);
     };
@@ -175,6 +241,11 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                                     <NeonText size={12} color="#888">
                                         {score.itemCount} items • {score.profit >= 0 ? '+' : ''}{formatMoney(score.profit)} profit
                                     </NeonText>
+                                    {score.bonus > 0 && (
+                                        <NeonText size={12} color={COLORS.limeGlow}>
+                                            🧠 +{formatMoney(score.bonus)} bluff bonus
+                                        </NeonText>
+                                    )}
                                 </View>
                                 <NeonText size={16} color={COLORS.neonCyan}>
                                     {formatMoney(score.total)}
@@ -213,21 +284,165 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                     </NeonText>
                     <View style={styles.factBox}>
                         <NeonText size={14} color={COLORS.neonCyan} style={styles.factLabel}>
-                            EXPERT SAYS:
+                            APPRAISER SAYS:
                         </NeonText>
                         <NeonText size={16} style={styles.factText}>
                             "{displayedFact}"
                         </NeonText>
                     </View>
                     <View style={styles.bluffWarning}>
-                        <NeonText size={12} color={COLORS.hotPink}>
+                        <NeonText size={14} color={COLORS.hotPink} weight="bold">
                             ⚠️ But is it TRUE or a BLUFF?
                         </NeonText>
                     </View>
                 </View>
 
                 <NeonButton
-                    title="START BIDDING!"
+                    title="🗳️ VOTE NOW!"
+                    onPress={handleStartVoting}
+                />
+            </NeonContainer>
+        );
+    }
+
+    // Vote Phase - Each player votes REAL or BLUFF
+    if (phase === 'vote') {
+        const votingPlayer = players[votingPlayerIndex];
+
+        return (
+            <NeonContainer>
+                <View style={styles.header}>
+                    <NeonText size={14} color={COLORS.hotPink}>
+                        ITEM {currentItemIndex + 1} of {items.length}
+                    </NeonText>
+                    <NeonText size={24} weight="bold" glow>
+                        🗳️ VOTE TIME
+                    </NeonText>
+                </View>
+
+                <View style={styles.votePlayerCard}>
+                    <NeonText size={14} color="#888">PASS THE PHONE TO:</NeonText>
+                    <NeonText size={32} weight="bold" glow>
+                        {votingPlayer.name}
+                    </NeonText>
+                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                        Is the claim about {currentItem.name} real or a bluff?
+                    </NeonText>
+                </View>
+
+                <View style={styles.factBoxCompact}>
+                    <NeonText size={14} style={styles.factText}>
+                        "{displayedFact}"
+                    </NeonText>
+                </View>
+
+                <View style={styles.voteActions}>
+                    <TouchableOpacity
+                        style={[styles.voteBtn, styles.voteBtnReal]}
+                        onPress={() => handleVote('real')}
+                        activeOpacity={0.7}
+                    >
+                        <NeonText size={36}>✅</NeonText>
+                        <NeonText size={20} weight="bold" color={COLORS.limeGlow}>
+                            REAL!
+                        </NeonText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.voteBtn, styles.voteBtnBluff]}
+                        onPress={() => handleVote('bluff')}
+                        activeOpacity={0.7}
+                    >
+                        <NeonText size={36}>🚫</NeonText>
+                        <NeonText size={20} weight="bold" color={COLORS.hotPink}>
+                            BLUFF!
+                        </NeonText>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.voteProgress}>
+                    <NeonText size={12} color="#888">
+                        {votingPlayerIndex + 1} of {players.length} voted
+                    </NeonText>
+                    <View style={styles.voteDots}>
+                        {players.map((_, i) => (
+                            <View
+                                key={i}
+                                style={[
+                                    styles.voteDot,
+                                    i <= votingPlayerIndex && styles.voteDotActive
+                                ]}
+                            />
+                        ))}
+                    </View>
+                </View>
+            </NeonContainer>
+        );
+    }
+
+    // Vote Results Phase
+    if (phase === 'vote-results') {
+        const realCount = Object.values(playerVotes).filter(v => v === 'real').length;
+        const bluffCount = Object.values(playerVotes).filter(v => v === 'bluff').length;
+
+        return (
+            <NeonContainer>
+                <View style={styles.header}>
+                    <NeonText size={24} weight="bold" glow>
+                        🗳️ VOTE RESULTS
+                    </NeonText>
+                </View>
+
+                <View style={styles.voteResultsCard}>
+                    <NeonText size={48}>{currentItem.image}</NeonText>
+                    <NeonText size={20} weight="bold" style={{ marginTop: 10 }}>
+                        {currentItem.name}
+                    </NeonText>
+
+                    <View style={styles.voteBarContainer}>
+                        <View style={styles.voteBarLabels}>
+                            <NeonText size={16} color={COLORS.limeGlow}>✅ REAL</NeonText>
+                            <NeonText size={16} color={COLORS.hotPink}>BLUFF 🚫</NeonText>
+                        </View>
+                        <View style={styles.voteBar}>
+                            <View style={[
+                                styles.voteBarFill,
+                                {
+                                    width: `${(realCount / players.length) * 100}%`,
+                                    backgroundColor: COLORS.limeGlow
+                                }
+                            ]} />
+                            <View style={[
+                                styles.voteBarFill,
+                                {
+                                    width: `${(bluffCount / players.length) * 100}%`,
+                                    backgroundColor: COLORS.hotPink
+                                }
+                            ]} />
+                        </View>
+                        <View style={styles.voteBarLabels}>
+                            <NeonText size={14}>{realCount} vote{realCount !== 1 ? 's' : ''}</NeonText>
+                            <NeonText size={14}>{bluffCount} vote{bluffCount !== 1 ? 's' : ''}</NeonText>
+                        </View>
+                    </View>
+
+                    <View style={styles.playerVotesList}>
+                        {players.map(p => (
+                            <View key={p.name} style={styles.playerVoteRow}>
+                                <NeonText size={14}>{p.name}</NeonText>
+                                <NeonText size={14} color={playerVotes[p.name] === 'real' ? COLORS.limeGlow : COLORS.hotPink}>
+                                    {playerVotes[p.name] === 'real' ? '✅ Real' : '🚫 Bluff'}
+                                </NeonText>
+                            </View>
+                        ))}
+                    </View>
+
+                    <NeonText size={12} color="#888" style={{ marginTop: 10, textAlign: 'center' }}>
+                        Correct guessers earn ₦5M bonus!
+                    </NeonText>
+                </View>
+
+                <NeonButton
+                    title="🔨 START BIDDING!"
                     onPress={handleStartBidding}
                 />
             </NeonContainer>
@@ -237,12 +452,12 @@ const AuctionBluffScreen = ({ route, navigation }) => {
     // Bidding Phase
     if (phase === 'bid') {
         const playerBudget = playerBudgets[currentPlayer.name];
-        const bidAmounts = [10000, 50000, 100000, 500000];
+        const bidAmounts = [1000000, 5000000, 10000000, 50000000];
 
         return (
             <NeonContainer>
                 <View style={styles.bidHeader}>
-                    <NeonText size={64}>{currentItem.image}</NeonText>
+                    <NeonText size={48}>{currentItem.image}</NeonText>
                     <NeonText size={20} weight="bold">{currentItem.name}</NeonText>
                     <View style={styles.timer}>
                         <NeonText size={24} weight="bold" color={countdown <= 5 ? COLORS.hotPink : COLORS.neonCyan}>
@@ -264,7 +479,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.playerTurn}>
-                    <NeonText size={16}>{currentPlayer.name}'s turn</NeonText>
+                    <NeonText size={18} weight="bold" glow>{currentPlayer.name}'s turn</NeonText>
                     <NeonText size={12} color="#888">Budget: {formatMoney(playerBudget)}</NeonText>
                 </View>
 
@@ -300,13 +515,19 @@ const AuctionBluffScreen = ({ route, navigation }) => {
         const wasReal = showRealFact;
         const actualValue = wasReal ? currentItem.realValue : Math.floor(currentItem.realValue * 0.1);
 
+        // Determine who guessed correctly
+        const correctGuessers = players.filter(p => {
+            const vote = playerVotes[p.name];
+            return (vote === 'real' && wasReal) || (vote === 'bluff' && !wasReal);
+        });
+
         return (
             <NeonContainer>
                 <View style={styles.revealContainer}>
                     <NeonText size={48}>{currentItem.image}</NeonText>
 
                     <NeonText size={28} weight="bold" glow color={wasReal ? COLORS.limeGlow : COLORS.hotPink}>
-                        {wasReal ? "✓ IT WAS TRUE!" : "✗ IT WAS A BLUFF!"}
+                        {wasReal ? "✅ IT WAS TRUE!" : "🚫 IT WAS A BLUFF!"}
                     </NeonText>
 
                     <View style={styles.revealFacts}>
@@ -335,6 +556,17 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                         </View>
                     ) : (
                         <NeonText size={16} color="#888">No one bid on this item!</NeonText>
+                    )}
+
+                    {correctGuessers.length > 0 && (
+                        <View style={styles.bonusSection}>
+                            <NeonText size={14} color={COLORS.limeGlow} weight="bold">
+                                🧠 CORRECT GUESSERS (+₦5M each):
+                            </NeonText>
+                            <NeonText size={14} color={COLORS.neonCyan}>
+                                {correctGuessers.map(p => p.name).join(', ')}
+                            </NeonText>
+                        </View>
                     )}
 
                     <NeonButton
@@ -366,6 +598,7 @@ const styles = StyleSheet.create({
     },
     itemName: {
         marginTop: 15,
+        textAlign: 'center',
     },
     factBox: {
         marginTop: 20,
@@ -374,6 +607,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderLeftWidth: 3,
         borderLeftColor: COLORS.neonCyan,
+        width: '100%',
+    },
+    factBoxCompact: {
+        padding: 15,
+        backgroundColor: 'rgba(0, 248, 255, 0.1)',
+        borderRadius: 12,
+        borderLeftWidth: 3,
+        borderLeftColor: COLORS.neonCyan,
+        marginBottom: 20,
     },
     factLabel: {
         marginBottom: 5,
@@ -385,6 +627,106 @@ const styles = StyleSheet.create({
     bluffWarning: {
         marginTop: 15,
     },
+    // Vote Phase
+    votePlayerCard: {
+        alignItems: 'center',
+        padding: 25,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: COLORS.neonCyan,
+        marginBottom: 20,
+    },
+    voteActions: {
+        flexDirection: 'row',
+        gap: 15,
+        marginBottom: 20,
+        height: 130,
+    },
+    voteBtn: {
+        flex: 1,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    voteBtnReal: {
+        borderColor: COLORS.limeGlow,
+        shadowColor: COLORS.limeGlow,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    voteBtnBluff: {
+        borderColor: COLORS.hotPink,
+        shadowColor: COLORS.hotPink,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    voteProgress: {
+        alignItems: 'center',
+    },
+    voteDots: {
+        flexDirection: 'row',
+        gap: 6,
+        marginTop: 8,
+    },
+    voteDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    voteDotActive: {
+        backgroundColor: COLORS.limeGlow,
+    },
+    // Vote Results
+    voteResultsCard: {
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 16,
+        marginBottom: 20,
+    },
+    voteBarContainer: {
+        width: '100%',
+        marginTop: 20,
+    },
+    voteBarLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 5,
+    },
+    voteBar: {
+        flexDirection: 'row',
+        height: 20,
+        borderRadius: 10,
+        overflow: 'hidden',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginBottom: 5,
+    },
+    voteBarFill: {
+        height: '100%',
+    },
+    playerVotesList: {
+        width: '100%',
+        marginTop: 15,
+        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderRadius: 10,
+    },
+    playerVoteRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 6,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
+    },
+    // Bidding Phase
     bidHeader: {
         alignItems: 'center',
         marginBottom: 15,
@@ -428,6 +770,7 @@ const styles = StyleSheet.create({
         opacity: 0.3,
         borderColor: '#444',
     },
+    // Reveal Phase
     revealContainer: {
         flex: 1,
         alignItems: 'center',
@@ -448,10 +791,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 20,
     },
+    bonusSection: {
+        alignItems: 'center',
+        marginTop: 15,
+        padding: 10,
+        backgroundColor: 'rgba(198, 255, 74, 0.1)',
+        borderRadius: 10,
+    },
     nextBtn: {
         marginTop: 30,
         minWidth: 200,
     },
+    // Winner Screen
     winnerContainer: {
         flex: 1,
         alignItems: 'center',

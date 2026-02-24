@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TextInput, Alert, TouchableOpacity, Dimensions } from 'react-native';
-import NeonContainer from '../components/NeonContainer';
-import NeonText from '../components/NeonText';
-import NeonButton from '../components/NeonButton';
-import ConnectionStatus from '../components/ConnectionStatus';
-import AvatarPicker, { AvatarDisplay } from '../components/AvatarPicker';
+import { View, StyleSheet, TextInput, Alert, ScrollView, Platform, StatusBar } from 'react-native';
+import NeonBackground from '../components/NeonBackground';
+import AvatarPicker from '../components/AvatarPicker';
 import InstallAppModal from '../components/InstallAppModal';
+import LoadingOverlay from '../components/LoadingOverlay';
+import TopHeader from '../components/home/TopHeader';
+import ProfileSection from '../components/home/ProfileSection';
+import OnlineLobbyCard from '../components/home/OnlineLobbyCard';
+import SecondaryModes from '../components/home/SecondaryModes';
+import ProfileStatsBar from '../components/home/ProfileStatsBar';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
 import { useAuth } from '../context/AuthContext';
-import LoadingOverlay from '../components/LoadingOverlay';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, isGuest } = useAuth();
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -27,7 +27,7 @@ const HomeScreen = ({ navigation }) => {
 
     // Auto-fill name if user is authenticated
     useEffect(() => {
-        if (isAuthenticated && user?.username && !name) {
+        if (isAuthenticated && user?.username && user.username !== 'Guest' && !name) {
             setName(user.username);
         }
         if (isAuthenticated && user?.avatar) {
@@ -45,7 +45,6 @@ const HomeScreen = ({ navigation }) => {
             await SoundService.init();
             await SoundService.playLobbyMusic();
             setMusicStarted(true);
-            console.log('Music started on user interaction');
         } catch (error) {
             console.error('Error starting music:', error);
         }
@@ -57,63 +56,52 @@ const HomeScreen = ({ navigation }) => {
     };
 
     const handleCreate = async () => {
-        console.log('handleCreate called, name:', name);
         if (!name) {
-            Alert.alert("Enter Name", "Please enter a name to host.");
+            Alert.alert('Enter Name', 'Please enter a name to host.');
             return;
         }
-        // Start music on first interaction
         await startMusicOnInteraction();
-        setLoading(true); // Start loading
-        console.log('Emitting create-room event with playerName:', name, 'avatar:', selectedAvatar);
+        setLoading(true);
         SocketService.emit('create-room', {
             playerName: name,
             avatar: selectedAvatar,
-            avatarColor: selectedColor
+            avatarColor: selectedColor,
         });
-
-        // Timeout safeguard
         setTimeout(() => setLoading(false), 10000);
     };
 
     const handleJoin = async () => {
-        // Start music on first interaction
         await startMusicOnInteraction();
         navigation.navigate('Join', {
             playerName: name,
             avatar: selectedAvatar,
-            avatarColor: selectedColor
+            avatarColor: selectedColor,
         });
     };
 
     const handleLocalParty = async () => {
-        // Start music on first interaction
         await startMusicOnInteraction();
         navigation.navigate('LocalPartySetup');
     };
 
-    // Initialize SoundService (no autoplay)
+    // Initialize SoundService
     useEffect(() => {
         SoundService.init();
-        // Don't stop music on cleanup - let it continue during lobby
     }, []);
 
-    // Check for deep link / join parameter in URL
+    // Check for deep link / join parameter
     useEffect(() => {
         const checkDeepLink = () => {
             if (typeof window !== 'undefined' && window.location) {
                 const params = new URLSearchParams(window.location.search);
                 const joinCode = params.get('join');
                 if (joinCode) {
-                    console.log('Deep link detected, room code:', joinCode);
-                    // Clear the URL param to prevent re-triggering
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    // Navigate to join screen with the room code
                     navigation.navigate('Join', {
                         playerName: name,
                         roomCode: joinCode,
                         avatar: selectedAvatar,
-                        avatarColor: selectedColor
+                        avatarColor: selectedColor,
                     });
                 }
             }
@@ -121,19 +109,15 @@ const HomeScreen = ({ navigation }) => {
         checkDeepLink();
     }, []);
 
-    React.useEffect(() => {
+    // Listen for room-created event
+    useEffect(() => {
         const onRoomCreated = (room) => {
-            console.log('Room created event received:', room);
-            setLoading(false); // Stop loading
-            // Don't stop music - let it play during game selection/lobby
+            setLoading(false);
             navigation.navigate('GameSelection', { room, playerName: name });
         };
 
-        console.log('Setting up room-created listener');
         SocketService.on('room-created', onRoomCreated);
-
         return () => {
-            console.log('Cleaning up room-created listener');
             SocketService.off('room-created', onRoomCreated);
         };
     }, [navigation, name]);
@@ -145,121 +129,86 @@ const HomeScreen = ({ navigation }) => {
                 setHasShownAuthModal(true);
                 navigation.navigate('Auth');
             }
-        }, 1000); // 1 second delay for better UX
-
+        }, 1000);
         return () => clearTimeout(timer);
-    }, []); // Only run once on mount
+    }, []);
+
+    // Derive display values
+    const displayName = name || user?.username || 'GUEST';
+    const userLevel = user?.level || 1;
+    const userRank = ProfileSection.getRankTitle
+        ? ProfileSection.getRankTitle(userLevel)
+        : 'ROOKIE';
 
     return (
-        <NeonContainer style={styles.container} showMuteButton scrollable>
+        <View style={styles.rootContainer}>
+            <StatusBar barStyle="light-content" backgroundColor={COLORS.deepNightBlack} />
+            <NeonBackground />
             <LoadingOverlay visible={loading} message="Creating Party..." />
-            {/* Header with Connection Status, Settings, and Profile */}
-            <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                    <ConnectionStatus showLabel={true} size="small" />
-                    <TouchableOpacity
-                        style={styles.settingsIcon}
-                        onPress={() => navigation.navigate('Settings')}
-                    >
-                        <NeonText size={22}>⚙️</NeonText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.profileButton}
-                        onPress={() => navigation.navigate(isAuthenticated ? 'Profile' : 'Auth')}
-                    >
-                        <NeonText size={24}>{user?.avatar || '👤'}</NeonText>
-                        {isAuthenticated && (
-                            <View style={styles.levelBadge}>
-                                <NeonText size={10} color="#000" weight="bold">{user?.level || 1}</NeonText>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                </View>
-            </View>
 
-            {/* Logo */}
-            <View style={styles.logoArea}>
-                <NeonText size={SCREEN_WIDTH < 375 ? 36 : 42} weight="bold" glow>PLAYRAVE</NeonText>
-                <NeonText size={SCREEN_WIDTH < 375 ? 14 : 16} color={COLORS.limeGlow} style={{ letterSpacing: 2 }}>NEON PARTY</NeonText>
-            </View>
-
-            {/* Profile Card */}
-            <View style={styles.profileCard}>
-                {/* Avatar Selection */}
-                <TouchableOpacity
-                    style={styles.avatarSection}
-                    onPress={() => setShowAvatarPicker(true)}
-                >
-                    <AvatarDisplay
-                        avatar={selectedAvatar}
-                        color={selectedColor}
-                        size={SCREEN_WIDTH < 375 ? 60 : 70}
-                    />
-                    <NeonText size={12} color={COLORS.neonCyan} style={styles.changeAvatarText}>
-                        TAP TO CHANGE
-                    </NeonText>
-                </TouchableOpacity>
-
-                <NeonText style={{ marginBottom: 10 }}>ENTER YOUR NAME</NeonText>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Your Name"
-                    placeholderTextColor="#666"
-                    value={name}
-                    onChangeText={setName}
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+                {/* Top Header */}
+                <TopHeader
+                    onSettingsPress={() => navigation.navigate('Settings')}
+                    onProfilePress={() =>
+                        navigation.navigate(isAuthenticated ? 'Profile' : 'Auth')
+                    }
+                    isAuthenticated={isAuthenticated}
                 />
-            </View>
 
-            {/* Buttons */}
-            <View style={styles.actions}>
-                {/* Full-width online buttons */}
-                <View style={styles.actionSection}>
-                    <NeonText size={16} weight="bold" color={COLORS.neonCyan} style={styles.sectionLabel}>ONLINE</NeonText>
-                    <NeonButton title="HOST PARTY" onPress={handleCreate} icon="🎮" />
-                    <NeonButton title="JOIN PARTY" variant="secondary" onPress={handleJoin} icon="🎯" />
-                </View>
+                {/* Profile Section */}
+                <ProfileSection
+                    avatar={selectedAvatar}
+                    avatarColor={selectedColor}
+                    userName={displayName}
+                    level={userLevel}
+                    rank={userRank}
+                    onAvatarPress={() => setShowAvatarPicker(true)}
+                    onEditPress={() =>
+                        navigation.navigate(isAuthenticated ? 'Profile' : 'Auth')
+                    }
+                />
 
-                {/* Half-width local/offline buttons */}
-                <View style={styles.actionSection}>
-                    <NeonText size={16} weight="bold" color={COLORS.hotPink} style={styles.sectionLabel}>LOCAL / OFFLINE</NeonText>
-                    <View style={styles.halfButtonRow}>
-                        <NeonButton
-                            title="LOCAL GAMES"
-                            variant="primary"
-                            onPress={handleLocalParty}
-                            icon="🎲"
-                            style={[styles.halfButton, { borderColor: COLORS.hotPink }]}
-                        />
-                        <NeonButton
-                            title="LAN MODE"
-                            variant="secondary"
-                            onPress={() => navigation.navigate('LANMode')}
-                            icon="📡"
-                            style={styles.halfButton}
+                {/* Hidden TextInput for name (preserves name-entry for non-authenticated users) */}
+                {(!isAuthenticated || isGuest) && (
+                    <View style={styles.nameInputWrapper}>
+                        <TextInput
+                            style={styles.nameInput}
+                            placeholder="Enter your name..."
+                            placeholderTextColor="#4B5563"
+                            value={name}
+                            onChangeText={setName}
+                            maxLength={20}
                         />
                     </View>
-                </View>
-            </View>
+                )}
 
-            {/* Profile Button */}
-            <TouchableOpacity
-                style={styles.profileStatsLink}
-                onPress={() => navigation.navigate('Profile')}
-            >
-                <NeonText size={14} color={COLORS.neonCyan}>
-                    📊 MY PROFILE & STATS
-                </NeonText>
-            </TouchableOpacity>
+                {/* Online Lobby Card */}
+                <OnlineLobbyCard
+                    onHostPress={handleCreate}
+                    onJoinPress={handleJoin}
+                    disabled={loading}
+                />
 
-            {/* Spectate Button */}
-            <TouchableOpacity
-                style={styles.spectateButton}
-                onPress={() => navigation.navigate('JoinSpectator')}
-            >
-                <NeonText size={14} color={COLORS.electricPurple}>
-                    👁️ SPECTATE A GAME
-                </NeonText>
-            </TouchableOpacity>
+                {/* Secondary Modes */}
+                <SecondaryModes
+                    onLocalPress={handleLocalParty}
+                    onLANPress={() => navigation.navigate('LANMode')}
+                />
+
+                {/* Profile & Stats Bar */}
+                <ProfileStatsBar
+                    onPress={() => navigation.navigate('Profile')}
+                />
+
+                {/* Bottom spacing */}
+                <View style={styles.bottomSpacer} />
+            </ScrollView>
 
             {/* Avatar Picker Modal */}
             <AvatarPicker
@@ -271,123 +220,43 @@ const HomeScreen = ({ navigation }) => {
 
             {/* iOS Install App Prompt */}
             <InstallAppModal />
-        </NeonContainer>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    rootContainer: {
+        flex: 1,
+        height: '100%',
+        minHeight: '100vh',
+        backgroundColor: COLORS.deepNightBlack,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
+    scrollView: {
         flex: 1,
     },
-    connectionContainer: {
-        position: 'absolute',
-        top: 50,
-        left: 20,
-        zIndex: 10,
+    scrollContent: {
+        flexGrow: 1,
+        paddingTop: Platform.OS === 'ios' ? 50 : 10,
+        paddingBottom: 40,
     },
-    logoArea: {
-        alignItems: 'center',
-        marginTop: 60, // Clear absolute header
-        marginBottom: 60,
-    },
-    profileCard: {
-        marginBottom: 50, // Increased by 20px (was 30)
-        width: '100%',
-        maxWidth: 500,
-        alignSelf: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 25,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        borderRadius: 16,
-        marginHorizontal: 20,
-    },
-    input: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: COLORS.electricPurple,
-        padding: 15,
-        color: COLORS.white,
-        fontSize: 18,
-        textAlign: 'center',
-    },
-    actions: {
-        width: '100%',
-        gap: 30,
-        paddingHorizontal: 20,
-    },
-    actionSection: {
-        gap: 12,
-        width: '100%',
-    },
-    sectionLabel: {
-        marginBottom: 5,
-        textAlign: 'center',
-        letterSpacing: 1,
-        opacity: 0.8,
-    },
-    avatarSection: {
-        alignItems: 'center',
+    nameInputWrapper: {
+        paddingHorizontal: 40,
         marginBottom: 20,
     },
-    changeAvatarText: {
-        marginTop: 8,
-        letterSpacing: 1,
-    },
-    halfButtonRow: {
-        flexDirection: 'row',
-        gap: 12,
-        width: '100%',
-    },
-    halfButton: {
-        flex: 1,
-    },
-    profileButton: {
-        width: 50, height: 50, borderRadius: 25,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        justifyContent: 'center', alignItems: 'center',
-        position: 'relative',
-    },
-    profileStatsLink: {
-        marginTop: 20,
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        backgroundColor: 'rgba(0, 240, 255, 0.1)',
-        borderRadius: 20,
-        alignSelf: 'center',
+    nameInput: {
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        borderRadius: 10,
         borderWidth: 1,
-        borderColor: COLORS.neonCyan,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        color: COLORS.white,
+        fontSize: 15,
+        textAlign: 'center',
     },
-    levelBadge: {
-        position: 'absolute', bottom: -2, right: -2,
-        backgroundColor: COLORS.limeGlow,
-        width: 18, height: 18, borderRadius: 9,
-        justifyContent: 'center', alignItems: 'center',
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'absolute',
-        top: 50, left: 20, right: 20,
-        zIndex: 10,
-    },
-    spectateButton: {
-        alignItems: 'center',
-        padding: 10,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    settingsIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        justifyContent: 'center',
-        alignItems: 'center',
+    bottomSpacer: {
+        height: 30,
     },
 });
 

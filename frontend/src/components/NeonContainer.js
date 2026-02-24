@@ -10,9 +10,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NeonContainer = ({
     children,
     style,
-    showMuteButton = false,
+    rootStyle,
+    showMuteButton = true,
     showBackButton = false,
     scrollable = false,
+    hideBackground = false,
 }) => {
     // Responsive padding
     const getPadding = () => {
@@ -39,9 +41,9 @@ const NeonContainer = ({
     );
 
     return (
-        <View style={styles.rootContainer}>
+        <View style={[styles.rootContainer, rootStyle]}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.deepNightBlack} />
-            <NeonBackground />
+            {!hideBackground && <NeonBackground />}
             {showBackButton && <BackButton />}
             {showMuteButton && <MuteButton />}
             <SafeAreaView style={styles.safeArea}>

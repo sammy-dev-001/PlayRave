@@ -55,7 +55,7 @@ const MuteButton = ({ style }) => {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        top: 50,
+        top: 10,
         right: 20,
         flexDirection: 'row',
         gap: 8,

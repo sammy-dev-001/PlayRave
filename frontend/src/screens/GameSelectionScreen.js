@@ -91,7 +91,7 @@ const AVAILABLE_GAMES = [
         maxPlayers: 10,
     },
     {
-        id: 'never-have-i',
+        id: 'never-have-i-ever',
         name: 'Never Have I Ever',
         description: 'Confess your secrets - who has done it?',
         icon: '🤫',
@@ -334,8 +334,8 @@ const GameSelectionScreen = ({ route, navigation }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
-                <NeonText size={28} weight="bold" glow style={styles.title}>
-                    Select a Game
+                <NeonText size={32} weight="bold" glow style={styles.title}>
+                    SELECT GAME
                 </NeonText>
                 <NeonText size={14} color="#888" style={styles.subtitle}>
                     Room: {room.roomId} • Players: {room.players?.length || 0}
@@ -378,80 +378,85 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
         paddingBottom: 40,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 15,
-        marginTop: 10,
+        paddingTop: 10,
     },
     title: {
         textAlign: 'center',
-        marginTop: 10,
-        marginBottom: 5,
+        marginBottom: 8,
+        letterSpacing: 1,
     },
     subtitle: {
         textAlign: 'center',
         marginBottom: 30,
+        opacity: 0.7,
+        letterSpacing: 1,
     },
     categorySection: {
-        marginBottom: 30,
+        marginBottom: 35,
     },
     categoryHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 18,
         gap: 15,
     },
     categoryLine: {
         flex: 1,
         height: 1,
-        opacity: 0.5,
+        opacity: 0.2,
     },
     gamesGrid: {
-        gap: 12,
+        gap: 15,
     },
     gameCard: {
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
-        gap: 15,
+        borderColor: 'rgba(255, 255, 255, 0.08)',
+        gap: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
     },
     iconContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 70,
+        height: 70,
+        borderRadius: 35,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     gameInfo: {
         flex: 1,
         gap: 4,
-        alignItems: 'center',
     },
     description: {
         lineHeight: 16,
-        textAlign: 'center',
+        opacity: 0.8,
     },
     metaRow: {
         flexDirection: 'row',
         gap: 8,
-        marginTop: 4,
+        marginTop: 6,
     },
     badge: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+        borderWidth: 0.5,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     arrowContainer: {
-        opacity: 0.5,
+        paddingRight: 5,
+        opacity: 0.6,
     },
-    // Retain disabled logic if needed, but logic currently uses waitingForNavigation
-    // which effectively disables the TouchableOpacity
 });
 
 export default GameSelectionScreen;

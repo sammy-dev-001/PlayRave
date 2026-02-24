@@ -20,7 +20,7 @@ class GameManager {
         'trivia': 2,
         'myth-or-fact': 2,
         'whos-most-likely': 3,
-        'imposter': 4,
+        'imposter': 3,
         'confession-roulette': 3,
         'lie-detector': 3,
         'never-have-i-ever': 2,
@@ -1535,7 +1535,7 @@ class GameManager {
 
         const gameState = {
             type: 'imposter',
-            phase: 'waiting', // waiting, word_reveal, discussion, voting, results
+            phase: 'word_reveal', // waiting, word_reveal, discussion, voting, results
             round: 1,
             imposterId: imposter.id,
             imposterName: imposter.name,

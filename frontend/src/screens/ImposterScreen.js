@@ -48,10 +48,9 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.on('imposter-round-results', handleRoundResults);
         SocketService.on('room-updated', handleRoomUpdate);
 
-        // Start game if host
-        if (isHost) {
-            SocketService.emit('imposter-start', { roomId: room.id });
-        }
+        // Request current state on mount (recovery)
+        console.log("ImposterScreen mounted, requesting state...");
+        SocketService.emit('imposter-get-state', { roomId: room.id || room.roomId });
 
         return () => {
             SocketService.off('imposter-phase-changed', handlePhaseChange);
@@ -140,8 +139,16 @@ const ImposterScreen = ({ route, navigation }) => {
             {isHost && (
                 <NeonButton
                     title="START GAME"
-                    onPress={() => SocketService.emit('imposter-start', { roomId: room.id })}
+                    onPress={() => {
+                        console.log("Manual START GAME clicked");
+                        if (!SocketService.isConnected()) {
+                            Alert.alert("Error", "Socket not connected. Please wait...");
+                            return;
+                        }
+                        SocketService.emit('imposter-start', { roomId: room.id || room.roomId });
+                    }}
                     style={styles.startButton}
+                    sound={false}
                 />
             )}
         </View>
