@@ -118,7 +118,7 @@ const JoinScreen = ({ navigation, route }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="Guest"
-                                        placeholderTextColor="#FFFFFF"
+                                        placeholderTextColor="#666"
                                         value={name}
                                         onChangeText={setName}
                                         autoCorrect={false}
@@ -138,7 +138,7 @@ const JoinScreen = ({ navigation, route }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="ABCD"
-                                        placeholderTextColor="#FFFFFF"
+                                        placeholderTextColor="#666"
                                         value={code}
                                         onChangeText={text => setCode(text.toUpperCase())}
                                         autoCapitalize="characters"

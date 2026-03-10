@@ -180,7 +180,7 @@ const HomeScreen = ({ navigation }) => {
                         <TextInput
                             style={styles.nameInput}
                             placeholder="Enter your name..."
-                            placeholderTextColor="#FFFFFF"
+                            placeholderTextColor="#666"
                             value={name}
                             onChangeText={setName}
                             maxLength={20}

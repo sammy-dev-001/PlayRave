@@ -13,10 +13,10 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Bug 1 Fix: Hybrid shrink-with-floor tile sizing.
-    // idealTileSize fills the screen exactly; if it's below the 32px touch-target floor,
-    // clamp it to 32px and let the ScrollView handle overflow.
+    // idealTileSize fills the screen exactly; if it's below the 22px touch-target floor,
+    // clamp it to 22px and let the ScrollView handle overflow.
     const BOARD_PADDING = 20; // horizontal padding on both sides combined
-    const MIN_TILE_SIZE = 32;
+    const MIN_TILE_SIZE = 22;
     const idealTileSize = Math.floor((screenWidth - BOARD_PADDING) / BOARD_SIZE);
     const tileSize = Math.max(idealTileSize, MIN_TILE_SIZE);
     const needsScroll = idealTileSize < MIN_TILE_SIZE; // only true on very small screens
