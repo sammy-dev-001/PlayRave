@@ -16,9 +16,11 @@ import NeonBackground from '../components/NeonBackground';
 import MuteButton from '../components/MuteButton';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
+import { useAuth } from '../context/AuthContext';
 import { COLORS, SHADOWS } from '../constants/theme';
 
 const JoinScreen = ({ navigation, route }) => {
+    const { user } = useAuth();
     const [name, setName] = useState(route.params?.playerName || '');
     const [code, setCode] = useState(route.params?.roomCode || '');
     const avatar = route.params?.avatar;
@@ -55,7 +57,8 @@ const JoinScreen = ({ navigation, route }) => {
             roomId: code.toUpperCase(),
             playerName: name,
             avatar,
-            avatarColor
+            avatarColor,
+            userId: user?.id
         });
     };
 

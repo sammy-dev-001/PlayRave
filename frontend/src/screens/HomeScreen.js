@@ -14,9 +14,11 @@ import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
 import { useAuth } from '../context/AuthContext';
+import { useGame } from '../context/GameContext';
 
 const HomeScreen = ({ navigation }) => {
     const { user, isAuthenticated, isGuest } = useAuth();
+    const { setPlayer } = useGame();
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -66,6 +68,7 @@ const HomeScreen = ({ navigation }) => {
             playerName: name,
             avatar: selectedAvatar,
             avatarColor: selectedColor,
+            userId: user?.id
         });
         setTimeout(() => setLoading(false), 10000);
     };

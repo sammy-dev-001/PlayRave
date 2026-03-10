@@ -14,15 +14,24 @@ class RoomManager {
         return code;
     }
 
-    createRoom(hostId, playerName, avatar, avatarColor) {
+    createRoom(hostId, playerName, avatar, avatarColor, userId) {
         const roomId = this.generateRoomCode();
         const newRoom = {
             id: roomId,
             hostId: hostId,
             players: [
-                { id: hostId, name: playerName, score: 0, isHost: true, avatar, avatarColor, isReady: true }
+                { 
+                    id: hostId, 
+                    uid: userId || hostId, // Use hostId as fallback if userId not provided
+                    name: playerName, 
+                    score: 0, 
+                    isHost: true, 
+                    avatar, 
+                    avatarColor, 
+                    isReady: true 
+                }
             ],
-            gameState: 'LOBBY', // LOBBY, PLAYING, RESULTS
+            gameState: 'LOBBY',
             currentRound: 0,
             gameType: null,
         };
@@ -30,16 +39,48 @@ class RoomManager {
         return newRoom;
     }
 
-    joinRoom(roomId, playerId, playerName, avatar, avatarColor) {
+    joinRoom(roomId, playerId, playerName, avatar, avatarColor, userId) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: "Room not found" };
         if (room.gameState !== 'LOBBY') return { error: "Game already in progress" };
 
-        const playerExists = room.players.find(p => p.id === playerId);
+        const playerExists = room.players.find(p => p.uid === userId || p.id === playerId);
         if (!playerExists) {
-            room.players.push({ id: playerId, name: playerName, score: 0, isHost: false, avatar, avatarColor, isReady: false });
+            room.players.push({ 
+                id: playerId, 
+                uid: userId || playerId, 
+                name: playerName, 
+                score: 0, 
+                isHost: false, 
+                avatar, 
+                avatarColor, 
+                isReady: false 
+            });
+        } else {
+            // Update socket ID if rejoining lobby
+            playerExists.id = playerId;
         }
         return { room };
+    }
+
+    // New helper for state recovery: re-bind player to new socket
+    updatePlayerSocket(roomId, userId, newSocketId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return null;
+
+        const player = room.players.find(p => p.uid === userId);
+        if (player) {
+            const oldSocketId = player.id;
+            player.id = newSocketId;
+            
+            // If they were host, update hostId
+            if (room.hostId === oldSocketId) {
+                room.hostId = newSocketId;
+            }
+            
+            return { room, player };
+        }
+        return null;
     }
 
     getRoom(roomId) {

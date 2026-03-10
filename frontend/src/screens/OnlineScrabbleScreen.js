@@ -137,11 +137,27 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             }
         };
 
+        // Hard state sync/overwrite after reconnection
+        const handleStateSync = (data) => {
+            console.log('Received game state sync:', data);
+            if (data.gameType === 'scrabble' && data.gameState) {
+                updateGameState(data.gameState);
+                // Thoroughly reset UI state to prevent ghost tiles/modals
+                setSelectedTileIndex(null);
+                setPlacementHistory([]);
+                setExchangeMode(false);
+                setSelectedTilesForExchange([]);
+                setBlankTileModalVisible(false);
+                setPendingBlankPlacement(null);
+            }
+        };
+
         SocketService.on('game-started', handleGameStarted);
         SocketService.on('scrabble-move-submitted', handleMoveSubmitted);
         SocketService.on('scrabble-turn-passed', handleTurnPassed);
         SocketService.on('scrabble-game-ended', handleGameEnded);
         SocketService.on('scrabble-tiles-exchanged', handleTilesExchanged);
+        SocketService.on('game-state-sync', handleStateSync);
         SocketService.on('error', handleError);
 
         return () => {
@@ -150,6 +166,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             SocketService.off('scrabble-turn-passed', handleTurnPassed);
             SocketService.off('scrabble-game-ended', handleGameEnded);
             SocketService.off('scrabble-tiles-exchanged', handleTilesExchanged);
+            SocketService.off('game-state-sync', handleStateSync);
             SocketService.off('error', handleError);
         };
     }, [navigation, room]);

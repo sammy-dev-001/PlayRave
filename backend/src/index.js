@@ -220,17 +220,61 @@ app.post("/api/challenges/:id/claim", (req, res) => {
 io.on("connection", (socket) => {
     console.log("socket connected:", socket.id);
 
-    socket.on("create-room", ({ playerName, avatar, avatarColor }) => {
-        console.log("create-room event received, playerName:", playerName);
-        const room = roomManager.createRoom(socket.id, playerName, avatar, avatarColor);
+    socket.on("create-room", ({ playerName, avatar, avatarColor, userId }) => {
+        console.log("create-room event received, playerName:", playerName, "userId:", userId);
+        const room = roomManager.createRoom(socket.id, playerName, avatar, avatarColor, userId);
         console.log("Room created:", room);
         socket.join(room.id);
         console.log("Emitting room-created event to socket", socket.id);
         socket.emit("room-created", room);
     });
 
-    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor, isRejoin }) => {
-        console.log("join-room event received, roomId:", roomId, "playerName:", playerName, "socketId:", socket.id, "isRejoin:", isRejoin);
+    socket.on("request-room-sync", ({ roomId, userId }) => {
+        console.log("request-room-sync received:", roomId, userId, "socket:", socket.id);
+        
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found during sync" });
+            return;
+        }
+
+        // Re-bind the player to this new socket ID
+        const result = roomManager.updatePlayerSocket(roomId, userId, socket.id);
+        if (result) {
+            console.log("Player re-bound to socket:", socket.id);
+            socket.join(roomId);
+            
+            // Clear from pending disconnects since they are back
+            if (global.pendingDisconnects) {
+                global.pendingDisconnects.delete(userId);
+            }
+            
+            // 1. Send immediate room state
+            socket.emit("room-updated", result.room);
+            
+            // 2. Fetch and send full game state if playing
+            if (result.room.gameState === 'PLAYING' || result.room.gameState === 'GAMEOVER') {
+                const gameState = gameManager.getGameState(roomId);
+                socket.emit("game-state-sync", {
+                    gameState,
+                    gameType: result.room.gameType,
+                    timestamp: Date.now()
+                });
+            }
+            
+            // Notify others that the player is back
+            io.to(roomId).emit("player-reconnected", {
+                playerName: result.player.name,
+                userId: userId
+            });
+        } else {
+            console.log("Sync failed: Player not found in room");
+            socket.emit("error", { message: "Session expired or player not found" });
+        }
+    });
+
+    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor, userId }) => {
+        console.log("join-room event received:", roomId, playerName, socket.id, userId);
 
         const room = roomManager.getRoom(roomId);
         if (!room) {
@@ -238,66 +282,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        // Check for pending disconnect with same name (reconnection within grace period)
-        if (global.pendingDisconnects) {
-            for (const [oldSocketId, pending] of global.pendingDisconnects.entries()) {
-                if (pending.roomId === roomId && pending.playerName === playerName) {
-                    console.log("Reconnection detected for:", playerName, "was host:", pending.wasHost);
-                    global.pendingDisconnects.delete(oldSocketId);
-
-                    // If this was the host, restore host status
-                    if (pending.wasHost) {
-                        const restoreResult = roomManager.restoreHost(roomId, socket.id, playerName);
-                        if (restoreResult && !restoreResult.error) {
-                            socket.join(roomId);
-                            socket.emit("room-joined", restoreResult.room);
-                            io.to(roomId).emit("room-updated", restoreResult.room);
-                            console.log("Host restored successfully:", playerName);
-                            return;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Check if this is a rejoin attempt (even after grace period)
-        // Look for existing player with same name - they might have been replaced as host
-        if (isRejoin) {
-            const existingPlayer = room.players.find(p => p.name === playerName);
-            if (existingPlayer) {
-                console.log("Rejoin attempt for existing player:", playerName, "current host:", room.hostId);
-
-                // Check if this player was originally the host by checking room creation order
-                // The first player in the room is the original host
-                const wasOriginalHost = room.players[0].name === playerName || room.players.find(p => p.name === playerName && p.isHost);
-
-                if (wasOriginalHost) {
-                    console.log("Restoring original host:", playerName);
-                    const restoreResult = roomManager.restoreHost(roomId, socket.id, playerName);
-                    if (restoreResult && !restoreResult.error) {
-                        socket.join(roomId);
-                        socket.emit("room-joined", restoreResult.room);
-                        io.to(roomId).emit("room-updated", restoreResult.room);
-                        console.log("Host restored successfully after grace period:", playerName);
-                        return;
-                    }
-                } else {
-                    // Regular player rejoining - update their socket ID
-                    const index = room.players.findIndex(p => p.name === playerName);
-                    if (index !== -1) {
-                        room.players[index].id = socket.id;
-                        socket.join(roomId);
-                        socket.emit("room-joined", room);
-                        io.to(roomId).emit("room-updated", room);
-                        console.log("Regular player reconnected:", playerName);
-                        return;
-                    }
-                }
-            }
-        }
-
-        const result = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor);
+        const result = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor, userId);
         if (result.error) {
             socket.emit("error", { message: result.error });
             return;
@@ -306,7 +291,6 @@ io.on("connection", (socket) => {
         console.log("Player", playerName, "joined socket room:", roomId);
         socket.emit("room-joined", result.room);
         io.to(roomId).emit("room-updated", result.room);
-        console.log("Emitted room-joined and room-updated for player join");
     });
 
     socket.on("leave-room", ({ roomId }) => {
@@ -323,47 +307,43 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("disconnected:", socket.id);
 
-        // Store socket info before grace period
         const playerInfo = roomManager.getPlayerBySocketId(socket.id);
         const roomId = playerInfo?.roomId;
         const playerName = playerInfo?.name;
-        const wasHost = playerInfo?.isHost;
+        const userId = playerInfo?.uid;
 
-        // Add a grace period before removing player (helps with mobile reconnects)
-        const DISCONNECT_GRACE_PERIOD = 30000; // 30 seconds for poor networks
+        // Extended 3-minute grace period for state recovery
+        const DISCONNECT_GRACE_PERIOD = 180000; 
 
-        // Track pending disconnects for potential reconnection
-        if (roomId) {
+        if (roomId && userId) {
             if (!global.pendingDisconnects) global.pendingDisconnects = new Map();
-            global.pendingDisconnects.set(socket.id, { roomId, playerName, wasHost, timestamp: Date.now() });
+            global.pendingDisconnects.set(userId, { roomId, socketId: socket.id, timestamp: Date.now() });
+            
+            // Notify others that player is "away"
+            io.to(roomId).emit("player-connection-lost", { playerName, userId });
         }
 
         setTimeout(() => {
-            // Check if this socket has reconnected
-            const pending = global.pendingDisconnects?.get(socket.id);
-            if (!pending) {
-                console.log("Player already handled (reconnected?):", socket.id);
+            // Only remove if they haven't re-synced with a new socket ID
+            const pending = global.pendingDisconnects?.get(userId);
+            if (!pending || pending.socketId !== socket.id) {
                 return;
             }
-            global.pendingDisconnects.delete(socket.id);
+            global.pendingDisconnects.delete(userId);
 
             const result = roomManager.removePlayer(socket.id);
             if (result && !result.roomDeleted) {
-                console.log("Player removed after grace period:", socket.id);
-
-                // Notify remaining players
                 io.to(result.roomId).emit("player-left", {
                     playerName: playerName || "A player",
                     playerId: socket.id,
+                    userId: userId,
                     remainingPlayers: result.room.players.length
                 });
 
                 io.to(result.roomId).emit("room-updated", result.room);
 
-                // Check if game needs to end due to insufficient players
                 const game = gameManager.getGameState(result.roomId);
                 if (game && result.room.players.length < 2) {
-                    console.log("Not enough players, ending game in room:", result.roomId);
                     io.to(result.roomId).emit("game-ended-insufficient-players", {
                         message: "Game ended - not enough players remaining",
                         finalScores: game.scores || {}

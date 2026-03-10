@@ -299,6 +299,18 @@ class SocketService {
     }
 
     /**
+     * Proactively reconnect if disconnected
+     */
+    reconnect() {
+        if (!this.socket) {
+            this.connect();
+        } else if (!this.socket.connected) {
+            console.log('Proactively reconnecting socket...');
+            this.socket.connect();
+        }
+    }
+
+    /**
      * Emit with error handling
      */
     emit(event, data) {

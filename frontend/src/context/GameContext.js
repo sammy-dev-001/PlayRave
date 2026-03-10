@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
+import { AppState, Platform } from 'react-native';
 import SocketService, { ConnectionState } from '../services/socket';
+import { useAuth } from './AuthContext';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
 
 // Initial state
@@ -156,6 +158,8 @@ const GameContext = createContext(null);
 
 // Provider component
 export function GameProvider({ children }) {
+    const { user } = useAuth();
+    const appState = useRef(AppState.currentState);
     const [state, dispatch] = useReducer(gameReducer, {
         ...initialState,
         player: {
@@ -164,6 +168,53 @@ export function GameProvider({ children }) {
             avatarColor: getRandomColor(),
         },
     });
+
+    // Handle background -> foreground transitions (State Recovery)
+    useEffect(() => {
+        const handleForeground = () => {
+            console.log('App/Tab returned to focus. Checking connection...');
+            
+            // 1. Ensure socket is connected
+            if (!SocketService.isConnected()) {
+                SocketService.reconnect();
+            }
+
+            // 2. If we were in a room, request a full sync
+            if (state.room?.id && user?.id) {
+                console.log('Requesting room sync for user:', user.id);
+                SocketService.emit('request-room-sync', {
+                    roomId: state.room.id,
+                    userId: user.id
+                });
+            }
+        };
+
+        // React Native AppState listener
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                handleForeground();
+            }
+            appState.current = nextAppState;
+        });
+
+        // Web visibilitychange listener
+        let visibilityListener;
+        if (Platform.OS === 'web') {
+            visibilityListener = () => {
+                if (document.visibilityState === 'visible') {
+                    handleForeground();
+                }
+            };
+            document.addEventListener('visibilitychange', visibilityListener);
+        }
+
+        return () => {
+            subscription.remove();
+            if (visibilityListener) {
+                document.removeEventListener('visibilitychange', visibilityListener);
+            }
+        };
+    }, [state.room?.id, user?.id]);
 
     // Subscribe to socket connection state changes
     useEffect(() => {
