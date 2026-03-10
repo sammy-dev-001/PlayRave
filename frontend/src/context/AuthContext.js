@@ -5,9 +5,11 @@ import ApiService from '../services/api';
 const AuthContext = createContext(null);
 
 // Guest user template for local storage
-const createGuestUser = () => ({
-    id: 'guest-' + Date.now(),
-    username: '',
+const generateGuestId = () => `guest_${Math.random().toString(16).slice(2, 10)}`;
+
+const createGuestUser = (username = '') => ({
+    id: generateGuestId(),
+    username: username || '',
     avatar: '👤',
     level: 1,
     xp: 0,
@@ -17,6 +19,8 @@ const createGuestUser = () => ({
     isGuest: true,
     stats: {}
 });
+
+const STORAGE_KEY = 'playrave_guest_profile';
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -30,9 +34,10 @@ export const AuthProvider = ({ children }) => {
 
     const initAuth = async () => {
         try {
+            console.log('Auth Initialization started...');
             await ApiService.init();
 
-            // Check for saved auth token
+            // 1. Check for saved auth token (Registered users take precedence)
             const token = await AsyncStorage.getItem('authToken');
             if (token) {
                 try {
@@ -40,14 +45,22 @@ export const AuthProvider = ({ children }) => {
                     setUser(userData);
                     setIsGuest(false);
                 } catch (e) {
-                    // Token invalid, clear it
                     await AsyncStorage.removeItem('authToken');
                 }
-            } else {
-                // Check for guest data
-                const guestData = await AsyncStorage.getItem('guestUser');
+            } 
+            
+            // 2. Check for guest data or generate new if not found
+            if (!user) {
+                const guestData = await AsyncStorage.getItem(STORAGE_KEY);
                 if (guestData) {
+                    console.log('Loading existing guest profile');
                     setUser(JSON.parse(guestData));
+                    setIsGuest(true);
+                } else {
+                    console.log('No profile found. Generating new permanent guest ID');
+                    const newGuest = createGuestUser();
+                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newGuest));
+                    setUser(newGuest);
                     setIsGuest(true);
                 }
             }
@@ -55,6 +68,7 @@ export const AuthProvider = ({ children }) => {
             console.error('Auth init error:', e);
         } finally {
             setIsLoading(false);
+            console.log('Auth initialized.');
         }
     };
 
@@ -62,7 +76,7 @@ export const AuthProvider = ({ children }) => {
         const { user: userData } = await ApiService.register(email, password, username);
         setUser(userData);
         setIsGuest(false);
-        await AsyncStorage.removeItem('guestUser');
+        await AsyncStorage.removeItem(STORAGE_KEY);
         return userData;
     };
 
@@ -70,13 +84,14 @@ export const AuthProvider = ({ children }) => {
         const { user: userData } = await ApiService.login(email, password);
         setUser(userData);
         setIsGuest(false);
-        await AsyncStorage.removeItem('guestUser');
+        await AsyncStorage.removeItem(STORAGE_KEY);
         return userData;
     };
 
     const continueAsGuest = async () => {
+        // This is now redundant since initAuth does it, but kept for UI switches
         const guestUser = createGuestUser();
-        await AsyncStorage.setItem('guestUser', JSON.stringify(guestUser));
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(guestUser));
         setUser(guestUser);
         setIsGuest(true);
         return guestUser;
@@ -84,9 +99,11 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         await ApiService.logout();
-        await AsyncStorage.removeItem('guestUser');
+        await AsyncStorage.removeItem(STORAGE_KEY);
         setUser(null);
         setIsGuest(false);
+        // Force re-init to get a fresh guest profile
+        initAuth();
     };
 
     const updateLocalStats = async (gameType, stats) => {
@@ -108,7 +125,7 @@ export const AuthProvider = ({ children }) => {
             }
 
             setUser(updatedUser);
-            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
             return { xpGained, newLevel: updatedUser.level, newXp: updatedUser.xp };
         } else {
             // Update on server for registered users
@@ -139,7 +156,7 @@ export const AuthProvider = ({ children }) => {
         setUser(updatedUser);
 
         if (isGuest) {
-            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
         } else {
             // For authenticated users, could upload to server
             // For now, store locally
@@ -157,7 +174,7 @@ export const AuthProvider = ({ children }) => {
         setUser(updatedUser);
 
         if (isGuest) {
-            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
         }
 
         return updatedUser;
@@ -170,7 +187,7 @@ export const AuthProvider = ({ children }) => {
         setUser(updatedUser);
 
         if (isGuest) {
-            await AsyncStorage.setItem('guestUser', JSON.stringify(updatedUser));
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
         } else {
             // TODO: Implement API call for registered users
             // await ApiService.updateProfile({ username: newUsername });
