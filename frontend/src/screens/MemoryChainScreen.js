@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -12,7 +13,7 @@ import RaveLights from '../components/RaveLights';
 import { COLORS, SHADOWS } from '../constants/theme';
 
 // Emojis for the memory game
-const MEMORY_ITEMS = ['🍎', '🍕', '🎸', '🚀', '🌙', '⚡', '🎲', '🌈', '🦄', '🎯', '🔥', '💎', '🎪', '🎭', '🌺', '🦋'];
+const MEMORY_ITEMS = ['🍎', '🍕', '🎸', '', '🌙', '⚡', '🎲', '🌈', '🦄', '🎯', '🔥', '💎', '🎪', '🎭', '🌺', '🦋'];
 
 const MemoryChainScreen = ({ route, navigation }) => {
     const { players } = route.params;
@@ -160,9 +161,9 @@ const MemoryChainScreen = ({ route, navigation }) => {
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
                     <NeonText size={28} weight="bold" glow>
-                        🏆 MEMORY MASTER 🏆
+                        MEMORY MASTER
                     </NeonText>
-                    <NeonText size={80}>🧠</NeonText>
+                    <NeonText size={80}></NeonText>
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
                         {winner?.name}
                     </NeonText>
@@ -208,7 +209,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                         ROUND {currentSequence.length}
                     </NeonText>
                     <NeonText size={24} weight="bold" glow>
-                        🧠 MEMORY CHAIN
+                        MEMORY CHAIN
                     </NeonText>
                 </View>
 

@@ -5,6 +5,7 @@ import {
     TextInput,
     Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -111,7 +112,7 @@ const JoinSpectatorScreen = ({ navigation }) => {
                     </View>
 
                     <NeonButton
-                        title={loading ? "CONNECTING..." : "👁️ START WATCHING"}
+                        title={loading ? "CONNECTING..." : "START WATCHING"}
                         onPress={handleJoin}
                         disabled={loading}
                         style={styles.joinBtn}

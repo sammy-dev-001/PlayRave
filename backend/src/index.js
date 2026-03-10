@@ -790,127 +790,157 @@ io.on("connection", (socket) => {
 
     socket.on("scrabble-place-tiles", ({ roomId, tiles }) => {
         console.log("scrabble-place-tiles event received, roomId:", roomId, "tiles:", tiles?.length);
-        const result = gameManager.scrabblePlaceTiles(roomId, socket.id, tiles);
+        try {
+            const result = gameManager.scrabblePlaceTiles(roomId, socket.id, tiles);
 
-        if (result.error) {
-            socket.emit("error", { message: result.error });
-            return;
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            // Broadcast to all players that tiles were placed (for real-time updates)
+            io.to(roomId).emit("scrabble-tiles-placed", {
+                playerId: socket.id,
+                tiles: result.tiles
+            });
+        } catch (err) {
+            console.error("scrabble-place-tiles error:", err);
+            socket.emit("error", { message: "Server error placing tiles" });
         }
-
-        // Broadcast to all players that tiles were placed (for real-time updates)
-        io.to(roomId).emit("scrabble-tiles-placed", {
-            playerId: socket.id,
-            tiles: result.tiles
-        });
     });
 
     socket.on("scrabble-recall-tiles", ({ roomId }) => {
         console.log("scrabble-recall-tiles event received, roomId:", roomId);
-        const result = gameManager.scrabbleRecallTiles(roomId, socket.id);
+        try {
+            const result = gameManager.scrabbleRecallTiles(roomId, socket.id);
 
-        if (result.error) {
-            socket.emit("error", { message: result.error });
-            return;
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            // Notify all players
+            io.to(roomId).emit("scrabble-tiles-recalled", {
+                playerId: socket.id
+            });
+        } catch (err) {
+            console.error("scrabble-recall-tiles error:", err);
+            socket.emit("error", { message: "Server error recalling tiles" });
         }
-
-        // Notify all players
-        io.to(roomId).emit("scrabble-tiles-recalled", {
-            playerId: socket.id
-        });
     });
 
     socket.on("scrabble-submit-move", ({ roomId, tiles }) => {
         console.log("scrabble-submit-move event received, roomId:", roomId, "tiles:", tiles?.length);
-        const result = gameManager.scrabbleSubmitMove(roomId, socket.id, tiles);
+        try {
+            const result = gameManager.scrabbleSubmitMove(roomId, socket.id, tiles);
 
-        if (result.error) {
-            socket.emit("error", { message: result.error, invalidWords: result.invalidWords });
-            return;
-        }
+            if (result.error) {
+                socket.emit("error", { message: result.error, invalidWords: result.invalidWords });
+                return;
+            }
 
-        // Get updated game state for all players
-        const room = roomManager.getRoom(roomId);
-        room.players.forEach(player => {
-            const playerState = gameManager.getScrabbleGameState(roomId, player.id);
-            io.to(player.id).emit("scrabble-move-submitted", {
-                success: true,
-                score: result.score,
-                formedWords: result.formedWords,
-                gameState: playerState,
-                gameEnded: result.gameEnded,
-                finalScores: result.finalScores
+            // Get updated game state for all players
+            const room = roomManager.getRoom(roomId);
+            room.players.forEach(player => {
+                const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("scrabble-move-submitted", {
+                    success: true,
+                    score: result.score,
+                    formedWords: result.formedWords,
+                    gameState: playerState,
+                    gameEnded: result.gameEnded,
+                    finalScores: result.finalScores
+                });
             });
-        });
 
-        console.log("Scrabble move submitted successfully, score:", result.score, "words:", result.formedWords);
+            console.log("Scrabble move submitted successfully, score:", result.score, "words:", result.formedWords);
+        } catch (err) {
+            console.error("scrabble-submit-move error:", err);
+            socket.emit("error", { message: "Server error processing move. Please try again." });
+        }
     });
 
     socket.on("scrabble-pass-turn", ({ roomId }) => {
         console.log("scrabble-pass-turn event received, roomId:", roomId);
-        const result = gameManager.scrabblePassTurn(roomId, socket.id);
+        try {
+            const result = gameManager.scrabblePassTurn(roomId, socket.id);
 
-        if (result.error) {
-            socket.emit("error", { message: result.error });
-            return;
-        }
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
 
-        // Get updated game state for all players
-        const room = roomManager.getRoom(roomId);
-        room.players.forEach(player => {
-            const playerState = gameManager.getScrabbleGameState(roomId, player.id);
-            io.to(player.id).emit("scrabble-turn-passed", {
-                gameState: playerState,
-                gameEnded: result.gameEnded,
-                finalScores: result.finalScores
+            // Get updated game state for all players
+            const room = roomManager.getRoom(roomId);
+            room.players.forEach(player => {
+                const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("scrabble-turn-passed", {
+                    gameState: playerState,
+                    gameEnded: result.gameEnded,
+                    finalScores: result.finalScores
+                });
             });
-        });
+        } catch (err) {
+            console.error("scrabble-pass-turn error:", err);
+            socket.emit("error", { message: "Server error passing turn" });
+        }
     });
 
     socket.on("scrabble-exchange-tiles", ({ roomId, tileIndices }) => {
         console.log("scrabble-exchange-tiles event received, roomId:", roomId, "tiles:", tileIndices?.length);
-        const result = gameManager.scrabbleExchangeTiles(roomId, socket.id, tileIndices);
+        try {
+            const result = gameManager.scrabbleExchangeTiles(roomId, socket.id, tileIndices);
 
-        if (result.error) {
-            socket.emit("error", { message: result.error });
-            return;
-        }
-
-        // Get updated game state for the player who exchanged tiles
-        const playerState = gameManager.getScrabbleGameState(roomId, socket.id);
-        socket.emit("scrabble-tiles-exchanged", {
-            success: true,
-            gameState: playerState
-        });
-
-        // Notify other players that tiles were exchanged (turn passed)
-        const room = roomManager.getRoom(roomId);
-        room.players.forEach(player => {
-            if (player.id !== socket.id) {
-                const otherPlayerState = gameManager.getScrabbleGameState(roomId, player.id);
-                io.to(player.id).emit("scrabble-turn-passed", {
-                    gameState: otherPlayerState,
-                    gameEnded: result.gameEnded,
-                    finalScores: result.finalScores
-                });
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
             }
-        });
-        console.log("Scrabble tiles exchanged successfully.");
+
+            // Get updated game state for the player who exchanged tiles
+            const playerState = gameManager.getScrabbleGameState(roomId, socket.id);
+            socket.emit("scrabble-tiles-exchanged", {
+                success: true,
+                gameState: playerState
+            });
+
+            // Notify other players that tiles were exchanged (turn passed)
+            const room = roomManager.getRoom(roomId);
+            room.players.forEach(player => {
+                if (player.id !== socket.id) {
+                    const otherPlayerState = gameManager.getScrabbleGameState(roomId, player.id);
+                    io.to(player.id).emit("scrabble-turn-passed", {
+                        gameState: otherPlayerState,
+                        gameEnded: result.gameEnded,
+                        finalScores: result.finalScores
+                    });
+                }
+            });
+            console.log("Scrabble tiles exchanged successfully.");
+        } catch (err) {
+            console.error("scrabble-exchange-tiles error:", err);
+            socket.emit("error", { message: "Server error exchanging tiles" });
+        }
     });
 
     socket.on("scrabble-end-game", ({ roomId }) => {
         console.log("scrabble-end-game event received, roomId:", roomId);
-        const result = gameManager.endScrabbleGame(roomId);
+        try {
+            const result = gameManager.endScrabbleGame(roomId);
 
-        if (result.error) {
-            socket.emit("error", { message: result.error });
-            return;
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            io.to(roomId).emit("scrabble-game-ended", {
+                finished: true,
+                finalScores: result.finalScores,
+                winner: result.winner
+            });
+        } catch (err) {
+            console.error("scrabble-end-game error:", err);
+            socket.emit("error", { message: "Server error ending game" });
         }
-
-        io.to(roomId).emit("scrabble-game-ended", {
-            finished: true,
-            finalScores: result.finalScores,
-            winner: result.winner
-        });
     });
 
     socket.on("submit-answer", ({ roomId, answerIndex }) => {

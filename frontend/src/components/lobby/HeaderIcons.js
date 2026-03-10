@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from '../NeonText';
 import VoiceToggle from '../VoiceToggle';
 import { COLORS } from '../../constants/theme';
@@ -10,7 +11,7 @@ const HeaderIcons = ({ onBackPress, roomId }) => {
             <View style={styles.leftRow}>
                 {/* Back arrow */}
                 <TouchableOpacity style={styles.backBtn} onPress={onBackPress}>
-                    <NeonText size={22} color="#FFFFFF">←</NeonText>
+                    <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
 
                 {/* Room Code */}
@@ -23,10 +24,10 @@ const HeaderIcons = ({ onBackPress, roomId }) => {
             {/* Right icons */}
             <View style={styles.iconsRow}>
                 <TouchableOpacity style={styles.iconBtn}>
-                    <NeonText size={18} color="#8B8FA3">🔊</NeonText>
+                    <Ionicons name="volume-high" size={20} color="#8B8FA3" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn}>
-                    <NeonText size={18} color="#8B8FA3">♬</NeonText>
+                    <Ionicons name="musical-notes" size={20} color="#8B8FA3" />
                 </TouchableOpacity>
                 <VoiceToggle roomId={roomId} />
             </View>

@@ -7,6 +7,7 @@ import {
     Platform,
     Vibration
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -194,7 +195,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                 <View style={styles.container}>
                     <View style={styles.header}>
                         <NeonText size={22} weight="bold" glow color={COLORS.electricPurple}>
-                            🎮 TIC-TAC-TOE TOURNAMENT
+                            TIC-TAC-TOE TOURNAMENT
                         </NeonText>
                         <NeonText size={14} color="#888">Round {roundNumber}</NeonText>
                     </View>
@@ -203,7 +204,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                     {phase === 'bracket' && (
                         <View style={styles.bracketContainer}>
                             <NeonText size={18} weight="bold" style={styles.sectionTitle}>
-                                🏆 Tournament Bracket
+                                Tournament Bracket
                             </NeonText>
 
                             {/* Visual Bracket Display */}
@@ -219,11 +220,11 @@ const TicTacToeScreen = ({ route, navigation }) => {
                             {matches.map((match, index) => (
                                 <View key={index} style={styles.matchCard}>
                                     <NeonText size={16} color={COLORS.neonCyan}>
-                                        {match.player1?.isAI ? '🤖 ' : ''}{match.player1?.name || match.player1}
+                                        {match.player1?.isAI ? '' : ''}{match.player1?.name || match.player1}
                                     </NeonText>
                                     <NeonText size={14} color="#666">vs</NeonText>
                                     <NeonText size={16} color={COLORS.hotPink}>
-                                        {match.player2?.isAI ? '🤖 ' : ''}{match.player2?.name || match.player2 || 'TBD'}
+                                        {match.player2?.isAI ? '' : ''}{match.player2?.name || match.player2 || 'TBD'}
                                     </NeonText>
                                     {match.isAIMatch && (
                                         <NeonText size={12} color={COLORS.electricPurple}>(vs AI)</NeonText>
@@ -246,13 +247,13 @@ const TicTacToeScreen = ({ route, navigation }) => {
                             <View style={styles.playersRow}>
                                 <View style={[styles.playerTag, currentTurn === player1?.id && styles.activePlayer]}>
                                     <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
-                                        {player1?.isAI ? '🤖 ' : ''}{player1?.name} (X)
+                                        {player1?.isAI ? '' : ''}{player1?.name} (X)
                                     </NeonText>
                                 </View>
                                 <NeonText size={16} color="#666">vs</NeonText>
                                 <View style={[styles.playerTag, currentTurn === player2?.id && styles.activePlayer]}>
                                     <NeonText size={14} weight="bold" color={COLORS.hotPink}>
-                                        {player2?.isAI ? '🤖 ' : ''}{player2?.name} (O)
+                                        {player2?.isAI ? '' : ''}{player2?.name} (O)
                                     </NeonText>
                                 </View>
                             </View>
@@ -264,7 +265,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                                     { opacity: thinkingAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }
                                 ]}>
                                     <NeonText size={16} color={COLORS.electricPurple} glow>
-                                        🤖 AI is thinking...
+                                        AI is thinking...
                                     </NeonText>
                                 </Animated.View>
                             )}
@@ -297,7 +298,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                             {matchResult?.winner ? (
                                 <>
                                     <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
-                                        🏆 {matchResult.winner.name} Wins!
+                                        {matchResult.winner.name} Wins!
                                     </NeonText>
                                     {matchResult.winner.id === myId && (
                                         <NeonText size={18} color={COLORS.neonCyan} style={styles.subtitle}>
@@ -348,7 +349,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                     {phase === 'finished' && (
                         <View style={styles.finishedContainer}>
                             <NeonText size={32} weight="bold" glow color={COLORS.limeGlow}>
-                                🏆 CHAMPION 🏆
+                                CHAMPION
                             </NeonText>
                             <NeonText size={28} weight="bold" color={COLORS.neonCyan} style={styles.championName}>
                                 {champion?.name}

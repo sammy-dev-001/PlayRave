@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -119,7 +120,7 @@ const OnlineRapidFireScreen = ({ route, navigation }) => {
         <NeonContainer>
             <View style={styles.header}>
                 <NeonText size={24} weight="bold" glow>
-                    ⚡ RAPID FIRE
+                    RAPID FIRE
                 </NeonText>
                 <View style={[styles.categoryBadge, { borderColor: getCategoryColor() }]}>
                     <NeonText size={12} color={getCategoryColor()} weight="bold">
@@ -182,7 +183,7 @@ const OnlineRapidFireScreen = ({ route, navigation }) => {
                             style={[styles.answerBtn, styles.answeredBtn]}
                             onPress={() => handleAnswer(true)}
                         >
-                            <NeonText size={32}>✓</NeonText>
+                            <NeonText size={32}></NeonText>
                             <NeonText size={14} weight="bold" color={COLORS.limeGlow}>
                                 ANSWERED!
                             </NeonText>

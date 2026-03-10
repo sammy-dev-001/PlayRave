@@ -1,4 +1,7 @@
-const { SCRABBLE_WORDS } = require('./scrabbleWords');
+// Bug 6 Fix: SOWPODS official international Scrabble word list (267,751 words).
+// Loaded once at startup into a Set for O(1) lookup — no latency on validation.
+const sowpods = require('sowpods');
+const SCRABBLE_WORDS = new Set(sowpods); // All words are already uppercase strings
 
 // Scrabble-style letter tiles and scoring
 const LETTER_TILES = {
@@ -87,9 +90,9 @@ const drawTiles = (bag, count) => {
     return drawn;
 };
 
-// Word validation
+// Word validation — SOWPODS Set contains uppercase strings
 const isValidWord = (word) => {
-    return SCRABBLE_WORDS.has(word.toLowerCase());
+    return SCRABBLE_WORDS.has(word.toUpperCase());
 };
 
 module.exports = {

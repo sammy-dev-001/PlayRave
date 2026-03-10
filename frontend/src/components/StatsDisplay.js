@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 import PlayerStatsService from '../services/PlayerStatsService';
@@ -70,13 +71,13 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
             <View style={styles.secondaryRow}>
                 <View style={styles.statBoxSmall}>
                     <NeonText size={20} weight="bold" color={COLORS.electricPurple}>
-                        🔥 {stats.streakDays}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flame" size={18} color={COLORS.electricPurple} /><NeonText size={20} weight="bold" color={COLORS.electricPurple}>{stats.streakDays}</NeonText></View>
                     </NeonText>
                     <NeonText size={11} color="#888">Day Streak</NeonText>
                 </View>
                 <View style={styles.statBoxSmall}>
                     <NeonText size={20} weight="bold" color={COLORS.neonCyan}>
-                        ⭐ {stats.totalScore.toLocaleString()}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="star" size={18} color={COLORS.neonCyan} /><NeonText size={20} weight="bold" color={COLORS.neonCyan}>{stats.totalScore.toLocaleString()}</NeonText></View>
                     </NeonText>
                     <NeonText size={11} color="#888">Total Score</NeonText>
                 </View>
@@ -109,9 +110,7 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
             {/* Achievements */}
             {stats.achievements.length > 0 && (
                 <View style={styles.achievementsSection}>
-                    <NeonText size={16} weight="bold" style={styles.sectionTitle}>
-                        🏆 Achievements ({stats.achievements.length})
-                    </NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}><Ionicons name="trophy" size={18} color={COLORS.limeGlow} /><NeonText size={16} weight="bold">Achievements ({stats.achievements.length})</NeonText></View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {stats.achievements.map(achievement => (
                             <View key={achievement.id} style={styles.achievementBadge}>

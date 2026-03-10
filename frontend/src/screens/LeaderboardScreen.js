@@ -6,6 +6,7 @@ import {
     ActivityIndicator,
     RefreshControl
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import EmptyState from '../components/EmptyState';
@@ -45,9 +46,9 @@ const LeaderboardScreen = () => {
         const rank = index + 1;
 
         let medalEmoji = '';
-        if (rank === 1) medalEmoji = '🥇';
-        else if (rank === 2) medalEmoji = '🥈';
-        else if (rank === 3) medalEmoji = '🥉';
+        if (rank === 1) medalEmoji = '1st';
+        else if (rank === 2) medalEmoji = '2nd';
+        else if (rank === 3) medalEmoji = '3rd';
 
         return (
             <View style={[styles.row, isMe && styles.myRow, rank <= 3 && styles.topRow]}>
@@ -83,7 +84,7 @@ const LeaderboardScreen = () => {
         <NeonContainer showBackButton scrollable>
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <NeonText size={28} weight="bold" glow>🏆 LEADERBOARD</NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="trophy" size={26} color={COLORS.limeGlow} /><NeonText size={28} weight="bold" glow>LEADERBOARD</NeonText></View>
                     <NeonText size={14} color="#888">Top players worldwide</NeonText>
                 </View>
 
@@ -93,7 +94,7 @@ const LeaderboardScreen = () => {
                     </View>
                 ) : leaderboard.length === 0 ? (
                     <EmptyState
-                        icon="🎮"
+                        icon="game-controller"
                         title="No Players Yet"
                         message="Be the first to claim victory!"
                     />

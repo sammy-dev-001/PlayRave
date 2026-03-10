@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, TextInput, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import { useTheme } from '../context/ThemeContext';
@@ -49,7 +50,7 @@ const SettingsScreen = ({ navigation }) => {
                 <View style={[styles.themePreview, { backgroundColor: themeOption.preview }]} />
                 <NeonText size={16}>{themeOption.emoji} {themeOption.name}</NeonText>
                 {isSelected && (
-                    <NeonText size={12} color={theme.colors.primary}>✓</NeonText>
+                    <NeonText size={12} color={theme.colors.primary}></NeonText>
                 )}
             </TouchableOpacity>
         );
@@ -136,7 +137,7 @@ const SettingsScreen = ({ navigation }) => {
                 {/* Theme Section */}
                 <View style={styles.section}>
                     <NeonText size={18} weight="bold" style={styles.sectionTitle}>
-                        🎨 Theme
+                        Theme
                     </NeonText>
                     <View style={styles.themeGrid}>
                         {availableThemes.map(renderThemeOption)}

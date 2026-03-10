@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import RaveLights from '../components/RaveLights';
@@ -72,7 +73,7 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
                     </NeonText>
                 </View>
                 <View style={styles.playerInfo}>
-                    {isWinner && <NeonText size={20}>⚡ </NeonText>}
+                    {isWinner && <NeonText size={20}></NeonText>}
                     <NeonText size={18} weight={isWinner ? 'bold' : 'normal'}>
                         {playerName}
                     </NeonText>
@@ -98,7 +99,7 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
             {results.winner && (
                 <View style={styles.winnerAnnouncement}>
                     <NeonText size={20} color={COLORS.limeGlow} style={styles.winnerText}>
-                        🏆 {getPlayerName(results.winner)} WINS! 🏆
+                        {getPlayerName(results.winner)} WINS!
                     </NeonText>
                 </View>
             )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -13,10 +14,10 @@ const isDesktop = SCREEN_WIDTH > 768;
 
 // Game categories for organization
 const GAME_CATEGORIES = {
-    party: { name: '🎉 Party Games', color: COLORS.hotPink },
-    competitive: { name: '🏆 Competitive', color: COLORS.neonCyan },
-    trivia: { name: '🧠 Trivia & Knowledge', color: COLORS.limeGlow },
-    speed: { name: '⚡ Speed Games', color: COLORS.electricPurple },
+    party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
+    competitive: { name: 'Competitive', icon: 'trophy', color: COLORS.neonCyan },
+    trivia: { name: 'Trivia & Knowledge', icon: 'bulb', color: COLORS.limeGlow },
+    speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
 };
 
 const AVAILABLE_GAMES = [
@@ -316,17 +317,17 @@ const GameSelectionScreen = ({ route, navigation }) => {
 
                 <View style={styles.metaRow}>
                     <View style={styles.badge}>
-                        <NeonText size={10} color="#FFF">👥 {game.minPlayers || 2}-{game.maxPlayers || 8}</NeonText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="people" size={12} color="#FFF" /><NeonText size={10} color="#FFF">{game.minPlayers || 2}-{game.maxPlayers || 8}</NeonText></View>
                     </View>
                     {game.category === 'speed' && (
                         <View style={[styles.badge, { backgroundColor: '#FF3FA440' }]}>
-                            <NeonText size={10} color="#FF3FA4">⚡ Fast</NeonText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={12} color="#FF3FA4" /><NeonText size={10} color="#FF3FA4">Fast</NeonText></View>
                         </View>
                     )}
                 </View>
             </View>
             <View style={styles.arrowContainer}>
-                <NeonText size={20} color={game.color}>→</NeonText>
+                <Ionicons name="chevron-forward" size={20} color={game.color} />
             </View>
         </TouchableOpacity>
     );
@@ -357,9 +358,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
                     return (
                         <View key={key} style={styles.categorySection}>
                             <View style={styles.categoryHeader}>
-                                <NeonText size={20} weight="bold" color={category.color} glow>
-                                    {category.name}
-                                </NeonText>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name={category.icon} size={18} color={category.color} /><NeonText size={20} weight="bold" color={category.color} glow>{category.name}</NeonText></View>
                                 <View style={[styles.categoryLine, { backgroundColor: category.color }]} />
                             </View>
                             <View style={styles.gamesGrid}>
@@ -369,7 +368,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
                     );
                 })}
             </View>
-        </NeonContainer>
+        </NeonContainer >
     );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TextInput, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -29,7 +30,7 @@ const HotSeatScreen = ({ route, navigation }) => {
         };
 
         const onGameFinished = ({ message }) => {
-            Alert.alert('🎉 Game Complete!', message, [
+            Alert.alert('Game Complete!', message, [
                 { text: 'Back to Lobby', onPress: () => navigation.navigate('Lobby', { room, playerName }) }
             ]);
         };
@@ -92,7 +93,7 @@ const HotSeatScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>ROUND {round}</NeonText>
-                    <NeonText size={28} weight="bold" glow>🔥 HOT SEAT 🔥</NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="flame" size={26} color={COLORS.hotPink} /><NeonText size={28} weight="bold" glow>HOT SEAT</NeonText><Ionicons name="flame" size={26} color={COLORS.hotPink} /></View>
                 </View>
 
                 <View style={styles.hotSeatPlayerCard}>
@@ -104,7 +105,7 @@ const HotSeatScreen = ({ route, navigation }) => {
 
                 {isHotSeat ? (
                     <View style={styles.waitingView}>
-                        <NeonText size={48}>🪑</NeonText>
+                        <Ionicons name="person" size={48} color={COLORS.hotPink} />
                         <NeonText size={20} weight="bold" style={styles.marginTop}>
                             You're in the hot seat!
                         </NeonText>
@@ -121,7 +122,7 @@ const HotSeatScreen = ({ route, navigation }) => {
                     <View style={styles.questionInputView}>
                         {hasSubmitted ? (
                             <View style={styles.submittedView}>
-                                <NeonText size={48}>✅</NeonText>
+                                <Ionicons name="checkmark-circle" size={48} color={COLORS.limeGlow} />
                                 <NeonText size={18} weight="bold" style={styles.marginTop}>
                                     Question Submitted!
                                 </NeonText>
@@ -171,7 +172,7 @@ const HotSeatScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>ROUND {round}</NeonText>
-                    <NeonText size={28} weight="bold" glow>🔥 HOT SEAT 🔥</NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="flame" size={26} color={COLORS.hotPink} /><NeonText size={28} weight="bold" glow>HOT SEAT</NeonText><Ionicons name="flame" size={26} color={COLORS.hotPink} /></View>
                 </View>
 
                 <View style={styles.hotSeatPlayerCard}>
@@ -200,7 +201,7 @@ const HotSeatScreen = ({ route, navigation }) => {
 
                 {isHotSeat && (
                     <NeonText size={14} color={COLORS.limeGlow} style={styles.answerPrompt}>
-                        Answer this question out loud! 🎤
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>Answer this question out loud! <Ionicons name="mic" size={16} color={COLORS.neonCyan} /></View>
                     </NeonText>
                 )}
 

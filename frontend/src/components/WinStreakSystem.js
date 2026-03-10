@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
@@ -8,14 +9,19 @@ import { COLORS } from '../constants/theme';
 const StreakBadge = ({ streak, size = 'small' }) => {
     if (!streak || streak < 2) return null;
 
-    const fireEmojis = streak >= 10 ? '🔥🔥🔥' : streak >= 5 ? '🔥🔥' : '🔥';
+    const fireCount = streak >= 10 ? 3 : streak >= 5 ? 2 : 1;
     const isSmall = size === 'small';
 
     return (
         <View style={[styles.badge, isSmall && styles.smallBadge]}>
-            <NeonText size={isSmall ? 10 : 14} color={COLORS.hotPink} glow>
-                {fireEmojis} {streak}
-            </NeonText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                {Array.from({ length: fireCount }).map((_, i) => (
+                    <Ionicons key={i} name="flame" size={isSmall ? 10 : 14} color={COLORS.hotPink} />
+                ))}
+                <NeonText size={isSmall ? 10 : 14} color={COLORS.hotPink} glow>
+                    {' '}{streak}
+                </NeonText>
+            </View>
         </View>
     );
 };
@@ -44,9 +50,9 @@ const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
     if (!visible) return null;
 
     const getMessage = () => {
-        if (streak >= 10) return '🏆 UNSTOPPABLE! 🏆';
-        if (streak >= 5) return '🔥 ON FIRE! 🔥';
-        return '✨ WINNING STREAK! ✨';
+        if (streak >= 10) return 'UNSTOPPABLE!';
+        if (streak >= 5) return 'ON FIRE!';
+        return 'WINNING STREAK!';
     };
 
     return (
@@ -83,7 +89,7 @@ const StreakBreakerPopup = ({ breakerName, oldStreak, visible, onComplete }) => 
     return (
         <Animated.View style={[styles.breakerPopup, { transform: [{ translateY: slideAnim }] }]}>
             <NeonText size={14} color="#fff">
-                💥 {breakerName} broke a {oldStreak} win streak!
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={16} color="#fff" /><NeonText size={14} color="#fff">{breakerName} broke a {oldStreak} win streak!</NeonText></View>
             </NeonText>
         </Animated.View>
     );

@@ -6,6 +6,7 @@ import {
     ScrollView,
     Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -185,7 +186,7 @@ const ImposterScreen = ({ route, navigation }) => {
             {!isImposter && (
                 <View style={styles.roleBadge}>
                     <NeonText size={16} color={COLORS.limeGlow}>
-                        ✓ You have the normal word
+                        You have the normal word
                     </NeonText>
                     <NeonText size={14} color="#888" style={{ marginTop: 10, textAlign: 'center' }}>
                         Find the imposter without revealing the word!
@@ -288,7 +289,7 @@ const ImposterScreen = ({ route, navigation }) => {
                             {player.name}
                         </NeonText>
                         {selectedPlayer === player.name && (
-                            <NeonText size={18} color={COLORS.neonCyan}>✓</NeonText>
+                            <NeonText size={18} color={COLORS.neonCyan}></NeonText>
                         )}
                     </TouchableOpacity>
                 ))}
@@ -306,7 +307,7 @@ const ImposterScreen = ({ route, navigation }) => {
     const renderResultsPhase = () => (
         <View style={styles.resultsContainer}>
             <NeonText size={24} weight="bold" glow style={styles.phaseTitle}>
-                🎭 RESULTS
+                RESULTS
             </NeonText>
 
             <View style={styles.imposterReveal}>
@@ -338,7 +339,7 @@ const ImposterScreen = ({ route, navigation }) => {
             {roundResults?.imposterCaught ? (
                 <View style={styles.outcomeBox}>
                     <NeonText size={20} color={COLORS.limeGlow} weight="bold">
-                        ✓ IMPOSTER CAUGHT!
+                        IMPOSTER CAUGHT!
                     </NeonText>
                     <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
                         Most players voted correctly

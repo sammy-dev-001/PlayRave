@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -15,21 +16,21 @@ const RapidFireCategoryScreen = ({ route, navigation }) => {
             name: 'NORMAL',
             description: 'Fun quick questions for everyone',
             color: COLORS.limeGlow,
-            icon: '⚡'
+            icon: 'flash'
         },
         {
             id: 'spicy',
             name: 'SPICY',
             description: 'Dating, relationships & love',
             color: COLORS.hotPink,
-            icon: '🌶️'
+            icon: 'flame'
         },
         {
             id: 'naughty',
             name: 'NAUGHTY',
             description: 'Adults only - no filter!',
             color: COLORS.electricPurple,
-            icon: '🔞'
+            icon: 'alert-circle'
         }
     ];
 
@@ -46,9 +47,7 @@ const RapidFireCategoryScreen = ({ route, navigation }) => {
                 bounces={true}
             >
                 <View style={styles.header}>
-                    <NeonText size={28} weight="bold" glow>
-                        ⚡ RAPID FIRE
-                    </NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={22} color={COLORS.limeGlow} /><NeonText size={24} weight="bold" glow>RAPID FIRE</NeonText></View>
                     <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
                         Choose your spice level
                     </NeonText>
@@ -65,9 +64,7 @@ const RapidFireCategoryScreen = ({ route, navigation }) => {
                             ]}
                             onPress={() => setSelectedCategory(category.id)}
                         >
-                            <NeonText size={40} style={styles.categoryIcon}>
-                                {category.icon}
-                            </NeonText>
+                            <Ionicons name={category.icon} size={40} color={category.color} />
                             <NeonText
                                 size={22}
                                 weight="bold"
@@ -95,13 +92,13 @@ const RapidFireCategoryScreen = ({ route, navigation }) => {
                         HOW TO PLAY
                     </NeonText>
                     <NeonText size={13} color="#aaa" style={styles.rule}>
-                        ⏱️ 5 seconds to answer each question
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="timer-outline" size={14} color="#aaa" /><NeonText size={13} color="#aaa">5 seconds to answer each question</NeonText></View>
                     </NeonText>
                     <NeonText size={13} color="#aaa" style={styles.rule}>
-                        ✓ Tap ANSWERED if they respond in time
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="checkmark" size={14} color="#aaa" /><NeonText size={13} color="#aaa">Tap ANSWERED if they respond in time</NeonText></View>
                     </NeonText>
                     <NeonText size={13} color="#aaa" style={styles.rule}>
-                        ⚡ Quick, honest, one-word answers!
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={14} color={COLORS.limeGlow} /><NeonText size={12} color="#888">Quick, honest, one-word answers!</NeonText></View>
                     </NeonText>
                 </View>
 

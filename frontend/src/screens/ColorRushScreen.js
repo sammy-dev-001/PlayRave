@@ -7,6 +7,7 @@ import {
     Platform,
     Vibration
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -158,7 +159,7 @@ const ColorRushScreen = ({ route, navigation }) => {
             <Animated.View style={[styles.container, { backgroundColor: flashBackground }]}>
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow color={COLORS.electricPurple}>
-                        🎨 COLOR RUSH
+                        COLOR RUSH
                     </NeonText>
                     <View style={styles.roundInfo}>
                         <NeonText size={14} color="#888">
@@ -244,7 +245,7 @@ const ColorRushScreen = ({ route, navigation }) => {
                                 style={styles.resultText}
                             >
                                 {myResult.correct
-                                    ? (myResult.isWinner ? '🏆 FASTEST!' : '✓ Correct!')
+                                    ? (myResult.isWinner ? 'FASTEST!' : 'Correct!')
                                     : '✗ Wrong!'}
                             </NeonText>
                         )}
@@ -254,7 +255,7 @@ const ColorRushScreen = ({ route, navigation }) => {
                 {phase === 'roundWon' && (
                     <View style={styles.centerContent}>
                         <NeonText size={24} weight="bold" glow color={COLORS.limeGlow}>
-                            🏆 {roundWinner} was fastest!
+                            {roundWinner} was fastest!
                         </NeonText>
                     </View>
                 )}
@@ -291,7 +292,7 @@ const ColorRushScreen = ({ route, navigation }) => {
                 {phase === 'finished' && finalResults && (
                     <View style={styles.finalContainer}>
                         <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
-                            🏆 {finalResults.winner?.name} WINS! 🏆
+                            {finalResults.winner?.name} WINS!
                         </NeonText>
                         <NeonText size={18} color={COLORS.neonCyan} style={styles.winnerScore}>
                             {finalResults.winner?.score} points

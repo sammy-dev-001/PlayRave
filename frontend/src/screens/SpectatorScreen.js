@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     FlatList
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -129,7 +130,7 @@ const SpectatorScreen = ({ route, navigation }) => {
                 </View>
                 <View style={styles.headerCenter}>
                     <NeonText size={18} weight="bold" glow>
-                        👁️ SPECTATING
+                        SPECTATING
                     </NeonText>
                     <NeonText size={12} color={COLORS.neonCyan}>
                         Room: {room.id}
@@ -137,7 +138,7 @@ const SpectatorScreen = ({ route, navigation }) => {
                 </View>
                 <View style={styles.headerRight}>
                     <NeonText size={12} color="#888">
-                        👁️ {spectatorCount}
+                        {spectatorCount}
                     </NeonText>
                 </View>
             </View>
@@ -177,7 +178,7 @@ const SpectatorScreen = ({ route, navigation }) => {
 
                     {gameState === 'ended' && (
                         <View style={styles.endedState}>
-                            <NeonText size={48}>🏆</NeonText>
+                            <NeonText size={48}></NeonText>
                             <NeonText size={18}>Game Over!</NeonText>
                         </View>
                     )}
@@ -207,7 +208,7 @@ const SpectatorScreen = ({ route, navigation }) => {
                                     {scores[item.id] || 0}
                                 </NeonText>
                                 {index === 0 && sortedPlayers.length > 1 && (
-                                    <NeonText size={10}>👑</NeonText>
+                                    <NeonText size={10}></NeonText>
                                 )}
                             </View>
                         )}

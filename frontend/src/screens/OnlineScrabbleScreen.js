@@ -12,13 +12,15 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { room, playerName, gameState: initialGameState } = route.params;
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-    // Calculate tile sizes - improved for desktop
-    const isDesktop = screenWidth > 768;
-    const availableSize = Math.min(screenWidth * 0.9, screenHeight - 300);
-    const minTileSize = isDesktop ? 28 : 18;
-    const maxTileSize = isDesktop ? 40 : 30;
-    const tileSize = Math.min(maxTileSize, Math.max(Math.floor(availableSize / BOARD_SIZE), minTileSize));
-    const rackTileSize = Math.min(Math.max(tileSize * 1.3, 40), 55);
+    // Bug 1 Fix: Hybrid shrink-with-floor tile sizing.
+    // idealTileSize fills the screen exactly; if it's below the 32px touch-target floor,
+    // clamp it to 32px and let the ScrollView handle overflow.
+    const BOARD_PADDING = 20; // horizontal padding on both sides combined
+    const MIN_TILE_SIZE = 32;
+    const idealTileSize = Math.floor((screenWidth - BOARD_PADDING) / BOARD_SIZE);
+    const tileSize = Math.max(idealTileSize, MIN_TILE_SIZE);
+    const needsScroll = idealTileSize < MIN_TILE_SIZE; // only true on very small screens
+    const rackTileSize = 48; // fixed comfortable touch target
 
     // Game state from server
     const [gameState, setGameState] = useState(null);
@@ -42,6 +44,8 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const [showScorePopup, setShowScorePopup] = useState(false);
     const [lastScore, setLastScore] = useState(0);
     const [lastWords, setLastWords] = useState([]);
+    // Bug 2: Remaining tiles counter from server game state
+    const [tilesInBag, setTilesInBag] = useState(null);
     const scrollViewRef = useRef(null);
 
     // Blank tile selection modal state
@@ -159,6 +163,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         setPlayers(state.players || []);
         setIsMyTurn(state.isMyTurn || false);
         setCurrentPlayerName(state.currentPlayerName || '');
+        setTilesInBag(state.tilesInBag ?? null); // Bug 2: capture remaining tile count
         setPlacedTiles([]); // Clear placed tiles when state updates
     };
 
@@ -410,6 +415,13 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             {/* Header */}
             <View style={styles.header}>
                 <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
+                {/* Bug 2: Tiles remaining badge */}
+                {tilesInBag !== null && (
+                    <View style={styles.tilesBadge}>
+                        <NeonText size={10} color="#888">🎲 TILES LEFT</NeonText>
+                        <NeonText size={14} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
+                    </View>
+                )}
                 <View style={styles.scoreRow}>
                     {players.map(p => (
                         <View key={p.id} style={[styles.miniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
@@ -646,6 +658,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: COLORS.deepNightBlack,
     },
+    tilesBadge: {
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: 'rgba(0, 240, 255, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 240, 255, 0.3)',
+    },
     scoreRow: {
         flexDirection: 'row',
         gap: 10,
@@ -672,8 +693,6 @@ const styles = StyleSheet.create({
     },
     boardContent: {
         flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         padding: 10,
     },
     gridContainer: {

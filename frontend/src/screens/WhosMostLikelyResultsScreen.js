@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -47,7 +48,7 @@ const WhosMostLikelyResultsScreen = ({ route }) => {
         return (
             <View style={[styles.voteRow, item.isWinner && styles.winnerRow]}>
                 <View style={styles.playerInfo}>
-                    {item.isWinner && <NeonText size={20}>👑 </NeonText>}
+                    {item.isWinner && <NeonText size={20}></NeonText>}
                     <NeonText size={18} weight={item.isWinner ? 'bold' : 'normal'}>
                         {playerName}
                     </NeonText>

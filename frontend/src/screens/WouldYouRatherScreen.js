@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -183,15 +184,15 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
         navigation.navigate('LocalGameSelection', { players });
     };
 
-    // Get reaction emoji based on vote split
-    const getReactionEmoji = () => {
+    // Get reaction label based on vote split
+    const getReactionLabel = () => {
         const total = votes.A.length + votes.B.length;
-        if (total === 0) return '🤔';
+        if (total === 0) return 'WAITING...';
         const percentA = (votes.A.length / total) * 100;
-        if (percentA === 100 || percentA === 0) return '🤯 UNANIMOUS!';
-        if (percentA >= 80 || percentA <= 20) return '😤 LANDSLIDE!';
-        if (percentA >= 60 || percentA <= 40) return '⚔️ CLOSE CALL!';
-        return '🔥 SPLIT DECISION!';
+        if (percentA === 100 || percentA === 0) return 'UNANIMOUS!';
+        if (percentA >= 80 || percentA <= 20) return 'LANDSLIDE!';
+        if (percentA >= 60 || percentA <= 40) return 'CLOSE CALL!';
+        return 'SPLIT DECISION!';
     };
 
     // Results Screen
@@ -207,7 +208,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                     {/* Reaction Header */}
                     <View style={styles.reactionHeader}>
                         <NeonText size={32} weight="bold" glow>
-                            {getReactionEmoji()}
+                            {getReactionLabel()}
                         </NeonText>
                     </View>
 
@@ -250,12 +251,12 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         winnerIsA && styles.resultCardWinner
                     ]}>
                         <View style={styles.resultCardHeader}>
-                            <NeonText size={24}>🅰️</NeonText>
+                            <View style={styles.optionBadge}><NeonText size={16} weight="bold" color="#000">A</NeonText></View>
                             <NeonText size={18} weight="bold" color={COLORS.neonCyan}>
                                 {currentQuestion.optionA}
                             </NeonText>
                             {winnerIsA && (
-                                <NeonText size={16}>👑</NeonText>
+                                <Ionicons name="trophy" size={18} color={COLORS.limeGlow} />
                             )}
                         </View>
                         <View style={styles.votersList}>
@@ -266,7 +267,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                                     </View>
                                 ))
                             ) : (
-                                <NeonText size={14} color="#555">Nobody chose this 😬</NeonText>
+                                <NeonText size={14} color="#555">Nobody chose this</NeonText>
                             )}
                         </View>
                     </View>
@@ -285,12 +286,12 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         !winnerIsA && styles.resultCardWinnerB
                     ]}>
                         <View style={styles.resultCardHeader}>
-                            <NeonText size={24}>🅱️</NeonText>
+                            <View style={[styles.optionBadge, { backgroundColor: COLORS.hotPink }]}><NeonText size={16} weight="bold" color="#000">B</NeonText></View>
                             <NeonText size={18} weight="bold" color={COLORS.hotPink}>
                                 {currentQuestion.optionB}
                             </NeonText>
                             {!winnerIsA && (
-                                <NeonText size={16}>👑</NeonText>
+                                <Ionicons name="trophy" size={18} color={COLORS.limeGlow} />
                             )}
                         </View>
                         <View style={styles.votersList}>
@@ -301,7 +302,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                                     </View>
                                 ))
                             ) : (
-                                <NeonText size={14} color="#555">Nobody chose this 😬</NeonText>
+                                <NeonText size={14} color="#555">Nobody chose this</NeonText>
                             )}
                         </View>
                     </View>
@@ -310,7 +311,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                     {streaks.unanimous > 1 && (
                         <View style={styles.streakBanner}>
                             <NeonText size={14} color={COLORS.limeGlow} weight="bold">
-                                🔥 {streaks.unanimous} unanimous streak!
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flame" size={16} color={COLORS.limeGlow} /><NeonText size={14} color={COLORS.limeGlow} weight="bold">{streaks.unanimous} unanimous streak!</NeonText></View>
                             </NeonText>
                         </View>
                     )}
@@ -318,9 +319,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                     {/* Actions */}
                     <View style={styles.actions}>
                         <TouchableOpacity style={styles.nextQuestionBtn} onPress={handleNextQuestion} activeOpacity={0.7}>
-                            <NeonText size={18} weight="bold" color="#000">
-                                ⚡ NEXT QUESTION
-                            </NeonText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={18} color="#000" /><NeonText size={18} weight="bold" color="#000">NEXT QUESTION</NeonText></View>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.endGameBtn} onPress={handleEndGame} activeOpacity={0.7}>
                             <NeonText size={14} color="#888">
@@ -329,7 +328,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
-            </NeonContainer>
+            </NeonContainer >
         );
     }
 
@@ -383,7 +382,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         activeOpacity={0.7}
                     >
                         <View style={styles.choiceLabel}>
-                            <NeonText size={22}>🅰️</NeonText>
+                            <View style={styles.optionBadge}><NeonText size={16} weight="bold" color="#000">A</NeonText></View>
                         </View>
                         <NeonText size={18} weight="bold" color="#fff" style={styles.choiceText}>
                             {currentQuestion.optionA}
@@ -401,7 +400,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         ]
                     }
                 ]}>
-                    <NeonText size={20} weight="bold" color="#fff">⚡VS⚡</NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={18} color="#fff" /><NeonText size={20} weight="bold" color="#fff">VS</NeonText><Ionicons name="flash" size={18} color="#fff" /></View>
                 </Animated.View>
 
                 {/* Option B */}
@@ -416,7 +415,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         activeOpacity={0.7}
                     >
                         <View style={styles.choiceLabelB}>
-                            <NeonText size={22}>🅱️</NeonText>
+                            <View style={[styles.optionBadge, { backgroundColor: COLORS.hotPink }]}><NeonText size={16} weight="bold" color="#000">B</NeonText></View>
                         </View>
                         <NeonText size={18} weight="bold" color="#fff" style={styles.choiceText}>
                             {currentQuestion.optionB}
@@ -677,6 +676,14 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         paddingVertical: 8,
         marginTop: 10,
+    },
+    optionBadge: {
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: COLORS.neonCyan,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 

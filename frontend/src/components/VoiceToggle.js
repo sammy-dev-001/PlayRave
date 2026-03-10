@@ -1,6 +1,7 @@
 // VoiceToggle.js - Mute/unmute button for voice chat
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, View, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 import VoiceService from '../services/VoiceService';
@@ -43,7 +44,7 @@ const VoiceToggle = ({ roomId, style }) => {
     if (isJoining) {
         return (
             <View style={[styles.container, styles.joining, style]}>
-                <NeonText size={16}>🎙️</NeonText>
+                <Ionicons name="mic" size={20} color="#888" />
                 <NeonText size={10} color="#888">...</NeonText>
             </View>
         );
@@ -64,9 +65,7 @@ const VoiceToggle = ({ roomId, style }) => {
             onPress={handleToggle}
             activeOpacity={0.7}
         >
-            <NeonText size={20}>
-                {isMuted ? '🔇' : '🎙️'}
-            </NeonText>
+            <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={22} color={isMuted ? '#ff4444' : COLORS.limeGlow} />
             <NeonText
                 size={10}
                 color={isMuted ? '#ff4444' : COLORS.limeGlow}

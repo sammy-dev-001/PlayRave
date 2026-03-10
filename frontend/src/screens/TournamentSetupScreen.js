@@ -6,6 +6,7 @@ import {
     ScrollView,
     TextInput,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -15,16 +16,16 @@ import { COLORS } from '../constants/theme';
 
 // Available games for tournament
 const TOURNAMENT_GAMES = [
-    { id: 'trivia', name: 'Trivia', icon: '🧠', points: '10 per correct' },
-    { id: 'would-you-rather', name: 'Would You Rather', icon: '🤔', points: 'Majority wins' },
+    { id: 'trivia', name: 'Trivia', icon: 'bulb', points: '10 per correct' },
+    { id: 'would-you-rather', name: 'Would You Rather', icon: 'help-circle', points: 'Majority wins' },
     { id: 'whos-most-likely', name: "Who's Most Likely", icon: '👆', points: 'Votes = points' },
-    { id: 'rapid-fire', name: 'Rapid Fire', icon: '⚡', points: 'Speed bonus' },
-    { id: 'myth-or-fact', name: 'Myth or Fact', icon: '🔍', points: '10 per correct' },
-    { id: 'imposter', name: 'Imposter', icon: '🕵️', points: 'Survival bonus' },
+    { id: 'rapid-fire', name: 'Rapid Fire', icon: 'flash', points: 'Speed bonus' },
+    { id: 'myth-or-fact', name: 'Myth or Fact', icon: 'search', points: '10 per correct' },
+    { id: 'imposter', name: 'Imposter', icon: 'search', points: 'Survival bonus' },
     { id: 'memory-chain', name: 'Memory Chain', icon: '🔗', points: 'Chain length' },
     { id: 'math-blitz', name: 'Math Blitz', icon: '🔢', points: 'Speed + accuracy' },
-    { id: 'type-race', name: 'Type Race', icon: '⌨️', points: 'WPM score' },
-    { id: 'word-rush', name: 'Word Rush', icon: '📝', points: 'Words found' },
+    { id: 'type-race', name: 'Type Race', icon: 'keypad', points: 'WPM score' },
+    { id: 'word-rush', name: 'Word Rush', icon: 'create', points: 'Words found' },
 ];
 
 const TournamentSetupScreen = ({ route, navigation }) => {
@@ -90,7 +91,7 @@ const TournamentSetupScreen = ({ route, navigation }) => {
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow color={COLORS.electricPurple}>
-                        🏆 CREATE TOURNAMENT
+                        CREATE TOURNAMENT
                     </NeonText>
                     <NeonText size={14} color="#888">
                         Select 2-5 games to play in order

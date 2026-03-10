@@ -8,6 +8,7 @@ import {
     Vibration,
     ScrollView
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -17,7 +18,7 @@ import { COLORS } from '../constants/theme';
 const CARD_PAIRS = [
     '🎮', '🎯', '🎪', '🎭', '🎨', '🎬',
     '🎤', '🎧', '🎸', '🎹', '🎺', '🎻',
-    '🏆', '⭐', '💎', '🔥', '⚡', '🌈'
+    '', '⭐', '💎', '🔥', '⚡', '🌈'
 ];
 
 const MemoryMatchScreen = ({ route, navigation }) => {
@@ -162,7 +163,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                 <View style={styles.container}>
                     <View style={styles.header}>
                         <NeonText size={24} weight="bold" glow color={COLORS.neonCyan}>
-                            🧠 MEMORY MATCH
+                            MEMORY MATCH
                         </NeonText>
                     </View>
 
@@ -280,7 +281,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                     {gamePhase === 'finished' && (
                         <View style={styles.finishedContainer}>
                             <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
-                                🏆 Game Over! 🏆
+                                Game Over!
                             </NeonText>
 
                             <View style={styles.rankings}>

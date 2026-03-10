@@ -8,10 +8,12 @@ import {
     Platform,
     TouchableOpacity,
     SafeAreaView,
+    StatusBar,
     Animated
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import NeonContainer from '../components/NeonContainer';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import NeonBackground from '../components/NeonBackground';
+import MuteButton from '../components/MuteButton';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
 import { COLORS, SHADOWS } from '../constants/theme';
@@ -76,19 +78,23 @@ const JoinScreen = ({ navigation, route }) => {
     }, [navigation, name]);
 
     return (
-        <NeonContainer hideBackground showBackButton rootStyle={styles.root}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.keyboardView}
-            >
-                <SafeAreaView style={styles.container}>
-                    {/* Radial Glow Effects */}
-                    <View style={styles.glowTopLeft} pointerEvents="none" />
-                    <View style={styles.glowBottomRight} pointerEvents="none" />
+        <View style={styles.screen}>
+            <StatusBar barStyle="light-content" backgroundColor="#05050A" />
+            <NeonBackground />
 
-                    {/* Header Spacer for MuteButton/BackButton in NeonContainer */}
-                    <View style={styles.headerSpacer} />
+            <SafeAreaView style={styles.safeArea}>
+                {/* Header — same pattern as LobbyScreen */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <MuteButton style={styles.muteOverride} />
+                </View>
 
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.keyboardView}
+                >
                     <View style={styles.content}>
                         {/* Title Section */}
                         <View style={styles.titleSection}>
@@ -112,7 +118,7 @@ const JoinScreen = ({ navigation, route }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="Guest"
-                                        placeholderTextColor="#6B7280"
+                                        placeholderTextColor="#FFFFFF"
                                         value={name}
                                         onChangeText={setName}
                                         autoCorrect={false}
@@ -132,7 +138,7 @@ const JoinScreen = ({ navigation, route }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="ABCD"
-                                        placeholderTextColor="#6B7280"
+                                        placeholderTextColor="#FFFFFF"
                                         value={code}
                                         onChangeText={text => setCode(text.toUpperCase())}
                                         autoCapitalize="characters"
@@ -149,96 +155,97 @@ const JoinScreen = ({ navigation, route }) => {
                                     onPress={handleJoin}
                                     activeOpacity={0.8}
                                 >
-                                    <View style={styles.enterButtonInner}>
-                                        <NeonText size={20} weight="bold" color="#05050A">
-                                            Enter Room
-                                        </NeonText>
-                                    </View>
+                                    <NeonText size={20} weight="bold" color="#05050A">
+                                        Enter Room
+                                    </NeonText>
                                 </TouchableOpacity>
                             </Animated.View>
                         </View>
 
                         {/* Footer Text */}
                         <View style={styles.footerSection}>
-                            <NeonText size={12} color="#4B5563" style={styles.footerText}>
+                            <NeonText size={12} color="rgba(0, 229, 255, 0.35)" style={styles.footerText}>
                                 NIGHTCLUB PROTOCOL V4.2 // ACTIVE
                             </NeonText>
                         </View>
                     </View>
-                </SafeAreaView>
-            </KeyboardAvoidingView>
-        </NeonContainer>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    root: {
+    screen: {
+        flex: 1,
+        // Bug 7: Removed height:'100%' and minHeight:'100vh' — 100vh includes the browser
+        // URL bar on mobile, clipping bottom content. flex:1 fills parent correctly.
+        // paddingTop handled by the SafeAreaView already wrapping content in JSX.
         backgroundColor: '#05050A',
-        paddingHorizontal: 0,
-        paddingTop: 0,
+    },
+    safeArea: {
+        flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 8,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    muteOverride: {
+        position: 'relative',
+        top: 0,
+        right: 0,
     },
     keyboardView: {
         flex: 1,
-    },
-    container: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        overflow: 'hidden',
-    },
-    glowTopLeft: {
-        position: 'absolute',
-        top: -100,
-        left: -100,
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        backgroundColor: 'rgba(177, 78, 255, 0.08)',
-    },
-    glowBottomRight: {
-        position: 'absolute',
-        bottom: -50,
-        right: -50,
-        width: 250,
-        height: 250,
-        borderRadius: 125,
-        backgroundColor: 'rgba(0, 248, 255, 0.05)',
-    },
-    headerSpacer: {
-        height: 60,
     },
     content: {
         flex: 1,
         width: '100%',
         maxWidth: 400,
         alignItems: 'center',
+        alignSelf: 'center',
         justifyContent: 'center',
         paddingHorizontal: 30,
     },
     titleSection: {
         alignItems: 'center',
-        marginBottom: 50,
+        marginBottom: 40,
     },
     title: {
         color: COLORS.white,
-        letterSpacing: 2,
+        letterSpacing: 4,
     },
     titleUnderline: {
-        width: 80,
+        width: 60,
         height: 4,
         backgroundColor: '#00E5FF',
-        marginTop: 10,
+        marginTop: 12,
         borderRadius: 2,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+        elevation: 4,
     },
     card: {
         width: '100%',
-        backgroundColor: '#0F0F1A',
-        borderRadius: 30,
+        backgroundColor: 'rgba(15, 15, 26, 0.85)',
+        borderRadius: 24,
         padding: 25,
         paddingVertical: 35,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.08)',
     },
     inputGroup: {
         marginBottom: 25,
@@ -251,10 +258,12 @@ const styles = StyleSheet.create({
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1A1A2E',
-        borderRadius: 15,
-        height: 60,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        borderRadius: 14,
+        height: 58,
         paddingHorizontal: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     iconBox: {
         width: 30,
@@ -273,31 +282,25 @@ const styles = StyleSheet.create({
     },
     enterButton: {
         marginTop: 15,
-        height: 65,
+        height: 60,
         width: '100%',
-        borderRadius: 15,
+        borderRadius: 14,
         backgroundColor: '#00E5FF',
         alignItems: 'center',
         justifyContent: 'center',
-        // Cyan Neon Glow
         shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.9,
         shadowRadius: 15,
         elevation: 10,
     },
-    enterButtonInner: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-    },
     footerSection: {
-        marginTop: 80,
+        marginTop: 50,
     },
     footerText: {
         letterSpacing: 3,
         textAlign: 'center',
-    }
+    },
 });
 
 export default JoinScreen;

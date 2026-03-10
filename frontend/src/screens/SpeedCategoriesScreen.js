@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -172,11 +173,11 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
-                    <NeonText size={24}>🏆</NeonText>
+                    <NeonText size={24}></NeonText>
                     <NeonText size={32} weight="bold" glow style={styles.winnerTitle}>
                         SPEED CHAMPION
                     </NeonText>
-                    <NeonText size={48}>🏃⚡</NeonText>
+                    <NeonText size={48}></NeonText>
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
                         {winner[0]}
                     </NeonText>
@@ -212,7 +213,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
                         ROUND {currentCategoryIndex + 1} / {playerCategories[0]?.length || 10}
                     </NeonText>
                     <NeonText size={28} weight="bold" glow>
-                        🏃 SPEED CATEGORIES
+                        SPEED CATEGORIES
                     </NeonText>
                 </View>
 
@@ -341,7 +342,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
 
                     <View style={styles.judgingButtons}>
                         <NeonButton
-                            title="✓ YES, THEY DID!"
+                            title="YES, THEY DID!"
                             onPress={handleJudgeSuccess}
                             style={styles.judgeBtn}
                         />
@@ -366,7 +367,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <View style={styles.resultsContainer}>
                     <NeonText size={48}>
-                        {earnedPoints > 0 ? '🎉' : '😅'}
+                        {earnedPoints > 0 ? '' : ''}
                     </NeonText>
                     <NeonText size={24} weight="bold" style={styles.resultsTitle}>
                         {earnedPoints > 0 ? 'WELL DONE!' : 'BETTER LUCK NEXT TIME!'}

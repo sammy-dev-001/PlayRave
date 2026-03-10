@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 
@@ -151,9 +152,9 @@ const TurnTimer = memo(({
                 </NeonText>
             </View>
             {showLabel && (
-                <NeonText size={10} color="#888" style={styles.label}>
-                    {timeLeft <= 10 ? '⚠️' : '⏱️'}
-                </NeonText>
+                <View style={styles.label}>
+                    <Ionicons name={timeLeft <= 10 ? 'warning' : 'timer-outline'} size={14} color="#888" />
+                </View>
             )}
         </Animated.View>
     );

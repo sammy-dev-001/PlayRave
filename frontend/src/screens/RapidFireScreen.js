@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -124,9 +125,7 @@ const RapidFireScreen = ({ route, navigation }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
-                <NeonText size={24} weight="bold" glow>
-                    ⚡ RAPID FIRE
-                </NeonText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={22} color={COLORS.limeGlow} /><NeonText size={24} weight="bold" glow>RAPID FIRE</NeonText></View>
                 <View style={[styles.categoryBadge, { borderColor: getCategoryColor() }]}>
                     <NeonText size={12} color={getCategoryColor()} weight="bold">
                         {category.toUpperCase()}
@@ -188,7 +187,7 @@ const RapidFireScreen = ({ route, navigation }) => {
                     onPress={() => handleNext(true)}
                     activeOpacity={0.7}
                 >
-                    <NeonText size={50}>⚡</NeonText>
+                    <Ionicons name="flash" size={50} color={COLORS.limeGlow} />
                     <NeonText size={20} weight="bold" color={COLORS.limeGlow}>
                         GOT IT!
                     </NeonText>
@@ -198,7 +197,7 @@ const RapidFireScreen = ({ route, navigation }) => {
                     onPress={() => handleNext(false)}
                     activeOpacity={0.7}
                 >
-                    <NeonText size={50}>💨</NeonText>
+                    <Ionicons name="snow" size={50} color={COLORS.hotPink} />
                     <NeonText size={20} weight="bold" color={COLORS.hotPink}>
                         PASS
                     </NeonText>

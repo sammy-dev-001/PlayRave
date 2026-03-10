@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -16,7 +17,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
             name: 'MIXED',
             description: 'Random mix of all categories',
             color: COLORS.neonCyan,
-            icon: '🎲'
+            icon: 'dice'
         },
         {
             id: 'normal',

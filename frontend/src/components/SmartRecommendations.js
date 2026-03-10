@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import GameIcon from './GameIcon';
 import { COLORS } from '../constants/theme';
@@ -162,21 +163,21 @@ const getRecommendations = (playerCount = 4, timeOfDay = null, previousGames = [
 
 const getRecommendationReason = (gameId, data, playerCount, isLateNight) => {
     if (isLateNight && data.tags.includes('spicy')) {
-        return '🌙 Perfect for late night vibes!';
+        return 'Perfect for late night vibes!';
     }
     if (data.minPlayers <= playerCount && playerCount <= 5 && data.vibe === 'social') {
-        return '👥 Great for your group size!';
+        return 'Great for your group size!';
     }
     if (playerCount >= 6 && data.maxPlayers >= 10) {
-        return '🎉 Handles large groups well!';
+        return 'Handles large groups well!';
     }
     if (data.energy === 'high') {
-        return '⚡ High energy fun!';
+        return 'High energy fun!';
     }
     if (data.duration <= 5) {
-        return '⏱️ Quick rounds!';
+        return 'Quick rounds!';
     }
-    return '✨ Fan favorite!';
+    return 'Fan favorite!';
 };
 
 // Smart Recommendations Component
@@ -195,9 +196,7 @@ const SmartGameRecommendations = ({
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <NeonText size={14} weight="bold" color={COLORS.electricPurple}>
-                    🧠 RECOMMENDED FOR YOU
-                </NeonText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="bulb" size={16} color={COLORS.electricPurple} /><NeonText size={14} weight="bold" color={COLORS.electricPurple}>RECOMMENDED FOR YOU</NeonText></View>
                 <NeonText size={10} color="#888">
                     Based on {playerCount} players & time
                 </NeonText>

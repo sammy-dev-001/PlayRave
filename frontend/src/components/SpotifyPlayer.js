@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import { COLORS } from '../constants/theme';
@@ -10,11 +11,11 @@ const REDIRECT_URI = 'playrave://spotify-callback';
 
 // Party playlist presets
 const PARTY_PLAYLISTS = [
-    { id: '37i9dQZF1DXaXB8fQg7xif', name: '🎉 Party Mix', description: 'High energy hits' },
-    { id: '37i9dQZF1DX0Yxoavh5qJV', name: '🔥 Hot Hits', description: 'Current bangers' },
-    { id: '37i9dQZF1DX4JAvHpjipBk', name: '🎵 New Pop', description: 'Fresh tracks' },
-    { id: '37i9dQZF1DX9XIFQuFvzM4', name: '🕺 Dance Party', description: 'Get moving' },
-    { id: '37i9dQZF1DWY7IeIP1cdjF', name: '🎤 Throwback', description: '2000s classics' },
+    { id: '37i9dQZF1DXaXB8fQg7xif', name: 'Party Mix', icon: 'musical-notes', description: 'High energy hits' },
+    { id: '37i9dQZF1DX0Yxoavh5qJV', name: 'Hot Hits', icon: 'flame', description: 'Current bangers' },
+    { id: '37i9dQZF1DX4JAvHpjipBk', name: 'New Pop', icon: 'musical-note', description: 'Fresh tracks' },
+    { id: '37i9dQZF1DX9XIFQuFvzM4', name: 'Dance Party', icon: 'body', description: 'Get moving' },
+    { id: '37i9dQZF1DWY7IeIP1cdjF', name: 'Throwback', icon: 'mic', description: '2000s classics' },
 ];
 
 // Spotify Player Component
@@ -58,9 +59,7 @@ const SpotifyPlayer = ({ visible = true }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <NeonText size={16} weight="bold" color={COLORS.limeGlow}>
-                    🎵 Party Music
-                </NeonText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="musical-notes" size={18} color={COLORS.limeGlow} /><NeonText size={16} weight="bold" color={COLORS.limeGlow}>Party Music</NeonText></View>
                 {!showPlaylists && (
                     <TouchableOpacity onPress={() => setShowPlaylists(true)}>
                         <NeonText size={12} color={COLORS.neonCyan}>+ Playlists</NeonText>
@@ -73,7 +72,7 @@ const SpotifyPlayer = ({ visible = true }) => {
                     <View style={styles.playlistHeader}>
                         <NeonText size={12} color="#888">Quick Start Playlists</NeonText>
                         <TouchableOpacity onPress={() => setShowPlaylists(false)}>
-                            <NeonText size={14} color={COLORS.hotPink}>✕</NeonText>
+                            <Ionicons name="close" size={18} color={COLORS.hotPink} />
                         </TouchableOpacity>
                     </View>
                     {PARTY_PLAYLISTS.map((playlist) => (
@@ -83,10 +82,10 @@ const SpotifyPlayer = ({ visible = true }) => {
                             onPress={() => openPlaylist(playlist.id)}
                         >
                             <View style={styles.playlistInfo}>
-                                <NeonText size={14} weight="bold">{playlist.name}</NeonText>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name={playlist.icon} size={14} color={COLORS.limeGlow} /><NeonText size={14} weight="bold">{playlist.name}</NeonText></View>
                                 <NeonText size={10} color="#888">{playlist.description}</NeonText>
                             </View>
-                            <NeonText size={16} color={COLORS.limeGlow}>▶</NeonText>
+                            <Ionicons name="play" size={18} color={COLORS.limeGlow} />
                         </TouchableOpacity>
                     ))}
                     <NeonText size={10} color="#666" style={styles.spotifyNote}>
@@ -101,14 +100,14 @@ const SpotifyPlayer = ({ visible = true }) => {
                         style={styles.spotifyButton}
                         onPress={() => setShowPlaylists(true)}
                     >
-                        <NeonText size={20}>🎧</NeonText>
+                        <Ionicons name="headset" size={22} color={COLORS.neonCyan} />
                         <NeonText size={12}>Browse</NeonText>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.spotifyButton}
                         onPress={() => Linking.openURL('https://open.spotify.com')}
                     >
-                        <NeonText size={20}>🟢</NeonText>
+                        <Ionicons name="musical-notes" size={22} color="#1DB954" />
                         <NeonText size={12}>Spotify</NeonText>
                     </TouchableOpacity>
                 </View>
@@ -126,7 +125,7 @@ const MiniMusicPlayer = ({ visible = true }) => {
             style={styles.miniPlayer}
             onPress={() => Linking.openURL('https://open.spotify.com')}
         >
-            <NeonText size={16}>🎵</NeonText>
+            <Ionicons name="musical-note" size={18} color={COLORS.limeGlow} />
             <NeonText size={10} color="#888">Music</NeonText>
         </TouchableOpacity>
     );

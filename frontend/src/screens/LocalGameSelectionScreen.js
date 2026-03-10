@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -10,10 +11,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Game categories for organization (Sync with GameSelectionScreen)
 const GAME_CATEGORIES = {
-    party: { name: '🎉 Party Games', color: COLORS.hotPink },
-    competitive: { name: '🏆 Competitive', color: COLORS.neonCyan },
-    trivia: { name: '🧠 Trivia & Knowledge', color: COLORS.limeGlow },
-    speed: { name: '⚡ Speed Games', color: COLORS.electricPurple },
+    party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
+    competitive: { name: 'Competitive', icon: 'trophy', color: COLORS.neonCyan },
+    trivia: { name: 'Trivia & Knowledge', icon: 'bulb', color: COLORS.limeGlow },
+    speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
 };
 
 const LOCAL_GAMES = [
@@ -224,17 +225,17 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 
                 <View style={styles.metaRow}>
                     <View style={styles.badge}>
-                        <NeonText size={10} color="#FFF">👥 {game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="people" size={12} color="#FFF" /><NeonText size={10} color="#FFF">{game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText></View>
                     </View>
                     {game.category === 'speed' && (
                         <View style={[styles.badge, { backgroundColor: '#FF3FA440' }]}>
-                            <NeonText size={10} color="#FF3FA4">⚡ Fast</NeonText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={12} color="#FF3FA4" /><NeonText size={10} color="#FF3FA4">Fast</NeonText></View>
                         </View>
                     )}
                 </View>
             </View>
             <View style={styles.arrowContainer}>
-                <NeonText size={20} color={game.color}>→</NeonText>
+                <Ionicons name="chevron-forward" size={20} color={game.color} />
             </View>
         </TouchableOpacity>
     );
@@ -245,9 +246,10 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 <NeonText size={SCREEN_WIDTH < 375 ? 26 : 32} weight="bold" glow>
                     {isSinglePlayer ? 'VS AI MODE' : 'CHOOSE GAME'}
                 </NeonText>
-                <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                    {isSinglePlayer ? '1 player vs AI 🤖' : `${players.length} players ready 🎮`}
-                </NeonText>
+                {isSinglePlayer
+                    ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><NeonText size={14} color={COLORS.neonCyan}>1 player vs AI</NeonText><Ionicons name="hardware-chip-outline" size={16} color={COLORS.neonCyan} /></View>
+                    : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><NeonText size={14} color={COLORS.neonCyan}>{players.length} players ready</NeonText><Ionicons name="game-controller" size={16} color={COLORS.neonCyan} /></View>
+                }
             </View>
 
             <View style={styles.container}>
@@ -258,9 +260,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                     return (
                         <View key={key} style={styles.categorySection}>
                             <View style={styles.categoryHeader}>
-                                <NeonText size={20} weight="bold" color={category.color} glow>
-                                    {category.name}
-                                </NeonText>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name={category.icon} size={18} color={category.color} /><NeonText size={20} weight="bold" color={category.color} glow>{category.name}</NeonText></View>
                                 <View style={[styles.categoryLine, { backgroundColor: category.color }]} />
                             </View>
                             <View style={styles.gamesGrid}>
@@ -270,7 +270,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                     );
                 })}
             </View>
-        </NeonContainer>
+        </NeonContainer >
     );
 };
 

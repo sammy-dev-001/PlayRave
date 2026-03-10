@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     ScrollView
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -158,7 +159,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.container}>
                     <View style={styles.header}>
-                        <NeonText size={22} weight="bold" glow color={COLORS.hotPink}>🎨 DRAW BATTLE</NeonText>
+                        <NeonText size={22} weight="bold" glow color={COLORS.hotPink}>DRAW BATTLE</NeonText>
                         <NeonText size={14} color={COLORS.limeGlow}>Score: {myScore}</NeonText>
                     </View>
 
@@ -195,7 +196,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
 
                     {phase === 'submitted' && (
                         <View style={styles.centerContent}>
-                            <NeonText size={20} weight="bold" color={COLORS.limeGlow}>✓ Submitted!</NeonText>
+                            <NeonText size={20} weight="bold" color={COLORS.limeGlow}>Submitted!</NeonText>
                             <NeonText size={16} color="#888">Waiting... ({submittedCount}/{totalPlayers})</NeonText>
                         </View>
                     )}
@@ -225,7 +226,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
 
                     {phase === 'finished' && finalResults && (
                         <View style={styles.centerContent}>
-                            <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>🏆 {finalResults.winner?.name} WINS!</NeonText>
+                            <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>{finalResults.winner?.name} WINS!</NeonText>
                             <NeonButton title="LOBBY" variant="secondary" onPress={handleBackToLobby} style={styles.btn} />
                         </View>
                     )}

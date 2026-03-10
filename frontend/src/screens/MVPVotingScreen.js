@@ -6,6 +6,7 @@ import {
     FlatList,
     Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -150,7 +151,7 @@ const MVPVotingScreen = ({ route, navigation }) => {
                         styles.mvpContainer,
                         { transform: [{ scale: crownScale }] }
                     ]}>
-                        <NeonText size={80}>👑</NeonText>
+                        <NeonText size={80}></NeonText>
                         <View style={styles.mvpAvatar}>
                             <NeonText size={64}>👤</NeonText>
                         </View>
@@ -158,7 +159,7 @@ const MVPVotingScreen = ({ route, navigation }) => {
                             {getPlayerName(mvpWinner)}
                         </NeonText>
                         <NeonText size={16} color={COLORS.hotPink} style={styles.mvpLabel}>
-                            🎉 MVP OF THE GAME 🎉
+                            MVP OF THE GAME
                         </NeonText>
                     </Animated.View>
 

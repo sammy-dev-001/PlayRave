@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 import { ConfettiBurst } from './Animations';
@@ -46,7 +47,7 @@ const XPGainPopup = ({ visible, xp, levelUp, newLevel, onClose }) => {
                     <ConfettiBurst active={levelUp} />
 
                     <View style={styles.xpBadge}>
-                        <NeonText size={48}>⭐</NeonText>
+                        <Ionicons name="star" size={48} color={COLORS.limeGlow} />
                         <Animated.Text style={styles.xpText}>
                             +{Math.round(xpAnim._value || xp)} XP
                         </Animated.Text>
@@ -54,7 +55,7 @@ const XPGainPopup = ({ visible, xp, levelUp, newLevel, onClose }) => {
 
                     {levelUp && (
                         <View style={styles.levelUpContainer}>
-                            <NeonText size={24} weight="bold" color={COLORS.limeGlow}>🎉 LEVEL UP!</NeonText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="ribbon" size={24} color={COLORS.limeGlow} /><NeonText size={24} weight="bold" color={COLORS.limeGlow}>LEVEL UP!</NeonText></View>
                             <NeonText size={32} weight="bold" glow>Level {newLevel}</NeonText>
                         </View>
                     )}

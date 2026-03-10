@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TextInput, Keyboard } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -87,7 +88,7 @@ const WordRushGameScreen = ({ route, navigation }) => {
         const onWordSubmitted = ({ success, isValid }) => {
             if (success) {
                 setGameState('submitted');
-                setValidationFeedback(isValid ? '✓ Valid word!' : '✗ Invalid word');
+                setValidationFeedback(isValid ? 'Valid word!' : '✗ Invalid word');
                 // Play sound based on validity
                 if (isValid) {
                     SoundService.playCorrect();
@@ -228,7 +229,7 @@ const WordRushGameScreen = ({ route, navigation }) => {
 
                 {gameState === 'submitted' && (
                     <View style={styles.feedbackContainer}>
-                        <NeonText size={24} weight="bold" color={validationFeedback.includes('✓') ? COLORS.limeGlow : COLORS.hotPink}>
+                        <NeonText size={24} weight="bold" color={validationFeedback.includes('') ? COLORS.limeGlow : COLORS.hotPink}>
                             {validationFeedback}
                         </NeonText>
                         <NeonText size={18} style={styles.wordDisplay}>

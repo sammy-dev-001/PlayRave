@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Keyboard
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -143,7 +144,7 @@ const CaptionThisScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
-                    <NeonText size={24}>🏆</NeonText>
+                    <NeonText size={24}></NeonText>
                     <NeonText size={32} weight="bold" glow style={styles.winnerTitle}>
                         CAPTION CHAMPION
                     </NeonText>

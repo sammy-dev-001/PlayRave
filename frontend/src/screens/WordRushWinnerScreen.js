@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -88,7 +89,7 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
                 ) : (
                     <View style={styles.winnerContainer}>
                         <NeonText size={24} color={COLORS.limeGlow} style={styles.winnerLabel}>
-                            🏆 WINNER 🏆
+                            WINNER
                         </NeonText>
                         <NeonText size={48} weight="bold" color={COLORS.limeGlow} glow style={styles.winnerName}>
                             {getPlayerName(winner)}

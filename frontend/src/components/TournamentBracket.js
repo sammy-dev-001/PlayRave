@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet, Animated, ScrollView, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 
@@ -55,9 +56,9 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
                         weight={player1Won ? 'bold' : 'normal'}
                         color={player1Won ? COLORS.limeGlow : (player2Won ? '#666' : '#fff')}
                     >
-                        {match.player1?.isAI ? '🤖 ' : ''}{player1Name}
+                        {match.player1?.isAI ? <><Ionicons name="hardware-chip-outline" size={12} color="#a78bfa" /> </> : ''}{player1Name}
                     </NeonText>
-                    {player1Won && <NeonText size={10} color={COLORS.limeGlow}>✓</NeonText>}
+                    {player1Won && <Ionicons name="checkmark" size={14} color={COLORS.limeGlow} />}
                 </View>
 
                 {/* VS Divider */}
@@ -76,9 +77,9 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
                         weight={player2Won ? 'bold' : 'normal'}
                         color={player2Won ? COLORS.limeGlow : (player1Won ? '#666' : '#fff')}
                     >
-                        {match.player2?.isAI ? '🤖 ' : ''}{player2Name}
+                        {match.player2?.isAI ? <><Ionicons name="hardware-chip-outline" size={12} color="#a78bfa" /> </> : ''}{player2Name}
                     </NeonText>
-                    {player2Won && <NeonText size={10} color={COLORS.limeGlow}>✓</NeonText>}
+                    {player2Won && <Ionicons name="checkmark" size={14} color={COLORS.limeGlow} />}
                 </View>
 
                 {/* Match Status Badge */}
@@ -89,7 +90,7 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
                 )}
                 {isAIMatch && !match.completed && (
                     <View style={styles.aiBadge}>
-                        <NeonText size={8} color="#fff">🤖</NeonText>
+                        <Ionicons name="hardware-chip-outline" size={12} color="#fff" />
                     </View>
                 )}
             </Animated.View>
@@ -109,7 +110,7 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
                         color={isCurrentRound ? COLORS.neonCyan : '#888'}
                         glow={isCurrentRound}
                     >
-                        {roundIndex === rounds.length - 1 ? '🏆 FINAL' : `Round ${roundIndex + 1}`}
+                        {roundIndex === rounds.length - 1 ? <><Ionicons name="trophy" size={14} color={COLORS.neonCyan} /> FINAL</> : `Round ${roundIndex + 1}`}
                     </NeonText>
                 </View>
                 <View style={styles.matchesColumn}>

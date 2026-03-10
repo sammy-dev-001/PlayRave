@@ -9,6 +9,7 @@ import {
     Platform,
     Image
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -126,10 +127,10 @@ const ProfileScreen = ({ navigation }) => {
                                 style={styles.profileImage}
                             />
                         ) : (
-                            <NeonText size={64}>{user.avatar || '👤'}</NeonText>
+                            <Ionicons name="person" size={64} color={COLORS.neonCyan} />
                         )}
                         <View style={styles.editBadge}>
-                            <NeonText size={16}>📷</NeonText>
+                            <Ionicons name="camera" size={16} color="#000" />
                         </View>
                         {isUploadingImage && (
                             <View style={styles.uploadingOverlay}>
@@ -149,7 +150,7 @@ const ProfileScreen = ({ navigation }) => {
                         style={styles.settingsButton}
                         onPress={() => navigation.navigate('Settings')}
                     >
-                        <NeonText size={14} color={COLORS.neonCyan}>⚙️ Settings</NeonText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="settings-outline" size={16} color={COLORS.neonCyan} /><NeonText size={14} color={COLORS.neonCyan}>Settings</NeonText></View>
                     </TouchableOpacity>
                 </View>
 
@@ -218,7 +219,7 @@ const ProfileScreen = ({ navigation }) => {
                         />
                     )}
                     <TouchableOpacity style={styles.leaderboardButton} onPress={() => navigation.navigate('Leaderboard')}>
-                        <NeonText size={16} color={COLORS.neonCyan}>🏆 View Leaderboard</NeonText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="trophy" size={16} color={COLORS.neonCyan} /><NeonText size={16} color={COLORS.neonCyan}>View Leaderboard</NeonText></View>
                     </TouchableOpacity>
                     <NeonButton
                         title={isGuest ? "CLEAR GUEST DATA" : "SIGN OUT"}

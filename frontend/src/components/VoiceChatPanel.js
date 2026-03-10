@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 import VoiceService from '../services/VoiceService';
@@ -75,7 +76,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <NeonText size={12} color={COLORS.neonCyan}>🎤 VOICE</NeonText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Ionicons name="mic" size={14} color={COLORS.neonCyan} /><NeonText size={12} color={COLORS.neonCyan}>VOICE</NeonText></View>
                 {isConnected && (
                     <View style={styles.connectedBadge}>
                         <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
@@ -94,10 +95,10 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
                         style={[styles.controlBtn, isMuted && styles.mutedBtn]}
                         onPress={handleToggleMute}
                     >
-                        <NeonText size={20}>{isMuted ? '🔇' : '🎤'}</NeonText>
+                        <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={22} color={isMuted ? '#ff4444' : COLORS.limeGlow} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.controlBtn} onPress={handleLeaveVoice}>
-                        <NeonText size={20}>📴</NeonText>
+                        <Ionicons name="call" size={22} color="#ff4444" />
                     </TouchableOpacity>
                 </View>
             )}
@@ -106,7 +107,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
                 <View style={styles.usersList}>
                     {users.slice(0, 4).map(u => (
                         <View key={u.uid} style={[styles.userBadge, speakingUsers[u.uid] && styles.speaking]}>
-                            <NeonText size={10}>👤</NeonText>
+                            <Ionicons name="person" size={14} color="#ccc" />
                         </View>
                     ))}
                     {users.length > 4 && (

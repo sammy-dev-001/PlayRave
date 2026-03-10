@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -186,7 +187,7 @@ const CustomQuestionsScreen = ({ route, navigation }) => {
                                             color={optIndex === q.correctAnswer ? COLORS.limeGlow : '#ccc'}
                                             style={styles.optionText}
                                         >
-                                            {optIndex === q.correctAnswer ? '✓ ' : '  '}{opt}
+                                            {optIndex === q.correctAnswer ? '' : '  '}{opt}
                                         </NeonText>
                                     ))}
                                 </View>

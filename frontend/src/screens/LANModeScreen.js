@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -108,7 +109,7 @@ const LANModeScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.infoCard}>
-                <NeonText size={14} weight="bold" color={COLORS.neonCyan}>🎮 LAN Mode Benefits:</NeonText>
+                <NeonText size={14} weight="bold" color={COLORS.neonCyan}>LAN Mode Benefits:</NeonText>
                 <NeonText size={12} color="#ccc" style={styles.infoText}>• No internet required</NeonText>
                 <NeonText size={12} color="#ccc" style={styles.infoText}>• Faster response times</NeonText>
                 <NeonText size={12} color="#ccc" style={styles.infoText}>• Works on same WiFi network</NeonText>
@@ -203,7 +204,7 @@ const LANModeScreen = ({ navigation }) => {
 
             {connected && (
                 <View style={styles.successCard}>
-                    <NeonText size={16} color={COLORS.limeGlow}>✓ Connected!</NeonText>
+                    <NeonText size={16} color={COLORS.limeGlow}>Connected!</NeonText>
                     <NeonButton
                         title="ENABLE LAN MODE"
                         onPress={handleEnableLAN}

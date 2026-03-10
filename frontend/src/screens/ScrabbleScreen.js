@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -44,7 +45,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
 
     // Create players array with AI if in AI mode
     const gamePlayers = isAIMode
-        ? [...players, { id: 'ai', name: 'AI Opponent 🤖', gender: 'other', isAI: true }]
+        ? [...players, { id: 'ai', name: 'AI Opponent ', gender: 'other', isAI: true }]
         : (players || []);
 
     // Calculate tile size dynamically based on screen dimensions

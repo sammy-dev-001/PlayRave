@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
@@ -174,7 +175,7 @@ const NeonTapGameScreen = ({ route, navigation }) => {
 
                 {gameState === 'tapped' && (
                     <NeonText size={32} weight="bold" color={COLORS.limeGlow} style={styles.centerText}>
-                        TAPPED! ⚡
+                        TAPPED!
                     </NeonText>
                 )}
 

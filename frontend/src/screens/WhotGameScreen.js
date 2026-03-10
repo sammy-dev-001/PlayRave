@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -47,7 +48,7 @@ const WhotGameScreen = ({ route, navigation }) => {
                 setTimeout(() => {
                     const winnerPlayer = room.players.find(p => p.id === detectedWinner);
                     Alert.alert(
-                        'Game Over! 🏆',
+                        'Game Over!',
                         `${winnerPlayer?.name || 'Someone'} wins!`,
                         [{ text: 'OK', onPress: () => navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name }) }]
                     );
@@ -138,7 +139,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             {isSpectator && (
                 <View style={styles.spectatorBadge}>
                     <NeonText size={16} color={COLORS.hotPink} glow>
-                        👁️ SPECTATOR MODE
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="eye" size={18} color={COLORS.hotPink} /><NeonText size={16} color={COLORS.hotPink} glow>SPECTATOR MODE</NeonText></View>
                     </NeonText>
                 </View>
             )}
@@ -179,7 +180,7 @@ const WhotGameScreen = ({ route, navigation }) => {
                             <NeonText size={16}>YOUR HAND ({gameState.playerHand?.length || 0})</NeonText>
                             {isMyTurn && (
                                 <NeonText size={14} color={COLORS.limeGlow} glow>
-                                    YOUR TURN ⚡
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><NeonText size={14} color={COLORS.limeGlow} glow>YOUR TURN</NeonText><Ionicons name="flash" size={16} color={COLORS.limeGlow} /></View>
                                 </NeonText>
                             )}
                         </View>

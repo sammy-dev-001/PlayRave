@@ -8,6 +8,7 @@ import {
     Vibration,
     Keyboard
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -167,7 +168,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow color={COLORS.hotPink}>
-                        🧮 MATH BLITZ
+                        MATH BLITZ
                     </NeonText>
                     <View style={styles.roundInfo}>
                         <NeonText size={14} color="#888">
@@ -261,7 +262,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                                 style={styles.resultText}
                             >
                                 {myResult.correct
-                                    ? (myResult.isWinner ? '🎉 YOU WON THIS ROUND!' : '✓ Correct!')
+                                    ? (myResult.isWinner ? 'YOU WON THIS ROUND!' : 'Correct!')
                                     : '✗ Wrong!'}
                             </NeonText>
                         )}
@@ -272,7 +273,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                 {phase === 'roundWon' && (
                     <View style={styles.centerContent}>
                         <NeonText size={24} weight="bold" glow color={COLORS.limeGlow}>
-                            🏆 {roundWinner} wins!
+                            {roundWinner} wins!
                         </NeonText>
                         <NeonText size={32} weight="bold" color={COLORS.neonCyan} style={styles.answerDisplay}>
                             {problem} = {correctAnswer}
@@ -322,7 +323,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                 {phase === 'finished' && finalResults && (
                     <View style={styles.finalContainer}>
                         <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
-                            🏆 {finalResults.winner?.name} WINS! 🏆
+                            {finalResults.winner?.name} WINS!
                         </NeonText>
                         <NeonText size={18} color={COLORS.neonCyan} style={styles.winnerScore}>
                             {finalResults.winner?.score} points

@@ -5,6 +5,7 @@ import {
     ScrollView,
     Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -39,9 +40,9 @@ const TournamentResultsScreen = ({ route, navigation }) => {
 
     const getRankEmoji = (rank) => {
         switch (rank) {
-            case 1: return '🥇';
-            case 2: return '🥈';
-            case 3: return '🥉';
+            case 1: return '1st';
+            case 2: return '2nd';
+            case 3: return '3rd';
             default: return `#${rank}`;
         }
     };
@@ -60,7 +61,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
                     styles.championSection,
                     { transform: [{ scale: scaleAnim }, { translateY: trophyAnim }] }
                 ]}>
-                    <NeonText size={60}>🏆</NeonText>
+                    <NeonText size={60}></NeonText>
                     <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
                         TOURNAMENT CHAMPION
                     </NeonText>
@@ -128,7 +129,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
                                     {standing.player?.name}
                                 </NeonText>
                                 {index === 0 && (
-                                    <NeonText size={10} color={COLORS.limeGlow}>👑 Champion</NeonText>
+                                    <NeonText size={10} color={COLORS.limeGlow}>Champion</NeonText>
                                 )}
                             </View>
                             <NeonText size={18} weight="bold" color={COLORS.neonCyan}>
@@ -141,7 +142,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
                 {/* Game Breakdown */}
                 <View style={styles.breakdownSection}>
                     <NeonText size={16} weight="bold" color="#888">
-                        🎮 Games Played
+                        Games Played
                     </NeonText>
                     <View style={styles.gamesRow}>
                         {tournament.games?.map((gameId, index) => (

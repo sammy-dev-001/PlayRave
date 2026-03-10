@@ -5,6 +5,7 @@ import {
     ScrollView,
     Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -142,7 +143,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                 <NeonText size={10} color={isCompleted ? COLORS.limeGlow : (isCurrent ? '#fff' : '#888')}>
                     {index + 1}
                 </NeonText>
-                {isCompleted && <NeonText size={10}>✓</NeonText>}
+                {isCompleted && <NeonText size={10}></NeonText>}
             </Animated.View>
         );
     };
@@ -153,7 +154,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <NeonText size={22} weight="bold" glow color={COLORS.electricPurple}>
-                        🏆 {tournament.name}
+                        {tournament.name}
                     </NeonText>
                     <NeonText size={14} color="#888">
                         Game {tournament.currentGameIndex + 1} of {tournament.games.length}
@@ -193,7 +194,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                                 index === 0 && styles.leaderRow
                             ]}>
                                 <NeonText size={14} color={index === 0 ? COLORS.limeGlow : '#fff'}>
-                                    #{standing.rank} {index === 0 ? '👑' : ''}
+                                    #{standing.rank} {index === 0 ? '' : ''}
                                 </NeonText>
                                 <NeonText size={14} style={styles.playerName}>
                                     {standing.player?.name}
@@ -214,7 +215,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                         </NeonText>
                         {isHost && (
                             <NeonButton
-                                title="🚀 START TOURNAMENT"
+                                title="START TOURNAMENT"
                                 onPress={startTournament}
                                 style={styles.actionButton}
                             />
@@ -231,7 +232,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                 {phase === 'between_games' && countdown === null && (
                     <View style={styles.lobbyContainer}>
                         <NeonText size={18} weight="bold" color={COLORS.limeGlow}>
-                            🎉 Game Complete!
+                            Game Complete!
                         </NeonText>
                         <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
                             Next up: {tournament.games[tournament.currentGameIndex]}

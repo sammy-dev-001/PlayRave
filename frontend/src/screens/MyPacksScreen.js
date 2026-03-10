@@ -7,6 +7,7 @@ import {
     RefreshControl,
     Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -19,7 +20,7 @@ const TYPE_ICONS = {
     'truth-or-dare': '🎭',
     'never-have-i-ever': '🙋',
     'would-you-rather': '🤔',
-    'trivia': '🧠'
+    'trivia': ''
 };
 
 const MyPacksScreen = ({ navigation }) => {

@@ -3536,24 +3536,12 @@ class GameManager {
             };
         }
 
-        // Calculate score
-        let score = 0;
-        let wordMultiplier = 1;
-        tiles.forEach(t => {
-            let letterScore = t.value;
-            const key = `${t.x},${t.y}`;
-            const bonus = BONUS_SQUARES[key];
+        // Bug 5 Fix: Score the full formed words (existing + new tiles), not just new tiles.
+        // Only newly placed tiles receive letter/word bonus multipliers.
+        const newTilesSet = new Set(tiles.map(t => `${t.x},${t.y}`));
+        let score = this.calculateScrabbleScore(formedWords, newTilesSet, BONUS_SQUARES);
 
-            if (bonus === 'DL') letterScore *= 2;
-            if (bonus === 'TL') letterScore *= 3;
-            if (bonus === 'DW') wordMultiplier *= 2;
-            if (bonus === 'TW') wordMultiplier *= 3;
-
-            score += letterScore;
-        });
-        score *= wordMultiplier;
-
-        // Bonus for using all 7 tiles
+        // Bingo bonus for using all 7 tiles from the rack
         if (tiles.length === 7) score += 50;
 
         // Commit tiles to board
@@ -3564,18 +3552,22 @@ class GameManager {
         // Update player score
         currentPlayer.score += score;
 
-        // Refill hand
+        // Refill hand from bag
         const { drawTiles } = require('../data/scrabbleData');
         const newTiles = drawTiles(game.tileBag, tiles.length);
 
-        // Remove used tiles from hand and add new ones
-        const tileLetters = tiles.map(t => t.letter);
+        // Bug 3 Fix: Remove used tiles from hand.
+        // Blank tiles are sent with their chosen letter (e.g. 'S'), but stored in the hand
+        // as '_'. We must search for '_' when isBlank is true, otherwise we'd never find
+        // and remove the blank — causing the player to get it back + new tiles (> 7 tiles).
         let remainingHand = [...currentPlayer.hand];
-        tileLetters.forEach(letter => {
-            const idx = remainingHand.findIndex(t => t.letter === letter);
+        tiles.forEach(playedTile => {
+            const searchLetter = playedTile.isBlank ? '_' : playedTile.letter;
+            const idx = remainingHand.findIndex(t => t.letter === searchLetter);
             if (idx !== -1) remainingHand.splice(idx, 1);
         });
-        currentPlayer.hand = [...remainingHand, ...newTiles];
+        // Hard cap: rack must never exceed 7 tiles (safety net)
+        currentPlayer.hand = [...remainingHand, ...newTiles].slice(0, 7);
 
         // Clear placed tiles
         game.placedTiles[playerId] = [];
@@ -3727,6 +3719,37 @@ class GameManager {
         });
 
         return words;
+    }
+
+    // Bug 5 Fix: Score helper — sums the full formed words, not just the newly placed tiles.
+    // Letter-score bonuses (DL, TL) and word multipliers (DW, TW) only apply to NEWLY placed tiles.
+    calculateScrabbleScore(formedWords, newTilesSet, BONUS_SQUARES) {
+        let totalScore = 0;
+
+        formedWords.forEach(wordObj => {
+            let wordScore = 0;
+            let wordMultiplier = 1;
+
+            wordObj.tiles.forEach(tile => {
+                const key = `${tile.x},${tile.y}`;
+                const isNew = newTilesSet.has(key);
+                let letterScore = tile.value || 0;
+
+                if (isNew) {
+                    const bonus = BONUS_SQUARES[key];
+                    if (bonus === 'DL') letterScore *= 2;
+                    if (bonus === 'TL') letterScore *= 3;
+                    if (bonus === 'DW') wordMultiplier *= 2;
+                    if (bonus === 'TW') wordMultiplier *= 3;
+                }
+
+                wordScore += letterScore;
+            });
+
+            totalScore += wordScore * wordMultiplier;
+        });
+
+        return totalScore;
     }
 
     scrabblePassTurn(roomId, playerId) {

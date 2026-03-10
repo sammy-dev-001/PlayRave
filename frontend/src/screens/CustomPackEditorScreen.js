@@ -8,6 +8,7 @@ import {
     Alert,
     Switch
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -16,10 +17,10 @@ import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const PACK_TYPES = [
-    { id: 'truth-or-dare', name: 'Truth or Dare', icon: '🎭' },
+    { id: 'truth-or-dare', name: 'Truth or Dare', icon: 'happy' },
     { id: 'never-have-i-ever', name: 'Never Have I Ever', icon: '🙋' },
-    { id: 'would-you-rather', name: 'Would You Rather', icon: '🤔' },
-    { id: 'trivia', name: 'Trivia', icon: '🧠' }
+    { id: 'would-you-rather', name: 'Would You Rather', icon: 'help-circle' },
+    { id: 'trivia', name: 'Trivia', icon: 'bulb' }
 ];
 
 const CustomPackEditorScreen = ({ route, navigation }) => {

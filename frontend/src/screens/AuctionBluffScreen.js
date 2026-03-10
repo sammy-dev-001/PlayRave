@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -223,7 +224,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
                     <NeonText size={28} weight="bold" glow>
-                        🏆 AUCTION CHAMPION 🏆
+                        AUCTION CHAMPION
                     </NeonText>
                     <NeonText size={48}>💰</NeonText>
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
@@ -243,7 +244,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                                     </NeonText>
                                     {score.bonus > 0 && (
                                         <NeonText size={12} color={COLORS.limeGlow}>
-                                            🧠 +{formatMoney(score.bonus)} bluff bonus
+                                            +{formatMoney(score.bonus)} bluff bonus
                                         </NeonText>
                                     )}
                                 </View>
@@ -561,7 +562,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                     {correctGuessers.length > 0 && (
                         <View style={styles.bonusSection}>
                             <NeonText size={14} color={COLORS.limeGlow} weight="bold">
-                                🧠 CORRECT GUESSERS (+₦5M each):
+                                CORRECT GUESSERS (+₦5M each):
                             </NeonText>
                             <NeonText size={14} color={COLORS.neonCyan}>
                                 {correctGuessers.map(p => p.name).join(', ')}

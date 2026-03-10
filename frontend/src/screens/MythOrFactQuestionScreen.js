@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -117,7 +118,7 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
                             disabled={hasSubmitted}
                         />
                         <NeonButton
-                            title="FACT ✓"
+                            title="FACT "
                             variant={selectedAnswer === true ? 'primary' : 'secondary'}
                             onPress={() => handleSelectAnswer(true)}
                             style={[styles.answerButton, styles.factButton]}

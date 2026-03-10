@@ -6,6 +6,7 @@ import {
     Animated,
     Dimensions
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -123,7 +124,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
     const renderWaitingPhase = () => (
         <View style={styles.centeredContent}>
             <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow>
-                🔥 UNPOPULAR OPINIONS
+                UNPOPULAR OPINIONS
             </NeonText>
             <NeonText size={16} color="#888" style={styles.subtitle}>
                 Waiting for host to start...

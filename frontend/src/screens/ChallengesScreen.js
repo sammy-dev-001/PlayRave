@@ -7,6 +7,7 @@ import {
     RefreshControl,
     Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -85,7 +86,7 @@ const ChallengesScreen = ({ navigation }) => {
                     <NeonButton title="CLAIM" onPress={() => handleClaim(item)} style={styles.claimBtn} />
                 )}
                 {item.claimed && (
-                    <NeonText size={12} color={COLORS.limeGlow} style={styles.claimedText}>✓ Claimed</NeonText>
+                    <NeonText size={12} color={COLORS.limeGlow} style={styles.claimedText}>Claimed</NeonText>
                 )}
             </View>
         );

@@ -8,6 +8,7 @@ import {
     Animated,
     Dimensions
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -208,7 +209,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             </View>
 
             <NeonText size={22} weight="bold" style={styles.phaseTitle}>
-                📝 WRITE YOUR CONFESSION
+                WRITE YOUR CONFESSION
             </NeonText>
 
             <NeonText size={14} color="#888" style={styles.hint}>
@@ -234,7 +235,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             {hasSubmitted ? (
                 <View style={styles.submittedBadge}>
                     <NeonText size={18} color={COLORS.limeGlow}>
-                        ✓ Confession Submitted!
+                        Confession Submitted!
                     </NeonText>
                     <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
                         Waiting for others... ({submissionCount}/{players.length})
@@ -291,7 +292,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                             {player.name}
                         </NeonText>
                         {selectedPlayer === player.name && (
-                            <NeonText size={16} color={COLORS.neonCyan}>✓</NeonText>
+                            <NeonText size={16} color={COLORS.neonCyan}></NeonText>
                         )}
                     </TouchableOpacity>
                 ))}
@@ -309,7 +310,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     const renderResultsPhase = () => (
         <View style={styles.resultsContainer}>
             <NeonText size={22} weight="bold" glow style={styles.phaseTitle}>
-                🎭 THE TRUTH REVEALED
+                THE TRUTH REVEALED
             </NeonText>
 
             <View style={styles.confessionCard}>
@@ -328,7 +329,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             {roundResults?.correctGuessers?.length > 0 && (
                 <View style={styles.guessersBox}>
                     <NeonText size={14} color={COLORS.neonCyan}>
-                        ✓ Correct guessers: {roundResults.correctGuessers.join(', ')}
+                        Correct guessers: {roundResults.correctGuessers.join(', ')}
                     </NeonText>
                 </View>
             )}
@@ -350,14 +351,14 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         return (
             <View style={styles.finalScoresContainer}>
                 <NeonText size={28} weight="bold" glow style={styles.phaseTitle}>
-                    🏆 FINAL SCORES
+                    FINAL SCORES
                 </NeonText>
 
                 <ScrollView style={styles.scoresList}>
                     {sortedScores.map(([name, score], index) => (
                         <View key={name} style={[styles.scoreRow, index === 0 && styles.winnerRow]}>
                             <NeonText size={24}>
-                                {index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                {index === 0 ? '' : index === 1 ? '2nd' : index === 2 ? '3rd' : `${index + 1}.`}
                             </NeonText>
                             <NeonText size={18} style={styles.scoreName}>
                                 {name}

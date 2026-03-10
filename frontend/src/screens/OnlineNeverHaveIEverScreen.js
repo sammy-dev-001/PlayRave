@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -121,7 +122,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
         return (
             <NeonContainer>
                 <View style={styles.header}>
-                    <NeonText size={28} weight="bold" glow>🎉 GAME OVER!</NeonText>
+                    <NeonText size={28} weight="bold" glow>GAME OVER!</NeonText>
                     <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
                         {gameState.roundNumber} rounds completed
                     </NeonText>
@@ -135,7 +136,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
                     {sortedPlayers.map((player, index) => (
                         <View key={player.id} style={[styles.resultRow, index === 0 && styles.winnerRow]}>
                             <NeonText size={18}>
-                                {index === 0 ? '🏆' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                {index === 0 ? '' : index === 1 ? '2nd' : index === 2 ? '3rd' : `#${index + 1}`}
                             </NeonText>
                             <NeonText size={18} weight="bold" style={{ flex: 1, marginLeft: 15 }}>
                                 {player.name}

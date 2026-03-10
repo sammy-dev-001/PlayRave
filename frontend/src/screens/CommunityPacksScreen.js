@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     RefreshControl
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import { COLORS } from '../constants/theme';
@@ -16,7 +17,7 @@ const TYPE_ICONS = {
     'truth-or-dare': '🎭',
     'never-have-i-ever': '🙋',
     'would-you-rather': '🤔',
-    'trivia': '🧠'
+    'trivia': ''
 };
 
 const TABS = [
@@ -24,7 +25,7 @@ const TABS = [
     { id: 'truth-or-dare', name: '🎭' },
     { id: 'never-have-i-ever', name: '🙋' },
     { id: 'would-you-rather', name: '🤔' },
-    { id: 'trivia', name: '🧠' }
+    { id: 'trivia', name: '' }
 ];
 
 const CommunityPacksScreen = ({ navigation }) => {

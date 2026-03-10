@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import NeonText from '../NeonText';
 import { COLORS } from '../../constants/theme';
 
@@ -33,10 +34,12 @@ const ProfileSection = ({
                                 source={{ uri: avatar }}
                                 style={styles.avatarImage}
                             />
-                        ) : (
+                        ) : avatar?.emoji ? (
                             <NeonText size={44}>
-                                {avatar?.emoji || '👤'}
+                                {avatar.emoji}
                             </NeonText>
+                        ) : (
+                            <Feather name="user" size={44} color="#8B8FA3" />
                         )}
                     </View>
                 </View>
@@ -55,9 +58,7 @@ const ProfileSection = ({
                 >
                     {userName || 'GUEST'}
                 </NeonText>
-                <NeonText size={14} color="#8B8FA3" style={styles.editIcon}>
-                    ✏️
-                </NeonText>
+                <Feather name="edit-2" size={14} color="#8B8FA3" style={styles.editIcon} />
             </TouchableOpacity>
 
             {/* Level & rank */}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -149,7 +150,7 @@ const ScoreboardScreen = ({ route, navigation }) => {
                 </View>
                 <View style={styles.playerInfo}>
                     <NeonText size={20} weight="bold">
-                        {getPlayerName(item.playerId)} {isWinner && '👑'}
+                        {getPlayerName(item.playerId)} {isWinner && ''}
                     </NeonText>
                 </View>
                 <NeonText size={24} weight="bold" color={COLORS.neonCyan}>

@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
 
 // Sound definitions with web-compatible audio
 const SOUNDS = {
-    airhorn: { emoji: '📯', name: 'Airhorn', file: 'airhorn.mp3' },
-    buzzer: { emoji: '❌', name: 'Buzzer', file: 'buzzer.mp3' },
-    applause: { emoji: '👏', name: 'Applause', file: 'applause.mp3' },
-    drumroll: { emoji: '🥁', name: 'Drumroll', file: 'drumroll.mp3' },
-    tada: { emoji: '🎉', name: 'Ta-da!', file: 'tada.mp3' },
-    sad: { emoji: '😢', name: 'Sad Trombone', file: 'sad.mp3' },
-    laugh: { emoji: '😂', name: 'Laugh', file: 'laugh.mp3' },
-    wow: { emoji: '😮', name: 'Wow', file: 'wow.mp3' },
+    airhorn: { icon: 'megaphone', name: 'Airhorn', file: 'airhorn.mp3' },
+    buzzer: { icon: 'close-circle', name: 'Buzzer', file: 'buzzer.mp3' },
+    applause: { icon: 'hand-left', name: 'Applause', file: 'applause.mp3' },
+    drumroll: { icon: 'musical-notes', name: 'Drumroll', file: 'drumroll.mp3' },
+    tada: { icon: 'ribbon', name: 'Ta-da!', file: 'tada.mp3' },
+    sad: { icon: 'sad', name: 'Sad Trombone', file: 'sad.mp3' },
+    laugh: { icon: 'happy', name: 'Laugh', file: 'laugh.mp3' },
+    wow: { icon: 'eye', name: 'Wow', file: 'wow.mp3' },
 };
 
 // Soundboard button component
@@ -23,7 +24,7 @@ const SoundButton = ({ sound, onPress, disabled }) => (
         onPress={onPress}
         disabled={disabled}
     >
-        <NeonText size={24}>{sound.emoji}</NeonText>
+        <Ionicons name={sound.icon} size={24} color={COLORS.neonCyan} />
         <NeonText size={10} color="#888">{sound.name}</NeonText>
     </TouchableOpacity>
 );
@@ -54,11 +55,9 @@ const Soundboard = ({ roomId, playerName, visible = true }) => {
             {expanded ? (
                 <View style={styles.soundboardPanel}>
                     <View style={styles.header}>
-                        <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
-                            🔊 SOUNDBOARD
-                        </NeonText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="volume-high" size={16} color={COLORS.neonCyan} /><NeonText size={14} weight="bold" color={COLORS.neonCyan}>SOUNDBOARD</NeonText></View>
                         <TouchableOpacity onPress={() => setExpanded(false)}>
-                            <NeonText size={20}>✕</NeonText>
+                            <Ionicons name="close" size={22} color="#fff" />
                         </TouchableOpacity>
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -79,7 +78,7 @@ const Soundboard = ({ roomId, playerName, visible = true }) => {
                     style={styles.toggleButton}
                     onPress={() => setExpanded(true)}
                 >
-                    <NeonText size={20}>🔊</NeonText>
+                    <Ionicons name="volume-high" size={22} color={COLORS.electricPurple} />
                 </TouchableOpacity>
             )}
         </View>
@@ -102,7 +101,7 @@ const SoundNotification = ({ soundId, playerName, visible, onComplete }) => {
 
     return (
         <View style={styles.notification}>
-            <NeonText size={30}>{sound.emoji}</NeonText>
+            <Ionicons name={sound.icon} size={30} color={COLORS.neonCyan} />
             <NeonText size={12} color="#fff">
                 {playerName} played {sound.name}
             </NeonText>

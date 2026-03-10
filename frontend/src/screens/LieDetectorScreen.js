@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -145,7 +146,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
                             style={[styles.choiceBtn, selectedChoice === 'truth' && styles.truthSelected]}
                             onPress={() => setSelectedChoice('truth')}
                         >
-                            <NeonText size={24}>✓</NeonText>
+                            <NeonText size={24}></NeonText>
                             <NeonText size={14} color={selectedChoice === 'truth' ? '#fff' : '#888'}>TRUTH</NeonText>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -199,7 +200,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
                     <NeonText size={16} style={styles.votePrompt}>Is this the TRUTH or a LIE?</NeonText>
                     <View style={styles.voteButtons}>
                         <TouchableOpacity style={[styles.voteBtn, styles.truthBtn]} onPress={() => handleVote('truth')}>
-                            <NeonText size={32}>✓</NeonText>
+                            <NeonText size={32}></NeonText>
                             <NeonText size={18} weight="bold">TRUTH</NeonText>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.voteBtn, styles.lieBtn]} onPress={() => handleVote('lie')}>
@@ -232,11 +233,11 @@ const LieDetectorScreen = ({ route, navigation }) => {
 
     const renderFinished = () => (
         <View style={styles.phaseContainer}>
-            <NeonText size={24} weight="bold" glow>🏆 GAME OVER!</NeonText>
+            <NeonText size={24} weight="bold" glow>GAME OVER!</NeonText>
             <View style={styles.rankingsContainer}>
                 {rankings.map((player, idx) => (
                     <View key={player.id} style={[styles.rankRow, idx === 0 && styles.winnerRow]}>
-                        <NeonText size={20}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}</NeonText>
+                        <NeonText size={20}>{idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `#${idx + 1}`}</NeonText>
                         <NeonText size={16}>{player.avatar}</NeonText>
                         <NeonText size={16} weight="bold" style={{ flex: 1 }}>{player.name}</NeonText>
                         <NeonText size={16} color={COLORS.limeGlow}>{player.score} pts</NeonText>
@@ -251,7 +252,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
         <NeonContainer scrollable>
             <GameOverlay roomId={room.id} playerName={playerName}>
                 <View style={styles.container}>
-                    <NeonText size={28} weight="bold" glow style={styles.title}>🔍 LIE DETECTOR</NeonText>
+                    <NeonText size={28} weight="bold" glow style={styles.title}>LIE DETECTOR</NeonText>
 
                     {finished ? renderFinished() :
                         phase === 'answering' ? renderAnsweringPhase() :

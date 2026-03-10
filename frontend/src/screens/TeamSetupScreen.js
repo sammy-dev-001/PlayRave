@@ -7,6 +7,7 @@ import {
     TextInput,
     Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -224,7 +225,7 @@ const TeamSetupScreen = ({ route, navigation }) => {
                             maxLength={20}
                         />
                         <TouchableOpacity onPress={handleSaveTeamName}>
-                            <NeonText size={18} color={COLORS.limeGlow}>✓</NeonText>
+                            <NeonText size={18} color={COLORS.limeGlow}></NeonText>
                         </TouchableOpacity>
                     </View>
                 ) : (

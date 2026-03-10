@@ -8,6 +8,7 @@ import {
     Vibration,
     Keyboard
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -219,7 +220,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow color={COLORS.neonCyan}>
-                        ⌨️ TYPE RACE
+                        TYPE RACE
                     </NeonText>
                     <View style={styles.roundInfo}>
                         <NeonText size={14} color="#888">
@@ -325,7 +326,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
 
                         {finished && (
                             <NeonText size={18} color={COLORS.limeGlow} style={styles.finishedText}>
-                                ✓ Finished! Waiting for others...
+                                Finished! Waiting for others...
                             </NeonText>
                         )}
                     </Animated.View>
@@ -376,7 +377,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                 {phase === 'finished' && finalResults && (
                     <View style={styles.finalContainer}>
                         <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
-                            🏆 {finalResults.winner?.name} WINS! 🏆
+                            {finalResults.winner?.name} WINS!
                         </NeonText>
                         <NeonText size={18} color={COLORS.neonCyan} style={styles.winnerScore}>
                             {finalResults.winner?.score} points

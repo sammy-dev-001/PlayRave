@@ -7,6 +7,7 @@ import {
     Vibration,
     Platform
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -199,7 +200,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <NeonText size={28} weight="bold" glow color={COLORS.hotPink}>
-                        ⚡ BUTTON MASH ⚡
+                        BUTTON MASH
                     </NeonText>
                 </View>
 
@@ -301,7 +302,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
                 {phase === 'results' && results && (
                     <View style={styles.resultsContainer}>
                         <NeonText size={24} weight="bold" glow color={COLORS.limeGlow} style={styles.winnerText}>
-                            🏆 {results.winner?.name} WINS! 🏆
+                            {results.winner?.name} WINS!
                         </NeonText>
                         <NeonText size={18} color={COLORS.neonCyan} style={styles.winnerScore}>
                             {results.winner?.tapCount} taps

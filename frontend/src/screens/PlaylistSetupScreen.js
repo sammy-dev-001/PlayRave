@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -14,14 +15,14 @@ import { COLORS, SHADOWS } from '../constants/theme';
 
 // Available games for playlist
 const AVAILABLE_GAMES = [
-    { id: 'trivia', name: 'Quick Trivia', icon: '🧠', color: COLORS.neonCyan },
-    { id: 'myth-or-fact', name: 'Myth or Fact', icon: '🤔', color: COLORS.hotPink },
-    { id: 'whos-most-likely', name: "Who's Most Likely", icon: '👥', color: COLORS.electricPurple },
-    { id: 'neon-tap', name: 'Neon Tap Frenzy', icon: '⚡', color: COLORS.limeGlow },
-    { id: 'word-rush', name: 'Word Rush', icon: '⚡', color: COLORS.hotPink },
-    { id: 'truth-or-dare', name: 'Truth or Dare', icon: '🎲', color: COLORS.hotPink },
-    { id: 'never-have-i', name: 'Never Have I Ever', icon: '🤫', color: COLORS.limeGlow },
-    { id: 'rapid-fire', name: 'Rapid Fire', icon: '⚡', color: COLORS.limeGlow },
+    { id: 'trivia', name: 'Quick Trivia', icon: 'bulb', color: COLORS.neonCyan },
+    { id: 'myth-or-fact', name: 'Myth or Fact', icon: 'help-circle', color: COLORS.hotPink },
+    { id: 'whos-most-likely', name: "Who's Most Likely", icon: 'people', color: COLORS.electricPurple },
+    { id: 'neon-tap', name: 'Neon Tap Frenzy', icon: 'flash', color: COLORS.limeGlow },
+    { id: 'word-rush', name: 'Word Rush', icon: 'flash', color: COLORS.hotPink },
+    { id: 'truth-or-dare', name: 'Truth or Dare', icon: 'dice', color: COLORS.hotPink },
+    { id: 'never-have-i', name: 'Never Have I Ever', icon: 'finger-print', color: COLORS.limeGlow },
+    { id: 'rapid-fire', name: 'Rapid Fire', icon: 'flash', color: COLORS.limeGlow },
 ];
 
 const PlaylistSetupScreen = ({ route, navigation }) => {
@@ -139,7 +140,7 @@ const PlaylistSetupScreen = ({ route, navigation }) => {
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow>
-                    🎵 PARTY PLAYLIST
+                    PARTY PLAYLIST
                 </NeonText>
                 <NeonText size={14} color="#888" style={styles.subtitle}>
                     Queue up games for non-stop fun!
@@ -207,7 +208,7 @@ const PlaylistSetupScreen = ({ route, navigation }) => {
             {/* Start Button */}
             {isHost && playlist.length >= 2 && (
                 <NeonButton
-                    title="🚀 START PLAYLIST"
+                    title="START PLAYLIST"
                     onPress={handleStartPlaylist}
                     style={styles.startButton}
                 />

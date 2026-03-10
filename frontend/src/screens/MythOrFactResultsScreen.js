@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -47,7 +48,7 @@ const MythOrFactResultsScreen = ({ route }) => {
         return (
             <View style={[styles.playerRow, item.isCorrect && styles.correctRow]}>
                 <NeonText size={18}>
-                    {item.isCorrect ? '✓' : '✗'} {playerName}
+                    {item.isCorrect ? '' : '✗'} {playerName}
                 </NeonText>
                 <NeonText size={18} color={COLORS.limeGlow}>
                     {item.currentScore} pts

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -17,7 +18,7 @@ const OnlineRapidFireCategoryScreen = ({ route, navigation }) => {
             name: 'NORMAL',
             description: 'Fun quick questions for everyone',
             color: COLORS.limeGlow,
-            icon: '⚡'
+            icon: 'flash'
         },
         {
             id: 'spicy',
@@ -54,7 +55,7 @@ const OnlineRapidFireCategoryScreen = ({ route, navigation }) => {
             >
                 <View style={styles.header}>
                     <NeonText size={28} weight="bold" glow>
-                        ⚡ RAPID FIRE
+                        RAPID FIRE
                     </NeonText>
                     <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
                         Choose your spice level
@@ -105,10 +106,10 @@ const OnlineRapidFireCategoryScreen = ({ route, navigation }) => {
                         ⏱️ 5 seconds to answer each question
                     </NeonText>
                     <NeonText size={13} color="#aaa" style={styles.rule}>
-                        ✓ Tap ANSWERED if they respond in time
+                        Tap ANSWERED if they respond in time
                     </NeonText>
                     <NeonText size={13} color="#aaa" style={styles.rule}>
-                        ⚡ Quick, honest, one-word answers!
+                        Quick, honest, one-word answers!
                     </NeonText>
                 </View>
 
