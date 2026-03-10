@@ -12,14 +12,6 @@ const io = new Server(server, {
     cors: { origin: "*" }
 });
 
-// WATCHDOG - BACKEND: Trap unhandled promises and exceptions
-process.on('unhandledRejection', (reason, promise) => {
-    console.error(`[WATCHDOG - BACKEND] FATAL: Unhandled Promise Rejection:`, reason);
-});
-process.on('uncaughtException', (error) => {
-    console.error(`[WATCHDOG - BACKEND] FATAL: Uncaught Exception:`, error);
-});
-
 // basic socket flow
 const roomManager = require("./managers/roomManager");
 const gameManager = require("./managers/gameManager");

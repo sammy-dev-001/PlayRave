@@ -15,39 +15,45 @@ const InstallAppModal = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     useEffect(() => {
-        checkInstallPrompt();
+        let isDismissed = false;
+
+        // Load dismissal state immediately
+        AsyncStorage.getItem(INSTALL_PROMPT_KEY).then(val => {
+            isDismissed = (val === 'true');
+            checkInstallPrompt(isDismissed);
+        });
+
+        const handleBeforeInstall = (e) => {
+            if (isDismissed) {
+                // If user dismissed our custom modal, don't prevent default.
+                // This lets the browser show its standard install banner (so we don't get the console warning).
+                return;
+            }
+            
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            setDeferredPrompt(e);
+            
+            // Now that we have the prompt, show our custom modal
+            setTimeout(() => {
+                setVisible(true);
+                HapticService.notification('success');
+            }, 1000);
+        };
 
         // Listen for beforeinstallprompt
         if (typeof window !== 'undefined') {
-            window.addEventListener('beforeinstallprompt', (e) => {
-                // Prevent the mini-infobar from appearing on mobile
-                e.preventDefault();
-                // Stash the event so it can be triggered later.
-                setDeferredPrompt(e);
-                // Update UI notify the user they can install the PWA
-                checkInstallPrompt();
-            });
+            window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+            return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
         }
     }, []);
 
-    const checkInstallPrompt = async () => {
+    const checkInstallPrompt = async (isDismissed) => {
         // Only show on web
         if (Platform.OS !== 'web') return;
 
-        // Check if already dismissed locally
-        try {
-            const dismissed = await AsyncStorage.getItem(INSTALL_PROMPT_KEY);
-            // If already dismissed, we generally don't show it, 
-            // BUT if we have a deferredPrompt (meaning the browser thinks it's installable),
-            // we might want to show a subtle button somewhere else, 
-            // but for this modal, we respect the dismissal.
-
-            // However, let's allow re-prompting if it's been a long time or if we really want to push it.
-            // For now, strict dismissal.
-            if (dismissed === 'true') return;
-        } catch (e) {
-            console.log('AsyncStorage error:', e);
-        }
+        if (isDismissed) return;
 
         // Check if already installed (standalone mode)
         if (typeof window !== 'undefined') {
@@ -61,8 +67,9 @@ const InstallAppModal = () => {
             const isiOS = /iphone|ipad|ipod/.test(userAgent);
             setIsIOS(isiOS);
 
-            // Show prompt after delay if not standalone
-            if (!standalone) {
+            // Show prompt after delay ONLY for iOS. 
+            // For Android/Desktop, we wait for beforeinstallprompt to fire so deferredPrompt is ready.
+            if (isiOS && !standalone) {
                 setTimeout(() => {
                     setVisible(true);
                     HapticService.notification('success');

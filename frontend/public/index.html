@@ -70,50 +70,6 @@
             50% { opacity: 0.7; }
         }
         
-        /* PWA Install Prompt */
-        #install-prompt {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border: 2px solid #00ffff;
-            border-radius: 16px;
-            padding: 15px 20px;
-            z-index: 9999;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
-        }
-        
-        #install-prompt.show {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        #install-prompt span {
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 14px;
-        }
-        
-        #install-prompt button {
-            background: linear-gradient(135deg, #00ffff 0%, #00d4ff 100%);
-            color: #0a0a1a;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        #install-prompt .close {
-            background: transparent;
-            color: #888;
-            padding: 5px 10px;
-            margin-left: 10px;
-        }
     </style>
 </head>
 <body>
@@ -124,14 +80,7 @@
         </div>
     </div>
     
-    <!-- PWA Install Prompt -->
-    <div id="install-prompt">
-        <span>📱 Add PlayRave to your home screen!</span>
-        <div>
-            <button id="install-btn">Install</button>
-            <button class="close" id="close-prompt">✕</button>
-        </div>
-    </div>
+    <!-- Install handled by React (InstallAppModal) -->
     
     <script>
         // Register Service Worker
@@ -147,42 +96,7 @@
             });
         }
         
-        // PWA Install Prompt
-        let deferredPrompt;
-        const installPrompt = document.getElementById('install-prompt');
-        const installBtn = document.getElementById('install-btn');
-        const closePrompt = document.getElementById('close-prompt');
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // Show install prompt after 5 seconds
-            setTimeout(() => {
-                if (deferredPrompt && !localStorage.getItem('pwa-dismissed')) {
-                    installPrompt.classList.add('show');
-                }
-            }, 5000);
-        });
-        
-        if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log('PWA install:', outcome);
-                    deferredPrompt = null;
-                    installPrompt.classList.remove('show');
-                }
-            });
-        }
-        
-        if (closePrompt) {
-            closePrompt.addEventListener('click', () => {
-                installPrompt.classList.remove('show');
-                localStorage.setItem('pwa-dismissed', 'true');
-            });
-        }
+        // Install app logic is handled inside React via beforeinstallprompt listener
         
         // Hide loading when app starts
         window.addEventListener('DOMContentLoaded', () => {
