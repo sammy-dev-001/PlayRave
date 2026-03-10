@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
 
 const HomeScreen = ({ navigation }) => {
-    const { user, isAuthenticated, isGuest } = useAuth();
+    const { user, isAuthenticated, isGuest, updateUsername } = useAuth();
     const { setPlayer } = useGame();
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
@@ -69,7 +69,7 @@ const HomeScreen = ({ navigation }) => {
         await startMusicOnInteraction();
         setLoading(true);
         console.log('[HOME] Updating stored profile name to:', name);
-        if (useAuth().updateUsername) useAuth().updateUsername(name);
+        if (updateUsername) updateUsername(name);
         
         SocketService.emit('create-room', {
             playerName: name,
@@ -83,7 +83,7 @@ const HomeScreen = ({ navigation }) => {
     const handleJoin = async () => {
         await startMusicOnInteraction();
         console.log('[HOME] Updating stored profile name to:', name);
-        if (useAuth().updateUsername) useAuth().updateUsername(name);
+        if (updateUsername) updateUsername(name);
 
         navigation.navigate('Join', {
             playerName: name,
