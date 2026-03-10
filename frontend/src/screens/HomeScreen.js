@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TextInput, Alert, ScrollView, Platform, StatusBar } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Bug 7
 import NeonBackground from '../components/NeonBackground';
 import AvatarPicker from '../components/AvatarPicker';
 import InstallAppModal from '../components/InstallAppModal';
@@ -18,7 +17,6 @@ import { useAuth } from '../context/AuthContext';
 
 const HomeScreen = ({ navigation }) => {
     const { user, isAuthenticated, isGuest } = useAuth();
-    const insets = useSafeAreaInsets(); // Bug 7: real device safe-area insets
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -150,14 +148,7 @@ const HomeScreen = ({ navigation }) => {
 
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={[
-                    styles.scrollContent,
-                    {
-                        // Bug 7 Action 1 & 2: dynamic inset-based padding instead of hardcoded values.
-                        paddingTop: (insets.top || (Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0)) + 10,
-                        paddingBottom: insets.bottom + 40,
-                    }
-                ]}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
@@ -236,17 +227,18 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     rootContainer: {
         flex: 1,
-        // Bug 7: Removed height:'100%' and minHeight:'100vh'.
-        // 100vh on mobile browsers includes the URL bar, clipping bottom content.
-        // flex:1 fills available space correctly on all platforms.
+        height: '100%',
+        minHeight: '100vh',
         backgroundColor: COLORS.deepNightBlack,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        // paddingTop and paddingBottom applied dynamically via insets (see JSX above)
+        paddingTop: Platform.OS === 'ios' ? 50 : 10,
+        paddingBottom: 40,
     },
     nameInputWrapper: {
         paddingHorizontal: 40,

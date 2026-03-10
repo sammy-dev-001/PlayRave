@@ -310,9 +310,10 @@ const LobbyScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        // Bug 7: Removed height:'100%', minHeight:'100vh', hardcoded paddingTop.
-        // SafeAreaView in JSX handles top inset; flex:1 fills parent without 100vh overflow.
+        height: '100%',
+        minHeight: '100vh',
         backgroundColor: '#05050A',
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     safeArea: {
         flex: 1,

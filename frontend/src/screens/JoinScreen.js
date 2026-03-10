@@ -178,10 +178,10 @@ const JoinScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        // Bug 7: Removed height:'100%' and minHeight:'100vh' — 100vh includes the browser
-        // URL bar on mobile, clipping bottom content. flex:1 fills parent correctly.
-        // paddingTop handled by the SafeAreaView already wrapping content in JSX.
+        height: '100%',
+        minHeight: '100vh',
         backgroundColor: '#05050A',
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     safeArea: {
         flex: 1,

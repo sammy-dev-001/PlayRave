@@ -119,7 +119,7 @@ class SocketService {
         });
 
         this.socket.on('disconnect', (reason) => {
-            console.log('[WATCHDOG - FRONTEND] Socket disconnected. Reason:', reason);
+            console.log('SocketService disconnected:', reason);
             this.setConnectionState(ConnectionState.DISCONNECTED);
             this.stopPingMonitoring();
 
@@ -130,7 +130,7 @@ class SocketService {
         });
 
         this.socket.on('connect_error', (err) => {
-            console.log('[WATCHDOG - FRONTEND] Socket connect_error:', err.message);
+            console.log('Socket connection error:', err.message);
             this.reconnectAttempts++;
             this.setConnectionState(ConnectionState.ERROR);
 
@@ -143,7 +143,7 @@ class SocketService {
         });
 
         this.socket.on('reconnecting', (attemptNumber) => {
-            console.log('[WATCHDOG - FRONTEND] Socket reconnect_attempt:', attemptNumber);
+            console.log('Reconnecting... attempt:', attemptNumber);
             this.setConnectionState(ConnectionState.RECONNECTING);
         });
 
@@ -164,11 +164,6 @@ class SocketService {
                 this.latency = Date.now() - this.lastPingTime;
                 this.notifyLatencyListeners();
             }
-        });
-
-        // Watchdog error listener
-        this.socket.on('error', (err) => {
-            console.log('[WATCHDOG - FRONTEND] Socket error:', err);
         });
     }
 

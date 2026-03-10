@@ -47,7 +47,6 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     // Bug 2: Remaining tiles counter from server game state
     const [tilesInBag, setTilesInBag] = useState(null);
     const scrollViewRef = useRef(null);
-    const moveTimeoutRef = useRef(null); // Watchdog 3: track pending server responses
 
     // Blank tile selection modal state
     const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
@@ -73,13 +72,6 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         // Listen for move submissions
         const handleMoveSubmitted = (data) => {
             console.log('Move submitted:', data);
-
-            // Watchdog 3: Clear timeout on server response
-            if (moveTimeoutRef.current) {
-                clearTimeout(moveTimeoutRef.current);
-                moveTimeoutRef.current = null;
-            }
-
             if (data.success) {
                 updateGameState(data.gameState);
 
@@ -125,13 +117,6 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         // Listen for errors
         const handleError = (error) => {
             console.error('Socket error:', error);
-
-            // Watchdog 3: Clear timeout on server error response
-            if (moveTimeoutRef.current) {
-                clearTimeout(moveTimeoutRef.current);
-                moveTimeoutRef.current = null;
-            }
-
             if (error.invalidWords && error.invalidWords.length > 0) {
                 Alert.alert(
                     'Invalid Words',
@@ -303,13 +288,6 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             roomId: room.id,
             tiles: placedTiles
         });
-
-        // Watchdog 3: Stuck Event Timeout
-        // If the server does not respond with success or error within 5s, warn user
-        moveTimeoutRef.current = setTimeout(() => {
-            console.warn('[WATCHDOG - FRONTEND] Server failed to respond to move within 5 seconds.');
-            Alert.alert('Connection Issue', 'Server failed to respond to move within 5 seconds. Game may be frozen.');
-        }, 5000);
     };
 
     const handlePass = () => {
