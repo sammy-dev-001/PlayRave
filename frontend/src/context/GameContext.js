@@ -158,7 +158,7 @@ const GameContext = createContext(null);
 
 // Provider component
 export function GameProvider({ children }) {
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const appState = useRef(AppState.currentState);
     const [state, dispatch] = useReducer(gameReducer, {
         ...initialState,
@@ -168,6 +168,14 @@ export function GameProvider({ children }) {
             avatarColor: getRandomColor(),
         },
     });
+
+    // Boot Blocker: Only connect socket after Auth is hydrated
+    useEffect(() => {
+        if (!isAuthLoading) {
+            console.log('[BOOT] Auth hydration complete. Connecting socket...');
+            SocketService.connect();
+        }
+    }, [isAuthLoading]);
 
     // Handle background -> foreground transitions (State Recovery)
     useEffect(() => {

@@ -27,11 +27,15 @@ const HomeScreen = ({ navigation }) => {
     const [hasShownAuthModal, setHasShownAuthModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Auto-fill name if user is authenticated
+    // Fix: Reactive Sync for name input (autofill on hydration)
     useEffect(() => {
-        if (isAuthenticated && user?.username && user.username !== 'Guest' && !name) {
+        if (user && user.username && user.username !== 'Guest') {
+            console.log('[HOME] Autofilling name input with:', user.username);
             setName(user.username);
         }
+    }, [user]);
+
+    useEffect(() => {
         if (isAuthenticated && user?.avatar) {
             setSelectedAvatar(user.avatar);
         }
@@ -64,6 +68,9 @@ const HomeScreen = ({ navigation }) => {
         }
         await startMusicOnInteraction();
         setLoading(true);
+        console.log('[HOME] Updating stored profile name to:', name);
+        if (useAuth().updateUsername) useAuth().updateUsername(name);
+        
         SocketService.emit('create-room', {
             playerName: name,
             avatar: selectedAvatar,
@@ -75,6 +82,9 @@ const HomeScreen = ({ navigation }) => {
 
     const handleJoin = async () => {
         await startMusicOnInteraction();
+        console.log('[HOME] Updating stored profile name to:', name);
+        if (useAuth().updateUsername) useAuth().updateUsername(name);
+
         navigation.navigate('Join', {
             playerName: name,
             avatar: selectedAvatar,

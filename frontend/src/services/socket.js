@@ -1,4 +1,5 @@
 import io from 'socket.io-client';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import LANService from './LANService';
 
@@ -84,6 +85,10 @@ class SocketService {
      * Connect to the socket server with enhanced reconnection logic
      */
     connect() {
+        if (this.socket && (this.socket.connected || this.connectionState === ConnectionState.CONNECTING)) {
+            console.log('Socket already connecting or connected. Skipping connect call.');
+            return;
+        }
         console.log('Connecting to socket...', SOCKET_URL);
         this.setConnectionState(ConnectionState.CONNECTING);
 

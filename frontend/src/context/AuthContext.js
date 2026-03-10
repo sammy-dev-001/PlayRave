@@ -53,13 +53,15 @@ export const AuthProvider = ({ children }) => {
             if (!user) {
                 const guestData = await AsyncStorage.getItem(STORAGE_KEY);
                 if (guestData) {
-                    console.log('Loading existing guest profile');
-                    setUser(JSON.parse(guestData));
+                    const profile = JSON.parse(guestData);
+                    console.log('[AUTH] Found existing profile:', profile);
+                    setUser(profile);
                     setIsGuest(true);
                 } else {
-                    console.log('No profile found. Generating new permanent guest ID');
+                    console.log('[AUTH] No profile found. Generating new guest.');
                     const newGuest = createGuestUser();
                     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newGuest));
+                    console.log('[AUTH] Saved new profile:', newGuest);
                     setUser(newGuest);
                     setIsGuest(true);
                 }

@@ -10,8 +10,6 @@ import { register as registerServiceWorker } from './src/utils/serviceWorkerRegi
 export default function App() {
 
   useEffect(() => {
-    SocketService.connect();
-
     // Register service worker for offline support (web only)
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       registerServiceWorker();
