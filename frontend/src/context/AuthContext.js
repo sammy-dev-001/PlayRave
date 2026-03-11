@@ -34,23 +34,27 @@ export const AuthProvider = ({ children }) => {
 
     const initAuth = async () => {
         try {
-            console.log('Auth Initialization started...');
+            console.log('[AUTH] Initialization started...');
             await ApiService.init();
+            let activeUser = null;
 
             // 1. Check for saved auth token (Registered users take precedence)
             const token = await AsyncStorage.getItem('authToken');
             if (token) {
                 try {
                     const { user: userData } = await ApiService.getProfile();
+                    console.log('[AUTH] Token found. Authenticated as:', userData.username);
+                    activeUser = userData;
                     setUser(userData);
                     setIsGuest(false);
                 } catch (e) {
+                    console.log('[AUTH] Token invalid. Clearing.');
                     await AsyncStorage.removeItem('authToken');
                 }
             } 
             
-            // 2. Check for guest data or generate new if not found
-            if (!user) {
+            // 2. Check for guest data or generate new if no authenticated user loaded
+            if (!activeUser) {
                 const guestData = await AsyncStorage.getItem(STORAGE_KEY);
                 if (guestData) {
                     const profile = JSON.parse(guestData);
@@ -58,7 +62,7 @@ export const AuthProvider = ({ children }) => {
                     setUser(profile);
                     setIsGuest(true);
                 } else {
-                    console.log('[AUTH] No profile found. Generating new guest.');
+                    console.log('[AUTH] No profile found. Generating new permanent guest.');
                     const newGuest = createGuestUser();
                     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newGuest));
                     console.log('[AUTH] Saved new profile:', newGuest);
@@ -70,7 +74,7 @@ export const AuthProvider = ({ children }) => {
             console.error('Auth init error:', e);
         } finally {
             setIsLoading(false);
-            console.log('Auth initialized.');
+            console.log('[AUTH] Initialization complete.');
         }
     };
 
@@ -78,7 +82,7 @@ export const AuthProvider = ({ children }) => {
         const { user: userData } = await ApiService.register(email, password, username);
         setUser(userData);
         setIsGuest(false);
-        await AsyncStorage.removeItem(STORAGE_KEY);
+        // Note: We no longer remove the guest profile key here
         return userData;
     };
 
@@ -86,7 +90,7 @@ export const AuthProvider = ({ children }) => {
         const { user: userData } = await ApiService.login(email, password);
         setUser(userData);
         setIsGuest(false);
-        await AsyncStorage.removeItem(STORAGE_KEY);
+        // Note: We no longer remove the guest profile key here
         return userData;
     };
 
@@ -101,10 +105,10 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         await ApiService.logout();
-        await AsyncStorage.removeItem(STORAGE_KEY);
+        // Note: We no longer remove STORAGE_KEY here so Guest Persistence survives logout
         setUser(null);
         setIsGuest(false);
-        // Force re-init to get a fresh guest profile
+        // Re-init to restore the guest profile
         initAuth();
     };
 
@@ -182,17 +186,16 @@ export const AuthProvider = ({ children }) => {
         return updatedUser;
     };
 
-    const updateUsername = async (newUsername) => {
-        if (!user || !newUsername) return;
+    const updateUsername = async (newName) => {
+        // Strict guard: Must have a user object and an ID
+        if (!user?.id || !newName) return;
 
-        const updatedUser = { ...user, username: newUsername };
+        console.log('[AUTH] Updating username to:', newName);
+        const updatedUser = { ...user, username: newName };
         setUser(updatedUser);
 
         if (isGuest) {
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-        } else {
-            // TODO: Implement API call for registered users
-            // await ApiService.updateProfile({ username: newUsername });
         }
         return updatedUser;
     };
