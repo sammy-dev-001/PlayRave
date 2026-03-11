@@ -19,11 +19,20 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const ESTIMATED_CONTROLS_HEIGHT = 300; // rough height of header + footer
     const maxAvailableDim = Math.min(screenWidth - BOARD_PADDING, Math.max(screenHeight - ESTIMATED_CONTROLS_HEIGHT, 300), 800);
     
-    const MIN_TILE_SIZE = 22;
+    const MIN_TILE_SIZE = 20;
     const idealTileSize = Math.floor(maxAvailableDim / BOARD_SIZE);
     const tileSize = Math.max(idealTileSize, MIN_TILE_SIZE);
     const needsScroll = idealTileSize < MIN_TILE_SIZE; // only true on very small screens
     const rackTileSize = Math.min(48, Math.floor((screenWidth - 40) / 7)); // Cap rack tile size too
+
+    // Helper to safely show alerts on web
+    const showAlert = (title, message) => {
+        if (Platform.OS === 'web') {
+            window.alert(`${title}\n\n${message}`);
+        } else {
+            Alert.alert(title, message);
+        }
+    };
 
     // Game state from server
     const [gameState, setGameState] = useState(null);
@@ -121,12 +130,12 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         const handleError = (error) => {
             console.error('Socket error:', error);
             if (error.invalidWords && error.invalidWords.length > 0) {
-                Alert.alert(
+                showAlert(
                     'Invalid Words',
                     `These words are not in the dictionary:\n\n${error.invalidWords.join(', ')}`
                 );
             } else {
-                Alert.alert('Error', error.message || 'An error occurred');
+                showAlert('Error', error.message || 'An error occurred');
             }
         };
 
@@ -189,7 +198,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
     const handleRackTilePress = (index) => {
         if (!isMyTurn) {
-            Alert.alert('Not Your Turn', 'Please wait for your turn');
+            showAlert('Not Your Turn', 'Please wait for your turn');
             return;
         }
 
@@ -212,7 +221,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
     const handleBoardSquarePress = (x, y) => {
         if (!isMyTurn) {
-            Alert.alert('Not Your Turn', 'Please wait for your turn');
+            showAlert('Not Your Turn', 'Please wait for your turn');
             return;
         }
 
@@ -294,12 +303,12 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
     const handleSubmitMove = () => {
         if (!isMyTurn) {
-            Alert.alert('Not Your Turn', 'Please wait for your turn');
+            showAlert('Not Your Turn', 'Please wait for your turn');
             return;
         }
 
         if (placedTiles.length === 0) {
-            Alert.alert('No Tiles Placed', 'Please place some tiles first');
+            showAlert('No Tiles Placed', 'Please place some tiles first');
             return;
         }
 
@@ -312,7 +321,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
     const handlePass = () => {
         if (!isMyTurn) {
-            Alert.alert('Not Your Turn', 'Please wait for your turn');
+            showAlert('Not Your Turn', 'Please wait for your turn');
             return;
         }
 
@@ -322,7 +331,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 setPlacedTiles([]);
             }
         } else {
-            Alert.alert(
+            showAlert(
                 'Pass Turn',
                 'Are you sure you want to pass your turn?',
                 [
@@ -341,7 +350,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
     const handleToggleExchangeMode = () => {
         if (!isMyTurn) {
-            Alert.alert('Not Your Turn', 'Please wait for your turn');
+            showAlert('Not Your Turn', 'Please wait for your turn');
             return;
         }
 
@@ -350,7 +359,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             setSelectedTilesForExchange([]);
         } else {
             if (placedTiles.length > 0) {
-                Alert.alert("Cannot Exchange", "Recall your placed tiles first.");
+                showAlert("Cannot Exchange", "Recall your placed tiles first.");
                 return;
             }
             setExchangeMode(true);
@@ -360,7 +369,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
     const handleConfirmExchange = () => {
         if (selectedTilesForExchange.length === 0) {
-            Alert.alert("No Tiles Selected", "Please select tiles to exchange.");
+            showAlert("No Tiles Selected", "Please select tiles to exchange.");
             return;
         }
 
