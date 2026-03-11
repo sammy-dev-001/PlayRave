@@ -4416,7 +4416,7 @@ class GameManager {
             confessions: [], // Array of { confession: string, authorId: string }
             currentConfessionIndex: 0,
             phase: 'submission', // submission, voting, results, finished
-            submissionTime: 60,
+            submissionTime: 120,
             votingTime: 30
         };
 
@@ -4501,8 +4501,8 @@ class GameManager {
         const authorId = currentConfession.authorId;
         const author = game.players.find(p => p.id === authorId);
 
-        // Find who voted correctly (voted for the author)
-        const correctGuessers = author.votes || [];
+        // Find who voted correctly (voted for the author), but exclude the author themselves if they bluff-voted
+        const correctGuessers = (author.votes || []).filter(voterId => voterId !== authorId);
         const fooledCount = game.players.length - correctGuessers.length - 1; // -1 to exclude author
 
         // Award points
@@ -4523,9 +4523,12 @@ class GameManager {
             scores[p.id] = p.score;
         });
 
+        // Anonymity Rule: If <= 50% of total players guessed correctly, true author is hidden
+        const isAnonymous = correctGuessers.length <= (game.players.length / 2);
+
         return {
             confession: currentConfession.confession,
-            author: authorId,
+            author: isAnonymous ? null : authorId,
             correctGuessers,
             fooledCount,
             scores
@@ -4571,6 +4574,25 @@ class GameManager {
                 total: game.confessions.length
             }
         };
+    }
+    updatePlayerSocket(roomId, oldSocketId, newSocketId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return;
+
+        // Update player ID in game.players
+        const player = game.players.find(p => p.id === oldSocketId);
+        if (player) {
+            player.id = newSocketId;
+        }
+
+        // Specifically for Confession Roulette, update authorId in confessions
+        if (game.type === 'confession-roulette' && game.confessions) {
+            game.confessions.forEach(c => {
+                if (c.authorId === oldSocketId) {
+                    c.authorId = newSocketId;
+                }
+            });
+        }
     }
 }
 

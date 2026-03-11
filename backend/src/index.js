@@ -238,12 +238,20 @@ io.on("connection", (socket) => {
             return;
         }
 
+        const player = room.players.find(p => p.uid === userId);
+        const oldSocketId = player?.id;
+
         // Re-bind the player to this new socket ID
         const result = roomManager.updatePlayerSocket(roomId, userId, socket.id);
         if (result) {
             console.log("Player re-bound to socket:", socket.id);
             socket.join(roomId);
             
+            // Critical: Also update the game manager's internal state
+            if (oldSocketId) {
+                gameManager.updatePlayerSocket(roomId, oldSocketId, socket.id);
+            }
+
             // Clear from pending disconnects since they are back
             if (global.pendingDisconnects) {
                 global.pendingDisconnects.delete(userId);
@@ -1282,6 +1290,45 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("rapid-fire-ended", { playerScores });
     });
 
+    // ==================== HELPER: END VOTING PHASE ====================
+    const triggerVotingResults = (roomId) => {
+        const room = roomManager.getRoom(roomId);
+        if (room && room.activeTimers && room.activeTimers['confession']) {
+            clearInterval(room.activeTimers['confession']);
+        }
+
+        const results = gameManager.getConfessionResults(roomId);
+        const authorPlayer = room?.players.find(p => p.id === results?.author);
+        
+        // Convert correct guessers IDs to names
+        const correctGuessersNames = results?.correctGuessers?.map(id => {
+            const p = room?.players.find(pl => pl.id === id);
+            return p?.name || id;
+        }) || [];
+
+        // Convert scores from IDs to names
+        const namedScores = {};
+        if (results?.scores) {
+            Object.entries(results.scores).forEach(([playerId, score]) => {
+                const player = room?.players.find(p => p.id === playerId);
+                namedScores[player?.name || playerId] = score;
+            });
+        }
+
+        io.to(roomId).emit("confession-phase-changed", {
+            phase: "results",
+            data: {}
+        });
+
+        io.to(roomId).emit("confession-round-results", {
+            confession: results?.confession,
+            author: authorPlayer?.name || 'Unknown',
+            correctGuessers: correctGuessersNames,
+            fooledCount: results?.fooledCount || 0,
+            scores: namedScores
+        });
+    };
+
     // ==================== CONFESSION ROULETTE EVENTS ====================
 
     socket.on("confession-start", ({ roomId }) => {
@@ -1292,6 +1339,12 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // Cleanup any existing timers for this room to prevent overlap bugs
+        if (!room.activeTimers) room.activeTimers = {};
+        if (room.activeTimers['confession']) {
+            clearInterval(room.activeTimers['confession']);
+        }
+
         const gameState = gameManager.startConfessionRouletteGame(roomId, room);
         io.to(roomId).emit("confession-phase-changed", {
             phase: "submission",
@@ -1299,13 +1352,13 @@ io.on("connection", (socket) => {
         });
 
         // Start submission timer
-        let timeLeft = 60;
-        const timerInterval = setInterval(() => {
+        let timeLeft = 120;
+        room.activeTimers['confession'] = setInterval(() => {
             timeLeft--;
             io.to(roomId).emit("confession-timer-update", { seconds: timeLeft });
 
             if (timeLeft <= 0) {
-                clearInterval(timerInterval);
+                clearInterval(room.activeTimers['confession']);
                 // End submission phase
                 const result = gameManager.endConfessionSubmission(roomId);
                 if (result.totalConfessions > 0) {
@@ -1315,17 +1368,29 @@ io.on("connection", (socket) => {
                         total: result.totalConfessions
                     });
                     io.to(roomId).emit("confession-phase-changed", {
-                        phase: "voting",
+                        phase: "reveal",
                         data: { totalConfessions: result.totalConfessions }
                     });
 
-                    // Start voting timer
-                    let voteTime = 30;
-                    const voteInterval = setInterval(() => {
-                        voteTime--;
-                        io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
-                        if (voteTime <= 0) {
-                            clearInterval(voteInterval);
+                    // Start Reveal (Discussion) timer
+                    let discussTime = 60;
+                    room.activeTimers['confession'] = setInterval(() => {
+                        discussTime--;
+                        io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
+                        if (discussTime <= 0) {
+                            clearInterval(room.activeTimers['confession']);
+                            // Auto-transition to voting phase
+                            io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+                            
+                            let voteTime = 20;
+                            room.activeTimers['confession'] = setInterval(() => {
+                                voteTime--;
+                                io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+                                if (voteTime <= 0) {
+                                    clearInterval(room.activeTimers['confession']);
+                                    triggerVotingResults(roomId);
+                                }
+                            }, 1000);
                         }
                     }, 1000);
                 } else {
@@ -1354,6 +1419,11 @@ io.on("connection", (socket) => {
 
         // If everyone submitted, end submission early
         if (result.submittedCount >= result.totalPlayers) {
+            const room = roomManager.getRoom(roomId);
+            if (room && room.activeTimers && room.activeTimers['confession']) {
+                clearInterval(room.activeTimers['confession']);
+            }
+            
             const endResult = gameManager.endConfessionSubmission(roomId);
             if (endResult.totalConfessions > 0) {
                 io.to(roomId).emit("confession-reveal", {
@@ -1362,9 +1432,32 @@ io.on("connection", (socket) => {
                     total: endResult.totalConfessions
                 });
                 io.to(roomId).emit("confession-phase-changed", {
-                    phase: "voting",
+                    phase: "reveal",
                     data: { totalConfessions: endResult.totalConfessions }
                 });
+
+                // Start Reveal (Discussion) timer
+                let discussTime = 60;
+                if (!room.activeTimers) room.activeTimers = {};
+                room.activeTimers['confession'] = setInterval(() => {
+                    discussTime--;
+                    io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
+                    if (discussTime <= 0) {
+                        clearInterval(room.activeTimers['confession']);
+                        // Auto-transition to voting phase
+                        io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+                        
+                        let voteTime = 20;
+                        room.activeTimers['confession'] = setInterval(() => {
+                            voteTime--;
+                            io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+                            if (voteTime <= 0) {
+                                clearInterval(room.activeTimers['confession']);
+                                triggerVotingResults(roomId);
+                            }
+                        }, 1000);
+                    }
+                }, 1000);
             }
         }
     });
@@ -1389,61 +1482,88 @@ io.on("connection", (socket) => {
         }
 
         io.to(roomId).emit("confession-votes-update", { votedCount: result.votedCount });
+
+        // If everyone voted, immediately trigger results
+        if (result.votedCount >= result.totalPlayers) {
+            triggerVotingResults(roomId);
+        }
     });
 
     socket.on("confession-next", ({ roomId }) => {
         console.log("confession-next event received, roomId:", roomId);
-
-        // Get results for current confession
-        const results = gameManager.getConfessionResults(roomId);
         const room = roomManager.getRoom(roomId);
-
-        // Convert author ID to name
-        const authorPlayer = room?.players.find(p => p.id === results?.author);
-        const correctGuessersNames = results?.correctGuessers.map(id => {
-            const p = room?.players.find(pl => pl.id === id);
-            return p?.name || id;
-        }) || [];
-
-        // Convert scores from IDs to names
-        const namedScores = {};
-        if (results?.scores) {
-            Object.entries(results.scores).forEach(([playerId, score]) => {
-                const player = room?.players.find(p => p.id === playerId);
-                namedScores[player?.name || playerId] = score;
-            });
+        if (room && room.activeTimers && room.activeTimers['confession']) {
+            clearInterval(room.activeTimers['confession']);
         }
+        
+        const nextResult = gameManager.nextConfession(roomId);
 
-        io.to(roomId).emit("confession-round-results", {
-            confession: results?.confession,
-            author: authorPlayer?.name || 'Unknown',
-            correctGuessers: correctGuessersNames,
-            fooledCount: results?.fooledCount || 0,
-            scores: namedScores
-        });
+        if (nextResult.finished) {
+            io.to(roomId).emit("confession-phase-changed", {
+                phase: "final_scores",
+                data: {}
+            });
+            // Convert rankings to namedScores for frontend
+            const namedScores = {};
+            nextResult.rankings.forEach(ranking => {
+                namedScores[ranking.name] = ranking.score;
+            });
+            io.to(roomId).emit("confession-final-scores", namedScores);
+        } else {
+            io.to(roomId).emit("confession-reveal", {
+                confession: nextResult.nextConfession?.confession,
+                index: nextResult.nextConfession?.index,
+                total: nextResult.nextConfession?.total
+            });
+            io.to(roomId).emit("confession-phase-changed", {
+                phase: "reveal",
+                data: {}
+            });
 
-        // Brief delay then move to next
-        setTimeout(() => {
-            const nextResult = gameManager.nextConfession(roomId);
+            // Start completely fresh Reveal timer for the next statement
+            let discussTime = 60;
+            if (!room.activeTimers) room.activeTimers = {};
+            room.activeTimers['confession'] = setInterval(() => {
+                discussTime--;
+                io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
+                if (discussTime <= 0) {
+                    clearInterval(room.activeTimers['confession']);
+                    io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+                    
+                    let voteTime = 20;
+                    room.activeTimers['confession'] = setInterval(() => {
+                        voteTime--;
+                        io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+                        if (voteTime <= 0) {
+                            clearInterval(room.activeTimers['confession']);
+                            triggerVotingResults(roomId);
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+        }
+    });
 
-            if (nextResult.finished) {
-                io.to(roomId).emit("confession-phase-changed", {
-                    phase: "final_scores",
-                    data: {}
-                });
-                io.to(roomId).emit("confession-final-scores", namedScores);
-            } else {
-                io.to(roomId).emit("confession-reveal", {
-                    confession: nextResult.nextConfession?.confession,
-                    index: nextResult.nextConfession?.index,
-                    total: nextResult.nextConfession?.total
-                });
-                io.to(roomId).emit("confession-phase-changed", {
-                    phase: "voting",
-                    data: {}
-                });
+    socket.on("confession-start-voting", ({ roomId }) => {
+        console.log("confession-start-voting event manually triggered, roomId:", roomId);
+        const room = roomManager.getRoom(roomId);
+        if (room && room.activeTimers && room.activeTimers['confession']) {
+            clearInterval(room.activeTimers['confession']);
+        }
+        
+        // Skip discussion phase and transition instantly to voting phase
+        io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+        
+        let voteTime = 20;
+        if (!room.activeTimers) room.activeTimers = {};
+        room.activeTimers['confession'] = setInterval(() => {
+            voteTime--;
+            io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+            if (voteTime <= 0) {
+                clearInterval(room.activeTimers['confession']);
+                triggerVotingResults(roomId);
             }
-        }, 3000);
+        }, 1000);
     });
 
     // ==================== IMPOSTER EVENTS ====================

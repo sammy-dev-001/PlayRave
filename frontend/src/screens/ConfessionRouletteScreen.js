@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import GameOverlay from '../components/GameOverlay';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
 import { CONFESSION_CONFIG, CONFESSION_STARTERS } from '../data/confessionPrompts';
@@ -65,10 +66,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         SocketService.on('confession-final-scores', handleFinalScores);
         SocketService.on('room-updated', handleRoomUpdate);
 
-        // Start game if host
-        if (isHost) {
-            SocketService.emit('confession-start', { roomId: room.id });
-        }
+        // Host must manually click "START GAME" now to prevent accidental double-timers
 
         return () => {
             SocketService.off('confession-phase-changed', handlePhaseChange);
@@ -252,11 +250,11 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         </View>
     );
 
-    const renderVotingPhase = () => (
+    const renderRevealPhase = () => (
         <View style={styles.votingContainer}>
             <View style={styles.timerBadge}>
-                <NeonText size={24} weight="bold" color={timer <= 5 ? COLORS.hotPink : COLORS.neonCyan} glow>
-                    {timer}s
+                <NeonText size={24} weight="bold" color={timer <= 10 ? COLORS.hotPink : COLORS.neonCyan} glow>
+                    {timer}s (Discussion)
                 </NeonText>
             </View>
 
@@ -271,11 +269,43 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             </Animated.View>
 
             <NeonText size={16} weight="bold" style={styles.votePrompt}>
-                Who wrote this?
+                Who do you think wrote this? Discuss!
+            </NeonText>
+            
+            {isHost && (
+                <NeonButton
+                    title="SKIP & START VOTING"
+                    onPress={() => SocketService.emit('confession-start-voting', { roomId: room.id })}
+                    style={styles.voteButton}
+                />
+            )}
+        </View>
+    );
+
+    const renderVotingPhase = () => (
+        <View style={styles.votingContainer}>
+            <View style={styles.timerBadge}>
+                <NeonText size={24} weight="bold" color={timer <= 5 ? COLORS.hotPink : COLORS.neonCyan} glow>
+                    {timer}s (Voting)
+                </NeonText>
+            </View>
+
+            <NeonText size={14} color={COLORS.limeGlow} style={styles.confessionCount}>
+                Confession {confessionIndex + 1} of {totalConfessions}
+            </NeonText>
+
+            <Animated.View style={[styles.confessionCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+                <NeonText size={18} style={styles.confessionText}>
+                    "{currentConfession}"
+                </NeonText>
+            </Animated.View>
+
+            <NeonText size={16} weight="bold" style={styles.votePrompt}>
+                Lock in your final guess!
             </NeonText>
 
             <ScrollView style={styles.playersList} contentContainerStyle={styles.playersContent}>
-                {players.filter(p => p.name !== playerName).map((player) => (
+                {players.map((player) => (
                     <TouchableOpacity
                         key={player.name}
                         style={[
@@ -322,7 +352,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             <View style={styles.authorReveal}>
                 <NeonText size={16} color="#888">Written by...</NeonText>
                 <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow style={{ marginTop: 10 }}>
-                    {roundResults?.author || 'Unknown'}
+                    {roundResults?.author === 'Unknown' ? '🕵️ UNKNOWN' : (roundResults?.author || '🕵️ UNKNOWN')}
                 </NeonText>
             </View>
 
@@ -386,6 +416,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             case GAME_PHASES.SUBMISSION:
                 return renderSubmissionPhase();
             case GAME_PHASES.REVEAL:
+                return renderRevealPhase();
             case GAME_PHASES.VOTING:
                 return renderVotingPhase();
             case GAME_PHASES.RESULTS:
@@ -398,13 +429,13 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer>
+        <GameOverlay roomId={room.id} playerName={playerName}>
             <View style={styles.header}>
                 <NeonText size={16} color={COLORS.hotPink}>CONFESSION ROULETTE</NeonText>
                 <NeonText size={12} color="#666">Room: {room.id}</NeonText>
             </View>
             {renderPhase()}
-        </NeonContainer>
+        </GameOverlay>
     );
 };
 
