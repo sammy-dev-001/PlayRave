@@ -217,6 +217,9 @@ app.post("/api/challenges/:id/claim", (req, res) => {
     res.json(result);
 });
 
+// Global registry for setInterval timers (keeps them out of the room object JSON)
+const activeRoomTimers = {};
+
 io.on("connection", (socket) => {
     console.log("socket connected:", socket.id);
 
@@ -1299,8 +1302,8 @@ io.on("connection", (socket) => {
     // ==================== HELPER: END VOTING PHASE ====================
     const triggerVotingResults = (roomId) => {
         const room = roomManager.getRoom(roomId);
-        if (room && room.activeTimers && room.activeTimers['confession']) {
-            clearInterval(room.activeTimers['confession']);
+        if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
         }
 
         const results = gameManager.getConfessionResults(roomId);
@@ -1346,9 +1349,9 @@ io.on("connection", (socket) => {
         }
 
         // Cleanup any existing timers for this room to prevent overlap bugs
-        if (!room.activeTimers) room.activeTimers = {};
-        if (room.activeTimers['confession']) {
-            clearInterval(room.activeTimers['confession']);
+        if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+        if (activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
         }
 
         const gameState = gameManager.startConfessionRouletteGame(roomId, room);
@@ -1360,13 +1363,13 @@ io.on("connection", (socket) => {
         // Start submission timer
         let timeLeft = 120;
         room.confessionTimeLeft = timeLeft;
-        room.activeTimers['confession'] = setInterval(() => {
+        activeRoomTimers[roomId]['confession'] = setInterval(() => {
             timeLeft--;
             room.confessionTimeLeft = timeLeft;
             io.to(roomId).emit("confession-timer-update", { seconds: timeLeft });
 
             if (timeLeft <= 0) {
-                clearInterval(room.activeTimers['confession']);
+                clearInterval(activeRoomTimers[roomId]['confession']);
                 // End submission phase
                 const result = gameManager.endConfessionSubmission(roomId);
                 if (result.totalConfessions > 0) {
@@ -1383,23 +1386,23 @@ io.on("connection", (socket) => {
                     // Start Reveal (Discussion) timer
                     let discussTime = 60;
                     room.confessionTimeLeft = discussTime;
-                    room.activeTimers['confession'] = setInterval(() => {
+                    activeRoomTimers[roomId]['confession'] = setInterval(() => {
                         discussTime--;
                         room.confessionTimeLeft = discussTime;
                         io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                         if (discussTime <= 0) {
-                            clearInterval(room.activeTimers['confession']);
+                            clearInterval(activeRoomTimers[roomId]['confession']);
                             // Auto-transition to voting phase
                             io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                             
                             let voteTime = 20;
                             room.confessionTimeLeft = voteTime;
-                            room.activeTimers['confession'] = setInterval(() => {
+                            activeRoomTimers[roomId]['confession'] = setInterval(() => {
                                 voteTime--;
                                 room.confessionTimeLeft = voteTime;
                                 io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
                                 if (voteTime <= 0) {
-                                    clearInterval(room.activeTimers['confession']);
+                                    clearInterval(activeRoomTimers[roomId]['confession']);
                                     triggerVotingResults(roomId);
                                 }
                             }, 1000);
@@ -1432,8 +1435,8 @@ io.on("connection", (socket) => {
         // If everyone submitted, end submission early
         if (result.submittedCount >= result.totalPlayers) {
             const room = roomManager.getRoom(roomId);
-            if (room && room.activeTimers && room.activeTimers['confession']) {
-                clearInterval(room.activeTimers['confession']);
+            if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+                clearInterval(activeRoomTimers[roomId]['confession']);
             }
             
             const endResult = gameManager.endConfessionSubmission(roomId);
@@ -1451,24 +1454,24 @@ io.on("connection", (socket) => {
                 // Start Reveal (Discussion) timer
                 let discussTime = 60;
                 room.confessionTimeLeft = discussTime;
-                if (!room.activeTimers) room.activeTimers = {};
-                room.activeTimers['confession'] = setInterval(() => {
+                if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+                activeRoomTimers[roomId]['confession'] = setInterval(() => {
                     discussTime--;
                     room.confessionTimeLeft = discussTime;
                     io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                     if (discussTime <= 0) {
-                        clearInterval(room.activeTimers['confession']);
+                        clearInterval(activeRoomTimers[roomId]['confession']);
                         // Auto-transition to voting phase
                         io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                         
                         let voteTime = 20;
                         room.confessionTimeLeft = voteTime;
-                        room.activeTimers['confession'] = setInterval(() => {
+                        activeRoomTimers[roomId]['confession'] = setInterval(() => {
                             voteTime--;
                             room.confessionTimeLeft = voteTime;
                             io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
                             if (voteTime <= 0) {
-                                clearInterval(room.activeTimers['confession']);
+                                clearInterval(activeRoomTimers[roomId]['confession']);
                                 triggerVotingResults(roomId);
                             }
                         }, 1000);
@@ -1508,8 +1511,8 @@ io.on("connection", (socket) => {
     socket.on("confession-next", ({ roomId }) => {
         console.log("confession-next event received, roomId:", roomId);
         const room = roomManager.getRoom(roomId);
-        if (room && room.activeTimers && room.activeTimers['confession']) {
-            clearInterval(room.activeTimers['confession']);
+        if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
         }
         
         const nextResult = gameManager.nextConfession(roomId);
@@ -1539,23 +1542,23 @@ io.on("connection", (socket) => {
             // Start completely fresh Reveal timer for the next statement
             let discussTime = 60;
             room.confessionTimeLeft = discussTime;
-            if (!room.activeTimers) room.activeTimers = {};
-            room.activeTimers['confession'] = setInterval(() => {
+            if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+            activeRoomTimers[roomId]['confession'] = setInterval(() => {
                 discussTime--;
                 room.confessionTimeLeft = discussTime;
                 io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                 if (discussTime <= 0) {
-                    clearInterval(room.activeTimers['confession']);
+                    clearInterval(activeRoomTimers[roomId]['confession']);
                     io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                     
                     let voteTime = 20;
                     room.confessionTimeLeft = voteTime;
-                    room.activeTimers['confession'] = setInterval(() => {
+                    activeRoomTimers[roomId]['confession'] = setInterval(() => {
                         voteTime--;
                         room.confessionTimeLeft = voteTime;
                         io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
                         if (voteTime <= 0) {
-                            clearInterval(room.activeTimers['confession']);
+                            clearInterval(activeRoomTimers[roomId]['confession']);
                             triggerVotingResults(roomId);
                         }
                     }, 1000);
@@ -1567,8 +1570,8 @@ io.on("connection", (socket) => {
     socket.on("confession-start-voting", ({ roomId }) => {
         console.log("confession-start-voting event manually triggered, roomId:", roomId);
         const room = roomManager.getRoom(roomId);
-        if (room && room.activeTimers && room.activeTimers['confession']) {
-            clearInterval(room.activeTimers['confession']);
+        if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
         }
         
         // Skip discussion phase and transition instantly to voting phase
@@ -1576,13 +1579,13 @@ io.on("connection", (socket) => {
         
         let voteTime = 20;
         room.confessionTimeLeft = voteTime;
-        if (!room.activeTimers) room.activeTimers = {};
-        room.activeTimers['confession'] = setInterval(() => {
+        if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+        activeRoomTimers[roomId]['confession'] = setInterval(() => {
             voteTime--;
             room.confessionTimeLeft = voteTime;
             io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
             if (voteTime <= 0) {
-                clearInterval(room.activeTimers['confession']);
+                clearInterval(activeRoomTimers[roomId]['confession']);
                 triggerVotingResults(roomId);
             }
         }, 1000);
