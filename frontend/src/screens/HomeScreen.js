@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
 
 const HomeScreen = ({ navigation }) => {
-    const { user, isAuthenticated, isGuest, updateUsername } = useAuth();
+    const { user, isAuthenticated, isGuest, updateUsername, isLoading: isAuthLoading } = useAuth();
     const { setPlayer } = useGame();
     const [name, setName] = useState('');
     const [musicStarted, setMusicStarted] = useState(false);
@@ -135,16 +135,20 @@ const HomeScreen = ({ navigation }) => {
         };
     }, [navigation, name]);
 
-    // Show auth modal on first load if not authenticated
+    // Show auth modal ONLY after auth has fully loaded and user is still not authenticated
     useEffect(() => {
+        // Don't run until the AsyncStorage read is complete
+        if (isAuthLoading) return;
+
         const timer = setTimeout(() => {
             if (!isAuthenticated && !hasShownAuthModal) {
                 setHasShownAuthModal(true);
                 navigation.navigate('Auth');
             }
-        }, 1000);
+        }, 500);
         return () => clearTimeout(timer);
-    }, []);
+    // Re-run when loading finishes so the check happens with the correct user state
+    }, [isAuthLoading, isAuthenticated]);
 
     // Derive display values
     const displayName = name || user?.username || 'GUEST';

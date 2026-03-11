@@ -95,7 +95,18 @@ export const AuthProvider = ({ children }) => {
     };
 
     const continueAsGuest = async () => {
-        // This is now redundant since initAuth does it, but kept for UI switches
+        // CRITICAL: Always check for an existing profile first.
+        // Never overwrite a saved profile with a fresh guest ID.
+        const existing = await AsyncStorage.getItem(STORAGE_KEY);
+        if (existing) {
+            const profile = JSON.parse(existing);
+            console.log('[AUTH] continueAsGuest: Restored existing profile:', profile.id);
+            setUser(profile);
+            setIsGuest(true);
+            return profile;
+        }
+        // Only generate a new guest if absolutely no profile exists
+        console.log('[AUTH] continueAsGuest: Generating new guest profile...');
         const guestUser = createGuestUser();
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(guestUser));
         setUser(guestUser);
