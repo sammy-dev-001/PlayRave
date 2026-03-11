@@ -360,31 +360,43 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             </Animated.View>
 
             <NeonText size={16} weight="bold" style={styles.votePrompt}>
-                Lock in your final guess!
+                Lock in your final guess! (Suspects: {players?.length || 0})
             </NeonText>
 
-            <ScrollView style={styles.playersList} contentContainerStyle={styles.playersContent}>
-                {players.map((player) => (
-                    <TouchableOpacity
-                        key={player.name}
-                        style={[
-                            styles.playerOption,
-                            selectedPlayer === player.name && styles.selectedPlayer
-                        ]}
-                        onPress={() => setSelectedPlayer(player.name)}
-                    >
-                        <NeonText size={16}>{player.avatar || '👤'}</NeonText>
-                        <NeonText
-                            size={16}
-                            color={selectedPlayer === player.name ? COLORS.neonCyan : COLORS.white}
+            <ScrollView 
+                style={[styles.playersList, { flex: 1, minHeight: 150 }]} 
+                contentContainerStyle={styles.playersContent}
+                showsVerticalScrollIndicator={true}
+            >
+                {players && players.length > 0 ? (
+                    players.map((player, index) => (
+                        <TouchableOpacity
+                            key={player.id || player.name || index}
+                            style={[
+                                styles.playerOption,
+                                selectedPlayer === player.name && styles.selectedPlayer
+                            ]}
+                            onPress={() => setSelectedPlayer(player.name)}
                         >
-                            {player.name}
-                        </NeonText>
-                        {selectedPlayer === player.name && (
-                            <NeonText size={16} color={COLORS.neonCyan}></NeonText>
-                        )}
-                    </TouchableOpacity>
-                ))}
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <NeonText size={18} style={{ marginRight: 12 }}>{player.avatar || '👤'}</NeonText>
+                                <NeonText
+                                    size={16}
+                                    color={selectedPlayer === player.name ? COLORS.neonCyan : COLORS.white}
+                                >
+                                    {player.name}
+                                </NeonText>
+                            </View>
+                            {selectedPlayer === player.name && (
+                                <Ionicons name="checkmark-circle" size={20} color={COLORS.neonCyan} />
+                            )}
+                        </TouchableOpacity>
+                    ))
+                ) : (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                        <NeonText size={14} color="#666">No players available to vote for</NeonText>
+                    </View>
+                )}
             </ScrollView>
 
             <NeonButton
