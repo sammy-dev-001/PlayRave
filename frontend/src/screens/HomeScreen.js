@@ -135,10 +135,12 @@ const HomeScreen = ({ navigation }) => {
         };
     }, [navigation, name]);
 
-    // Show auth modal ONLY after auth has fully loaded and user is still not authenticated
+    // Show auth modal ONLY for truly new/unauthed users (never for returning guests)
     useEffect(() => {
         // Don't run until the AsyncStorage read is complete
         if (isAuthLoading) return;
+        // If user is already a guest with a profile, skip the auth modal entirely
+        if (isGuest) return;
 
         const timer = setTimeout(() => {
             if (!isAuthenticated && !hasShownAuthModal) {
@@ -147,8 +149,7 @@ const HomeScreen = ({ navigation }) => {
             }
         }, 500);
         return () => clearTimeout(timer);
-    // Re-run when loading finishes so the check happens with the correct user state
-    }, [isAuthLoading, isAuthenticated]);
+    }, [isAuthLoading, isAuthenticated, isGuest]);
 
     // Derive display values
     const displayName = name || user?.username || 'GUEST';

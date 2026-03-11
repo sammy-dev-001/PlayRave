@@ -1,4 +1,4 @@
-const CACHE_NAME = 'playrave-v1';
+const CACHE_NAME = 'playrave-v2';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
                 console.log('PlayRave: Cache failed', error);
             })
     );
-    // Activate immediately
+    // Activate immediately - don't wait for old SW to die
     self.skipWaiting();
 });
 
@@ -41,45 +41,61 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch event - serve from cache, fall back to network
+// Fetch event - Network-first for JS/CSS, cache-first for static assets
 self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests and socket connections
+    // Skip non-GET requests, socket connections, and chrome extensions
     if (event.request.method !== 'GET' ||
         event.request.url.includes('socket.io') ||
-        event.request.url.includes('api.qrserver.com')) {
+        event.request.url.includes('api.qrserver.com') ||
+        event.request.url.startsWith('chrome-extension://')) {
         return;
     }
 
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Return cached version or fetch from network
-                if (response) {
-                    return response;
-                }
+    const url = new URL(event.request.url);
+    const isCodeFile = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
 
-                return fetch(event.request).then((response) => {
-                    // Don't cache non-successful responses
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-
-                    // Clone the response for caching
-                    const responseToCache = response.clone();
-
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
+    if (isCodeFile) {
+        // NETWORK-FIRST for JS/CSS: Always get latest code from server.
+        // Only fall back to cache when offline.
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    if (response && response.status === 200) {
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
                             cache.put(event.request, responseToCache);
                         });
-
+                    }
                     return response;
-                });
-            })
-            .catch(() => {
-                // Offline fallback - return cached index.html for navigation requests
-                if (event.request.mode === 'navigate') {
-                    return caches.match('/index.html');
-                }
-            })
-    );
+                })
+                .catch(() => {
+                    return caches.match(event.request);
+                })
+        );
+    } else {
+        // CACHE-FIRST for static assets (images, fonts, icons)
+        event.respondWith(
+            caches.match(event.request)
+                .then((response) => {
+                    if (response) {
+                        return response;
+                    }
+                    return fetch(event.request).then((response) => {
+                        if (!response || response.status !== 200 || response.type !== 'basic') {
+                            return response;
+                        }
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                        return response;
+                    });
+                })
+                .catch(() => {
+                    if (event.request.mode === 'navigate') {
+                        return caches.match('/index.html');
+                    }
+                })
+        );
+    }
 });
