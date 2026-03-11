@@ -4421,6 +4421,13 @@ class GameManager {
         };
 
         this.activeGames.set(roomId, gameState);
+        
+        // Update room state for reconnection logic
+        if (room) {
+            room.gameState = 'PLAYING';
+            room.gameType = 'confession-roulette';
+        }
+
         return gameState;
     }
 

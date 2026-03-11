@@ -65,6 +65,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         SocketService.on('confession-round-results', handleRoundResults);
         SocketService.on('confession-final-scores', handleFinalScores);
         SocketService.on('room-updated', handleRoomUpdate);
+        SocketService.on('game-state-sync', handleGameStateSync);
 
         // Host must manually click "START GAME" now to prevent accidental double-timers
 
@@ -77,6 +78,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             SocketService.off('confession-round-results', handleRoundResults);
             SocketService.off('confession-final-scores', handleFinalScores);
             SocketService.off('room-updated', handleRoomUpdate);
+            SocketService.off('game-state-sync', handleGameStateSync);
         };
     }, []);
 
@@ -143,6 +145,42 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
 
     const handleRoomUpdate = (updatedRoom) => {
         setPlayers(updatedRoom.players || []);
+    };
+
+    const handleGameStateSync = (data) => {
+        if (!data || !data.gameState) return;
+        const state = data.gameState;
+        
+        setPhase(state.phase || GAME_PHASES.WAITING);
+        if (state.totalConfessions) {
+            setTotalConfessions(state.totalConfessions);
+        }
+        
+        // Recover Timer State perfectly from backend
+        if (state.currentTimer !== undefined) {
+            setTimer(state.currentTimer);
+        }
+        
+        // Recover Submissions
+        if (state.phase === GAME_PHASES.SUBMISSION) {
+            const myPlayer = state.players?.find(p => p.id === SocketService.socket.id || p.name === playerName);
+            if (myPlayer?.hasSubmitted) {
+                setHasSubmitted(true);
+            }
+            const submittedCount = state.players?.filter(p => p.hasSubmitted)?.length || 0;
+            setSubmissionCount(submittedCount);
+        }
+
+        // Recover Current Confession to display
+        if (state.currentConfessionIndex !== undefined && state.confessions) {
+            setConfessionIndex(state.currentConfessionIndex);
+            if (state.confessions[state.currentConfessionIndex]) {
+                setCurrentConfession(state.confessions[state.currentConfessionIndex].confession);
+            }
+        }
+
+        // Recover scores and players
+        if (state.players) setPlayers(state.players);
     };
 
     const submitConfession = () => {

@@ -263,6 +263,12 @@ io.on("connection", (socket) => {
             // 2. Fetch and send full game state if playing
             if (result.room.gameState === 'PLAYING' || result.room.gameState === 'GAMEOVER') {
                 const gameState = gameManager.getGameState(roomId);
+                
+                // Inject the active timer for Confession Roulette reconnects
+                if (result.room.gameType === 'confession-roulette' && result.room.confessionTimeLeft !== undefined) {
+                    gameState.currentTimer = result.room.confessionTimeLeft;
+                }
+
                 socket.emit("game-state-sync", {
                     gameState,
                     gameType: result.room.gameType,
@@ -1353,8 +1359,10 @@ io.on("connection", (socket) => {
 
         // Start submission timer
         let timeLeft = 120;
+        room.confessionTimeLeft = timeLeft;
         room.activeTimers['confession'] = setInterval(() => {
             timeLeft--;
+            room.confessionTimeLeft = timeLeft;
             io.to(roomId).emit("confession-timer-update", { seconds: timeLeft });
 
             if (timeLeft <= 0) {
@@ -1374,8 +1382,10 @@ io.on("connection", (socket) => {
 
                     // Start Reveal (Discussion) timer
                     let discussTime = 60;
+                    room.confessionTimeLeft = discussTime;
                     room.activeTimers['confession'] = setInterval(() => {
                         discussTime--;
+                        room.confessionTimeLeft = discussTime;
                         io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                         if (discussTime <= 0) {
                             clearInterval(room.activeTimers['confession']);
@@ -1383,8 +1393,10 @@ io.on("connection", (socket) => {
                             io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                             
                             let voteTime = 20;
+                            room.confessionTimeLeft = voteTime;
                             room.activeTimers['confession'] = setInterval(() => {
                                 voteTime--;
+                                room.confessionTimeLeft = voteTime;
                                 io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
                                 if (voteTime <= 0) {
                                     clearInterval(room.activeTimers['confession']);
@@ -1438,9 +1450,11 @@ io.on("connection", (socket) => {
 
                 // Start Reveal (Discussion) timer
                 let discussTime = 60;
+                room.confessionTimeLeft = discussTime;
                 if (!room.activeTimers) room.activeTimers = {};
                 room.activeTimers['confession'] = setInterval(() => {
                     discussTime--;
+                    room.confessionTimeLeft = discussTime;
                     io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                     if (discussTime <= 0) {
                         clearInterval(room.activeTimers['confession']);
@@ -1448,8 +1462,10 @@ io.on("connection", (socket) => {
                         io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                         
                         let voteTime = 20;
+                        room.confessionTimeLeft = voteTime;
                         room.activeTimers['confession'] = setInterval(() => {
                             voteTime--;
+                            room.confessionTimeLeft = voteTime;
                             io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
                             if (voteTime <= 0) {
                                 clearInterval(room.activeTimers['confession']);
@@ -1522,17 +1538,21 @@ io.on("connection", (socket) => {
 
             // Start completely fresh Reveal timer for the next statement
             let discussTime = 60;
+            room.confessionTimeLeft = discussTime;
             if (!room.activeTimers) room.activeTimers = {};
             room.activeTimers['confession'] = setInterval(() => {
                 discussTime--;
+                room.confessionTimeLeft = discussTime;
                 io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                 if (discussTime <= 0) {
                     clearInterval(room.activeTimers['confession']);
                     io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                     
                     let voteTime = 20;
+                    room.confessionTimeLeft = voteTime;
                     room.activeTimers['confession'] = setInterval(() => {
                         voteTime--;
+                        room.confessionTimeLeft = voteTime;
                         io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
                         if (voteTime <= 0) {
                             clearInterval(room.activeTimers['confession']);
@@ -1555,9 +1575,11 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
         
         let voteTime = 20;
+        room.confessionTimeLeft = voteTime;
         if (!room.activeTimers) room.activeTimers = {};
         room.activeTimers['confession'] = setInterval(() => {
             voteTime--;
+            room.confessionTimeLeft = voteTime;
             io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
             if (voteTime <= 0) {
                 clearInterval(room.activeTimers['confession']);
