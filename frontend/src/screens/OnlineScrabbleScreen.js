@@ -12,15 +12,18 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { room, playerName, gameState: initialGameState } = route.params;
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-    // Bug 1 Fix: Hybrid shrink-with-floor tile sizing.
-    // idealTileSize fills the screen exactly; if it's below the 22px touch-target floor,
-    // clamp it to 22px and let the ScrollView handle overflow.
-    const BOARD_PADDING = 20; // horizontal padding on both sides combined
+    // Bug 1 Fix & Desktop Constraint: Hybrid shrink-with-floor tile sizing.
+    // Calculate tile size based on the smaller of available width or estimated available height.
+    // Cap the absolute max board size so it doesn't look stretched on ultra-wide screens.
+    const BOARD_PADDING = 20;
+    const ESTIMATED_CONTROLS_HEIGHT = 300; // rough height of header + footer
+    const maxAvailableDim = Math.min(screenWidth - BOARD_PADDING, Math.max(screenHeight - ESTIMATED_CONTROLS_HEIGHT, 300), 800);
+    
     const MIN_TILE_SIZE = 22;
-    const idealTileSize = Math.floor((screenWidth - BOARD_PADDING) / BOARD_SIZE);
+    const idealTileSize = Math.floor(maxAvailableDim / BOARD_SIZE);
     const tileSize = Math.max(idealTileSize, MIN_TILE_SIZE);
     const needsScroll = idealTileSize < MIN_TILE_SIZE; // only true on very small screens
-    const rackTileSize = 48; // fixed comfortable touch target
+    const rackTileSize = Math.min(48, Math.floor((screenWidth - 40) / 7)); // Cap rack tile size too
 
     // Game state from server
     const [gameState, setGameState] = useState(null);
@@ -711,6 +714,8 @@ const styles = StyleSheet.create({
     boardContent: {
         flexGrow: 1,
         padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     gridContainer: {
         backgroundColor: '#000',
