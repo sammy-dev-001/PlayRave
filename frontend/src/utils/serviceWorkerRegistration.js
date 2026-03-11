@@ -21,15 +21,8 @@ export const register = async () => {
                 });
             });
 
-            // When a new SW takes control, reload the page to get fresh code
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    console.log('[SW] New service worker activated - reloading for fresh code...');
-                    window.location.reload();
-                }
-            });
+
+
 
             return registration;
         } catch (error) {
