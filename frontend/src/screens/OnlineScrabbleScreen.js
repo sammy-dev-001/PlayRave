@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, Platform } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -316,20 +316,27 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             return;
         }
 
-        Alert.alert(
-            'Pass Turn',
-            'Are you sure you want to pass your turn?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Pass',
-                    onPress: () => {
-                        SocketService.emit('scrabble-pass-turn', { roomId: room.id });
-                        setPlacedTiles([]);
+        if (Platform.OS === 'web') {
+            if (window.confirm('Are you sure you want to pass your turn?')) {
+                SocketService.emit('scrabble-pass-turn', { roomId: room.id });
+                setPlacedTiles([]);
+            }
+        } else {
+            Alert.alert(
+                'Pass Turn',
+                'Are you sure you want to pass your turn?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Pass',
+                        onPress: () => {
+                            SocketService.emit('scrabble-pass-turn', { roomId: room.id });
+                            setPlacedTiles([]);
+                        }
                     }
-                }
-            ]
-        );
+                ]
+            );
+        }
     };
 
     const handleToggleExchangeMode = () => {
@@ -539,19 +546,23 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                                     <NeonText size={12}>Pass</NeonText>
                                 </TouchableOpacity>
                             </View>
-                            <NeonButton
-                                title="PLAY WORD"
-                                onPress={handleSubmitMove}
-                                disabled={placedTiles.length === 0 || !isMyTurn}
-                                style={{ marginTop: 5, paddingVertical: 8 }}
-                            />
-                            <TouchableOpacity
-                                style={[styles.exchangeBtn, !isMyTurn && styles.disabledBtn]}
-                                onPress={handleToggleExchangeMode}
-                                disabled={!isMyTurn}
-                            >
-                                <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
-                            </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                                <View style={{ flex: 1 }}>
+                                    <NeonButton
+                                        title="PLAY WORD"
+                                        onPress={handleSubmitMove}
+                                        disabled={placedTiles.length === 0 || !isMyTurn}
+                                        style={{ paddingVertical: 8 }}
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.smallBtn, { flex: 1, justifyContent: 'center', alignItems: 'center' }, !isMyTurn && styles.disabledBtn]}
+                                    onPress={handleToggleExchangeMode}
+                                    disabled={!isMyTurn}
+                                >
+                                    <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
+                                </TouchableOpacity>
+                            </View>
                         </>
                     ) : (
                         <>
