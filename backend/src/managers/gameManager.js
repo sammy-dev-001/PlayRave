@@ -4530,12 +4530,11 @@ class GameManager {
             scores[p.id] = p.score;
         });
 
-        // Anonymity Rule: If <= 50% of total players guessed correctly, true author is hidden
-        const isAnonymous = correctGuessers.length <= (game.players.length / 2);
-
+        // Author is ALWAYS anonymous by default - they can voluntarily reveal themselves
         return {
             confession: currentConfession.confession,
-            author: isAnonymous ? null : authorId,
+            author: null,
+            authorId: authorId, // kept internally so backend can send private reveal button
             correctGuessers,
             fooledCount,
             scores

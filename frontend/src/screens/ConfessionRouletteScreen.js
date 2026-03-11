@@ -46,6 +46,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     const [scores, setScores] = useState({});
     const [timer, setTimer] = useState(0);
     const [submissionCount, setSubmissionCount] = useState(0);
+    const [isAuthor, setIsAuthor] = useState(false);
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -67,6 +68,8 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         SocketService.on('confession-final-scores', handleFinalScores);
         SocketService.on('room-updated', handleRoomUpdate);
         SocketService.on('game-state-sync', handleGameStateSync);
+        SocketService.on('confession-you-are-author', () => setIsAuthor(true));
+        SocketService.on('confession-author-revealed', handleAuthorRevealed);
 
         // Host must manually click "START GAME" now to prevent accidental double-timers
 
@@ -80,6 +83,8 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             SocketService.off('confession-final-scores', handleFinalScores);
             SocketService.off('room-updated', handleRoomUpdate);
             SocketService.off('game-state-sync', handleGameStateSync);
+            SocketService.off('confession-you-are-author');
+            SocketService.off('confession-author-revealed', handleAuthorRevealed);
         };
     }, []);
 
@@ -117,6 +122,9 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         if (newPhase === GAME_PHASES.REVEAL) {
             setSelectedPlayer(null);
         }
+        if (newPhase === GAME_PHASES.RESULTS) {
+            setIsAuthor(false); // Reset each round - will be set by confession-you-are-author if applicable
+        }
     };
 
     const handleTimerUpdate = ({ seconds }) => {
@@ -141,6 +149,10 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     const handleRoundResults = (results) => {
         setRoundResults(results);
         setScores(results.scores || {});
+    };
+
+    const handleAuthorRevealed = ({ authorName }) => {
+        setRoundResults(prev => prev ? { ...prev, author: authorName } : { author: authorName });
     };
 
     const handleFinalScores = (finalScores) => {
@@ -210,6 +222,11 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
 
     const nextConfession = () => {
         SocketService.emit('confession-next', { roomId: room.id });
+    };
+
+    const revealIdentity = () => {
+        SocketService.emit('confession-reveal-author', { roomId: room.id });
+        setIsAuthor(false); // Hide button after clicking
     };
 
     const endGame = () => {
@@ -397,6 +414,15 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                     {roundResults?.author === 'Unknown' ? '🕵️ UNKNOWN' : (roundResults?.author || '🕵️ UNKNOWN')}
                 </NeonText>
             </View>
+
+            {isAuthor && roundResults?.author === 'Unknown' && (
+                <NeonButton
+                    title="🔓 REVEAL YOURSELF"
+                    onPress={revealIdentity}
+                    style={{ marginBottom: 20, minWidth: 200 }}
+                    color={COLORS.limeGlow}
+                />
+            )}
 
             {roundResults?.correctGuessers?.length > 0 && (
                 <View style={styles.guessersBox}>

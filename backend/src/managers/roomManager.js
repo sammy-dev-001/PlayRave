@@ -73,9 +73,10 @@ class RoomManager {
             const oldSocketId = player.id;
             player.id = newSocketId;
             
-            // If they were host, update hostId
-            if (room.hostId === oldSocketId) {
+            // If they were host, update hostId and ensure isHost flag is set
+            if (room.hostId === oldSocketId || player.isHost) {
                 room.hostId = newSocketId;
+                player.isHost = true;
             }
             
             return { room, player };
@@ -148,7 +149,8 @@ class RoomManager {
                     return { roomId, roomDeleted: true };
                 }
                 // If host left, assign new host (MVP: simple reassignment)
-                if (room.hostId === socketId) {
+                // If host left, assign new host (MVP: simple reassignment)
+                if (room.hostId === socketId && room.players.length > 0) {
                     room.hostId = room.players[0].id;
                     room.players[0].isHost = true;
                 }

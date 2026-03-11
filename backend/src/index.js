@@ -1307,7 +1307,6 @@ io.on("connection", (socket) => {
         }
 
         const results = gameManager.getConfessionResults(roomId);
-        const authorPlayer = room?.players.find(p => p.id === results?.author);
         
         // Convert correct guessers IDs to names
         const correctGuessersNames = results?.correctGuessers?.map(id => {
@@ -1329,13 +1328,24 @@ io.on("connection", (socket) => {
             data: {}
         });
 
+        // Author is always hidden by default
         io.to(roomId).emit("confession-round-results", {
             confession: results?.confession,
-            author: authorPlayer?.name || 'Unknown',
+            author: 'Unknown',
             correctGuessers: correctGuessersNames,
             fooledCount: results?.fooledCount || 0,
             scores: namedScores
         });
+
+        // Privately tell the actual author they can reveal themselves
+        if (results?.authorId) {
+            const authorPlayer = room?.players.find(p => p.id === results.authorId);
+            if (authorPlayer) {
+                io.to(results.authorId).emit("confession-you-are-author", {
+                    authorName: authorPlayer.name
+                });
+            }
+        }
     };
 
     // ==================== CONFESSION ROULETTE EVENTS ====================
@@ -1593,6 +1603,30 @@ io.on("connection", (socket) => {
                 triggerVotingResults(roomId);
             }
         }, 1000);
+    });
+
+    socket.on("confession-reveal-author", ({ roomId }) => {
+        console.log("confession-reveal-author event received, roomId:", roomId, "from:", socket.id);
+        const room = roomManager.getRoom(roomId);
+        const game = gameManager.getGameState(roomId);
+        if (!room || !game || game.type !== 'confession-roulette') return;
+
+        const currentConfession = game.confessions?.[game.currentConfessionIndex];
+        if (!currentConfession) return;
+
+        // Verify the requester IS actually the author
+        if (currentConfession.authorId !== socket.id) {
+            socket.emit("error", { message: "You are not the author of this confession" });
+            return;
+        }
+
+        const authorPlayer = room.players.find(p => p.id === socket.id);
+        if (!authorPlayer) return;
+
+        // Broadcast the reveal to everyone
+        io.to(roomId).emit("confession-author-revealed", {
+            authorName: authorPlayer.name
+        });
     });
 
     // ==================== IMPOSTER EVENTS ====================
