@@ -13,6 +13,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
+import MuteButton from '../components/MuteButton';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
 import { CONFESSION_CONFIG, CONFESSION_STARTERS } from '../data/confessionPrompts';
@@ -111,6 +112,9 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             setConfession('');
         }
         if (newPhase === GAME_PHASES.VOTING) {
+            setSelectedPlayer(null);
+        }
+        if (newPhase === GAME_PHASES.REVEAL) {
             setSelectedPlayer(null);
         }
     };
@@ -468,6 +472,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
 
     return (
         <GameOverlay roomId={room.id} playerName={playerName}>
+            <MuteButton />
             <View style={styles.header}>
                 <NeonText size={16} color={COLORS.hotPink}>CONFESSION ROULETTE</NeonText>
                 <NeonText size={12} color="#666">Room: {room.id}</NeonText>

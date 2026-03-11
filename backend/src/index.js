@@ -1393,6 +1393,7 @@ io.on("connection", (socket) => {
                         if (discussTime <= 0) {
                             clearInterval(activeRoomTimers[roomId]['confession']);
                             // Auto-transition to voting phase
+                            gameManager.setConfessionPhase(roomId, 'voting');
                             io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                             
                             let voteTime = 20;
@@ -1462,6 +1463,7 @@ io.on("connection", (socket) => {
                     if (discussTime <= 0) {
                         clearInterval(activeRoomTimers[roomId]['confession']);
                         // Auto-transition to voting phase
+                        gameManager.setConfessionPhase(roomId, 'voting');
                         io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                         
                         let voteTime = 20;
@@ -1549,6 +1551,7 @@ io.on("connection", (socket) => {
                 io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
                 if (discussTime <= 0) {
                     clearInterval(activeRoomTimers[roomId]['confession']);
+                    gameManager.setConfessionPhase(roomId, 'voting');
                     io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
                     
                     let voteTime = 20;
@@ -1575,6 +1578,7 @@ io.on("connection", (socket) => {
         }
         
         // Skip discussion phase and transition instantly to voting phase
+        gameManager.setConfessionPhase(roomId, 'voting');
         io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
         
         let voteTime = 20;

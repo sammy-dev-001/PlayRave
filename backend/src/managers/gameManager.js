@@ -4464,7 +4464,7 @@ class GameManager {
 
         // Shuffle confessions for anonymity
         game.confessions = game.confessions.sort(() => 0.5 - Math.random());
-        game.phase = 'voting';
+        game.phase = 'reveal';
         game.currentConfessionIndex = 0;
 
         return {
@@ -4599,6 +4599,13 @@ class GameManager {
                     c.authorId = newSocketId;
                 }
             });
+        }
+    }
+
+    setConfessionPhase(roomId, phase) {
+        const game = this.activeGames.get(roomId);
+        if (game && game.type === 'confession-roulette') {
+            game.phase = phase;
         }
     }
 }
