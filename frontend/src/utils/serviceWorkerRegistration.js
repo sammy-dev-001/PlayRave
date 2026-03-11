@@ -1,6 +1,3 @@
-// Service Worker Registration
-// This file registers the service worker for offline support
-
 export const register = async () => {
     if ('serviceWorker' in navigator) {
         try {
@@ -10,20 +7,29 @@ export const register = async () => {
 
             console.log('[SW] Service Worker registered successfully:', registration.scope);
 
-            // Check for updates - update silently without prompting user
+            // When a new SW is found, force it to activate immediately
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 console.log('[SW] New service worker found, installing...');
 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[SW] New content available - will apply on next visit');
-                        // Don't auto-reload, let the new version activate on next page load
+                        console.log('[SW] New content available - activating immediately...');
+                        // Force the waiting SW to activate NOW
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
                     }
                 });
             });
 
-            // No auto-reload - updates will apply on next page visit
+            // When a new SW takes control, reload the page to get fresh code
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    console.log('[SW] New service worker activated - reloading for fresh code...');
+                    window.location.reload();
+                }
+            });
 
             return registration;
         } catch (error) {

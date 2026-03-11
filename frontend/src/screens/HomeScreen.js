@@ -135,21 +135,7 @@ const HomeScreen = ({ navigation }) => {
         };
     }, [navigation, name]);
 
-    // Show auth modal ONLY for truly new/unauthed users (never for returning guests)
-    useEffect(() => {
-        // Don't run until the AsyncStorage read is complete
-        if (isAuthLoading) return;
-        // If user is already a guest with a profile, skip the auth modal entirely
-        if (isGuest) return;
-
-        const timer = setTimeout(() => {
-            if (!isAuthenticated && !hasShownAuthModal) {
-                setHasShownAuthModal(true);
-                navigation.navigate('Auth');
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [isAuthLoading, isAuthenticated, isGuest]);
+    // AUTH MODAL REMOVED: Guests go straight to HomeScreen. No auto-redirect.
 
     // Derive display values
     const displayName = name || user?.username || 'GUEST';
