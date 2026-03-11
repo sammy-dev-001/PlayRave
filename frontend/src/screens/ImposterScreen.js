@@ -65,6 +65,7 @@ const ImposterScreen = ({ route, navigation }) => {
 
     useEffect(() => {
         // Fade in animation
+        fadeAnim.setValue(0);
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 500,
@@ -74,7 +75,6 @@ const ImposterScreen = ({ route, navigation }) => {
 
     const handlePhaseChange = ({ phase: newPhase }) => {
         setPhase(newPhase);
-        fadeAnim.setValue(0);
         if (newPhase === GAME_PHASES.VOTING) {
             setSelectedPlayer(null);
         }
