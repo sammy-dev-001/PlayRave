@@ -260,7 +260,7 @@ function generateAllMoves(board, hand) {
                         extendRight(
                             node, anchorPos, prefixTiles, prefixStr,
                             { ...rackCounts }, crossChecks, board, trie, rackValueMap,
-                            line, isRow, moves
+                            line, isRow, moves, anchorPos
                         );
                     }
                 } else {
@@ -307,7 +307,7 @@ function generateLeftParts(
     extendRight(
         node, anchorPos, [...partialTiles], partialWord,
         { ...rack }, crossChecks, board, trie, rackValueMap,
-        line, isRow, moves
+        line, isRow, moves, origAnchor
     );
 
     if (maxLeft <= 0) return;
@@ -373,11 +373,11 @@ function generateLeftParts(
 function extendRight(
     node, pos, partialTiles, partialWord,
     rack, crossChecks, board, trie, rackValueMap,
-    line, isRow, moves
+    line, isRow, moves, origAnchor
 ) {
     if (pos >= BOARD_SIZE) {
         // Off the board — if we have a complete word, record it
-        if (node.isTerminal && partialTiles.some(t => !t.fromBoard)) {
+        if (node.isTerminal && partialTiles.some(t => !t.fromBoard) && pos > origAnchor) {
             recordMove(partialTiles, line, isRow, board, moves);
         }
         return;
@@ -395,14 +395,14 @@ function extendRight(
             extendRight(
                 node.children[ch], pos + 1, partialTiles, partialWord + ch,
                 rack, crossChecks, board, trie, rackValueMap,
-                line, isRow, moves
+                line, isRow, moves, origAnchor
             );
             partialTiles.pop();
         }
         // If trie doesn't have this letter, this path is dead
     } else {
         // Empty square — try placing each possible letter from the rack
-        if (node.isTerminal && partialTiles.length > 0 && partialTiles.some(t => !t.fromBoard)) {
+        if (node.isTerminal && partialTiles.length > 0 && partialTiles.some(t => !t.fromBoard) && pos > origAnchor) {
             recordMove([...partialTiles], line, isRow, board, moves);
         }
 
@@ -419,7 +419,7 @@ function extendRight(
                 extendRight(
                     node.children[ch], pos + 1, partialTiles, partialWord + ch,
                     rack, crossChecks, board, trie, rackValueMap,
-                    line, isRow, moves
+                    line, isRow, moves, origAnchor
                 );
                 partialTiles.pop();
                 rack[ch]++;
@@ -432,7 +432,7 @@ function extendRight(
                 extendRight(
                     node.children[ch], pos + 1, partialTiles, partialWord + ch,
                     rack, crossChecks, board, trie, rackValueMap,
-                    line, isRow, moves
+                    line, isRow, moves, origAnchor
                 );
                 partialTiles.pop();
                 rack['_']++;
