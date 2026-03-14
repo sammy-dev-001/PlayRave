@@ -67,7 +67,8 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
         if (isStarting) return;
         setIsStarting(true);
         SocketService.emit('scrabble-single-player-start', {
-            difficulty: selectedDifficulty
+            difficulty: selectedDifficulty,
+            playerName: players[0].name
         });
     };
 

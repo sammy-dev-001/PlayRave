@@ -825,19 +825,14 @@ io.on("connection", (socket) => {
             socket.emit("error", { message: "Server error recalling tiles" });
         }
     });
-    socket.on("scrabble-single-player-start", ({ difficulty }) => {
+    socket.on("scrabble-single-player-start", ({ difficulty, playerName }) => {
         console.log("Starting Scrabble Single Player (AI) game, difficulty:", difficulty);
         const roomId = "local-" + socket.id; // Create a unique local room ID for the single player game
         
         // Ensure user is in a room (create a dummy one if needed)
         let room = roomManager.getRoom(roomId);
         if (!room) {
-            const user = userManager.getUser(socket.id);
-            if (!user) {
-                socket.emit("error", { message: "User not found" });
-                return;
-            }
-            room = roomManager.createRoom(roomId, user);
+            room = roomManager.createRoom(socket.id, playerName || "Player 1", null, null, socket.id);
         }
 
         const gameState = gameManager.startScrabbleSinglePlayerGame(roomId, room, difficulty);
