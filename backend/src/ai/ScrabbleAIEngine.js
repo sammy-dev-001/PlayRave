@@ -282,11 +282,14 @@ function generateAllMoves(board, hand) {
                     }
 
                     // Generate left-parts of length 0..maxLeft from the rack
-                    generateLeftParts(
-                        trie.root, anchorPos, [], '',
-                        { ...rackCounts }, crossChecks, board, trie, rackValueMap,
-                        line, isRow, moves, maxLeft, anchorPos
-                    );
+                    for (let len = 0; len <= maxLeft; len++) {
+                        const startPos = anchorPos - len;
+                        buildLeftPartForwards(
+                            trie.root, startPos, anchorPos, [], '',
+                            { ...rackCounts }, crossChecks, board, trie, rackValueMap,
+                            line, isRow, moves, anchorPos
+                        );
+                    }
                 }
             }
         }
@@ -296,71 +299,51 @@ function generateAllMoves(board, hand) {
 }
 
 /**
- * Recursively build left-parts from the rack, then extend right.
+ * Recursively build left-parts from the rack, iterating left-to-right
+ * up to the anchor, then hand off to extendRight.
  */
-function generateLeftParts(
-    node, anchorPos, partialTiles, partialWord,
+function buildLeftPartForwards(
+    node, currentPos, anchorPos, partialTiles, partialWord,
     rack, crossChecks, board, trie, rackValueMap,
-    line, isRow, moves, maxLeft, origAnchor
+    line, isRow, moves, origAnchor
 ) {
-    // Try extending right from this left-part
-    extendRight(
-        node, anchorPos, [...partialTiles], partialWord,
-        { ...rack }, crossChecks, board, trie, rackValueMap,
-        line, isRow, moves, origAnchor
-    );
+    if (currentPos === anchorPos) {
+        // We've reached the anchor. Now hand off to extendRight!
+        extendRight(
+            node, anchorPos, [...partialTiles], partialWord,
+            { ...rack }, crossChecks, board, trie, rackValueMap,
+            line, isRow, moves, origAnchor
+        );
+        return;
+    }
 
-    if (maxLeft <= 0) return;
-
-    const pos = anchorPos - partialTiles.filter(t => !t.fromBoard).length - 1;
-    // pos would be where the next left-part tile goes
-    // But we need to express it differently: left-part tiles go at positions
-    // anchorPos - len - 1, anchorPos - len - 2, etc.
-
-    // Actually, let's simplify. Left parts are placed at positions
-    // (anchorPos - 1, anchorPos - 2, ...).  We prepend to partialTiles.
-
-    const leftPos = anchorPos - partialTiles.length - 1;
-    if (leftPos < 0) return;
-
-    // Check cross-check at leftPos
-    const cc = crossChecks[leftPos];
-
+    // Try placing from rack at `currentPos`
+    const cc = crossChecks[currentPos];
     for (const ch of ALPHABET) {
         if (cc && !cc.has(ch)) continue; // Cross-check rejects this letter
         if (!node.children[ch]) continue; // Trie rejects this prefix
 
-        // Try placing from rack (normal letter)
         if (rack[ch] && rack[ch] > 0) {
             rack[ch]--;
-            const tile = { pos: leftPos, letter: ch, value: rackValueMap[ch] || 0, isBlank: false, fromBoard: false };
-            partialTiles.unshift(tile);
-            const newWord = ch + partialWord;
-
-            generateLeftParts(
-                node.children[ch], anchorPos, partialTiles, newWord,
+            partialTiles.push({ pos: currentPos, letter: ch, value: rackValueMap[ch] || 0, isBlank: false, fromBoard: false });
+            buildLeftPartForwards(
+                node.children[ch], currentPos + 1, anchorPos, partialTiles, partialWord + ch,
                 rack, crossChecks, board, trie, rackValueMap,
-                line, isRow, moves, maxLeft - 1, origAnchor
+                line, isRow, moves, origAnchor
             );
-
-            partialTiles.shift();
+            partialTiles.pop();
             rack[ch]++;
         }
 
-        // Try placing a blank as this letter
         if (rack['_'] && rack['_'] > 0) {
             rack['_']--;
-            const tile = { pos: leftPos, letter: ch, value: 0, isBlank: true, fromBoard: false };
-            partialTiles.unshift(tile);
-            const newWord = ch + partialWord;
-
-            generateLeftParts(
-                node.children[ch], anchorPos, partialTiles, newWord,
+            partialTiles.push({ pos: currentPos, letter: ch, value: 0, isBlank: true, fromBoard: false });
+            buildLeftPartForwards(
+                node.children[ch], currentPos + 1, anchorPos, partialTiles, partialWord + ch,
                 rack, crossChecks, board, trie, rackValueMap,
-                line, isRow, moves, maxLeft - 1, origAnchor
+                line, isRow, moves, origAnchor
             );
-
-            partialTiles.shift();
+            partialTiles.pop();
             rack['_']++;
         }
     }
