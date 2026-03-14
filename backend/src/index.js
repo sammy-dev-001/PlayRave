@@ -832,7 +832,7 @@ io.on("connection", (socket) => {
         // Ensure user is in a room (create a dummy one if needed)
         let room = roomManager.getRoom(roomId);
         if (!room) {
-            room = roomManager.createRoom(socket.id, playerName || "Player 1", null, null, socket.id);
+            room = roomManager.createLocalRoom(roomId, socket.id, playerName || "Player 1", null, null, socket.id);
         }
 
         const gameState = gameManager.startScrabbleSinglePlayerGame(roomId, room, difficulty);

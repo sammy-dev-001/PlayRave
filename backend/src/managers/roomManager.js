@@ -39,6 +39,30 @@ class RoomManager {
         return newRoom;
     }
 
+    createLocalRoom(roomId, hostId, playerName, avatar, avatarColor, userId) {
+        const newRoom = {
+            id: roomId,
+            hostId: hostId,
+            players: [
+                { 
+                    id: hostId, 
+                    uid: userId || hostId,
+                    name: playerName, 
+                    score: 0, 
+                    isHost: true, 
+                    avatar, 
+                    avatarColor, 
+                    isReady: true 
+                }
+            ],
+            gameState: 'LOBBY',
+            currentRound: 0,
+            gameType: null,
+        };
+        this.rooms.set(roomId, newRoom);
+        return newRoom;
+    }
+
     joinRoom(roomId, playerId, playerName, avatar, avatarColor, userId) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: "Room not found" };
