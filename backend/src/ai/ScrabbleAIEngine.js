@@ -65,9 +65,9 @@ function getTrie() {
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-/** Get the tile at (r,c) from the board map, or null. */
+/** Get the tile at (r,c) from the board map, or null. Note: board is keyed as "x,y" where x=c, y=r */
 function getCell(board, r, c) {
-    return board[`${r},${c}`] || null;
+    return board[`${c},${r}`] || null;
 }
 
 /** True if (r,c) is inside the 15×15 grid. */
@@ -147,7 +147,7 @@ function findAnchors(board) {
 
     const anchorSet = new Set();
     for (const key of occupied) {
-        const [r, c] = key.split(',').map(Number);
+        const [c, r] = key.split(',').map(Number); // gameManager uses x=c, y=r
         for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nr = r + dr;
             const nc = c + dc;
@@ -452,8 +452,8 @@ function recordMove(partialTiles, line, isRow, board, moves) {
         const r = isRow ? line : t.pos;
         const c = isRow ? t.pos : line;
         newTiles.push({
-            x: r,
-            y: c,
+            x: c,
+            y: r,
             letter: t.letter,
             value: t.value,
             isBlank: t.isBlank || false
@@ -479,7 +479,7 @@ function estimateScore(partialTiles, line, isRow) {
     for (const t of partialTiles) {
         const r = isRow ? line : t.pos;
         const c = isRow ? t.pos : line;
-        const key = `${r},${c}`;
+        const key = `${c},${r}`; // BONUS_SQUARES is keyed by "x,y"
         let letterScore = t.value || 0;
 
         if (!t.fromBoard) {
