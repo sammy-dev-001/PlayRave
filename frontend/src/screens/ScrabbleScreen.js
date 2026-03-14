@@ -15,14 +15,13 @@ import {
     BONUS_SQUARES
 } from '../data/scrabbleData';
 import { COLORS } from '../constants/theme';
-import ScrabbleAI from '../ai/ScrabbleAI';
 import PlayerStatsService from '../services/PlayerStatsService';
 
 const HAND_SIZE = 7;
 
 
 const ScrabbleScreen = ({ route, navigation }) => {
-    const { players = [], difficulty = null } = route.params || {};
+    const { players = [] } = route.params || {};
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Debug logging
@@ -37,16 +36,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
             ]);
         }
     }, []);
-
-    // Check if this is AI mode (single player with difficulty)
-    const isAIMode = difficulty !== null && players && players.length === 1;
-
-    console.log('[ScrabbleScreen] Mode:', { isAIMode, playerCount: players?.length });
-
-    // Create players array with AI if in AI mode
-    const gamePlayers = isAIMode
-        ? [...players, { id: 'ai', name: 'AI Opponent ', gender: 'other', isAI: true }]
-        : (players || []);
+    const gamePlayers = players || [];
 
     // Calculate tile size dynamically based on screen dimensions
     // For desktop (wider screens), use a larger minimum tile size
@@ -93,116 +83,6 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const [showScorePopup, setShowScorePopup] = useState(false);
     const [lastScore, setLastScore] = useState(0);
     const [lastWords, setLastWords] = useState([]);
-
-    // AI state
-    const [isAIThinking, setIsAIThinking] = useState(false);
-    const aiRef = useRef(isAIMode ? new ScrabbleAI(difficulty) : null);
-
-    // Blank tile selection modal state
-    const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
-    const [pendingBlankPlacement, setPendingBlankPlacement] = useState(null); // { x, y, handIndex }
-
-    const currentPlayer = gamePlayers[currentPlayerIndex];
-    const currentHand = playerHands[currentPlayer?.id] || [];
-    const scrollViewRef = useRef(null);
-
-    // AI Turn Handler
-    useEffect(() => {
-        if (isAIMode && currentPlayer?.isAI && !isAIThinking) {
-            setIsAIThinking(true);
-
-            // Delay for realism
-            setTimeout(() => {
-                executeAITurn();
-            }, 1500);
-        }
-    }, [currentPlayerIndex, isAIMode]);
-
-    const executeAITurn = () => {
-        if (!aiRef.current) return;
-
-        const aiHand = playerHands['ai'] || [];
-        const move = aiRef.current.findBestMove(board, aiHand, tileBag);
-
-        if (!move || move.type === 'pass') {
-            // AI passes
-            handleAIPass();
-        } else if (move.type === 'exchange') {
-            // AI exchanges tiles
-            handleAIExchange(move.tileIndices);
-        } else if (move.type === 'move' && move.tiles) {
-            // AI plays tiles
-            handleAIMove(move);
-        } else {
-            // No valid move found, pass
-            handleAIPass();
-        }
-
-        setIsAIThinking(false);
-    };
-
-    const handleAIPass = () => {
-        const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
-        if (nextIndex === 0) setTurnNumber(prev => prev + 1);
-        setCurrentPlayerIndex(nextIndex);
-    };
-
-    const handleAIExchange = (tileIndices) => {
-        const aiHand = playerHands['ai'] || [];
-        const tilesToExchange = tileIndices.map(i => aiHand[i]).filter(Boolean);
-        const newHand = aiHand.filter((_, i) => !tileIndices.includes(i));
-        const newTiles = drawTiles(tileBag, tilesToExchange.length);
-
-        setPlayerHands(prev => ({
-            ...prev,
-            ai: [...newHand, ...newTiles]
-        }));
-
-        const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
-        if (nextIndex === 0) setTurnNumber(prev => prev + 1);
-        setCurrentPlayerIndex(nextIndex);
-    };
-
-    const handleAIMove = (move) => {
-        // Place AI tiles on board
-        const newBoard = { ...board };
-        move.tiles.forEach(t => {
-            newBoard[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: true };
-        });
-        setBoard(newBoard);
-
-        // Update AI score
-        setPlayerScores(prev => ({
-            ...prev,
-            ai: prev.ai + (move.score || 0)
-        }));
-
-        // Show score popup
-        setLastScore(move.score || 0);
-        setLastWords([move.word]);
-        setShowScorePopup(true);
-
-        // Remove used tiles from AI hand
-        const aiHand = playerHands['ai'] || [];
-        const usedLetters = move.tiles.map(t => t.letter);
-        const newHand = [...aiHand];
-        usedLetters.forEach(letter => {
-            const idx = newHand.findIndex(t => t.letter === letter);
-            if (idx !== -1) newHand.splice(idx, 1);
-        });
-
-        // Draw new tiles
-        const newTiles = drawTiles(tileBag, usedLetters.length);
-        setPlayerHands(prev => ({
-            ...prev,
-            ai: [...newHand, ...newTiles]
-        }));
-
-        // Next turn
-        const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
-        if (nextIndex === 0) setTurnNumber(prev => prev + 1);
-        setCurrentPlayerIndex(nextIndex);
-    };
 
     // --- Interaction Handlers ---
 
@@ -1276,3 +1156,4 @@ const styles = StyleSheet.create({
 });
 
 export default ScrabbleScreen;
+

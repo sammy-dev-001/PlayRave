@@ -825,6 +825,99 @@ io.on("connection", (socket) => {
             socket.emit("error", { message: "Server error recalling tiles" });
         }
     });
+    socket.on("scrabble-single-player-start", ({ difficulty }) => {
+        console.log("Starting Scrabble Single Player (AI) game, difficulty:", difficulty);
+        const roomId = "local-" + socket.id; // Create a unique local room ID for the single player game
+        
+        // Ensure user is in a room (create a dummy one if needed)
+        let room = roomManager.getRoom(roomId);
+        if (!room) {
+            const user = userManager.getUser(socket.id);
+            if (!user) {
+                socket.emit("error", { message: "User not found" });
+                return;
+            }
+            room = roomManager.createRoom(roomId, user);
+        }
+
+        const gameState = gameManager.startScrabbleSinglePlayerGame(roomId, room, difficulty);
+
+        if (gameState.error) {
+            socket.emit("error", { message: gameState.error });
+            return;
+        }
+
+        socket.join(roomId);
+
+        // Send game state to the player
+        const playerState = gameManager.getScrabbleGameState(roomId, socket.id);
+        socket.emit("game-started", {
+            gameType: "scrabble",
+            gameState: playerState,
+            hostParticipates: true,
+            isSinglePlayer: true
+        });
+        console.log("Scrabble Single Player game started successfully:", roomId);
+    });
+
+    // Helper to check and execute AI's turn if applicable
+    const checkAndTriggerScrabbleAITurn = (roomId) => {
+        const game = gameManager.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble' || !game.isSinglePlayer || game.phase !== 'playing') return;
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.isAI) {
+            console.log(`[ScrabbleAI] Scheduling AI turn for room ${roomId}...`);
+            // Add a small delay for realism
+            setTimeout(() => {
+                const aiResult = gameManager.executeScrabbleAITurn(roomId);
+                if (aiResult.error) {
+                    console.error("[ScrabbleAI] Error executing AI turn:", aiResult.error);
+                    return;
+                }
+
+                // Broadcast the AI's action back to the human player
+                const humanPlayer = game.players.find(p => !p.isAI);
+                if (!humanPlayer) return;
+
+                const humanState = gameManager.getScrabbleGameState(roomId, humanPlayer.id);
+
+                if (aiResult.aiAction === 'move') {
+                    io.to(humanPlayer.id).emit("scrabble-move-submitted", {
+                        success: true,
+                        score: aiResult.score,
+                        formedWords: aiResult.formedWords,
+                        gameState: humanState,
+                        gameEnded: aiResult.gameEnded,
+                        finalScores: aiResult.finalScores,
+                        isAITurn: true // Flag so frontend knows this was the AI
+                    });
+                } else if (aiResult.aiAction === 'pass') {
+                    io.to(humanPlayer.id).emit("scrabble-turn-passed", {
+                        gameState: humanState,
+                        gameEnded: aiResult.gameEnded,
+                        finalScores: aiResult.finalScores,
+                        isAITurn: true
+                    });
+                } else if (aiResult.aiAction === 'exchange') {
+                    // Tell human that AI exchanged tiles (acts like a pass from human perspective)
+                    io.to(humanPlayer.id).emit("scrabble-turn-passed", {
+                        gameState: humanState,
+                        gameEnded: aiResult.gameEnded,
+                        finalScores: aiResult.finalScores,
+                        isAITurn: true,
+                        aiExchanged: true
+                    });
+                }
+                
+                // If the game didn't end and somehow it's still the AI's turn, trigger again (shouldn't happen, but safe)
+                if (!aiResult.gameEnded) {
+                    checkAndTriggerScrabbleAITurn(roomId);
+                }
+
+            }, 2500); // 2.5 second thinking delay
+        }
+    };
 
     socket.on("scrabble-submit-move", ({ roomId, tiles }) => {
         console.log("scrabble-submit-move event received, roomId:", roomId, "tiles:", tiles?.length);
@@ -851,6 +944,10 @@ io.on("connection", (socket) => {
             });
 
             console.log("Scrabble move submitted successfully, score:", result.score, "words:", result.formedWords);
+            
+            if (!result.gameEnded) {
+                checkAndTriggerScrabbleAITurn(roomId);
+            }
         } catch (err) {
             console.error("scrabble-submit-move error:", err);
             socket.emit("error", { message: "Server error processing move. Please try again." });
@@ -877,6 +974,10 @@ io.on("connection", (socket) => {
                     finalScores: result.finalScores
                 });
             });
+
+            if (!result.gameEnded) {
+                checkAndTriggerScrabbleAITurn(roomId);
+            }
         } catch (err) {
             console.error("scrabble-pass-turn error:", err);
             socket.emit("error", { message: "Server error passing turn" });
@@ -913,6 +1014,10 @@ io.on("connection", (socket) => {
                 }
             });
             console.log("Scrabble tiles exchanged successfully.");
+
+            if (!result.gameEnded) {
+                checkAndTriggerScrabbleAITurn(roomId);
+            }
         } catch (err) {
             console.error("scrabble-exchange-tiles error:", err);
             socket.emit("error", { message: "Server error exchanging tiles" });
@@ -1328,10 +1433,14 @@ io.on("connection", (socket) => {
             data: {}
         });
 
-        // Author is always hidden by default
+        // Send the results - author will be the name if 50% guessed right, else 'Unknown'
+        const revealedAuthor = results?.author 
+            ? (room?.players.find(p => p.id === results.author)?.name || 'Unknown') 
+            : 'Unknown';
+
         io.to(roomId).emit("confession-round-results", {
             confession: results?.confession,
-            author: 'Unknown',
+            author: revealedAuthor,
             correctGuessers: correctGuessersNames,
             fooledCount: results?.fooledCount || 0,
             scores: namedScores

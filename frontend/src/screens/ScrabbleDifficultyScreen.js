@@ -1,13 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
+import SocketService from '../services/socket';
 
 const ScrabbleDifficultyScreen = ({ route, navigation }) => {
     const { players } = route.params;
     const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
+    const [isStarting, setIsStarting] = useState(false);
+
+    useEffect(() => {
+        const handleGameStarted = (data) => {
+            if (data.gameType === 'scrabble' && data.isSinglePlayer) {
+                console.log('Single player game started from server');
+                setIsStarting(false);
+                navigation.navigate('OnlineScrabble', {
+                    room: { id: "local-" + SocketService.socket.id, players: data.gameState.players },
+                    playerName: players[0].name,
+                    isHost: true,
+                    gameState: data.gameState
+                });
+            }
+        };
+
+        const handleError = (err) => {
+            console.error('Socket error starting game:', err);
+            setIsStarting(false);
+        };
+
+        SocketService.on('game-started', handleGameStarted);
+        SocketService.on('error', handleError);
+
+        return () => {
+            SocketService.off('game-started', handleGameStarted);
+            SocketService.off('error', handleError);
+        };
+    }, [navigation, players]);
 
     const difficulties = [
         {
@@ -34,8 +64,9 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
     ];
 
     const handleStartGame = () => {
-        navigation.navigate('Scrabble', {
-            players,
+        if (isStarting) return;
+        setIsStarting(true);
+        SocketService.emit('scrabble-single-player-start', {
             difficulty: selectedDifficulty
         });
     };
@@ -80,8 +111,9 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
 
             <View style={styles.buttonContainer}>
                 <NeonButton
-                    title={`START GAME`}
+                    title={isStarting ? "STARTING..." : "START GAME"}
                     onPress={handleStartGame}
+                    disabled={isStarting}
                     style={styles.startButton}
                 />
             </View>

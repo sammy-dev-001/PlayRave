@@ -3849,7 +3849,7 @@ class GameManager {
     getScrabbleFinalScores(game) {
         // Calculate final scores by deducting points for unplayed tiles
         const finalScores = game.players.map(p => {
-            const unplayedTileScore = p.hand.reduce((sum, tile) => sum + tile.score, 0);
+            const unplayedTileScore = p.hand.reduce((sum, tile) => sum + (tile.value || 0), 0);
             return {
                 playerId: p.id,
                 playerName: p.name,
@@ -3862,7 +3862,7 @@ class GameManager {
         if (playerWithEmptyHand) {
             const totalUnplayedTilesScore = game.players.reduce((sum, p) => {
                 if (p.id !== playerWithEmptyHand.id) {
-                    return sum + p.hand.reduce((tileSum, tile) => tileSum + tile.score, 0);
+                    return sum + p.hand.reduce((tileSum, tile) => tileSum + (tile.value || 0), 0);
                 }
                 return sum;
             }, 0);
@@ -3888,6 +3888,105 @@ class GameManager {
             finalScores,
             winner: finalScores[0]
         };
+    }
+
+    // ==================== SCRABBLE SINGLE PLAYER (AI) ====================
+
+    startScrabbleSinglePlayerGame(roomId, room, difficulty = 'medium') {
+        const { createTileBag, drawTiles, BOARD_SIZE, CENTER_SQUARE } = require('../data/scrabbleData');
+
+        // Build player list: the human + the AI bot
+        const humanPlayer = room.players[0]; // Single-player = 1 human
+        const players = [
+            {
+                id: humanPlayer.id,
+                name: humanPlayer.name,
+                score: 0,
+                hand: [],
+                isActive: true,
+                isAI: false
+            },
+            {
+                id: 'ai-bot',
+                name: 'AI Opponent',
+                score: 0,
+                hand: [],
+                isActive: true,
+                isAI: true
+            }
+        ];
+
+        const tileBag = createTileBag();
+
+        // Deal initial hands
+        players.forEach(player => {
+            player.hand = drawTiles(tileBag, 7);
+        });
+
+        const gameState = {
+            type: 'scrabble',
+            roomId,
+            players,
+            tileBag,
+            board: {},
+            currentPlayerIndex: 0,
+            phase: 'playing',
+            placedTiles: {},
+            turnNumber: 1,
+            passCount: 0,
+            hostParticipates: true,
+            isSinglePlayer: true,
+            difficulty
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    /**
+     * Execute the AI's turn using the same validation pipeline as online mode.
+     * Returns the result object from whichever action the AI chose.
+     */
+    executeScrabbleAITurn(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble') return { error: 'Game not found' };
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (!currentPlayer.isAI) return { error: 'Not AIs turn' };
+
+        const { findBestMove } = require('../ai/ScrabbleAIEngine');
+
+        const aiHand = currentPlayer.hand;
+        const move = findBestMove(game.board, aiHand, game.tileBag, game.difficulty || 'medium');
+
+        if (!move || move.type === 'pass') {
+            // AI passes — use the exact same pass logic as online
+            const result = this.scrabblePassTurn(roomId, currentPlayer.id);
+            return { aiAction: 'pass', ...result };
+        }
+
+        if (move.type === 'exchange' && move.tileIndices) {
+            // AI exchanges — use the exact same exchange logic as online
+            const result = this.scrabbleExchangeTiles(roomId, currentPlayer.id, move.tileIndices);
+            return { aiAction: 'exchange', ...result };
+        }
+
+        if (move.type === 'move' && move.tiles) {
+            // AI plays tiles — route through the EXACT same submit pipeline as online
+            const result = this.scrabbleSubmitMove(roomId, currentPlayer.id, move.tiles);
+            if (result.error) {
+                // The AI's move was rejected (should be very rare with correct generation).
+                // Fall back to a pass.
+                console.warn('[ScrabbleAI] Move rejected by validator:', result.error, 'tiles:', JSON.stringify(move.tiles));
+                const passResult = this.scrabblePassTurn(roomId, currentPlayer.id);
+                return { aiAction: 'pass', fallback: true, rejectedReason: result.error, ...passResult };
+            }
+            return { aiAction: 'move', ...result };
+        }
+
+        // Default fallback
+        const result = this.scrabblePassTurn(roomId, currentPlayer.id);
+        return { aiAction: 'pass', ...result };
     }
 
     // ==================== CAPTION THIS GAME ====================
@@ -4530,10 +4629,13 @@ class GameManager {
             scores[p.id] = p.score;
         });
 
-        // Author is ALWAYS anonymous by default - they can voluntarily reveal themselves
+        // Anonymity Rule: If <= 50% of total players guessed correctly, true author is hidden
+        // Note: author always has the button to reveal himself if he stays unknown
+        const isAnonymous = correctGuessers.length <= (game.players.length / 2);
+
         return {
             confession: currentConfession.confession,
-            author: null,
+            author: isAnonymous ? null : authorId,
             authorId: authorId, // kept internally so backend can send private reveal button
             correctGuessers,
             fooledCount,
