@@ -30,13 +30,10 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const needsScroll = idealTileSize < MIN_TILE_SIZE;
     const rackTileSize = isDesktop ? 48 : Math.min(48, Math.floor((screenWidth - 40) / 7));
 
-    // Helper to safely show alerts on web
+    // Helper to gracefully show alerts using the new Neon Modal
     const showAlert = (title, message) => {
-        if (Platform.OS === 'web') {
-            window.alert(`${title}\n\n${message}`);
-        } else {
-            Alert.alert(title, message);
-        }
+        setErrorModalContent({ title, message });
+        setErrorModalVisible(true);
     };
 
     // Game state from server
@@ -52,6 +49,10 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const [placedTiles, setPlacedTiles] = useState([]);
     const [placementHistory, setPlacementHistory] = useState([]); // Track for undo
     const [endGameModalVisible, setEndGameModalVisible] = useState(false);
+    
+    // Custom Error Modal State
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
 
     // Tile exchange state
     const [exchangeMode, setExchangeMode] = useState(false);
@@ -639,7 +640,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         horizontal
                         bounces={false}
                     >
-                        <ScrollView nestedScrollEnabled bounces={false}>
+                        <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
                             <View style={styles.gridContainer}>
                                 {renderGrid()}
                             </View>
@@ -749,6 +750,28 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Error Popup Modal */}
+            <Modal
+                transparent={true}
+                visible={errorModalVisible}
+                animationType="fade"
+                onRequestClose={() => setErrorModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { borderColor: COLORS.cancelRed, shadowColor: COLORS.cancelRed, shadowOpacity: 0.5, shadowRadius: 10 }]}>
+                        <NeonText size={22} weight="bold" color={COLORS.cancelRed} glow style={styles.errorModalTitle}>
+                            {errorModalContent.title === 'Invalid Words' ? 'INCORRECT WORD' : errorModalContent.title.toUpperCase()}
+                        </NeonText>
+                        <NeonText size={16} color="#ddd" style={{ textAlign: 'center', marginBottom: 25, lineHeight: 24 }}>
+                            {errorModalContent.message}
+                        </NeonText>
+                        <TouchableOpacity style={styles.errorDismissBtn} onPress={() => setErrorModalVisible(false)}>
+                            <NeonText color="#000" weight="bold" size={16}>DISMISS</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </NeonContainer>
     );
 };
@@ -804,14 +827,18 @@ const styles = StyleSheet.create({
     boardContent: {
         flexGrow: 1,
         padding: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
+        minWidth: '100%',
+    },
+    innerScrollContent: {
+        flexGrow: 1,
+        minHeight: '100%',
     },
     gridContainer: {
         backgroundColor: '#000',
         borderWidth: 2,
         borderColor: '#444',
         padding: 2,
+        margin: 'auto',
     },
     row: {
         flexDirection: 'row',
@@ -952,6 +979,24 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.hotPink,
         minWidth: 100,
         alignItems: 'center',
+    },
+    errorModalTitle: {
+        marginBottom: 15,
+        textShadowColor: COLORS.cancelRed,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 10,
+    },
+    errorDismissBtn: {
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 8,
+        backgroundColor: COLORS.cancelRed,
+        minWidth: 120,
+        alignItems: 'center',
+        shadowColor: COLORS.cancelRed,
+        shadowOpacity: 0.8,
+        shadowRadius: 5,
+        elevation: 5,
     },
     blankTileModal: {
         maxWidth: 350,

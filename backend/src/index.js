@@ -329,8 +329,8 @@ io.on("connection", (socket) => {
         const playerName = playerInfo?.name;
         const userId = playerInfo?.uid;
 
-        // Extended 3-minute grace period for state recovery
-        const DISCONNECT_GRACE_PERIOD = 180000; 
+        // Extended 30-minute grace period for state recovery to allow users to switch apps/tabs
+        const DISCONNECT_GRACE_PERIOD = 1800000; 
 
         if (roomId && userId) {
             if (!global.pendingDisconnects) global.pendingDisconnects = new Map();
@@ -347,6 +347,13 @@ io.on("connection", (socket) => {
                 return;
             }
             global.pendingDisconnects.delete(userId);
+
+            // Never auto-delete single-player local rooms on disconnect
+            // (These should persist in memory until explicitly ended or the server reboots)
+            if (roomId.startsWith('local-')) {
+                console.log(`Skipping room cleanup for persistent local room: ${roomId}`);
+                return;
+            }
 
             const result = roomManager.removePlayer(socket.id);
             if (result && !result.roomDeleted) {
