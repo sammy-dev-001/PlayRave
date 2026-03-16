@@ -562,17 +562,17 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     <View style={styles.sidebar}>
                         <View style={styles.desktopHeader}>
                             <NeonText size={24} weight="bold" glow style={{ marginBottom: 15 }}>SCRABBLE</NeonText>
-                            {tilesInBag !== null && (
-                                <View style={[styles.tilesBadge, { marginBottom: 20 }]}>
-                                    <NeonText size={10} color="#888">🎲 TILES LEFT</NeonText>
-                                    <NeonText size={18} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
-                                </View>
-                            )}
                             <View style={styles.desktopScoreContainer}>
+                                {tilesInBag !== null && (
+                                    <View style={[styles.tilesBadge, { flex: 1, paddingVertical: 10 }]}>
+                                        <NeonText size={10} color="#888">🎲 TILES</NeonText>
+                                        <NeonText size={16} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
+                                    </View>
+                                )}
                                 {players.map(p => (
                                     <View key={p.id} style={[styles.miniScore, styles.desktopMiniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
-                                        <NeonText size={12} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
-                                        <NeonText size={20} weight="bold">{p.score}</NeonText>
+                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'} numberOfLines={1}>{p.name}</NeonText>
+                                        <NeonText size={16} weight="bold">{p.score}</NeonText>
                                     </View>
                                 ))}
                             </View>
@@ -1005,13 +1005,15 @@ const styles = StyleSheet.create({
     },
     desktopScoreContainer: {
         width: '100%',
-        gap: 10,
+        flexDirection: 'row',
+        gap: 8,
     },
     desktopMiniScore: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 5,
     },
     desktopControlsScroll: {
         flexGrow: 1,
@@ -1035,8 +1037,6 @@ const styles = StyleSheet.create({
     },
     desktopBoardWrapper: {
         padding: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
 });
 
