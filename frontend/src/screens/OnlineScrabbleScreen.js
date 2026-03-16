@@ -12,18 +12,23 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { room, playerName, gameState: initialGameState } = route.params;
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-    // Bug 1 Fix & Desktop Constraint: Hybrid shrink-with-floor tile sizing.
-    // Calculate tile size based on the smaller of available width or estimated available height.
-    // Cap the absolute max board size so it doesn't look stretched on ultra-wide screens.
-    const BOARD_PADDING = 20;
-    const ESTIMATED_CONTROLS_HEIGHT = 300; // rough height of header + footer
-    const maxAvailableDim = Math.min(screenWidth - BOARD_PADDING, Math.max(screenHeight - ESTIMATED_CONTROLS_HEIGHT, 300), 800);
+    // Desktop Layout detection
+    const isDesktop = screenWidth >= 800;
+    const SIDEBAR_WIDTH = isDesktop ? 320 : 0;
+
+    const BOARD_PADDING = isDesktop ? 60 : 20;
+    const ESTIMATED_CONTROLS_HEIGHT = isDesktop ? 60 : 300;
+    const maxAvailableDim = Math.min(
+        screenWidth - SIDEBAR_WIDTH - BOARD_PADDING, 
+        Math.max(screenHeight - ESTIMATED_CONTROLS_HEIGHT, 300), 
+        1000 // Allow large expansion on desktop
+    );
     
     const MIN_TILE_SIZE = 20;
     const idealTileSize = Math.floor(maxAvailableDim / BOARD_SIZE);
     const tileSize = Math.max(idealTileSize, MIN_TILE_SIZE);
-    const needsScroll = idealTileSize < MIN_TILE_SIZE; // only true on very small screens
-    const rackTileSize = Math.min(48, Math.floor((screenWidth - 40) / 7)); // Cap rack tile size too
+    const needsScroll = idealTileSize < MIN_TILE_SIZE;
+    const rackTileSize = isDesktop ? 48 : Math.min(48, Math.floor((screenWidth - 40) / 7));
 
     // Helper to safely show alerts on web
     const showAlert = (title, message) => {
@@ -446,152 +451,216 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         );
     }
 
+    const renderRackTiles = () => {
+        return myHand.map((tile, index) => {
+            const isUsed = placedTiles.some(t => t.handIndex === index);
+            const isSelected = selectedTileIndex === index;
+            const isSelectedForExchange = selectedTilesForExchange.includes(index);
+
+            if (isUsed) return (
+                <View
+                    key={index}
+                    style={[styles.rackTile, styles.usedTile, { width: rackTileSize, height: rackTileSize }]}
+                />
+            );
+
+            return (
+                <TouchableOpacity
+                    key={index}
+                    style={[
+                        styles.rackTile,
+                        { width: rackTileSize, height: rackTileSize },
+                        isSelected && !exchangeMode && styles.selectedRackTile,
+                        isSelectedForExchange && styles.exchangeSelectedTile
+                    ]}
+                    onPress={() => handleRackTilePress(index)}
+                    disabled={!isMyTurn}
+                >
+                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">
+                        {tile.letter === '_' ? '★' : tile.letter}
+                    </NeonText>
+                    <NeonText size={rackTileSize * 0.22} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
+                </TouchableOpacity>
+            );
+        });
+    };
+
+    const renderActionButtons = () => {
+        if (!exchangeMode) {
+            return (
+                <>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity
+                            style={[styles.smallBtn, (!isMyTurn || placementHistory.length === 0) && styles.disabledBtn]}
+                            onPress={handleUndo}
+                            disabled={!isMyTurn || placementHistory.length === 0}
+                        >
+                            <NeonText size={12}>↶ Undo</NeonText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
+                            onPress={handleRecallTiles}
+                            disabled={!isMyTurn}
+                        >
+                            <NeonText size={12}>Recall</NeonText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
+                            onPress={handlePass}
+                            disabled={!isMyTurn}
+                        >
+                            <NeonText size={12}>Pass</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={isDesktop ? { gap: 10, marginTop: 15 } : { flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                        <View style={isDesktop ? {} : { flex: 1 }}>
+                            <NeonButton
+                                title="PLAY WORD"
+                                onPress={handleSubmitMove}
+                                disabled={placedTiles.length === 0 || !isMyTurn}
+                                style={isDesktop ? { paddingVertical: 12, marginTop: 0 } : { paddingVertical: 8 }}
+                            />
+                        </View>
+                        <TouchableOpacity
+                            style={[styles.smallBtn, isDesktop ? { paddingVertical: 12, alignItems: 'center' } : { flex: 1, justifyContent: 'center', alignItems: 'center' }, !isMyTurn && styles.disabledBtn]}
+                            onPress={handleToggleExchangeMode}
+                            disabled={!isMyTurn}
+                        >
+                            <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 8 }}>
+                        Select tiles to exchange ({selectedTilesForExchange.length} selected)
+                    </NeonText>
+                    <View style={isDesktop ? { gap: 10 } : styles.buttonRow}>
+                        <TouchableOpacity style={[styles.cancelExchangeBtn, isDesktop && { alignItems: 'center' }]} onPress={handleToggleExchangeMode}>
+                            <NeonText size={12}>Cancel</NeonText>
+                        </TouchableOpacity>
+                        <NeonButton
+                            title={`EXCHANGE (${selectedTilesForExchange.length})`}
+                            onPress={handleConfirmExchange}
+                            disabled={selectedTilesForExchange.length === 0}
+                            style={isDesktop ? { marginTop: 0, paddingVertical: 12 } : { marginTop: 0, paddingVertical: 8, flex: 1 }}
+                        />
+                    </View>
+                </>
+            );
+        }
+    };
+
     return (
         <NeonContainer>
-            {/* Header */}
-            <View style={styles.header}>
-                <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
-                {/* Bug 2: Tiles remaining badge */}
-                {tilesInBag !== null && (
-                    <View style={styles.tilesBadge}>
-                        <NeonText size={10} color="#888">🎲 TILES LEFT</NeonText>
-                        <NeonText size={14} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
+            <View style={[styles.mainLayout, isDesktop && styles.desktopLayout]}>
+                
+                {/* ─ DESKTOP SIDEBAR OR MOBILE HEADER ─ */}
+                {isDesktop ? (
+                    <View style={styles.sidebar}>
+                        <View style={styles.desktopHeader}>
+                            <NeonText size={24} weight="bold" glow style={{ marginBottom: 15 }}>SCRABBLE</NeonText>
+                            {tilesInBag !== null && (
+                                <View style={[styles.tilesBadge, { marginBottom: 20 }]}>
+                                    <NeonText size={10} color="#888">🎲 TILES LEFT</NeonText>
+                                    <NeonText size={18} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
+                                </View>
+                            )}
+                            <View style={styles.desktopScoreContainer}>
+                                {players.map(p => (
+                                    <View key={p.id} style={[styles.miniScore, styles.desktopMiniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
+                                        <NeonText size={12} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
+                                        <NeonText size={20} weight="bold">{p.score}</NeonText>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+
+                        <View style={[styles.turnIndicator, { borderRadius: 8, marginVertical: 15 }]}>
+                            <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : COLORS.hotPink} weight="bold">
+                                {isMyTurn ? '🎯 YOUR TURN' : `⏳ ${currentPlayerName}'s Turn`}
+                            </NeonText>
+                        </View>
+
+                        <ScrollView contentContainerStyle={styles.desktopControlsScroll} bounces={false}>
+                            <View style={styles.desktopControlsArea}>
+                                <View style={styles.rackContainer}>
+                                    <NeonText size={14} color="#666" style={{ marginBottom: 10 }}>Your Rack:</NeonText>
+                                    <View style={[styles.rack, styles.desktopRack]}>
+                                        {renderRackTiles()}
+                                    </View>
+                                </View>
+                                <View style={styles.gameButtons}>
+                                    {renderActionButtons()}
+                                </View>
+                            </View>
+                        </ScrollView>
+
+                        <TouchableOpacity style={[styles.smallBtn, { marginTop: 'auto', alignSelf: 'center', marginBottom: 20 }]} onPress={() => setEndGameModalVisible(true)}>
+                            <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        {/* MOBILE TOP CONTROLS */}
+                        <View style={styles.header}>
+                            <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
+                            {tilesInBag !== null && (
+                                <View style={styles.tilesBadge}>
+                                    <NeonText size={10} color="#888">🎲 TILES LEFT</NeonText>
+                                    <NeonText size={14} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
+                                </View>
+                            )}
+                            <View style={styles.scoreRow}>
+                                {players.map(p => (
+                                    <View key={p.id} style={[styles.miniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
+                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
+                                        <NeonText size={14} weight="bold">{p.score}</NeonText>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                        <View style={styles.turnIndicator}>
+                            <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : COLORS.hotPink} weight="bold">
+                                {isMyTurn ? '🎯 YOUR TURN' : `⏳ ${currentPlayerName}'s Turn`}
+                            </NeonText>
+                        </View>
+                    </>
+                )}
+
+                {/* ─ SHARED BOARD WRAPPER ─ */}
+                <View style={[styles.boardWrapper, isDesktop && styles.desktopBoardWrapper]}>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={styles.boardContainer}
+                        contentContainerStyle={styles.boardContent}
+                        horizontal
+                        bounces={false}
+                    >
+                        <ScrollView nestedScrollEnabled bounces={false}>
+                            <View style={styles.gridContainer}>
+                                {renderGrid()}
+                            </View>
+                        </ScrollView>
+                    </ScrollView>
+                </View>
+
+                {/* ─ MOBILE BOTTOM CONTROLS ─ */}
+                {!isDesktop && (
+                    <View style={styles.controlsArea}>
+                        <View style={styles.rackContainer}>
+                            <NeonText size={12} color="#666" style={{ marginBottom: 4 }}>Your Rack:</NeonText>
+                            <View style={[styles.rack, { height: rackTileSize + 8 }]}>
+                                {renderRackTiles()}
+                            </View>
+                        </View>
+                        <View style={styles.gameButtons}>
+                            {renderActionButtons()}
+                        </View>
                     </View>
                 )}
-                <View style={styles.scoreRow}>
-                    {players.map(p => (
-                        <View key={p.id} style={[styles.miniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
-                            <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
-                            <NeonText size={14} weight="bold">{p.score}</NeonText>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            {/* Turn Indicator */}
-            <View style={styles.turnIndicator}>
-                <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : COLORS.hotPink} weight="bold">
-                    {isMyTurn ? '🎯 YOUR TURN' : `⏳ ${currentPlayerName}'s Turn`}
-                </NeonText>
-            </View>
-
-            {/* Board */}
-            <ScrollView
-                ref={scrollViewRef}
-                style={styles.boardContainer}
-                contentContainerStyle={styles.boardContent}
-                horizontal
-                bounces={false}
-            >
-                <ScrollView nestedScrollEnabled bounces={false}>
-                    <View style={styles.gridContainer}>
-                        {renderGrid()}
-                    </View>
-                </ScrollView>
-            </ScrollView>
-
-            {/* Controls & Rack */}
-            <View style={styles.controlsArea}>
-                <View style={styles.rackContainer}>
-                    <NeonText size={12} color="#666" style={{ marginBottom: 4 }}>Your Rack:</NeonText>
-                    <View style={[styles.rack, { height: rackTileSize + 8 }]}>
-                        {myHand.map((tile, index) => {
-                            const isUsed = placedTiles.some(t => t.handIndex === index);
-                            const isSelected = selectedTileIndex === index;
-                            const isSelectedForExchange = selectedTilesForExchange.includes(index);
-
-                            if (isUsed) return (
-                                <View
-                                    key={index}
-                                    style={[styles.rackTile, styles.usedTile, { width: rackTileSize, height: rackTileSize }]}
-                                />
-                            );
-
-                            return (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={[
-                                        styles.rackTile,
-                                        { width: rackTileSize, height: rackTileSize },
-                                        isSelected && !exchangeMode && styles.selectedRackTile,
-                                        isSelectedForExchange && styles.exchangeSelectedTile
-                                    ]}
-                                    onPress={() => handleRackTilePress(index)}
-                                    disabled={!isMyTurn}
-                                >
-                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">
-                                        {tile.letter === '_' ? '★' : tile.letter}
-                                    </NeonText>
-                                    <NeonText size={rackTileSize * 0.22} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                </View>
-
-                <View style={styles.gameButtons}>
-                    {!exchangeMode ? (
-                        <>
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity
-                                    style={[styles.smallBtn, (!isMyTurn || placementHistory.length === 0) && styles.disabledBtn]}
-                                    onPress={handleUndo}
-                                    disabled={!isMyTurn || placementHistory.length === 0}
-                                >
-                                    <NeonText size={12}>↶ Undo</NeonText>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
-                                    onPress={handleRecallTiles}
-                                    disabled={!isMyTurn}
-                                >
-                                    <NeonText size={12}>Recall</NeonText>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.smallBtn, !isMyTurn && styles.disabledBtn]}
-                                    onPress={handlePass}
-                                    disabled={!isMyTurn}
-                                >
-                                    <NeonText size={12}>Pass</NeonText>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                                <View style={{ flex: 1 }}>
-                                    <NeonButton
-                                        title="PLAY WORD"
-                                        onPress={handleSubmitMove}
-                                        disabled={placedTiles.length === 0 || !isMyTurn}
-                                        style={{ paddingVertical: 8 }}
-                                    />
-                                </View>
-                                <TouchableOpacity
-                                    style={[styles.smallBtn, { flex: 1, justifyContent: 'center', alignItems: 'center' }, !isMyTurn && styles.disabledBtn]}
-                                    onPress={handleToggleExchangeMode}
-                                    disabled={!isMyTurn}
-                                >
-                                    <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
-                                </TouchableOpacity>
-                            </View>
-                        </>
-                    ) : (
-                        <>
-                            <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 8 }}>
-                                Select tiles to exchange ({selectedTilesForExchange.length} selected)
-                            </NeonText>
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity style={styles.cancelExchangeBtn} onPress={handleToggleExchangeMode}>
-                                    <NeonText size={12}>Cancel</NeonText>
-                                </TouchableOpacity>
-                                <NeonButton
-                                    title={`EXCHANGE (${selectedTilesForExchange.length})`}
-                                    onPress={handleConfirmExchange}
-                                    disabled={selectedTilesForExchange.length === 0}
-                                    style={{ marginTop: 0, paddingVertical: 8, flex: 1 }}
-                                />
-                            </View>
-                        </>
-                    )}
-                </View>
             </View>
 
             {/* Score Popup */}
@@ -603,13 +672,14 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 position="center"
             />
 
-            {/* End Game Button */}
-            <TouchableOpacity
-                style={styles.endGameBtn}
-                onPress={() => setEndGameModalVisible(true)}
-            >
-                <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
-            </TouchableOpacity>
+            {!isDesktop && (
+                <TouchableOpacity
+                    style={styles.endGameBtn}
+                    onPress={() => setEndGameModalVisible(true)}
+                >
+                    <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
+                </TouchableOpacity>
+            )}
 
             {/* Blank Tile Letter Selection Modal */}
             <Modal
@@ -911,6 +981,62 @@ const styles = StyleSheet.create({
         height: 6,
         borderRadius: 3,
         backgroundColor: COLORS.neonCyan,
+    },
+    // Desktop Responsive Styles
+    mainLayout: {
+        flex: 1,
+    },
+    desktopLayout: {
+        flexDirection: 'row',
+    },
+    sidebar: {
+        width: 320,
+        height: '100%',
+        backgroundColor: COLORS.deepNightBlack,
+        borderRightWidth: 1,
+        borderRightColor: '#333',
+        zIndex: 10,
+    },
+    desktopHeader: {
+        paddingHorizontal: 20,
+        paddingTop: 40,
+        paddingBottom: 20,
+        alignItems: 'flex-start',
+    },
+    desktopScoreContainer: {
+        width: '100%',
+        gap: 10,
+    },
+    desktopMiniScore: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        paddingVertical: 12,
+    },
+    desktopControlsScroll: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+    desktopControlsArea: {
+        borderTopWidth: 0,
+        padding: 0,
+        backgroundColor: 'transparent',
+    },
+    desktopRack: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        height: 'auto',
+        gap: 10,
+        justifyContent: 'center',
+    },
+    boardWrapper: {
+        flex: 1,
+    },
+    desktopBoardWrapper: {
+        padding: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 
