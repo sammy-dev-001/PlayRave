@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -83,6 +83,16 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const [showScorePopup, setShowScorePopup] = useState(false);
     const [lastScore, setLastScore] = useState(0);
     const [lastWords, setLastWords] = useState([]);
+    
+    // Custom Error Modal State
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
+
+    // Helper to show custom alert
+    const showAlert = (title, message) => {
+        setErrorModalContent({ title, message });
+        setErrorModalVisible(true);
+    };
 
     // --- Interaction Handlers ---
 
@@ -480,7 +490,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
         const formedWords = extractFormedWords(tempBoard, placedTiles);
 
         if (formedWords.length === 0) {
-            Alert.alert("Invalid Move", "You must form at least one valid word.");
+            showAlert("Invalid Move", "You must form at least one valid word.");
             return;
         }
 
@@ -488,7 +498,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
         const invalidWords = formedWords.filter(w => !isValidWord(w.word));
         if (invalidWords.length > 0) {
             const wordList = invalidWords.map(w => w.word).join(', ');
-            Alert.alert(
+            showAlert(
                 "Invalid Word(s)",
                 `The following ${invalidWords.length === 1 ? 'word is' : 'words are'} not in the dictionary:\n\n${wordList}\n\nPlease try a different word.`
             );
@@ -933,6 +943,34 @@ const ScrabbleScreen = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Error Popup Modal */}
+            <Modal
+                transparent={true}
+                visible={errorModalVisible}
+                animationType="fade"
+                onRequestClose={() => setErrorModalVisible(false)}
+            >
+                <TouchableOpacity 
+                    style={styles.modalOverlay} 
+                    activeOpacity={1} 
+                    onPress={() => setErrorModalVisible(false)}
+                >
+                    <TouchableWithoutFeedback>
+                        <View style={[styles.modalContent, { borderColor: COLORS.cancelRed, shadowColor: COLORS.cancelRed, shadowOpacity: 0.5, shadowRadius: 10 }]}>
+                            <NeonText size={22} weight="bold" color={COLORS.cancelRed} glow style={styles.errorModalTitle}>
+                                {errorModalContent.title === 'Invalid Word(s)' ? 'INCORRECT WORD' : errorModalContent.title.toUpperCase()}
+                            </NeonText>
+                            <NeonText size={16} color="#ddd" style={{ textAlign: 'center', marginBottom: 25, lineHeight: 24 }}>
+                                {errorModalContent.message}
+                            </NeonText>
+                            <TouchableOpacity style={styles.errorDismissBtn} onPress={() => setErrorModalVisible(false)}>
+                                <NeonText color="#000" weight="bold" size={16}>Thank you</NeonText>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </TouchableOpacity>
+            </Modal>
         </NeonContainer>
     );
 };
@@ -1153,7 +1191,24 @@ const styles = StyleSheet.create({
         borderRadius: 3,
         backgroundColor: COLORS.neonCyan,
     },
+    errorModalTitle: {
+        marginBottom: 15,
+        textShadowColor: COLORS.cancelRed,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 10,
+    },
+    errorDismissBtn: {
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 8,
+        backgroundColor: COLORS.cancelRed,
+        minWidth: 120,
+        alignItems: 'center',
+        shadowColor: COLORS.cancelRed,
+        shadowOpacity: 0.8,
+        shadowRadius: 5,
+        elevation: 5,
+    },
 });
 
 export default ScrabbleScreen;
-

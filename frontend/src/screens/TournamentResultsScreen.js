@@ -178,6 +178,7 @@ const styles = StyleSheet.create({
     container: {
         padding: 20,
         paddingTop: 60,
+        paddingBottom: 40,
         minHeight: '100%',
     },
     championSection: {

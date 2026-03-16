@@ -66,9 +66,13 @@ class RoomManager {
     joinRoom(roomId, playerId, playerName, avatar, avatarColor, userId) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: "Room not found" };
-        if (room.gameState !== 'LOBBY') return { error: "Game already in progress" };
-
+        
         const playerExists = room.players.find(p => p.uid === userId || p.id === playerId);
+        
+        if (room.gameState !== 'LOBBY' && !playerExists) {
+            return { error: "Game already in progress" };
+        }
+
         if (!playerExists) {
             room.players.push({ 
                 id: playerId, 

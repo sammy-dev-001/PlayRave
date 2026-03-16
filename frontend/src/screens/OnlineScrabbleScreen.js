@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, Platform, TouchableWithoutFeedback } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -75,6 +75,18 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         if (initialGameState) {
             console.log('Initializing from route params:', initialGameState);
             updateGameState(initialGameState);
+        }
+
+        // Register room data for auto-rejoin if socket disconnects
+        if (room && playerName) {
+            // Try to find current player's avatar data from the room object
+            const me = room.players?.find(p => p.name === playerName);
+            console.log('Registering room data for persistence:', room.id, { name: playerName });
+            SocketService.setRoomData(room.id, {
+                name: playerName,
+                avatar: me?.avatar,
+                avatarColor: me?.avatarColor
+            });
         }
     }, []);
 
@@ -758,19 +770,25 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 animationType="fade"
                 onRequestClose={() => setErrorModalVisible(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { borderColor: COLORS.cancelRed, shadowColor: COLORS.cancelRed, shadowOpacity: 0.5, shadowRadius: 10 }]}>
-                        <NeonText size={22} weight="bold" color={COLORS.cancelRed} glow style={styles.errorModalTitle}>
-                            {errorModalContent.title === 'Invalid Words' ? 'INCORRECT WORD' : errorModalContent.title.toUpperCase()}
-                        </NeonText>
-                        <NeonText size={16} color="#ddd" style={{ textAlign: 'center', marginBottom: 25, lineHeight: 24 }}>
-                            {errorModalContent.message}
-                        </NeonText>
-                        <TouchableOpacity style={styles.errorDismissBtn} onPress={() => setErrorModalVisible(false)}>
-                            <NeonText color="#000" weight="bold" size={16}>DISMISS</NeonText>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                <TouchableOpacity 
+                    style={styles.modalOverlay} 
+                    activeOpacity={1} 
+                    onPress={() => setErrorModalVisible(false)}
+                >
+                    <TouchableWithoutFeedback>
+                        <View style={[styles.modalContent, { borderColor: COLORS.cancelRed, shadowColor: COLORS.cancelRed, shadowOpacity: 0.5, shadowRadius: 10 }]}>
+                            <NeonText size={22} weight="bold" color={COLORS.cancelRed} glow style={styles.errorModalTitle}>
+                                {errorModalContent.title === 'Invalid Words' ? 'INCORRECT WORD' : errorModalContent.title.toUpperCase()}
+                            </NeonText>
+                            <NeonText size={16} color="#ddd" style={{ textAlign: 'center', marginBottom: 25, lineHeight: 24 }}>
+                                {errorModalContent.message}
+                            </NeonText>
+                            <TouchableOpacity style={styles.errorDismissBtn} onPress={() => setErrorModalVisible(false)}>
+                                <NeonText color="#000" weight="bold" size={16}>Thank you</NeonText>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </TouchableOpacity>
             </Modal>
         </NeonContainer>
     );

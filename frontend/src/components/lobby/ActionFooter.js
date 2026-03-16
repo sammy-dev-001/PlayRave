@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     footer: {
         paddingHorizontal: 20,
         paddingTop: 12,
-        paddingBottom: 24,
+        paddingBottom: 40,
         backgroundColor: '#05050A',
     },
     startBtn: {

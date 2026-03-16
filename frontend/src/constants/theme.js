@@ -7,6 +7,7 @@ export const COLORS = {
     darkOverlay: 'rgba(10, 10, 26, 0.8)',
     white: '#FFFFFF',
     offWhite: '#F0F0F0',
+    cancelRed: '#FF4444',
 };
 
 export const FONTS = {

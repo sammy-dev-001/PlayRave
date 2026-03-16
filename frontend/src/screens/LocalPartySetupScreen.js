@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     // -- Start Button --
     bottomBar: {
         paddingHorizontal: 20,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         paddingTop: 10,
     },
     startButton: {

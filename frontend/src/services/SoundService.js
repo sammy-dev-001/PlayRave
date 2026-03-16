@@ -25,7 +25,7 @@ const SOUNDS = {
     gameStart: { uri: 'https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3' },
     winner: { uri: '' },
     elimination: { uri: '' },
-    // buttonClick: { uri: 'https://cdn.freesound.org/previews/242/242501_434738-lq.mp3' },
+    buttonClick: { uri: 'https://cdn.freesound.org/previews/242/242501_434738-lq.mp3' },
     countdown: { uri: '' },
 };
 

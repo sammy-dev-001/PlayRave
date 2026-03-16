@@ -308,6 +308,16 @@ io.on("connection", (socket) => {
         console.log("Player", playerName, "joined socket room:", roomId);
         socket.emit("room-joined", result.room);
         io.to(roomId).emit("room-updated", result.room);
+
+        // If game is already in progress, send a state sync
+        if (result.room.gameState === 'PLAYING' || result.room.gameState === 'GAMEOVER') {
+            const gameState = gameManager.getGameState(roomId);
+            socket.emit("game-state-sync", {
+                gameState,
+                gameType: result.room.gameType,
+                timestamp: Date.now()
+            });
+        }
     });
 
     socket.on("leave-room", ({ roomId }) => {
