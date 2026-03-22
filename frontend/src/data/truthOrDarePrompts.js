@@ -98,8 +98,13 @@ const truthOrDarePrompts = {
             "Have you ever tripped and fell in public?",
             "What is your most awkward handshake/hug moment?",
             "Have you ever waved at someone who wasn't waving at you?",
-            "What is the most embarrassing thing your siblings have done to you?"
-        ],
+            "What is the most embarrassing thing your siblings have done to you?",
+            "What is a secret you have never told anyone?",
+        "What is the most embarrassing thing you have done in public?",
+        "If you could switch lives with someone for a day, who would it be?",
+        "What is a habit you wish you could break?",
+        "What is the weirdest thing you collect?",
+    ],
         dares: [
             "Do 20 pushups right now",
             "Do your best impression of someone in the room",
@@ -198,7 +203,12 @@ const truthOrDarePrompts = {
             "Act like a baby for 1 minute",
             "Let someone choose an emoji to comment on your last post",
             "Do a magic trick (or attempt one)",
-            "Let someone make a smoothie of their choice for you to drink"
+            "Let someone make a smoothie of their choice for you to drink",
+            "Speak in a British accent for the next 5 minutes",
+            "Do a handstand for 10 seconds",
+            "Swap an article of clothing with the person on your left",
+            "Recite the alphabet backwards",
+            "Do a silly dance for 30 seconds"
         ]
     },
     spicy: {
@@ -301,7 +311,12 @@ const truthOrDarePrompts = {
             "Have you ever been heartbroken?",
             "What is the most romantic compliment you've received?",
             "Have you ever written a song or poem for someone?",
-            "What is your favorite way to be wooed?"
+            "What is your favorite way to be wooed?",
+            "What is your most memorable kiss?",
+            "Have you ever had a crush on a friend's sibling?",
+            "What is the most daring thing you've done for love?",
+            "What is a fantasy you have never shared?",
+            "What is the most romantic gesture you've ever made?"
         ],
         dares: [
             "Slow dance with someone for 1 minute",
@@ -389,7 +404,12 @@ const truthOrDarePrompts = {
             "Give someone a friendly massage",
             "Let someone guess your ring size",
             "Tell the group your idea of a perfect proposal",
-            "Let someone lean on your shoulder for a minute"
+            "Let someone lean on your shoulder for a minute",
+            "Give a passionate kiss to the person of your choice",
+            "Write a love poem and read it aloud",
+            "Blindfold yourself and let someone feed you a mystery food",
+            "Perform a slow dance with someone without music",
+            "Share a secret you have never told anyone"
         ]
     },
     naughty: {
@@ -492,8 +512,13 @@ const truthOrDarePrompts = {
             "Have you ever had sex on a trampoline?",
             "What is your favorite thing to do with whipped cream?",
             "Have you ever had sex on a boat?",
-            "What is the most creative place you've hidden a sex toy?"
-        ],
+            "What is the most creative place you've hidden a sex toy?",
+            "What is your favorite position?",
+        "Have you ever used a sex toy?",
+        "What is the most public place you've been intimate?",
+        "What is a taboo you are curious about?",
+        "What is the longest you've gone without sex?"
+    ],
         dares: [
             "Give someone here a lap dance for 30 seconds",
             "Kiss the person to your left",
@@ -582,7 +607,12 @@ const truthOrDarePrompts = {
             "Let someone choose a sexy nickname for you",
             "Moan the name of the person to your left",
             "Let someone tickle your inner arm",
-            "Give someone a kiss on the nose sensually"
+            "Give someone a kiss on the nose sensually",
+            "Give a lap dance to the person on your right",
+            "Send a flirty text to a random contact",
+            "Perform a strip tease (keep underwear on)",
+            "Blindfold yourself and let someone kiss you",
+            "Take a selfie in a compromising position (no need to share)"
         ]
     }
 };

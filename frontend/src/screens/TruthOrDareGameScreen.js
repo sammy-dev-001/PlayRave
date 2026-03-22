@@ -3,7 +3,7 @@ import { View, StyleSheet, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { getRandomTruth, getRandomDare } from '../data/truthOrDarePrompts';
+import truthOrDarePrompts, { getRandomTruth, getRandomDare } from '../data/truthOrDarePrompts';
 import getGenderSpecificPrompt from '../data/genderSpecificPrompts';
 import { COLORS } from '../constants/theme';
 
@@ -15,6 +15,11 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     const [promptType, setPromptType] = useState(null);
     const [usedTruths, setUsedTruths] = useState([]);
     const [usedDares, setUsedDares] = useState([]);
+    const [playerSkips, setPlayerSkips] = useState({});
+
+    const currentCategoryData = truthOrDarePrompts[category] || truthOrDarePrompts.normal;
+    const totalTruths = currentCategoryData?.truths?.length || 0;
+    const totalDares = currentCategoryData?.dares?.length || 0;
 
     const currentPlayer = players[currentPlayerIndex];
 
@@ -52,6 +57,29 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
         setPromptType(null);
     };
 
+    const handleSkip = () => {
+        const playerKey = currentPlayer.id || currentPlayerIndex;
+        const currentSkips = playerSkips[playerKey] || 0;
+        
+        if (currentSkips >= 2) return;
+        
+        setPlayerSkips({
+            ...playerSkips,
+            [playerKey]: currentSkips + 1
+        });
+
+        if (promptType === 'TRUTH') {
+            const truth = getRandomTruth(category, usedTruths);
+            setUsedTruths([...usedTruths, truth]);
+            setCurrentPrompt(truth);
+        } else {
+            const dare = getRandomDare(category, usedDares);
+            const genderSpecificDare = getGenderSpecificPrompt(dare, currentPlayer.gender || 'other');
+            setUsedDares([...usedDares, dare]);
+            setCurrentPrompt(genderSpecificDare);
+        }
+    };
+
     const handleEndGame = () => {
         Alert.alert(
             'End Game',
@@ -77,6 +105,10 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
                     <NeonText size={12} color={getCategoryColor()} weight="bold">
                         {category.toUpperCase()}
                     </NeonText>
+                </View>
+                <View style={styles.counterContainer}>
+                    <NeonText size={12} color={COLORS.neonCyan}>Truths: {usedTruths.length}/{totalTruths}</NeonText>
+                    <NeonText size={12} color={COLORS.hotPink} style={{ marginLeft: 15 }}>Dares: {usedDares.length}/{totalDares}</NeonText>
                 </View>
             </View>
 
@@ -132,11 +164,20 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
                     </View>
 
                     <View style={styles.actionContainer}>
-                        <NeonButton
-                            title="DONE"
-                            onPress={handleDone}
-                            style={styles.doneButton}
-                        />
+                        <View style={styles.actionRow}>
+                            <NeonButton
+                                title={`SKIP (${2 - (playerSkips[currentPlayer.id || currentPlayerIndex] || 0)})`}
+                                variant="secondary"
+                                onPress={handleSkip}
+                                disabled={(playerSkips[currentPlayer.id || currentPlayerIndex] || 0) >= 2}
+                                style={styles.skipButton}
+                            />
+                            <NeonButton
+                                title="DONE"
+                                onPress={handleDone}
+                                style={styles.doneButton}
+                            />
+                        </View>
                         <NeonText size={14} color="#888" style={styles.nextPlayer}>
                             Next: {players[(currentPlayerIndex + 1) % players.length].name}
                         </NeonText>
@@ -165,6 +206,14 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderRadius: 20,
         borderWidth: 2,
+    },
+    counterContainer: {
+        flexDirection: 'row',
+        marginTop: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 15,
     },
     playerContainer: {
         alignItems: 'center',
@@ -219,9 +268,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 30,
     },
-    doneButton: {
-        minWidth: 200,
+    actionRow: {
+        flexDirection: 'row',
+        gap: 15,
         marginBottom: 15,
+    },
+    doneButton: {
+        minWidth: 140,
+    },
+    skipButton: {
+        minWidth: 140,
     },
     nextPlayer: {
         fontStyle: 'italic',

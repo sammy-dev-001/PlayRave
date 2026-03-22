@@ -299,22 +299,32 @@ io.on("connection", (socket) => {
             return;
         }
 
-        const result = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor, userId);
-        if (result.error) {
-            socket.emit("error", { message: result.error });
+        const joinResult = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor, userId);
+        if (joinResult.error) {
+            socket.emit("error", { message: joinResult.error });
             return;
         }
+        
+        const { room: joinedRoom, oldSocketId: reJoinOldSocketId } = joinResult;
+
         socket.join(roomId);
         console.log("Player", playerName, "joined socket room:", roomId);
-        socket.emit("room-joined", result.room);
-        io.to(roomId).emit("room-updated", result.room);
+
+        // Re-bind in game manager if game is playing
+        if (reJoinOldSocketId && (joinedRoom.gameState === 'PLAYING' || joinedRoom.gameState === 'GAMEOVER')) {
+            console.log(`Re-binding player ${playerName} from ${reJoinOldSocketId} to ${socket.id}`);
+            gameManager.updatePlayerSocket(roomId, reJoinOldSocketId, socket.id);
+        }
+
+        socket.emit("room-joined", joinedRoom);
+        io.to(roomId).emit("room-updated", joinedRoom);
 
         // If game is already in progress, send a state sync
-        if (result.room.gameState === 'PLAYING' || result.room.gameState === 'GAMEOVER') {
+        if (joinedRoom.gameState === 'PLAYING' || joinedRoom.gameState === 'GAMEOVER') {
             const gameState = gameManager.getGameState(roomId);
             socket.emit("game-state-sync", {
                 gameState,
-                gameType: result.room.gameType,
+                gameType: joinedRoom.gameType,
                 timestamp: Date.now()
             });
         }
@@ -796,6 +806,16 @@ io.on("connection", (socket) => {
                 setTimeout(() => {
                     sendImposterSetup(roomId, room);
                 }, 1000);
+            }
+        } else if (gameType === "spill-the-tea") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startSpillTheTeaGame(roomId, room, hostParticipates);
+                io.to(roomId).emit("game-started", {
+                    gameType: "spill-the-tea",
+                    hostParticipates: hostParticipates || false
+                });
             }
         }
     });
@@ -2801,6 +2821,53 @@ io.on("connection", (socket) => {
             gameNumber: room.tournament.currentGameIndex + 1,
             totalGames: room.tournament.games.length
         });
+    });
+
+    // ==================== SPILL THE TEA EVENTS ====================
+
+    socket.on("submit-spill-tea-secret", ({ roomId, text }) => {
+        console.log("submit-spill-tea-secret received", roomId, socket.id);
+        const result = gameManager.submitSpillTeaSecret(roomId, socket.id, text);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        io.to(roomId).emit("spill-tea-state-update", gameManager.getSpillTeaState(roomId));
+    });
+
+    socket.on("host-next-spill-tea", ({ roomId }) => {
+        console.log("host-next-spill-tea received", roomId);
+        const result = gameManager.nextSpillTeaSecret(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        if (result.finished) {
+            io.to(roomId).emit("spill-tea-state-update", { status: 'FINISHED' });
+            // Let the game manager handle ending if there is a method, but roomManager changes gameState
+            const room = roomManager.getRoom(roomId);
+            if (room) room.gameState = "GAMEOVER";
+            // We can emit a game over event instead of calling endGame if not standard
+        } else {
+            // Emits the new secret
+            io.to(roomId).emit("spill-tea-new-secret", {
+                secret: result.secret,
+                authorId: result.authorId,
+                index: result.index,
+                total: result.total
+            });
+            // Update state
+            io.to(roomId).emit("spill-tea-state-update", gameManager.getSpillTeaState(roomId));
+        }
+    });
+
+    socket.on("author-reveal-spill-tea", ({ roomId }) => {
+        console.log("author-reveal-spill-tea received", roomId, socket.id);
+        const game = gameManager.activeGames.get(roomId);
+        if (game && game.type === 'spill-the-tea') {
+            game.hasRevealedIdentity = true;
+            io.to(roomId).emit("spill-tea-author-revealed", { authorId: socket.id });
+        }
     });
 
 });

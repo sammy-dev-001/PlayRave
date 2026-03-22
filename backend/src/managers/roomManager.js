@@ -73,6 +73,7 @@ class RoomManager {
             return { error: "Game already in progress" };
         }
 
+        let oldSocketId = null;
         if (!playerExists) {
             room.players.push({ 
                 id: playerId, 
@@ -85,10 +86,16 @@ class RoomManager {
                 isReady: false 
             });
         } else {
-            // Update socket ID if rejoining lobby
+            // Update socket ID if rejoining
+            oldSocketId = playerExists.id;
             playerExists.id = playerId;
+            
+            // If they were host, update hostId
+            if (room.hostId === oldSocketId) {
+                room.hostId = playerId;
+            }
         }
-        return { room };
+        return { room, oldSocketId };
     }
 
     // New helper for state recovery: re-bind player to new socket

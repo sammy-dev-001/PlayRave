@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -116,6 +116,16 @@ const AVAILABLE_GAMES = [
         name: 'Confession Roulette',
         description: 'Anonymous confessions - guess who wrote it!',
         icon: '🎰',
+        color: COLORS.hotPink,
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 10,
+    },
+    {
+        id: 'spill-the-tea',
+        name: 'Spill The Tea',
+        description: 'Anonymous secrets and hot takes',
+        icon: '🍵',
         color: COLORS.hotPink,
         category: 'party',
         minPlayers: 3,
@@ -241,6 +251,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
     const { playerName } = route.params;
     const [selectedGame, setSelectedGame] = useState(null);
     const [waitingForNavigation, setWaitingForNavigation] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Process games into categories
     const gamesByCategory = React.useMemo(() => {
@@ -249,13 +260,23 @@ const GameSelectionScreen = ({ route, navigation }) => {
             grouped[key] = [];
         });
 
-        AVAILABLE_GAMES.forEach(game => {
+        let available = AVAILABLE_GAMES;
+        
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            available = available.filter(game => 
+                game.name.toLowerCase().includes(query) || 
+                game.description.toLowerCase().includes(query)
+            );
+        }
+
+        available.forEach(game => {
             if (grouped[game.category]) {
                 grouped[game.category].push(game);
             }
         });
         return grouped;
-    }, []);
+    }, [searchQuery]);
 
     const handleGameSelect = async (game) => {
         if (waitingForNavigation) return;
@@ -351,6 +372,18 @@ const GameSelectionScreen = ({ route, navigation }) => {
                     }}
                 />
 
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search games..."
+                        placeholderTextColor="#888"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoCorrect={false}
+                    />
+                </View>
+
                 {Object.entries(GAME_CATEGORIES).map(([key, category]) => {
                     const categoryGames = gamesByCategory[key];
                     if (!categoryGames || categoryGames.length === 0) return null;
@@ -389,6 +422,25 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         opacity: 0.7,
         letterSpacing: 1,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        marginBottom: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        color: '#FFF',
+        fontSize: 16,
+        paddingVertical: 12,
     },
     categorySection: {
         marginBottom: 35,

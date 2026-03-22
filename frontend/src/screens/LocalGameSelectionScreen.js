@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -28,16 +28,7 @@ const LOCAL_GAMES = [
         minPlayers: 2,
         maxPlayers: 10,
     },
-    {
-        id: 'spin-bottle',
-        name: 'Spin the Bottle',
-        description: 'Spin to choose who does the dare',
-        icon: '🍾',
-        color: COLORS.neonCyan,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-    },
+
     {
         id: 'never-have-i-local',
         name: 'Never Have I Ever',
@@ -154,6 +145,7 @@ const LOCAL_GAMES = [
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { players, isSinglePlayer = false } = route.params;
+    const [searchQuery, setSearchQuery] = useState('');
 
     // AI-compatible games (only these show in single-player mode)
     const AI_COMPATIBLE_GAMES = ['scrabble', 'memory-match', 'memory-chain', 'speed-categories'];
@@ -166,9 +158,17 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         });
 
         // Filter available games first
-        const available = isSinglePlayer
+        let available = isSinglePlayer
             ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
             : LOCAL_GAMES;
+
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            available = available.filter(game => 
+                game.name.toLowerCase().includes(query) || 
+                game.description.toLowerCase().includes(query)
+            );
+        }
 
         available.forEach(game => {
             if (grouped[game.category]) {
@@ -183,8 +183,6 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('TruthOrDareCategorySelection', { players });
         } else if (gameId === 'would-you-rather') {
             navigation.navigate('WouldYouRather', { players });
-        } else if (gameId === 'spin-bottle') {
-            navigation.navigate('SpinTheBottle', { players });
         } else if (gameId === 'never-have-i-local') {
             navigation.navigate('NeverHaveIEverCategory', { players });
         } else if (gameId === 'rapid-fire') {
@@ -253,6 +251,17 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.container}>
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search games..."
+                        placeholderTextColor="#888"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoCorrect={false}
+                    />
+                </View>
                 {Object.entries(GAME_CATEGORIES).map(([key, category]) => {
                     const categoryGames = gamesByCategory[key];
                     if (!categoryGames || categoryGames.length === 0) return null;
@@ -279,6 +288,25 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
         paddingBottom: 40,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        marginBottom: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        color: '#FFF',
+        fontSize: 16,
+        paddingVertical: 12,
     },
     header: {
         alignItems: 'center',

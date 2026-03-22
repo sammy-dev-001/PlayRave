@@ -19,13 +19,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Sound effects - currently using CDN, ideally should be local
 const SOUNDS = {
-    tick: { uri: '' },
+    tick: { uri: 'https://cdn.freesound.org/previews/268/268822_4486188-lq.mp3' },
     correct: { uri: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3' },
-    wrong: { uri: '' },
+    wrong: { uri: 'https://cdn.freesound.org/previews/327/327735_5610814-lq.mp3' },
     gameStart: { uri: 'https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3' },
-    winner: { uri: '' },
+    winner: { uri: 'https://cdn.freesound.org/previews/258/258142_4486188-lq.mp3' },
     elimination: { uri: '' },
-    buttonClick: { uri: 'https://cdn.freesound.org/previews/242/242501_434738-lq.mp3' },
+    buttonClick: { uri: 'https://cdn.freesound.org/previews/263/263133_2064400-lq.mp3' },
     countdown: { uri: '' },
 };
 

@@ -4688,9 +4688,11 @@ class GameManager {
         if (!game) return;
 
         // Update player ID in game.players
-        const player = game.players.find(p => p.id === oldSocketId);
-        if (player) {
-            player.id = newSocketId;
+        if (game.players) {
+            const player = game.players.find(p => p.id === oldSocketId);
+            if (player) {
+                player.id = newSocketId;
+            }
         }
 
         // Specifically for Confession Roulette, update authorId in confessions
@@ -4701,12 +4703,121 @@ class GameManager {
                 }
             });
         }
+        
+        // Specifically for Spill the Tea, update playerId
+        if (game.type === 'spill-the-tea' && game.secrets) {
+            game.secrets.forEach(c => {
+                if (c.playerId === oldSocketId) {
+                    c.playerId = newSocketId;
+                }
+            });
+            if (game.shuffledSecrets) {
+                game.shuffledSecrets.forEach(c => {
+                    if (c.playerId === oldSocketId) {
+                        c.playerId = newSocketId;
+                    }
+                });
+            }
+        }
     }
 
     setConfessionPhase(roomId, phase) {
         const game = this.activeGames.get(roomId);
         if (game && game.type === 'confession-roulette') {
             game.phase = phase;
+        }
+    }
+
+    // Spill the Tea Game Methods
+    startSpillTheTeaGame(roomId, room, hostParticipates = true) {
+        const gameState = {
+            type: 'spill-the-tea',
+            roomId,
+            secrets: [], // { playerId, text }
+            shuffledSecrets: [],
+            currentSecretIndex: -1,
+            hasRevealedIdentity: false,
+            status: 'SUBMISSION', // SUBMISSION, READING, FINISHED
+            hostParticipates,
+            players: room.players.map(p => ({ id: p.id, name: p.name }))
+        };
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    submitSpillTeaSecret(roomId, playerId, text) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'spill-the-tea') return { error: 'Game not found' };
+
+        const existing = game.secrets.find(s => s.playerId === playerId);
+        if (existing) {
+            existing.text = text;
+        } else {
+            game.secrets.push({ playerId, text });
+        }
+
+        const activePlayerCount = game.hostParticipates ? game.players.length : Math.max(2, game.players.length - 1);
+        const allSubmitted = game.secrets.length >= activePlayerCount;
+        
+        if (allSubmitted && game.status === 'SUBMISSION') {
+            game.status = 'READING';
+            // Shuffle
+            const toShuffle = [...game.secrets];
+            for (let i = toShuffle.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [toShuffle[i], toShuffle[j]] = [toShuffle[j], toShuffle[i]];
+            }
+            game.shuffledSecrets = toShuffle;
+        }
+
+        return { success: true, allSubmitted, submissionsCount: game.secrets.length, totalNeeded: activePlayerCount };
+    }
+
+    nextSpillTeaSecret(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'spill-the-tea') return { error: 'Game not found' };
+
+        game.currentSecretIndex++;
+        game.hasRevealedIdentity = false;
+
+        if (game.currentSecretIndex >= game.shuffledSecrets.length) {
+            game.status = 'FINISHED';
+            return { finished: true };
+        }
+
+        const secretObj = game.shuffledSecrets[game.currentSecretIndex];
+        return {
+            finished: false,
+            secret: secretObj.text,
+            authorId: secretObj.playerId,
+            index: game.currentSecretIndex,
+            total: game.shuffledSecrets.length
+        };
+    }
+
+    getSpillTeaState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'spill-the-tea') return null;
+        
+        if (game.status === 'SUBMISSION') {
+            const activePlayerCount = game.hostParticipates ? game.players.length : Math.max(2, game.players.length - 1);
+            return {
+                status: game.status,
+                submissionsCount: game.secrets.length,
+                totalNeeded: activePlayerCount
+            };
+        } else if (game.status === 'READING') {
+            const secretObj = game.currentSecretIndex >= 0 && game.currentSecretIndex < game.shuffledSecrets.length ? game.shuffledSecrets[game.currentSecretIndex] : null;
+            return {
+                status: game.status,
+                currentSecretIndex: game.currentSecretIndex,
+                totalSecrets: game.shuffledSecrets.length,
+                currentSecret: secretObj ? secretObj.text : null,
+                currentAuthorId: secretObj ? secretObj.playerId : null,
+                hasRevealedIdentity: game.hasRevealedIdentity
+            };
+        } else {
+            return { status: game.status };
         }
     }
 }

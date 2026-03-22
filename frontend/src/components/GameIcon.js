@@ -26,6 +26,7 @@ const gameIcons = {
     'lie-detector': require('../../assets/images/game_lie_detector.png'),
     'kings-cup': require('../../assets/images/game_kings_cup.png'),
     'unpopular-opinions': require('../../assets/images/game_unpopular_opinions.png'),
+    'spill-the-tea': require('../../assets/images/game_spill_the_tea.png'),
 };
 
 // Aliases for reuse

@@ -82,6 +82,8 @@ const LobbyScreen = ({ route, navigation }) => {
                 navigation.navigate('OnlineRapidFire', { room, isHost, initialGameState: gameState, players });
             } else if (gameType === 'confession-roulette') {
                 navigation.navigate('ConfessionRoulette', { room, playerName, isHost });
+            } else if (gameType === 'spill-the-tea') {
+                navigation.navigate('SpillTheTea', { room, playerName, isHost });
             } else if (gameType === 'imposter') {
                 navigation.navigate('Imposter', { room, playerName, isHost });
             } else if (gameType === 'unpopular-opinions') {

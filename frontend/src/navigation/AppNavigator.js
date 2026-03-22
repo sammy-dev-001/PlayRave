@@ -211,6 +211,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="ConfessionRoulette" component={LazyConfessionRouletteScreen} />
                             <Stack.Screen name="Imposter" component={LazyImposterScreen} />
                             <Stack.Screen name="UnpopularOpinions" component={LazyUnpopularOpinionsScreen} />
+                            <Stack.Screen name="SpillTheTea" component={withSuspense(lazy(() => import('../screens/SpillTheTeaScreen')))} />
                             <Stack.Screen name="HotSeat" component={withSuspense(lazy(() => import('../screens/HotSeatScreen')))} />
                             <Stack.Screen name="ButtonMash" component={withSuspense(lazy(() => import('../screens/ButtonMashScreen')))} />
                             <Stack.Screen name="TypeRace" component={withSuspense(lazy(() => import('../screens/TypeRaceScreen')))} />

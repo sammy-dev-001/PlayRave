@@ -13,7 +13,7 @@ import RaveLights from '../components/RaveLights';
 import { COLORS, SHADOWS } from '../constants/theme';
 
 // Emojis for the memory game
-const MEMORY_ITEMS = ['🍎', '🍕', '🎸', '', '🌙', '⚡', '🎲', '🌈', '🦄', '🎯', '🔥', '💎', '🎪', '🎭', '🌺', '🦋'];
+const MEMORY_ITEMS = ['🍎', '🍕', '🎸', '🍦', '🌙', '⚡', '🎲', '🌈', '🦄', '🎯', '🔥', '💎', '🎪', '🎭', '🌺', '🦋'];
 
 const MemoryChainScreen = ({ route, navigation }) => {
     const { players } = route.params;
@@ -48,8 +48,6 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
     const [currentLevel, setCurrentLevel] = useState(1);
     const [playersAttemptedLevel, setPlayersAttemptedLevel] = useState([]);
-
-    // ... existing ...
 
     const generatePlayerSequence = (level = 1) => {
         const currentPlayer = players[currentPlayerIndex];
@@ -104,21 +102,13 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
         // Check if only one player remains
         const remaining = players.filter(p => !eliminated.includes(p.name));
-        // Note: if current player was just eliminated, they are in 'eliminated'
 
-        if (remaining.length <= 1) { // 1 or 0 (if everyone dead)
-            // If 1 winner
-            if (remaining.length === 1) {
-                setShowWinner(true);
-                return;
-            }
-            // If everyone dead (0), show game over with score
+        if (remaining.length <= 1) {
             setShowWinner(true);
             return;
         }
 
         // Determine if level is complete
-        // Level is complete if all CURRENTLY active players have attempted it
         const levelComplete = remaining.every(p => updatedAttempted.includes(p.name));
 
         let nextLevel = currentLevel;
@@ -145,6 +135,36 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
     const handleEndGame = () => {
         navigation.navigate('LocalGameSelection', { players });
+    };
+
+    const handleItemPress = (item) => {
+        const nextInputIndex = playerInput.length;
+        const expectedItem = currentSequence[nextInputIndex];
+
+        if (item === expectedItem) {
+            const nextInput = [...playerInput, item];
+            setPlayerInput(nextInput);
+
+            // Check if sequence is complete
+            if (nextInput.length === currentSequence.length) {
+                // Award points
+                const points = currentLevel * 10;
+                setScores(prev => ({
+                    ...prev,
+                    [currentPlayer.name]: (prev[currentPlayer.name] || 0) + points
+                }));
+                
+                // Delay slightly for effect before showing success
+                setTimeout(() => {
+                    setPhase('result');
+                }, 500);
+            }
+        } else {
+            // Wrong item - elimination!
+            setEliminated(prev => [...prev, currentPlayer.name]);
+            setLastEliminated(currentPlayer.name);
+            setPhase('result');
+        }
     };
 
     // Sort scores for display
