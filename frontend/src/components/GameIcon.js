@@ -1,6 +1,8 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
+import { COLORS } from '../constants/theme';
 
 const gameIcons = {
     // Original Set
@@ -27,6 +29,8 @@ const gameIcons = {
     'kings-cup': require('../../assets/images/game_kings_cup.png'),
     'unpopular-opinions': require('../../assets/images/game_unpopular_opinions.png'),
     'spill-the-tea': require('../../assets/images/game_spill_the_tea.png'),
+    'memory-chain': require('../../assets/images/game_memory_chain.png'),
+    'memory-match': require('../../assets/images/game_memory_match.png'),
 };
 
 // Aliases for reuse
@@ -40,6 +44,7 @@ const ALIASES = {
     'would-you-rather': 'myth-or-fact', // Reuse Scales
     'auction-bluff': 'kings-cup', // Reuse Cards/Chips vibe
     'speed-categories': 'word-rush',
+    'hot-seat-mc': 'hot-seat',
 };
 
 const GameIcon = ({ gameId, size = 60, style, fallbackIcon }) => {
@@ -57,7 +62,15 @@ const GameIcon = ({ gameId, size = 60, style, fallbackIcon }) => {
     }
 
     if (fallbackIcon) {
-        return <NeonText size={size * 0.6}>{fallbackIcon}</NeonText>;
+        return (
+            <View style={[{ width: size, height: size, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }, style]}>
+                <Ionicons 
+                    name={fallbackIcon} 
+                    size={size * 0.6} 
+                    color={COLORS.neonCyan} 
+                />
+            </View>
+        );
     }
 
     return null;

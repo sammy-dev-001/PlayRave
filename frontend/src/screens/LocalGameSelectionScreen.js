@@ -27,6 +27,7 @@ const LOCAL_GAMES = [
         category: 'party',
         minPlayers: 2,
         maxPlayers: 10,
+        vibes: ['hype']
     },
 
     {
@@ -38,6 +39,7 @@ const LOCAL_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['hype']
     },
     {
         id: 'kings-cup',
@@ -48,7 +50,8 @@ const LOCAL_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
-        comingSoon: true
+        comingSoon: true,
+        vibes: ['chill']
     },
     {
         id: 'would-you-rather',
@@ -59,6 +62,7 @@ const LOCAL_GAMES = [
         category: 'party',
         minPlayers: 2,
         maxPlayers: 10,
+        vibes: ['chill']
     },
     {
         id: 'rapid-fire',
@@ -69,6 +73,7 @@ const LOCAL_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['hype']
     },
     {
         id: 'scrabble',
@@ -79,6 +84,7 @@ const LOCAL_GAMES = [
         category: 'competitive',
         minPlayers: 2,
         maxPlayers: 4,
+        vibes: ['brain']
     },
     {
         id: 'caption-this',
@@ -89,6 +95,7 @@ const LOCAL_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 8,
+        vibes: ['hype']
     },
     {
         id: 'speed-categories',
@@ -99,6 +106,7 @@ const LOCAL_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['hype']
     },
     {
         id: 'auction-bluff',
@@ -109,6 +117,7 @@ const LOCAL_GAMES = [
         category: 'competitive',
         minPlayers: 3,
         maxPlayers: 8,
+        vibes: ['chill']
     },
     {
         id: 'memory-chain',
@@ -119,6 +128,7 @@ const LOCAL_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['brain']
     },
     {
         id: 'hot-seat',
@@ -129,7 +139,8 @@ const LOCAL_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
-        comingSoon: true
+        comingSoon: true,
+        vibes: ['chill']
     },
     {
         id: 'memory-match',
@@ -140,12 +151,25 @@ const LOCAL_GAMES = [
         category: 'speed',
         minPlayers: 1,
         maxPlayers: 4,
+        vibes: ['brain']
+    },
+    {
+        id: 'charades',
+        name: 'Charades',
+        description: 'Act it out — no words allowed! Pass the phone.',
+        icon: '🎭',
+        color: COLORS.hotPink,
+        category: 'party',
+        minPlayers: 2,
+        maxPlayers: 10,
+        vibes: ['hype']
     }
 ];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { players, isSinglePlayer = false } = route.params;
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedVibe, setSelectedVibe] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
     const AI_COMPATIBLE_GAMES = ['scrabble', 'memory-match', 'memory-chain', 'speed-categories'];
@@ -162,6 +186,10 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
             : LOCAL_GAMES;
 
+        if (selectedVibe !== 'all') {
+            available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
+        }
+
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             available = available.filter(game => 
@@ -176,7 +204,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             }
         });
         return grouped;
-    }, [isSinglePlayer]);
+    }, [isSinglePlayer, searchQuery, selectedVibe]);
 
     const handleSelectGame = (gameId) => {
         if (gameId === 'truth-or-dare') {
@@ -204,6 +232,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('MemoryChain', { players });
         } else if (gameId === 'memory-match') {
             navigation.navigate('MemoryMatch', { players });
+        } else if (gameId === 'charades') {
+            navigation.navigate('LocalCharades', { players });
         }
     };
 
@@ -251,6 +281,39 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.container}>
+                <View style={styles.vibeContainer}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vibeScroll}>
+                        {[
+                            { id: 'all', label: 'All Games', icon: 'apps' },
+                            { id: 'hype', label: 'Hype', icon: 'flame' },
+                            { id: 'chill', label: 'Chill', icon: 'cafe' },
+                            { id: 'brain', label: 'Brain', icon: 'hardware-chip' }
+                        ].map(vibe => (
+                            <TouchableOpacity
+                                key={vibe.id}
+                                style={[
+                                    styles.vibePill,
+                                    selectedVibe === vibe.id && styles.vibePillSelected
+                                ]}
+                                onPress={() => setSelectedVibe(vibe.id)}
+                            >
+                                <Ionicons 
+                                    name={vibe.icon} 
+                                    size={16} 
+                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan} 
+                                />
+                                <NeonText 
+                                    size={14} 
+                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan}
+                                    weight={selectedVibe === vibe.id ? 'bold' : 'normal'}
+                                >
+                                    {vibe.label}
+                                </NeonText>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
                     <TextInput
@@ -288,6 +351,32 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
         paddingBottom: 40,
+    },
+    vibeContainer: {
+        marginBottom: 20,
+    },
+    vibeScroll: {
+        gap: 10,
+        paddingHorizontal: 2,
+    },
+    vibePill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,255,255,0.05)',
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+    },
+    vibePillSelected: {
+        backgroundColor: COLORS.neonCyan,
+        shadowColor: COLORS.neonCyan,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 5,
     },
     searchContainer: {
         flexDirection: 'row',

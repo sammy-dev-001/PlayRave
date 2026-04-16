@@ -7,6 +7,7 @@ const { getRandomQuestion: getRapidFireQ } = require('../data/rapidFirePrompts')
 const { getRandomWordPair } = require('../data/imposterWords');
 const UNPOPULAR_OPINIONS = require('../data/unpopularOpinions');
 const { getRandomSentences } = require('../data/typeRaceSentences');
+const { getRandomHotSeatMCQuestion } = require('../data/hotSeatMCQuestions');
 
 
 class GameManager {
@@ -27,6 +28,7 @@ class GameManager {
         'rapid-fire': 2,
         'truth-or-dare': 2,
         'hot-seat': 3,
+        'hot-seat-mc': 3,
         'tic-tac-toe': 2,
         'unpopular-opinions': 3,
     };
@@ -4819,6 +4821,220 @@ class GameManager {
         } else {
             return { status: game.status };
         }
+    }
+
+    // ==================== HOT SEAT MC ("How Well Do You Know Me?") ====================
+
+    startHotSeatMCGame(roomId, room, hostParticipates = true, category = null) {
+        const playerOrder = [];
+
+        room.players.forEach(player => {
+            if (!hostParticipates && player.isHost) return;
+            playerOrder.push({ id: player.id, name: player.name });
+        });
+
+        if (playerOrder.length < 3) {
+            return { error: 'Hot Seat MC requires at least 3 players' };
+        }
+
+        // Shuffle player order
+        for (let i = playerOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
+        }
+
+        // Pick the first question
+        const firstQ = getRandomHotSeatMCQuestion(category);
+
+        // Initialize scores
+        const scores = {};
+        playerOrder.forEach(p => { scores[p.id] = 0; });
+
+        const gameState = {
+            type: 'hot-seat-mc',
+            roomId,
+            currentCategory: category || 'Mixed',
+            playerOrder,
+            currentTargetIndex: 0,
+            targetUserId: playerOrder[0].id,
+            targetUserName: playerOrder[0].name,
+            currentQuestion: firstQ.question,
+            currentQuestionCategory: firstQ.category,
+            options: firstQ.options,
+            targetAnswer: null,
+            playerGuesses: {},         // { playerId: guessIndex }
+            gamePhase: 'waiting-for-target', // 'waiting-for-target' | 'guessing-phase' | 'reveal-phase'
+            scores,
+            round: 1,
+            questionsUsed: [firstQ.question],
+            hostParticipates,
+            lastRoundResults: null
+        };
+
+        this.activeGames.set(roomId, gameState);
+        return gameState;
+    }
+
+    lockTargetAnswer(roomId, answerIndex) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat-mc') return { error: 'Game not found' };
+        if (game.gamePhase !== 'waiting-for-target') return { error: 'Not in target answer phase' };
+        if (answerIndex < 0 || answerIndex > 3) return { error: 'Invalid answer index' };
+
+        game.targetAnswer = answerIndex;
+        game.gamePhase = 'guessing-phase';
+
+        return { success: true };
+    }
+
+    lockPlayerGuess(roomId, playerId, guessIndex) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat-mc') return { error: 'Game not found' };
+        if (game.gamePhase !== 'guessing-phase') return { error: 'Not in guessing phase' };
+        if (playerId === game.targetUserId) return { error: 'Target cannot guess' };
+        if (guessIndex < 0 || guessIndex > 3) return { error: 'Invalid guess index' };
+
+        game.playerGuesses[playerId] = guessIndex;
+
+        // Count how many non-target players exist
+        const expectedGuessers = game.playerOrder.filter(p => p.id !== game.targetUserId).length;
+        const currentGuessCount = Object.keys(game.playerGuesses).length;
+        const allGuessed = currentGuessCount >= expectedGuessers;
+
+        return {
+            success: true,
+            guessCount: currentGuessCount,
+            expectedGuessers,
+            allGuessed
+        };
+    }
+
+    calculateHotSeatMCScores(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat-mc') return { error: 'Game not found' };
+
+        const correctAnswer = game.targetAnswer;
+        let correctGuessCount = 0;
+        const guessResults = {};
+
+        // Score each guesser
+        Object.entries(game.playerGuesses).forEach(([playerId, guessIndex]) => {
+            const isCorrect = guessIndex === correctAnswer;
+            if (isCorrect) {
+                game.scores[playerId] = (game.scores[playerId] || 0) + 100;
+                correctGuessCount++;
+            }
+            const player = game.playerOrder.find(p => p.id === playerId);
+            guessResults[playerId] = {
+                playerName: player ? player.name : 'Unknown',
+                guessIndex,
+                guessText: game.options[guessIndex],
+                isCorrect
+            };
+        });
+
+        // Target gets +50 per correct guess
+        game.scores[game.targetUserId] = (game.scores[game.targetUserId] || 0) + (correctGuessCount * 50);
+
+        game.gamePhase = 'reveal-phase';
+
+        game.lastRoundResults = {
+            question: game.currentQuestion,
+            category: game.currentQuestionCategory,
+            options: game.options,
+            targetUserId: game.targetUserId,
+            targetUserName: game.targetUserName,
+            correctAnswerIndex: correctAnswer,
+            correctAnswerText: game.options[correctAnswer],
+            guessResults,
+            correctGuessCount,
+            targetBonus: correctGuessCount * 50,
+            scores: { ...game.scores }
+        };
+
+        return game.lastRoundResults;
+    }
+
+    nextHotSeatMCRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat-mc') return { error: 'Game not found' };
+
+        game.currentTargetIndex++;
+
+        if (game.currentTargetIndex >= game.playerOrder.length) {
+            // All players have been in the hot seat — game over
+            game.gamePhase = 'finished';
+
+            // Build final rankings
+            const rankings = game.playerOrder
+                .map(p => ({ id: p.id, name: p.name, score: game.scores[p.id] || 0 }))
+                .sort((a, b) => b.score - a.score);
+
+            return {
+                finished: true,
+                rankings,
+                winner: rankings[0]
+            };
+        }
+
+        // Set up next round
+        const nextTarget = game.playerOrder[game.currentTargetIndex];
+        const categoryToUse = game.currentCategory === 'Mixed' ? null : game.currentCategory;
+        const nextQ = getRandomHotSeatMCQuestion(categoryToUse, game.questionsUsed);
+
+        game.targetUserId = nextTarget.id;
+        game.targetUserName = nextTarget.name;
+        game.currentQuestion = nextQ.question;
+        game.currentQuestionCategory = nextQ.category;
+        game.options = nextQ.options;
+        game.targetAnswer = null;
+        game.playerGuesses = {};
+        game.gamePhase = 'waiting-for-target';
+        game.round++;
+        game.questionsUsed.push(nextQ.question);
+        game.lastRoundResults = null;
+
+        return {
+            finished: false,
+            round: game.round,
+            targetUserId: game.targetUserId,
+            targetUserName: game.targetUserName
+        };
+    }
+
+    getHotSeatMCState(roomId, playerId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.type !== 'hot-seat-mc') return null;
+
+        const isTarget = playerId === game.targetUserId;
+        const hasGuessed = !!game.playerGuesses[playerId];
+        const expectedGuessers = game.playerOrder.filter(p => p.id !== game.targetUserId).length;
+        const guessCount = Object.keys(game.playerGuesses).length;
+
+        const state = {
+            gamePhase: game.gamePhase,
+            round: game.round,
+            totalRounds: game.playerOrder.length,
+            currentCategory: game.currentCategory,
+            currentQuestionCategory: game.currentQuestionCategory,
+            targetUserId: game.targetUserId,
+            targetUserName: game.targetUserName,
+            currentQuestion: game.currentQuestion,
+            options: game.options,
+            isTarget,
+            hasGuessed,
+            guessCount,
+            expectedGuessers,
+            scores: game.scores
+        };
+
+        // Only show the target's answer during reveal phase
+        if (game.gamePhase === 'reveal-phase') {
+            state.targetAnswer = game.targetAnswer;
+            state.lastRoundResults = game.lastRoundResults;
+        }
+
+        return state;
     }
 }
 

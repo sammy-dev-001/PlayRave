@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -44,21 +45,21 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
             id: 'easy',
             name: 'Easy',
             description: 'Random moves - Great for beginners',
-            icon: '🟢',
+            icon: 'speedometer-outline',
             color: COLORS.limeGlow
         },
         {
             id: 'medium',
             name: 'Medium',
             description: 'Smart moves - Moderate challenge',
-            icon: '🟡',
+            icon: 'speedometer',
             color: COLORS.neonCyan
         },
         {
             id: 'hard',
             name: 'Hard',
             description: 'Strategic expert - Tough opponent',
-            icon: '🔴',
+            icon: 'flame',
             color: COLORS.hotPink
         }
     ];
@@ -94,7 +95,17 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
                         ]}
                         onPress={() => setSelectedDifficulty(diff.id)}
                     >
-                        <NeonText size={48}>{diff.icon}</NeonText>
+                        <Ionicons 
+                            name={diff.icon} 
+                            size={48} 
+                            color={diff.color}
+                            style={{
+                                textShadowColor: diff.color,
+                                textShadowOffset: { width: 0, height: 0 },
+                                textShadowRadius: 10,
+                                marginBottom: 10
+                            }}
+                        />
                         <NeonText size={24} weight="bold" style={styles.difficultyName}>
                             {diff.name}
                         </NeonText>

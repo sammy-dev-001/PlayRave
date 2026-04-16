@@ -259,9 +259,15 @@ io.on("connection", (socket) => {
             if (global.pendingDisconnects) {
                 global.pendingDisconnects.delete(userId);
             }
+
+            // Clear the disconnected flag now they're back
+            if (result.player) {
+                result.player.isDisconnected = false;
+            }
             
             // 1. Send immediate room state
             socket.emit("room-updated", result.room);
+            io.to(roomId).emit("room-updated", result.room);
             
             // 2. Fetch and send full game state if playing
             if (result.room.gameState === 'PLAYING' || result.room.gameState === 'GAMEOVER') {
@@ -355,7 +361,17 @@ io.on("connection", (socket) => {
         if (roomId && userId) {
             if (!global.pendingDisconnects) global.pendingDisconnects = new Map();
             global.pendingDisconnects.set(userId, { roomId, socketId: socket.id, timestamp: Date.now() });
-            
+
+            // Mark player as disconnected so frontend can show Away indicator
+            const roomForDisconnect = roomManager.getRoom(roomId);
+            if (roomForDisconnect) {
+                const disconnectedPlayer = roomForDisconnect.players.find(p => p.id === socket.id);
+                if (disconnectedPlayer) {
+                    disconnectedPlayer.isDisconnected = true;
+                    io.to(roomId).emit('room-updated', roomForDisconnect);
+                }
+            }
+
             // Notify others that player is "away"
             io.to(roomId).emit("player-connection-lost", { playerName, userId });
         }
@@ -817,6 +833,26 @@ io.on("connection", (socket) => {
                     hostParticipates: hostParticipates || false
                 });
             }
+        } else if (gameType === "hot-seat-mc") {
+            console.log("Starting Hot Seat MC game for room:", roomId, "category:", category);
+            const gameState = gameManager.startHotSeatMCGame(roomId, room, hostParticipates, category || null);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send personalized state to each player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "hot-seat-mc",
+                    gameState: playerState,
+                    players: room.players,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Hot Seat MC game started successfully");
         }
     });
 
@@ -2066,7 +2102,110 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("hot-seat-game-finished", { message: "Game ended by host" });
     });
 
-    // ==================== BUTTON MASH EVENTS ====================
+    // ==================== HOT SEAT MC EVENTS ====================
+
+    socket.on("lock-target-answer", ({ roomId, answerIndex }) => {
+        console.log("lock-target-answer received, roomId:", roomId, "answerIndex:", answerIndex);
+
+        const result = gameManager.lockTargetAnswer(roomId, answerIndex);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated state to each player
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-mc-state-update", playerState);
+        });
+    });
+
+    socket.on("lock-player-guess", ({ roomId, guessIndex }) => {
+        console.log("lock-player-guess received, roomId:", roomId, "player:", socket.id, "guess:", guessIndex);
+
+        const result = gameManager.lockPlayerGuess(roomId, socket.id, guessIndex);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+
+        // Broadcast updated guess count to all players
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-mc-state-update", playerState);
+        });
+
+        // If all guessed, auto-trigger score calculation
+        if (result.allGuessed) {
+            const scores = gameManager.calculateHotSeatMCScores(roomId);
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-mc-reveal", {
+                    results: scores,
+                    gameState: playerState
+                });
+            });
+        }
+    });
+
+    socket.on("calculate-hot-seat-mc-scores", ({ roomId }) => {
+        console.log("calculate-hot-seat-mc-scores received, roomId:", roomId);
+
+        const scores = gameManager.calculateHotSeatMCScores(roomId);
+        if (scores.error) {
+            socket.emit("error", { message: scores.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-mc-reveal", {
+                results: scores,
+                gameState: playerState
+            });
+        });
+    });
+
+    socket.on("hot-seat-mc-next-round", ({ roomId }) => {
+        console.log("hot-seat-mc-next-round received, roomId:", roomId);
+
+        const result = gameManager.nextHotSeatMCRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+
+        if (result.finished) {
+            io.to(roomId).emit("hot-seat-mc-game-finished", {
+                message: "All players have been in the Hot Seat!",
+                rankings: result.rankings,
+                winner: result.winner
+            });
+        } else {
+            // Broadcast new round state to each player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-mc-state-update", playerState);
+            });
+        }
+    });
+
+    socket.on("hot-seat-mc-end-game", ({ roomId }) => {
+        console.log("hot-seat-mc-end-game received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("hot-seat-mc-game-finished", {
+            message: "Game ended by host",
+            rankings: [],
+            winner: null
+        });
+    });
+
     socket.on("button-mash-start", ({ roomId }) => {
         console.log("button-mash-start event received, roomId:", roomId);
 

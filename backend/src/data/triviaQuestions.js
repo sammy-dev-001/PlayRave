@@ -1252,6 +1252,36 @@ const triviaQuestions = [
         options: ["Eagle", "Falcon", "Hawk", "Swift"],
         correctAnswer: 1,
         category: "Nature"
+    },
+    {
+        question: "Which chemical element has the symbol 'K'?",
+        options: ["Krypton", "Potassium", "Phosphorus", "Iron"],
+        correctAnswer: 1,
+        category: "Science"
+    },
+    {
+        question: "What is the smallest bone in the human body located?",
+        options: ["Nose", "Toe", "Ear", "Finger"],
+        correctAnswer: 2,
+        category: "Science"
+    },
+    {
+        question: "How many hearts does an octopus have?",
+        options: ["1", "2", "3", "4"],
+        correctAnswer: 2,
+        category: "Nature"
+    },
+    {
+        question: "Which planet is known for its beautiful rings?",
+        options: ["Jupiter", "Uranus", "Neptune", "Saturn"],
+        correctAnswer: 3,
+        category: "Science"
+    },
+    {
+        question: "In what year did the Apollo 11 moon landing occur?",
+        options: ["1965", "1969", "1971", "1973"],
+        correctAnswer: 1,
+        category: "History"
     }
 ];
 

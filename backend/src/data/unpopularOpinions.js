@@ -45,5 +45,12 @@ module.exports = [
     { text: "Tablets are useless devices.", category: "Tech" },
     { text: "Wireless earbuds are easy to lose and annoying.", category: "Tech" },
     { text: "Selfies are cringe.", category: "Tech" },
-    { text: "LinkedIn is the worst social network.", category: "Tech" }
+    { text: "LinkedIn is the worst social network.", category: "Tech" },
+
+    // Relationships & Social
+    { text: "Small talk is actually important and nice.", category: "Social" },
+    { text: "Ghosting is sometimes acceptable.", category: "Social" },
+    { text: "Roommates are better than living alone.", category: "Social" },
+    { text: "Voice calls without warning are rude.", category: "Social" },
+    { text: "Leaving a party without saying goodbye is the best way.", category: "Social" }
 ];

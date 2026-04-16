@@ -30,6 +30,7 @@ const AVAILABLE_GAMES = [
         category: 'trivia',
         minPlayers: 2,
         maxPlayers: 10,
+        vibes: ['brain']
     },
     {
         id: 'myth-or-fact',
@@ -40,6 +41,7 @@ const AVAILABLE_GAMES = [
         category: 'trivia',
         minPlayers: 2,
         maxPlayers: 10,
+        vibes: ['brain', 'hype', 'chill']
     },
     {
         id: 'whos-most-likely',
@@ -50,6 +52,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['hype']
     },
     {
         id: 'neon-tap',
@@ -60,6 +63,7 @@ const AVAILABLE_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['hype']
     },
     {
         id: 'word-rush',
@@ -70,6 +74,7 @@ const AVAILABLE_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 6,
+        vibes: ['hype']
     },
     {
         id: 'whot',
@@ -80,6 +85,7 @@ const AVAILABLE_GAMES = [
         category: 'competitive',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['chill']
     },
     {
         id: 'truth-or-dare',
@@ -90,6 +96,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 2,
         maxPlayers: 10,
+        vibes: ['hype']
     },
     {
         id: 'never-have-i-ever',
@@ -100,6 +107,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['hype']
     },
     {
         id: 'rapid-fire',
@@ -110,6 +118,7 @@ const AVAILABLE_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['hype']
     },
     {
         id: 'confession-roulette',
@@ -120,6 +129,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['chill', 'hype']
     },
     {
         id: 'spill-the-tea',
@@ -130,6 +140,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['chill']
     },
     {
         id: 'imposter',
@@ -140,6 +151,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 4,
         maxPlayers: 10,
+        vibes: ['hype']
     },
     {
         id: 'unpopular-opinions',
@@ -150,6 +162,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 2,
         maxPlayers: 10,
+        vibes: ['chill']
     },
     {
         id: 'hot-seat',
@@ -160,6 +173,18 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['chill']
+    },
+    {
+        id: 'hot-seat-mc',
+        name: 'The Hot Seat',
+        description: 'How well do they know you? Pick your answer, everyone guesses!',
+        icon: '🔥',
+        color: '#FF6B35',
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 10,
+        vibes: ['chill']
     },
     {
         id: 'button-mash',
@@ -170,6 +195,7 @@ const AVAILABLE_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 6,
+        vibes: ['hype']
     },
     {
         id: 'type-race',
@@ -180,6 +206,7 @@ const AVAILABLE_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 6,
+        vibes: ['brain']
     },
     {
         id: 'math-blitz',
@@ -190,6 +217,7 @@ const AVAILABLE_GAMES = [
         category: 'trivia',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['brain']
     },
     {
         id: 'color-rush',
@@ -200,6 +228,7 @@ const AVAILABLE_GAMES = [
         category: 'speed',
         minPlayers: 2,
         maxPlayers: 6,
+        vibes: ['hype']
     },
     {
         id: 'tic-tac-toe',
@@ -210,6 +239,7 @@ const AVAILABLE_GAMES = [
         category: 'competitive',
         minPlayers: 2,
         maxPlayers: 8,
+        vibes: ['brain']
     },
     {
         id: 'draw-battle',
@@ -220,6 +250,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 8,
+        vibes: ['hype']
     },
     {
         id: 'lie-detector',
@@ -230,6 +261,7 @@ const AVAILABLE_GAMES = [
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
+        vibes: ['chill']
     },
     {
         id: 'scrabble',
@@ -240,6 +272,7 @@ const AVAILABLE_GAMES = [
         category: 'competitive',
         minPlayers: 2,
         maxPlayers: 4,
+        vibes: ['brain']
     }
 ];
 
@@ -252,6 +285,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
     const [selectedGame, setSelectedGame] = useState(null);
     const [waitingForNavigation, setWaitingForNavigation] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedVibe, setSelectedVibe] = useState('all');
 
     // Process games into categories
     const gamesByCategory = React.useMemo(() => {
@@ -262,6 +296,10 @@ const GameSelectionScreen = ({ route, navigation }) => {
 
         let available = AVAILABLE_GAMES;
         
+        if (selectedVibe !== 'all') {
+            available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
+        }
+
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             available = available.filter(game => 
@@ -276,10 +314,21 @@ const GameSelectionScreen = ({ route, navigation }) => {
             }
         });
         return grouped;
-    }, [searchQuery]);
+    }, [searchQuery, selectedVibe]);
 
     const handleGameSelect = async (game) => {
         if (waitingForNavigation) return;
+
+        // Hot Seat MC has its own category selection screen before start
+        if (game.id === 'hot-seat-mc') {
+            navigation.navigate('HotSeatCategory', {
+                room,
+                isHost: true,
+                playerName,
+            });
+            return;
+        }
+
         setWaitingForNavigation(true);
         setSelectedGame(game);
 
@@ -372,6 +421,39 @@ const GameSelectionScreen = ({ route, navigation }) => {
                     }}
                 />
 
+                <View style={styles.vibeContainer}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vibeScroll}>
+                        {[
+                            { id: 'all', label: 'All Games', icon: 'apps' },
+                            { id: 'hype', label: 'Hype', icon: 'flame' },
+                            { id: 'chill', label: 'Chill', icon: 'cafe' },
+                            { id: 'brain', label: 'Brain', icon: 'hardware-chip' }
+                        ].map(vibe => (
+                            <TouchableOpacity
+                                key={vibe.id}
+                                style={[
+                                    styles.vibePill,
+                                    selectedVibe === vibe.id && styles.vibePillSelected
+                                ]}
+                                onPress={() => setSelectedVibe(vibe.id)}
+                            >
+                                <Ionicons 
+                                    name={vibe.icon} 
+                                    size={16} 
+                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan} 
+                                />
+                                <NeonText 
+                                    size={14} 
+                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan}
+                                    weight={selectedVibe === vibe.id ? 'bold' : 'normal'}
+                                >
+                                    {vibe.label}
+                                </NeonText>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
                     <TextInput
@@ -422,6 +504,32 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         opacity: 0.7,
         letterSpacing: 1,
+    },
+    vibeContainer: {
+        marginBottom: 20,
+    },
+    vibeScroll: {
+        gap: 10,
+        paddingHorizontal: 2,
+    },
+    vibePill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,255,255,0.05)',
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+    },
+    vibePillSelected: {
+        backgroundColor: COLORS.neonCyan,
+        shadowColor: COLORS.neonCyan,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 5,
     },
     searchContainer: {
         flexDirection: 'row',

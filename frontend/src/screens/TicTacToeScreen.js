@@ -175,14 +175,16 @@ const TicTacToeScreen = ({ route, navigation }) => {
             >
                 {value && (
                     <Animated.View style={{ transform: [{ scale }] }}>
-                        <NeonText
-                            size={48}
-                            weight="bold"
-                            glow
+                        <Ionicons
+                            name={value === 'X' ? 'close' : 'ellipse-outline'}
+                            size={56}
                             color={value === 'X' ? COLORS.neonCyan : COLORS.hotPink}
-                        >
-                            {value}
-                        </NeonText>
+                            style={{
+                                textShadowColor: value === 'X' ? COLORS.neonCyan : COLORS.hotPink,
+                                textShadowOffset: { width: 0, height: 0 },
+                                textShadowRadius: 15
+                            }}
+                        />
                     </Animated.View>
                 )}
             </TouchableOpacity>
@@ -424,3 +426,4 @@ const styles = StyleSheet.create({
 });
 
 export default TicTacToeScreen;
+

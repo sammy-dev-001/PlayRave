@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -15,21 +16,21 @@ const TruthOrDareCategorySelectionScreen = ({ route, navigation }) => {
             name: 'NORMAL',
             description: 'Fun and friendly questions and dares',
             color: COLORS.limeGlow,
-            icon: '😊'
+            icon: 'happy-outline'
         },
         {
             id: 'spicy',
             name: 'SPICY',
             description: 'Bold questions and daring challenges',
             color: COLORS.hotPink,
-            icon: '🌶️'
+            icon: 'flame'
         },
         {
             id: 'naughty',
             name: 'NAUGHTY',
             description: 'Adults only - explicit content',
             color: COLORS.electricPurple,
-            icon: '🔞'
+            icon: 'warning'
         }
     ];
 
@@ -67,9 +68,16 @@ const TruthOrDareCategorySelectionScreen = ({ route, navigation }) => {
                             ]}
                             onPress={() => setSelectedCategory(category.id)}
                         >
-                            <NeonText size={40} style={styles.categoryIcon}>
-                                {category.icon}
-                            </NeonText>
+                            <Ionicons 
+                                name={category.icon} 
+                                size={40} 
+                                color={selectedCategory === category.id ? category.color : COLORS.white}
+                                style={[{
+                                    textShadowColor: selectedCategory === category.id ? category.color : 'transparent',
+                                    textShadowOffset: { width: 0, height: 0 },
+                                    textShadowRadius: 10
+                                }, styles.categoryIcon]}
+                            />
                             <NeonText
                                 size={22}
                                 weight="bold"

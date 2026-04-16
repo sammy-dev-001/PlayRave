@@ -213,6 +213,8 @@ const AppNavigator = () => {
                             <Stack.Screen name="UnpopularOpinions" component={LazyUnpopularOpinionsScreen} />
                             <Stack.Screen name="SpillTheTea" component={withSuspense(lazy(() => import('../screens/SpillTheTeaScreen')))} />
                             <Stack.Screen name="HotSeat" component={withSuspense(lazy(() => import('../screens/HotSeatScreen')))} />
+                            <Stack.Screen name="HotSeatCategory" component={withSuspense(lazy(() => import('../screens/HotSeatCategoryScreen')))} />
+                            <Stack.Screen name="HotSeatMC" component={withSuspense(lazy(() => import('../screens/HotSeatMCScreen')))} />
                             <Stack.Screen name="ButtonMash" component={withSuspense(lazy(() => import('../screens/ButtonMashScreen')))} />
                             <Stack.Screen name="TypeRace" component={withSuspense(lazy(() => import('../screens/TypeRaceScreen')))} />
                             <Stack.Screen name="MathBlitz" component={withSuspense(lazy(() => import('../screens/MathBlitzScreen')))} />
@@ -228,6 +230,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="Challenges" component={withSuspense(ChallengesScreen)} />
                             <Stack.Screen name="LieDetector" component={withSuspense(lazy(() => import('../screens/LieDetectorScreen')))} />
                             <Stack.Screen name="LANMode" component={withSuspense(lazy(() => import('../screens/LANModeScreen')))} />
+                            <Stack.Screen name="LocalCharades" component={withSuspense(lazy(() => import('../screens/LocalCharadesScreen')))} />
                         </Stack.Navigator>
                     </NavigationContainer>
                 </GameProvider>

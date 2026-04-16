@@ -257,6 +257,7 @@ export function GameProvider({ children }) {
                 name: state.player.name,
                 avatar: state.player.avatar,
                 avatarColor: state.player.avatarColor,
+                userId: user?.id || state.player.uid || state.player.id,
             });
         }
     }, [state.room, state.player]);

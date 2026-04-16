@@ -23,7 +23,22 @@ const SPEED_CATEGORIES = [
     'Body Parts',
     'Occupations',
     'Languages',
-    'Planets'
+    'Planets',
+    'Fast Food Chains',
+    'Types of Cheese',
+    'Things that are Green',
+    'Superheroes',
+    'School Subjects',
+    'Things you plug in',
+    'Pizza Toppings',
+    'Insects',
+    'Things at the Beach',
+    'Types of Weather',
+    'Card Games',
+    'Things with Wheels',
+    'Hobbies',
+    'Desserts',
+    'Reptiles'
 ];
 
 const getRandomCategories = (count = 5) => {

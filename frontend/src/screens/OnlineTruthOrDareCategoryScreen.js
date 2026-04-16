@@ -24,21 +24,21 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
             name: 'NORMAL',
             description: 'Fun and friendly questions and dares',
             color: COLORS.limeGlow,
-            icon: '😊'
+            icon: 'happy-outline'
         },
         {
             id: 'spicy',
             name: 'SPICY',
             description: 'Bold questions and daring challenges',
             color: COLORS.hotPink,
-            icon: '🌶️'
+            icon: 'flame'
         },
         {
             id: 'naughty',
             name: 'NAUGHTY',
             description: 'Adults only - explicit content',
             color: COLORS.electricPurple,
-            icon: '🔞'
+            icon: 'warning'
         }
     ];
 
@@ -94,9 +94,16 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
                         ]}
                         onPress={() => setSelectedCategory(category.id)}
                     >
-                        <NeonText size={48} style={styles.categoryIcon}>
-                            {category.icon}
-                        </NeonText>
+                        <Ionicons 
+                            name={category.icon} 
+                            size={48} 
+                            color={selectedCategory === category.id ? category.color : COLORS.white}
+                            style={[{
+                                textShadowColor: selectedCategory === category.id ? category.color : 'transparent',
+                                textShadowOffset: { width: 0, height: 0 },
+                                textShadowRadius: 10
+                            }, styles.categoryIcon]}
+                        />
                         <NeonText
                             size={24}
                             weight="bold"

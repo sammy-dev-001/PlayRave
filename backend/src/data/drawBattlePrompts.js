@@ -43,7 +43,21 @@ const DRAW_PROMPTS = [
     "A DJ dropping beats",
     "Someone dancing badly",
     "The dance floor chaos",
-    "A party animal (literally)"
+    "A party animal (literally)",
+    
+    // Abstract/Hard
+    "The feeling of a Monday morning",
+    "A song stuck in your head",
+    "Love at first sight",
+    "Spicy food",
+    "A bad haircut",
+    
+    // Scenarios
+    "A T-Rex trying to make a bed",
+    "Batman doing laundry",
+    "An alien abducting a cow",
+    "A bear riding a unicycle",
+    "Darth Vader playing golf"
 ];
 
 // Get random prompts for a game

@@ -269,6 +269,7 @@ class SocketService {
                 playerName: this.lastPlayerData.name,
                 avatar: this.lastPlayerData.avatar,
                 avatarColor: this.lastPlayerData.avatarColor,
+                userId: this.lastPlayerData.userId,
                 isRejoin: true,
             });
         }

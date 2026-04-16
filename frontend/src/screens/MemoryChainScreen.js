@@ -12,8 +12,12 @@ import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import { COLORS, SHADOWS } from '../constants/theme';
 
-// Emojis for the memory game
-const MEMORY_ITEMS = ['🍎', '🍕', '🎸', '🍦', '🌙', '⚡', '🎲', '🌈', '🦄', '🎯', '🔥', '💎', '🎪', '🎭', '🌺', '🦋'];
+// Ionicons for the memory game
+const MEMORY_ITEMS = [
+    'game-controller', 'flash', 'headset', 'musical-notes', 'planet', 'rocket',
+    'star', 'flame', 'heart', 'diamond', 'skull', 'rose',
+    'pizza', 'beer', 'ice-cream', 'moon', 'sunny', 'snow'
+];
 
 const MemoryChainScreen = ({ route, navigation }) => {
     const { players } = route.params;
@@ -183,7 +187,12 @@ const MemoryChainScreen = ({ route, navigation }) => {
                     <NeonText size={28} weight="bold" glow>
                         MEMORY MASTER
                     </NeonText>
-                    <NeonText size={80}></NeonText>
+                    <Ionicons 
+                        name="trophy" 
+                        size={80} 
+                        color={COLORS.neonCyan} 
+                        style={{ textShadowColor: COLORS.neonCyan, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 }} 
+                    />
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
                         {winner?.name}
                     </NeonText>
@@ -252,9 +261,16 @@ const MemoryChainScreen = ({ route, navigation }) => {
                         { transform: [{ scale: scaleAnim }] }
                     ]}>
                         {showingIndex >= 0 && (
-                            <NeonText size={80}>
-                                {currentSequence[showingIndex]}
-                            </NeonText>
+                            <Ionicons 
+                                name={currentSequence[showingIndex]} 
+                                size={80} 
+                                color={COLORS.neonCyan} 
+                                style={{
+                                    textShadowColor: COLORS.neonCyan,
+                                    textShadowOffset: { width: 0, height: 0 },
+                                    textShadowRadius: 15
+                                }} 
+                            />
                         )}
                     </Animated.View>
 
@@ -311,7 +327,16 @@ const MemoryChainScreen = ({ route, navigation }) => {
                             style={styles.itemButton}
                             onPress={() => handleItemPress(item)}
                         >
-                            <NeonText size={36}>{item}</NeonText>
+                            <Ionicons 
+                                name={item} 
+                                size={36} 
+                                color={COLORS.limeGlow} 
+                                style={{
+                                    textShadowColor: COLORS.limeGlow,
+                                    textShadowOffset: { width: 0, height: 0 },
+                                    textShadowRadius: 10
+                                }} 
+                            />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -328,7 +353,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                 <View style={styles.resultContainer}>
                     {lastEliminated === currentPlayer.name ? (
                         <>
-                            <NeonText size={64}>❌</NeonText>
+                            <Ionicons name="close-circle" size={64} color={COLORS.hotPink} style={{ textShadowColor: COLORS.hotPink, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 }} />
                             <NeonText size={28} weight="bold" color={COLORS.hotPink}>
                                 WRONG!
                             </NeonText>
@@ -339,14 +364,20 @@ const MemoryChainScreen = ({ route, navigation }) => {
                                 <NeonText size={12} color="#888">The sequence was:</NeonText>
                                 <View style={styles.sequenceRow}>
                                     {currentSequence.map((item, i) => (
-                                        <NeonText key={i} size={24}>{item}</NeonText>
+                                        <Ionicons 
+                                            key={i} 
+                                            name={item} 
+                                            size={24} 
+                                            color={COLORS.neonCyan} 
+                                            style={{ marginHorizontal: 4 }} 
+                                        />
                                     ))}
                                 </View>
                             </View>
                         </>
                     ) : (
                         <>
-                            <NeonText size={64}>✅</NeonText>
+                            <Ionicons name="checkmark-circle" size={64} color={COLORS.limeGlow} style={{ textShadowColor: COLORS.limeGlow, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 }} />
                             <NeonText size={28} weight="bold" color={COLORS.limeGlow}>
                                 CORRECT!
                             </NeonText>

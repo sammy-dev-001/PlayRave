@@ -18,12 +18,12 @@ import { COLORS } from '../constants/theme';
 const TOURNAMENT_GAMES = [
     { id: 'trivia', name: 'Trivia', icon: 'bulb', points: '10 per correct' },
     { id: 'would-you-rather', name: 'Would You Rather', icon: 'help-circle', points: 'Majority wins' },
-    { id: 'whos-most-likely', name: "Who's Most Likely", icon: '👆', points: 'Votes = points' },
+    { id: 'whos-most-likely', name: "Who's Most Likely", icon: 'hand-up', points: 'Votes = points' },
     { id: 'rapid-fire', name: 'Rapid Fire', icon: 'flash', points: 'Speed bonus' },
     { id: 'myth-or-fact', name: 'Myth or Fact', icon: 'search', points: '10 per correct' },
     { id: 'imposter', name: 'Imposter', icon: 'search', points: 'Survival bonus' },
-    { id: 'memory-chain', name: 'Memory Chain', icon: '🔗', points: 'Chain length' },
-    { id: 'math-blitz', name: 'Math Blitz', icon: '🔢', points: 'Speed + accuracy' },
+    { id: 'memory-chain', name: 'Memory Chain', icon: 'link', points: 'Chain length' },
+    { id: 'math-blitz', name: 'Math Blitz', icon: 'calculator', points: 'Speed + accuracy' },
     { id: 'type-race', name: 'Type Race', icon: 'keypad', points: 'WPM score' },
     { id: 'word-rush', name: 'Word Rush', icon: 'create', points: 'Words found' },
 ];
@@ -122,9 +122,15 @@ const TournamentSetupScreen = ({ route, navigation }) => {
                                 const game = TOURNAMENT_GAMES.find(g => g.id === gameId);
                                 return (
                                     <View key={gameId} style={styles.selectedItem}>
-                                        <NeonText size={14} color={COLORS.neonCyan}>
-                                            {index + 1}. {game?.icon} {game?.name}
-                                        </NeonText>
+                                        <View style={styles.itemTitleRow}>
+                                            <NeonText size={14} color={COLORS.neonCyan}>
+                                                {index + 1}. 
+                                            </NeonText>
+                                            <Ionicons name={game?.icon} size={14} color={COLORS.neonCyan} style={styles.itemIcon} />
+                                            <NeonText size={14} color={COLORS.neonCyan}>
+                                                {game?.name}
+                                            </NeonText>
+                                        </View>
                                         <View style={styles.orderButtons}>
                                             <TouchableOpacity
                                                 onPress={() => moveGame(index, -1)}
@@ -241,6 +247,13 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.3)',
         borderRadius: 8,
         padding: 10,
+    },
+    itemTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    itemIcon: {
+        marginHorizontal: 4,
     },
     orderButtons: {
         flexDirection: 'row',

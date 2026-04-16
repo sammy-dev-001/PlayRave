@@ -1,0 +1,10 @@
+@echo off
+echo =========================================
+echo   GREATNESS EMPIRE - MATRIX LAUNCHER
+echo =========================================
+echo.
+echo Connecting to S21 Ultra...
+adb connect 10.96.255.33:5555
+echo.
+echo Launching with physical screen OFF...
+scrcpy -S

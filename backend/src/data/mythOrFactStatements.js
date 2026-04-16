@@ -193,6 +193,42 @@ const mythOrFactStatements = [
         answer: true,
         category: "General Knowledge",
         explanation: "This is a fact! Built around 2560 BC at 146.5 meters, it remained the tallest until Lincoln Cathedral in 1311 AD."
+    },
+    {
+        statement: "Ostriches bury their heads in the sand when scared",
+        answer: false,
+        category: "Nature",
+        explanation: "This is a myth. Ostriches actually drop to the ground and lie still to blend in with the landscape when they feel threatened."
+    },
+    {
+        statement: "The human nose can detect over 1 trillion different scents",
+        answer: true,
+        category: "Science",
+        explanation: "This is a fact! Recent studies suggest the human olfactory system is much more powerful than previously thought and can distinguish over a trillion scents."
+    },
+    {
+        statement: "Eating carrots significantly improves your night vision",
+        answer: false,
+        category: "Science",
+        explanation: "This is a myth. While carrots have Vitamin A (which is good for eye health), they won't give you superhuman night vision. This myth was WWII British propaganda to hide their radar technology."
+    },
+    {
+        statement: "Oxford University is older than the Aztec Empire",
+        answer: true,
+        category: "History",
+        explanation: "This is a fact! Teaching at Oxford began in 1096, while the central city of the Aztec Empire, Tenochtitlan, was founded in 1325."
+    },
+    {
+        statement: "Bulls become angry when they see the color red",
+        answer: false,
+        category: "Nature",
+        explanation: "This is a myth. Bulls are partially color-blind to red. They charge at the matador's cape because of its movement, not its color."
+    },
+    {
+        statement: "A strawberry is not actually a berry",
+        answer: true,
+        category: "Nature",
+        explanation: "This is a fact! Botanically speaking, a strawberry is an 'aggregate fruit'. Avocados and watermelon, however, are true berries."
     }
 ];
 

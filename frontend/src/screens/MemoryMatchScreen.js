@@ -14,11 +14,11 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
 
-// Card content - emojis for matching
+// Card content - Ionicons for matching
 const CARD_PAIRS = [
-    '🎮', '🎯', '🎪', '🎭', '🎨', '🎬',
-    '🎤', '🎧', '🎸', '🎹', '🎺', '🎻',
-    '', '⭐', '💎', '🔥', '⚡', '🌈'
+    'game-controller', 'flash', 'headset', 'musical-notes', 'planet', 'rocket',
+    'star', 'flame', 'heart', 'diamond', 'skull', 'rose',
+    'pizza', 'beer', 'ice-cream', 'moon', 'sunny', 'snow'
 ];
 
 const MemoryMatchScreen = ({ route, navigation }) => {
@@ -40,14 +40,14 @@ const MemoryMatchScreen = ({ route, navigation }) => {
         const totalCards = gridSize * gridSize;
         const pairsNeeded = totalCards / 2;
 
-        // Select random emojis and create pairs
-        const shuffledEmojis = [...CARD_PAIRS].sort(() => Math.random() - 0.5);
-        const selectedEmojis = shuffledEmojis.slice(0, pairsNeeded);
-        const cardPairs = [...selectedEmojis, ...selectedEmojis];
+        // Select random icons and create pairs
+        const shuffledIcons = [...CARD_PAIRS].sort(() => Math.random() - 0.5);
+        const selectedIcons = shuffledIcons.slice(0, pairsNeeded);
+        const cardPairs = [...selectedIcons, ...selectedIcons];
 
         // Shuffle the cards
         const shuffledCards = cardPairs
-            .map((emoji, index) => ({ id: index, emoji, isFlipped: false, isMatched: false }))
+            .map((icon, index) => ({ id: index, icon, isFlipped: false, isMatched: false }))
             .sort(() => Math.random() - 0.5);
 
         // Initialize flip animations
@@ -96,14 +96,14 @@ const MemoryMatchScreen = ({ route, navigation }) => {
             setIsProcessing(true);
             const [first, second] = newFlipped;
 
-            if (cards[first].emoji === cards[second].emoji) {
+            if (cards[first].icon === cards[second].icon) {
                 // Match found!
                 setTimeout(() => {
                     const updatedCards = [...cards];
                     updatedCards[first].isMatched = true;
                     updatedCards[second].isMatched = true;
                     setCards(updatedCards);
-                    setMatchedPairs([...matchedPairs, cards[first].emoji]);
+                    setMatchedPairs([...matchedPairs, cards[first].icon]);
 
                     // Update score for current player
                     const currentPlayer = players[currentPlayerIndex];
@@ -248,7 +248,16 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                                                 ]}
                                             >
                                                 {(card.isFlipped || card.isMatched) ? (
-                                                    <NeonText size={cardSize * 0.5}>{card.emoji}</NeonText>
+                                                    <Ionicons 
+                                                        name={card.icon} 
+                                                        size={cardSize * 0.5} 
+                                                        color={card.isMatched ? COLORS.limeGlow : COLORS.neonCyan}
+                                                        style={{
+                                                            textShadowColor: card.isMatched ? COLORS.limeGlow : COLORS.neonCyan,
+                                                            textShadowOffset: { width: 0, height: 0 },
+                                                            textShadowRadius: 10
+                                                        }}
+                                                    />
                                                 ) : (
                                                     <NeonText size={cardSize * 0.4} color={COLORS.neonCyan}>?</NeonText>
                                                 )}

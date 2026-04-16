@@ -90,6 +90,8 @@ const LobbyScreen = ({ route, navigation }) => {
                 navigation.navigate('UnpopularOpinions', { room, playerName, isHost });
             } else if (gameType === 'hot-seat') {
                 navigation.navigate('HotSeat', { room, playerName, isHost, gameState });
+            } else if (gameType === 'hot-seat-mc') {
+                navigation.navigate('HotSeatMC', { room, playerName, isHost, initialGameState: gameState });
             } else if (gameType === 'button-mash') {
                 navigation.navigate('ButtonMash', { room, playerName, isHost, gameState });
             } else if (gameType === 'type-race') {
@@ -139,6 +141,10 @@ const LobbyScreen = ({ route, navigation }) => {
         }
         if (selectedGame === 'rapid-fire') {
             navigation.navigate('OnlineRapidFireCategory', { room, isHost, playerName });
+            return;
+        }
+        if (selectedGame === 'hot-seat-mc') {
+            navigation.navigate('HotSeatCategory', { room, isHost, playerName });
             return;
         }
         SocketService.emit('start-game', {
