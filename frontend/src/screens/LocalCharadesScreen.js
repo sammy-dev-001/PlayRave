@@ -12,12 +12,14 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
+import HapticService from '../services/HapticService';
+import SoundService from '../services/SoundService';
 
 // ─── Word Data ────────────────────────────────────────────────────────────────
 const CATEGORIES = {
     Movies: {
         label: 'Movies & TV',
-        emoji: '🎬',
+        iconName: 'film-outline',
         color: COLORS.hotPink,
         words: {
             easy: [
@@ -43,7 +45,7 @@ const CATEGORIES = {
     },
     Animals: {
         label: 'Animals',
-        emoji: '🦁',
+        iconName: 'paw-outline',
         color: COLORS.limeGlow,
         words: {
             easy: [
@@ -67,7 +69,7 @@ const CATEGORIES = {
     },
     Actions: {
         label: 'Actions',
-        emoji: '⚡',
+        iconName: 'flash-outline',
         color: COLORS.neonCyan,
         words: {
             easy: [
@@ -97,7 +99,7 @@ const CATEGORIES = {
     },
     Celebrities: {
         label: 'Celebrities',
-        emoji: '⭐',
+        iconName: 'star-outline',
         color: COLORS.electricPurple,
         words: {
             easy: [
@@ -125,7 +127,7 @@ const CATEGORIES = {
     },
     FoodDrink: {
         label: 'Food & Drink',
-        emoji: '🍔',
+        iconName: 'fast-food-outline',
         color: '#FF8C42',
         words: {
             easy: [
@@ -152,7 +154,7 @@ const CATEGORIES = {
     },
     Sports: {
         label: 'Sports',
-        emoji: '🏆',
+        iconName: 'trophy-outline',
         color: '#FFD700',
         words: {
             easy: [
@@ -180,7 +182,7 @@ const CATEGORIES = {
     },
     NaijaVibes: {
         label: 'Naija Vibes',
-        emoji: '🇳🇬',
+        iconName: 'globe-outline',
         color: '#00A86B',
         words: {
             easy: [
@@ -216,7 +218,7 @@ const CATEGORIES = {
     },
     PartyMayhem: {
         label: 'Party & Mayhem',
-        emoji: '🎉',
+        iconName: 'sparkles-outline',
         color: '#FF4DFF',
         words: {
             easy: [
@@ -260,7 +262,7 @@ const CATEGORIES = {
 // Add a Mixed category that pulls words from all other categories
 CATEGORIES.Mixed = {
     label: 'Mixed Bag',
-    emoji: '🔀',
+    iconName: 'shuffle-outline',
     color: '#00E676', // Bright green
     words: {
         easy: Object.values(CATEGORIES).flatMap(c => c.words.easy),
@@ -270,9 +272,9 @@ CATEGORIES.Mixed = {
 };
 
 const DIFFICULTY_OPTIONS = [
-    { key: 'easy', label: 'Easy', emoji: '😊', color: COLORS.limeGlow, desc: 'Simple & fun for everyone' },
-    { key: 'medium', label: 'Medium', emoji: '🔥', color: '#FF8C42', desc: 'Mix of familiar & tricky' },
-    { key: 'hard', label: 'Hard', emoji: '💀', color: COLORS.hotPink, desc: 'Only the bold survive' },
+    { key: 'easy', label: 'Easy', iconName: 'happy-outline', color: COLORS.limeGlow, desc: 'Simple & fun for everyone' },
+    { key: 'medium', label: 'Medium', iconName: 'flame-outline', color: '#FF8C42', desc: 'Mix of familiar & tricky' },
+    { key: 'hard', label: 'Hard', iconName: 'skull-outline', color: COLORS.hotPink, desc: 'Only the bold survive' },
 ];
 
 const ROUND_DURATION = 60; // seconds per turn
@@ -289,11 +291,11 @@ const shuffle = (arr) => {
 
 const getRank = (score, total) => {
     const pct = total > 0 ? score / total : 0;
-    if (pct >= 0.8) return { label: 'LEGEND', emoji: '👑', color: '#FFD700' };
-    if (pct >= 0.6) return { label: 'PRO', emoji: '🔥', color: COLORS.hotPink };
-    if (pct >= 0.4) return { label: 'DECENT', emoji: '⚡', color: COLORS.neonCyan };
-    if (pct >= 0.2) return { label: 'TRYING', emoji: '😅', color: COLORS.limeGlow };
-    return { label: 'SAPA', emoji: '💀', color: '#888' };
+    if (pct >= 0.8) return { label: 'LEGEND', iconName: 'trophy-outline', color: '#FFD700' };
+    if (pct >= 0.6) return { label: 'PRO', iconName: 'flame-outline', color: COLORS.hotPink };
+    if (pct >= 0.4) return { label: 'DECENT', iconName: 'flash-outline', color: COLORS.neonCyan };
+    if (pct >= 0.2) return { label: 'TRYING', iconName: 'sad-outline', color: COLORS.limeGlow };
+    return { label: 'SAPA', iconName: 'skull-outline', color: '#888' };
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -326,6 +328,8 @@ const LocalCharadesScreen = ({ route, navigation }) => {
     // Streak / combo
     const [streak, setStreak] = useState(0);
     const [maxStreak, setMaxStreak] = useState(0);
+    const [isMuted, setIsMuted] = useState(SoundService.getMuted());
+    const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
 
     // Flash feedback
     const [feedback, setFeedback] = useState(null); // 'correct' | 'pass' | null
@@ -357,11 +361,18 @@ const LocalCharadesScreen = ({ route, navigation }) => {
     // ── Flash feedback ──
     const showFeedback = useCallback((type) => {
         setFeedback(type);
-        feedbackAnim.setValue(1);
+        
+        if (type === 'correct') {
+            HapticService.correctAnswer();
+            SoundService.playCorrect();
+        } else if (type === 'pass') {
+            HapticService.selection();
+            SoundService.playTick();
+        }
+
         clearTimeout(feedbackTimeout.current);
         feedbackTimeout.current = setTimeout(() => {
             setFeedback(null);
-            feedbackAnim.setValue(0);
         }, 600);
     }, []);
 
@@ -376,20 +387,36 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         }).start();
     }, []);
 
-    // ── Pulse timer when low ──
+    // ── Pulse timer or high streak when active ──
     useEffect(() => {
-        if (timeLeft <= 10 && gameState === 'playing') {
+        if (gameState !== 'playing') return;
+
+        let interval;
+        if (timeLeft <= 10 || streak >= STREAK_BONUS_THRESHOLD) {
+            const intensity = streak >= STREAK_BONUS_THRESHOLD ? 1.25 : 1.18;
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1.18, duration: 280, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 280, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { 
+                        toValue: intensity, 
+                        duration: streak >= STREAK_BONUS_THRESHOLD ? 400 : 280, 
+                        useNativeDriver: true 
+                    }),
+                    Animated.timing(pulseAnim, { 
+                        toValue: 1, 
+                        duration: streak >= STREAK_BONUS_THRESHOLD ? 400 : 280, 
+                        useNativeDriver: true 
+                    }),
                 ])
             ).start();
+
+            if (timeLeft <= 10 && timeLeft > 0) {
+                HapticService.timerTick();
+            }
         } else {
             pulseAnim.stopAnimation();
             pulseAnim.setValue(1);
         }
-    }, [timeLeft, gameState]);
+    }, [timeLeft, gameState, streak]);
 
     // ── Build word pool for current difficulty ──
     const buildWordPool = useCallback((catKey, diff) => {
@@ -568,7 +595,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         <ScrollView style={styles.flex} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
                 <NeonText size={34} weight="bold" glow style={styles.title}>
-                    🎭 CHARADES
+                    CHARADES
                 </NeonText>
                 <NeonText size={13} color="#777" style={styles.subtitle}>
                     Pick a category. Act it out. No words!
@@ -584,7 +611,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                         activeOpacity={0.75}
                     >
                         <View style={[styles.categoryIconBg, { backgroundColor: `${cat.color}22` }]}>
-                            <NeonText size={36}>{cat.emoji}</NeonText>
+                            <Ionicons name={cat.iconName} size={30} color={cat.color} />
                         </View>
                         <View style={styles.categoryInfo}>
                             <NeonText size={18} weight="bold" color={cat.color} style={styles.categoryLabel}>
@@ -615,7 +642,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         <View style={styles.centeredFlex}>
             {/* Category pill */}
             <View style={[styles.catPill, { borderColor: category.color }]}>
-                <NeonText size={24}>{category.emoji}</NeonText>
+                <Ionicons name={category.iconName} size={24} color={category.color} />
                 <NeonText size={18} weight="bold" color={category.color}>{category.label}</NeonText>
             </View>
 
@@ -634,7 +661,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                         onPress={() => handleSelectDifficulty(d.key)}
                         activeOpacity={0.75}
                     >
-                        <NeonText size={32}>{d.emoji}</NeonText>
+                        <Ionicons name={d.iconName} size={30} color={d.color} />
                         <View style={styles.diffInfo}>
                             <NeonText size={20} weight="bold" color={d.color}>{d.label}</NeonText>
                             <NeonText size={12} color="#666">{d.desc}</NeonText>
@@ -656,7 +683,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
     // ─────────────────────────────────────────
     const renderPlayerSetup = () => (
         <View style={styles.centeredFlex}>
-            <NeonText size={40}>🕹️</NeonText>
+            <Ionicons name="game-controller-outline" size={50} color={COLORS.neonCyan} />
             <NeonText size={24} weight="bold" color={COLORS.neonCyan} style={{ marginTop: 12, marginBottom: 8 }}>
                 Solo Mode
             </NeonText>
@@ -664,7 +691,8 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                 No players detected.{'\n'}Play solo — beat your own best score!
             </NeonText>
             <NeonButton
-                title="🎬  START GAME"
+                title="START GAME"
+                icon="play"
                 onPress={beginRound}
                 style={{ width: '90%' }}
             />
@@ -694,20 +722,20 @@ const LocalCharadesScreen = ({ route, navigation }) => {
 
             {!players && (
                 <View style={[styles.catPill, { borderColor: category.color, marginBottom: 24 }]}>
-                    <NeonText size={24}>{category.emoji}</NeonText>
+                    <Ionicons name={category.iconName} size={24} color={category.color} />
                     <NeonText size={18} weight="bold" color={category.color}>{category.label}</NeonText>
                 </View>
             )}
 
             <View style={[styles.diffBadge, { backgroundColor: `${difficulty.color}22`, borderColor: difficulty.color }]}>
                 <NeonText size={14} weight="bold" color={difficulty.color}>
-                    {difficulty.emoji} {difficulty.label.toUpperCase()} MODE
+                    <Ionicons name={difficulty.iconName} size={14} color={difficulty.color} /> {difficulty.label.toUpperCase()} MODE
                 </NeonText>
             </View>
 
             <View style={styles.countdownCircle}>
                 <NeonText size={80} weight="bold" glow color={COLORS.neonCyan}>
-                    {countdown > 0 ? countdown : '🎬'}
+                    {countdown > 0 ? countdown : <Ionicons name="videocam" size={70} color={COLORS.neonCyan} />}
                 </NeonText>
             </View>
 
@@ -732,6 +760,38 @@ const LocalCharadesScreen = ({ route, navigation }) => {
 
             {/* Top bar */}
             <View style={styles.topBar}>
+                {/* Header Controls */}
+                <View style={styles.headerControls}>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            const muted = SoundService.toggleMute();
+                            setIsMuted(muted);
+                            HapticService.selection();
+                        }}
+                        style={styles.controlIcon}
+                    >
+                        <Ionicons 
+                            name={isMuted ? "volume-mute" : "volume-high"} 
+                            size={18} 
+                            color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            HapticService.setEnabled(!isHapticsEnabled);
+                            setIsHapticsEnabled(!isHapticsEnabled);
+                            if (!isHapticsEnabled) HapticService.selection();
+                        }}
+                        style={styles.controlIcon}
+                    >
+                        <Ionicons 
+                            name={isHapticsEnabled ? "notifications" : "notifications-off"} 
+                            size={18} 
+                            color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
+                        />
+                    </TouchableOpacity>
+                </View>
+
                 {/* Timer */}
                 <View style={styles.timerContainer}>
                     <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -766,7 +826,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                     {streak >= 2 && (
                         <Animated.View style={[styles.streakBadge, { transform: [{ scale: streakAnim }] }]}>
                             <NeonText size={11} weight="bold" color="#FF8C42">
-                                🔥 ×{streak}
+                                <Ionicons name="flame" size={12} color="#FF8C42" /> ×{streak}
                             </NeonText>
                         </Animated.View>
                     )}
@@ -799,11 +859,11 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                 style={[
                     styles.wordCard,
                     {
-                        borderColor: category.color,
-                        shadowColor: category.color,
+                        borderColor: streak >= STREAK_BONUS_THRESHOLD ? '#FF8C42' : category.color,
+                        shadowColor: streak >= STREAK_BONUS_THRESHOLD ? '#FF8C42' : category.color,
                         opacity: wordAnim,
                         transform: [
-                            { scale: wordAnim.interpolate({ inputRange: [0, 1], outputRange: [0.82, 1] }) },
+                            { scale: Animated.multiply(wordAnim.interpolate({ inputRange: [0, 1], outputRange: [0.82, 1] }), pulseAnim) },
                         ],
                     },
                 ]}
@@ -824,7 +884,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                 {streak >= STREAK_BONUS_THRESHOLD && (
                     <View style={styles.bonusBadge}>
                         <NeonText size={11} weight="bold" color="#FF8C42">
-                            +2 BONUS ACTIVE 🔥
+                            BONUS ACTIVE <Ionicons name="flame" size={12} color="#FF8C42" />
                         </NeonText>
                     </View>
                 )}
@@ -870,7 +930,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
 
         return (
             <View style={styles.centeredFlex}>
-                <NeonText size={44} style={{ marginBottom: 4 }}>⏱️</NeonText>
+                <Ionicons name="alarm-outline" size={60} color={COLORS.hotPink} style={{ marginBottom: 10 }} />
                 <NeonText size={36} weight="bold" glow color={COLORS.hotPink} style={{ marginBottom: 4 }}>
                     TIME'S UP!
                 </NeonText>
@@ -893,12 +953,14 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                         <View style={styles.roundStat}>
                             <NeonText size={11} color="#888">BEST STREAK</NeonText>
                             <NeonText size={52} weight="bold" color="#FF8C42" glow>{maxStreak}</NeonText>
-                            <NeonText size={12} color="#666">🔥 in a row</NeonText>
+                            <NeonText size={12} color="#666">
+                                <Ionicons name="flame-outline" size={12} color="#666" /> in a row
+                            </NeonText>
                         </View>
                     </View>
 
                     <View style={[styles.rankBadge, { backgroundColor: `${rank.color}22`, borderColor: rank.color }]}>
-                        <NeonText size={24}>{rank.emoji}</NeonText>
+                        <Ionicons name={rank.iconName} size={24} color={rank.color} />
                         <NeonText size={16} weight="bold" color={rank.color}>{rank.label}</NeonText>
                     </View>
                 </View>
@@ -918,7 +980,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                             .map((p, rank) => (
                                 <View key={p.id} style={styles.leaderRow}>
                                     <NeonText size={14} color={rank === 0 ? '#FFD700' : '#555'}>
-                                        {rank === 0 ? '👑' : `#${rank + 1}`}
+                                        {rank === 0 ? <Ionicons name="trophy" size={14} color="#FFD700" /> : `#${rank + 1}`}
                                     </NeonText>
                                     <NeonText size={15} weight="bold" color={COLORS.white} style={{ flex: 1, marginLeft: 10 }}>
                                         {p.name}
@@ -949,7 +1011,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
             const rank = getRank(score, score + skips + 1);
             return (
                 <View style={styles.centeredFlex}>
-                    <NeonText size={52}>{rank.emoji}</NeonText>
+                    <Ionicons name={rank.iconName} size={70} color={rank.color} />
                     <NeonText size={34} weight="bold" glow color={rank.color} style={{ marginTop: 8, marginBottom: 4 }}>
                         {rank.label}!
                     </NeonText>
@@ -990,7 +1052,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
 
         return (
             <ScrollView style={styles.flex} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 40 }}>
-                <NeonText size={52} style={{ marginTop: 20 }}>👑</NeonText>
+                <Ionicons name="trophy" size={70} color="#FFD700" style={{ marginTop: 20 }} />
                 <NeonText size={13} color="#888" style={{ marginTop: 8, letterSpacing: 2 }}>
                     {isTie ? 'GAME OVER — IT\'S A TIE!' : 'GAME OVER — WINNER IS'}
                 </NeonText>
@@ -1013,7 +1075,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                                 { borderColor: i < 3 ? colors[i] : '#333', shadowColor: i < 3 ? colors[i] : 'transparent' },
                                 isWinner && styles.podiumCardWinner,
                             ]}>
-                                <NeonText size={isWinner ? 30 : 22}>{medals[i] || `#${i + 1}`}</NeonText>
+                                {i < 3 ? <Ionicons name="medal-outline" size={isWinner ? 30 : 22} color={colors[i]} /> : <NeonText size={16}>#{i + 1}</NeonText>}
                                 <NeonText size={isWinner ? 20 : 16} weight="bold" color={COLORS.white} style={{ marginTop: 4 }}>
                                     {p.name}
                                 </NeonText>
@@ -1044,7 +1106,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                         </View>
                         <View style={styles.funStat}>
                             <NeonText size={22} weight="bold" color="#FF8C42">
-                                {difficulty.emoji}
+                                <Ionicons name={difficulty.iconName} size={22} color="#FF8C42" />
                             </NeonText>
                             <NeonText size={11} color="#666">{difficulty.label} mode</NeonText>
                         </View>
@@ -1229,8 +1291,25 @@ const styles = StyleSheet.create({
     topBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 10,
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingTop: 10,
+        marginBottom: 15,
+        position: 'relative'
+    },
+    headerControls: {
+        position: 'absolute',
+        top: -40,
+        left: 0,
+        flexDirection: 'row',
+        gap: 8,
+    },
+    controlIcon: {
+        padding: 6,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     timerContainer: {
         alignItems: 'center',

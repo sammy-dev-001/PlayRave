@@ -87,17 +87,6 @@ const LOCAL_GAMES = [
         vibes: ['brain']
     },
     {
-        id: 'caption-this',
-        name: 'Caption This',
-        description: 'Write funny captions, vote for the best!',
-        icon: '📸',
-        color: COLORS.electricPurple,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 8,
-        vibes: ['hype']
-    },
-    {
         id: 'speed-categories',
         name: 'Speed Categories',
         description: 'Name 5 things in 10 seconds!',
@@ -109,17 +98,6 @@ const LOCAL_GAMES = [
         vibes: ['hype']
     },
     {
-        id: 'auction-bluff',
-        name: 'Auction Bluff',
-        description: 'Bid on items - real facts or bluffs?',
-        icon: '🔨',
-        color: COLORS.neonCyan,
-        category: 'competitive',
-        minPlayers: 3,
-        maxPlayers: 8,
-        vibes: ['chill']
-    },
-    {
         id: 'memory-chain',
         name: 'Memory Chain',
         description: 'Remember the growing sequence!',
@@ -129,18 +107,6 @@ const LOCAL_GAMES = [
         minPlayers: 2,
         maxPlayers: 8,
         vibes: ['brain']
-    },
-    {
-        id: 'hot-seat',
-        name: 'Hot Seat',
-        description: 'One person answers all questions',
-        icon: '🔥',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        comingSoon: true,
-        vibes: ['chill']
     },
     {
         id: 'memory-match',
@@ -184,7 +150,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         // Filter available games first
         let available = isSinglePlayer
             ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-            : LOCAL_GAMES;
+            : LOCAL_GAMES.filter(game => game.id !== 'scrabble');
 
         if (selectedVibe !== 'all') {
             available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
@@ -222,12 +188,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             } else {
                 navigation.navigate('Scrabble', { players });
             }
-        } else if (gameId === 'caption-this') {
-            navigation.navigate('CaptionThis', { players });
         } else if (gameId === 'speed-categories') {
             navigation.navigate('SpeedCategories', { players });
-        } else if (gameId === 'auction-bluff') {
-            navigation.navigate('AuctionBluff', { players });
         } else if (gameId === 'memory-chain') {
             navigation.navigate('MemoryChain', { players });
         } else if (gameId === 'memory-match') {

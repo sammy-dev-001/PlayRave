@@ -368,6 +368,21 @@ io.on("connection", (socket) => {
                 const disconnectedPlayer = roomForDisconnect.players.find(p => p.id === socket.id);
                 if (disconnectedPlayer) {
                     disconnectedPlayer.isDisconnected = true;
+
+                    // Fix 1: Active Host Migration — if the disconnected player was host,
+                    // immediately promote the next connected player so the lobby isn't frozen.
+                    if (roomForDisconnect.hostId === socket.id || disconnectedPlayer.isHost) {
+                        const reassignResult = roomManager.reassignHost(roomId);
+                        if (reassignResult) {
+                            console.log(`Host disconnected in room ${roomId}, migrated to ${reassignResult.newHost.name}`);
+                            io.to(roomId).emit("host-changed", {
+                                newHostId: reassignResult.newHost.id,
+                                newHostName: reassignResult.newHost.name,
+                                reason: "previous_host_disconnected"
+                            });
+                        }
+                    }
+
                     io.to(roomId).emit('room-updated', roomForDisconnect);
                 }
             }

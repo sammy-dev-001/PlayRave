@@ -172,6 +172,33 @@ class RoomManager {
         return { room, kickedPlayerId: playerIdToKick };
     }
 
+    // Immediately migrate host status to first connected player when host disconnects.
+    // The disconnected host stays in the player array (flagged isDisconnected) so they
+    // can still reconnect—they just lose host privileges until they manually reclaim.
+    reassignHost(roomId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return null;
+
+        // Find the first player who is NOT disconnected
+        const newHost = room.players.find(p => !p.isDisconnected);
+        if (!newHost) {
+            // Everyone is disconnected — nothing to do, grace timers will clean up
+            return null;
+        }
+
+        // Strip host from whoever currently has it
+        room.players.forEach(p => {
+            p.isHost = false;
+        });
+
+        // Promote the new host
+        newHost.isHost = true;
+        room.hostId = newHost.id;
+
+        console.log(`Host reassigned to ${newHost.name} (${newHost.id}) in room ${roomId}`);
+        return { room, newHost };
+    }
+
     removePlayer(socketId) {
         // Find room with this player
         for (const [roomId, room] of this.rooms.entries()) {

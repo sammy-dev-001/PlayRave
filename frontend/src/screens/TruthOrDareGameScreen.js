@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Alert, Animated, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import truthOrDarePrompts, { getRandomTruth, getRandomDare } from '../data/truthOrDarePrompts';
 import getGenderSpecificPrompt from '../data/genderSpecificPrompts';
 import { COLORS } from '../constants/theme';
+import HapticService from '../services/HapticService';
+import SoundService from '../services/SoundService';
 
 const TruthOrDareGameScreen = ({ route, navigation }) => {
     const { players, category = 'normal' } = route.params;
@@ -13,9 +16,26 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     const [gameState, setGameState] = useState('choose'); // choose, showing
     const [currentPrompt, setCurrentPrompt] = useState(null);
     const [promptType, setPromptType] = useState(null);
-    const [usedTruths, setUsedTruths] = useState([]);
     const [usedDares, setUsedDares] = useState([]);
     const [playerSkips, setPlayerSkips] = useState({});
+    const [isMuted, setIsMuted] = useState(SoundService.getMuted());
+    const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
+    
+    // Pulsating animation state
+    const [pulseAnim] = useState(new Animated.Value(1));
+
+    React.useEffect(() => {
+        if (gameState === 'choose') {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [gameState]);
 
     const currentCategoryData = truthOrDarePrompts[category] || truthOrDarePrompts.normal;
     const totalTruths = currentCategoryData?.truths?.length || 0;
@@ -32,6 +52,8 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     };
 
     const handleChooseTruth = () => {
+        HapticService.impact('medium');
+        SoundService.play('buttonClick');
         const truth = getRandomTruth(category, usedTruths);
         setUsedTruths([...usedTruths, truth]);
         setCurrentPrompt(truth);
@@ -40,6 +62,8 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     };
 
     const handleChooseDare = () => {
+        HapticService.impact('medium');
+        SoundService.play('buttonClick');
         const dare = getRandomDare(category, usedDares);
         const genderSpecificDare = getGenderSpecificPrompt(dare, currentPlayer.gender || 'other');
         setUsedDares([...usedDares, dare]);
@@ -49,6 +73,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     };
 
     const handleDone = () => {
+        HapticService.selection();
         // Move to next player
         const nextIndex = (currentPlayerIndex + 1) % players.length;
         setCurrentPlayerIndex(nextIndex);
@@ -58,6 +83,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     };
 
     const handleSkip = () => {
+        HapticService.impact('light');
         const playerKey = currentPlayer.id || currentPlayerIndex;
         const currentSkips = playerSkips[playerKey] || 0;
         
@@ -98,6 +124,36 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
+                <View style={styles.headerControls}>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            const muted = SoundService.toggleMute();
+                            setIsMuted(muted);
+                            HapticService.selection();
+                        }}
+                        style={styles.controlIcon}
+                    >
+                        <Ionicons 
+                            name={isMuted ? "volume-mute" : "volume-high"} 
+                            size={18} 
+                            color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            HapticService.setEnabled(!isHapticsEnabled);
+                            setIsHapticsEnabled(!isHapticsEnabled);
+                            if (!isHapticsEnabled) HapticService.selection();
+                        }}
+                        style={styles.controlIcon}
+                    >
+                        <Ionicons 
+                            name={isHapticsEnabled ? "notifications" : "notifications-off"} 
+                            size={18} 
+                            color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
+                        />
+                    </TouchableOpacity>
+                </View>
                 <NeonText size={32} weight="bold" glow>
                     TRUTH OR DARE
                 </NeonText>
@@ -199,6 +255,21 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 40,
+        position: 'relative',
+    },
+    headerControls: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        flexDirection: 'row',
+        gap: 8,
+    },
+    controlIcon: {
+        padding: 6,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     categoryBadge: {
         marginTop: 10,

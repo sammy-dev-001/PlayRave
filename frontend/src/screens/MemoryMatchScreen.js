@@ -13,12 +13,29 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
+import HapticService from '../services/HapticService';
+import SoundService from '../services/SoundService';
 
-// Card content - Ionicons for matching
+// Card content - Ionicons for matching with specific colors
 const CARD_PAIRS = [
-    'game-controller', 'flash', 'headset', 'musical-notes', 'planet', 'rocket',
-    'star', 'flame', 'heart', 'diamond', 'skull', 'rose',
-    'pizza', 'beer', 'ice-cream', 'moon', 'sunny', 'snow'
+    { name: 'game-controller', color: COLORS.neonCyan },
+    { name: 'flash', color: COLORS.limeGlow },
+    { name: 'headset', color: COLORS.hotPink },
+    { name: 'musical-notes', color: COLORS.electricPurple },
+    { name: 'planet', color: COLORS.neonCyan },
+    { name: 'rocket', color: COLORS.hotPink },
+    { name: 'star', color: '#FFD700' },
+    { name: 'flame', color: '#FF8C42' },
+    { name: 'heart', color: '#FF4444' },
+    { name: 'diamond', color: '#00E5FF' },
+    { name: 'skull', color: '#BBBBBB' },
+    { name: 'rose', color: '#FB9EC6' },
+    { name: 'pizza', color: '#FFC107' },
+    { name: 'beer', color: '#FF9800' },
+    { name: 'ice-cream', color: '#FF80AB' },
+    { name: 'moon', color: '#E040FB' },
+    { name: 'sunny', color: '#FFF176' },
+    { name: 'snow', color: '#B3E5FC' }
 ];
 
 const MemoryMatchScreen = ({ route, navigation }) => {
@@ -32,6 +49,8 @@ const MemoryMatchScreen = ({ route, navigation }) => {
     const [scores, setScores] = useState({});
     const [gridSize, setGridSize] = useState(4); // 4x4 default
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isMuted, setIsMuted] = useState(SoundService.getMuted());
+    const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
 
     const flipAnims = useRef({}).current;
 
@@ -47,7 +66,13 @@ const MemoryMatchScreen = ({ route, navigation }) => {
 
         // Shuffle the cards
         const shuffledCards = cardPairs
-            .map((icon, index) => ({ id: index, icon, isFlipped: false, isMatched: false }))
+            .map((item, index) => ({ 
+                id: index, 
+                icon: item.name, 
+                color: item.color,
+                isFlipped: false, 
+                isMatched: false 
+            }))
             .sort(() => Math.random() - 0.5);
 
         // Initialize flip animations
@@ -76,7 +101,8 @@ const MemoryMatchScreen = ({ route, navigation }) => {
         if (flippedCards.length >= 2) return;
 
         // Flip the card
-        if (Platform.OS !== 'web') Vibration.vibrate(10);
+        HapticService.cardFlip();
+        SoundService.play('buttonClick');
 
         Animated.timing(flipAnims[card.id], {
             toValue: 1,
@@ -114,6 +140,9 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                         }));
                     }
 
+                    HapticService.success();
+                    SoundService.playCorrect();
+
                     setFlippedCards([]);
                     setIsProcessing(false);
 
@@ -126,6 +155,9 @@ const MemoryMatchScreen = ({ route, navigation }) => {
             } else {
                 // No match - flip back after delay
                 setTimeout(() => {
+                    HapticService.wrongAnswer();
+                    SoundService.playWrong();
+
                     Animated.parallel([
                         Animated.timing(flipAnims[cards[first].id], { toValue: 0, duration: 200, useNativeDriver: true }),
                         Animated.timing(flipAnims[cards[second].id], { toValue: 0, duration: 200, useNativeDriver: true })
@@ -162,9 +194,53 @@ const MemoryMatchScreen = ({ route, navigation }) => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.container}>
                     <View style={styles.header}>
+                        <View style={styles.headerControls}>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    const muted = SoundService.toggleMute();
+                                    setIsMuted(muted);
+                                    HapticService.selection();
+                                }}
+                                style={styles.controlIcon}
+                            >
+                                <Ionicons 
+                                    name={isMuted ? "volume-mute" : "volume-high"} 
+                                    size={20} 
+                                    color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    HapticService.setEnabled(!isHapticsEnabled);
+                                    setIsHapticsEnabled(!isHapticsEnabled);
+                                    if (!isHapticsEnabled) HapticService.selection();
+                                }}
+                                style={styles.controlIcon}
+                            >
+                                <Ionicons 
+                                    name={isHapticsEnabled ? "notifications" : "notifications-off"} 
+                                    size={20} 
+                                    color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
+                                />
+                            </TouchableOpacity>
+                        </View>
+
                         <NeonText size={24} weight="bold" glow color={COLORS.neonCyan}>
                             MEMORY MATCH
                         </NeonText>
+
+                        <TouchableOpacity 
+                            style={styles.endGameIcon} 
+                            onPress={() => {
+                                HapticService.impact('medium');
+                                if (gamePhase === 'playing') setGamePhase('setup');
+                                else navigation.goBack();
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="close-circle" size={24} color={COLORS.hotPink} />
+                            <NeonText size={10} color={COLORS.hotPink}>{gamePhase === 'playing' ? 'END' : 'EXIT'}</NeonText>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Setup Phase */}
@@ -251,9 +327,9 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                                                     <Ionicons 
                                                         name={card.icon} 
                                                         size={cardSize * 0.5} 
-                                                        color={card.isMatched ? COLORS.limeGlow : COLORS.neonCyan}
+                                                        color={card.color}
                                                         style={{
-                                                            textShadowColor: card.isMatched ? COLORS.limeGlow : COLORS.neonCyan,
+                                                            textShadowColor: card.color,
                                                             textShadowOffset: { width: 0, height: 0 },
                                                             textShadowRadius: 10
                                                         }}
@@ -325,7 +401,30 @@ const MemoryMatchScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     scrollContent: { flexGrow: 1 },
     container: { flex: 1, paddingTop: 50, paddingHorizontal: 20, alignItems: 'center' },
-    header: { marginBottom: 20 },
+    header: { 
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        marginBottom: 20,
+        position: 'relative'
+    },
+    headerControls: {
+        position: 'absolute',
+        left: 0,
+        flexDirection: 'row',
+        gap: 10
+    },
+    controlIcon: {
+        padding: 5,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 8
+    },
+    endGameIcon: {
+        position: 'absolute',
+        right: 0,
+        alignItems: 'center'
+    },
     setupContainer: { alignItems: 'center', paddingTop: 40 },
     setupTitle: { marginBottom: 20 },
     gridOptions: { flexDirection: 'row', gap: 20, marginBottom: 30 },

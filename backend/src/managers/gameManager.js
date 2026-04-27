@@ -4689,7 +4689,9 @@ class GameManager {
         const game = this.activeGames.get(roomId);
         if (!game) return;
 
-        // Update player ID in game.players
+        console.log(`[Deep Re-bind] Swapping ${oldSocketId} → ${newSocketId} in ${game.type} (room ${roomId})`);
+
+        // ── 1. Update player ID in game.players array ──
         if (game.players) {
             const player = game.players.find(p => p.id === oldSocketId);
             if (player) {
@@ -4697,30 +4699,117 @@ class GameManager {
             }
         }
 
-        // Specifically for Confession Roulette, update authorId in confessions
-        if (game.type === 'confession-roulette' && game.confessions) {
+        // ── 2. Generic key-swap utility ──
+        // Swap oldSocketId key → newSocketId key in any plain object.
+        const swapKey = (obj) => {
+            if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+            if (oldSocketId in obj) {
+                obj[newSocketId] = obj[oldSocketId];
+                delete obj[oldSocketId];
+            }
+        };
+
+        // ── 3. Swap keys in all known keyed-by-socketId objects ──
+        // These are the maps where socket IDs are used as object keys.
+        const keyedObjects = [
+            game.scores,
+            game.playerAnswers,
+            game.playerVotes,
+            game.totalVotes,
+            game.playerTaps,
+            game.totalReactionTimes,
+            game.roundsWon,
+            game.playerWords,
+            game.playerGuesses,
+            game.votes,
+        ];
+        keyedObjects.forEach(swapKey);
+
+        // Also swap nested per-player answer/vote maps (e.g. playerAnswers[oldId][questionIdx])
+        // After swapping the top-level key above, the data is already under newSocketId.
+
+        // ── 4. Swap socket IDs inside arrays ──
+        const swapInArray = (arr) => {
+            if (!Array.isArray(arr)) return;
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] === oldSocketId) {
+                    arr[i] = newSocketId;
+                }
+            }
+        };
+
+        swapInArray(game.activePlayers);
+        swapInArray(game.eliminatedPlayers);
+        swapInArray(game.playerOrder);
+
+        // ── 5. Swap single-value ID fields ──
+        // These are individual properties that hold a single socket ID.
+        const singleIdFields = [
+            'imposterId',
+            'targetUserId',
+            'roundWinner',
+            'currentTurn',
+        ];
+        singleIdFields.forEach(field => {
+            if (game[field] === oldSocketId) {
+                game[field] = newSocketId;
+            }
+        });
+
+        // ── 6. Update objects inside arrays (player-like entries in sub-arrays) ──
+        // Handles structures like matches[].player1, matches[].player2, etc.
+        if (game.matches) {
+            game.matches.forEach(match => {
+                if (match.player1 && match.player1.id === oldSocketId) match.player1.id = newSocketId;
+                if (match.player2 && match.player2.id === oldSocketId) match.player2.id = newSocketId;
+                if (match.currentTurn === oldSocketId) match.currentTurn = newSocketId;
+                if (match.winner === oldSocketId) match.winner = newSocketId;
+            });
+        }
+
+        // playerOrder entries that are objects with { id, name }
+        if (game.playerOrder && game.playerOrder.length > 0 && typeof game.playerOrder[0] === 'object') {
+            game.playerOrder.forEach(entry => {
+                if (entry && entry.id === oldSocketId) {
+                    entry.id = newSocketId;
+                }
+            });
+        }
+
+        // ── 7. Game-type-specific fixups ──
+
+        // Confession Roulette: authorId in confessions array
+        if (game.confessions) {
             game.confessions.forEach(c => {
                 if (c.authorId === oldSocketId) {
                     c.authorId = newSocketId;
                 }
             });
         }
-        
-        // Specifically for Spill the Tea, update playerId
-        if (game.type === 'spill-the-tea' && game.secrets) {
+
+        // Spill the Tea: playerId in secrets and shuffledSecrets
+        if (game.secrets) {
             game.secrets.forEach(c => {
                 if (c.playerId === oldSocketId) {
                     c.playerId = newSocketId;
                 }
             });
-            if (game.shuffledSecrets) {
-                game.shuffledSecrets.forEach(c => {
-                    if (c.playerId === oldSocketId) {
-                        c.playerId = newSocketId;
-                    }
-                });
-            }
         }
+        if (game.shuffledSecrets) {
+            game.shuffledSecrets.forEach(c => {
+                if (c.playerId === oldSocketId) {
+                    c.playerId = newSocketId;
+                }
+            });
+        }
+
+        // Imposter: votes are keyed by voterId
+        // (already handled by swapKey(game.votes) above)
+
+        // Lie Detector: scores are keyed by playerId
+        // (already handled by swapKey(game.scores) above)
+
+        console.log(`[Deep Re-bind] Complete for ${game.type} in room ${roomId}`);
     }
 
     setConfessionPhase(roomId, phase) {

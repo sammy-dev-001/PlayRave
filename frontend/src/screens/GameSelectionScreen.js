@@ -273,6 +273,17 @@ const AVAILABLE_GAMES = [
         minPlayers: 2,
         maxPlayers: 4,
         vibes: ['brain']
+    },
+    {
+        id: 'caption-this',
+        name: 'Caption This',
+        description: 'Write funny captions, vote for the best!',
+        icon: '📸',
+        color: COLORS.electricPurple,
+        category: 'party',
+        minPlayers: 3,
+        maxPlayers: 10,
+        vibes: ['hype']
     }
 ];
 

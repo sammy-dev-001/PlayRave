@@ -111,9 +111,18 @@ const LobbyScreen = ({ route, navigation }) => {
             }
         };
 
+        const onHostChanged = ({ newHostName, reason }) => {
+            Alert.alert(
+                '👑 Host Migrated',
+                `${newHostName} is now the lobby host!`,
+                [{ text: 'OK' }]
+            );
+        };
+
         SocketService.on('room-updated', onRoomUpdated);
         SocketService.on('game-started', onGameStarted);
         SocketService.on('player-kicked', onPlayerKicked);
+        SocketService.on('host-changed', onHostChanged);
 
         const pollInterval = setInterval(() => {
             checkConnection();
@@ -127,6 +136,7 @@ const LobbyScreen = ({ route, navigation }) => {
             SocketService.off('room-updated', onRoomUpdated);
             SocketService.off('game-started', onGameStarted);
             SocketService.off('player-kicked', onPlayerKicked);
+            SocketService.off('host-changed', onHostChanged);
         };
     }, [navigation, room]);
 

@@ -60,26 +60,12 @@ const RecommendationService = {
             players: { min: 2, ideal: 4 },
             duration: 10
         },
-        'caption-this': {
-            name: 'Caption This',
-            category: 'creative',
-            energy: 'medium',
-            players: { min: 3, ideal: 5 },
-            duration: 15
-        },
         'speed-categories': {
             name: 'Speed Categories',
             category: 'knowledge',
             energy: 'high',
             players: { min: 2, ideal: 4 },
             duration: 10
-        },
-        'auction-bluff': {
-            name: 'Auction Bluff',
-            category: 'strategy',
-            energy: 'medium',
-            players: { min: 2, ideal: 4 },
-            duration: 15
         },
         'memory-chain': {
             name: 'Memory Chain',
@@ -187,11 +173,11 @@ const RecommendationService = {
     getQuickSuggestion(mood) {
         const moodMap = {
             'competitive': ['neon-tap', 'word-rush', 'trivia', 'speed-categories'],
-            'chill': ['myth-or-fact', 'never-have-i', 'caption-this'],
+            'chill': ['myth-or-fact', 'never-have-i'],
             'social': ['truth-or-dare', 'whos-most-likely', 'never-have-i'],
-            'creative': ['caption-this', 'auction-bluff'],
+            'creative': [],
             'fast': ['neon-tap', 'word-rush', 'rapid-fire', 'speed-categories'],
-            'strategic': ['auction-bluff', 'memory-chain', 'trivia']
+            'strategic': ['memory-chain', 'trivia']
         };
 
         const suggestions = moodMap[mood] || Object.keys(this.games);

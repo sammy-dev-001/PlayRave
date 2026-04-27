@@ -5,15 +5,17 @@ import AppNavigator from './src/navigation/AppNavigator';
 import OfflineIndicator from './src/components/OfflineIndicator';
 import ErrorToast from './src/components/ErrorToast';
 import { ThemeProvider } from './src/context/ThemeContext';
+import HapticService from './src/services/HapticService';
+import SoundService from './src/services/SoundService';
 import { register as registerServiceWorker } from './src/utils/serviceWorkerRegistration';
 
 export default function App() {
 
   useEffect(() => {
     // Register service worker for offline support (web only)
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      registerServiceWorker();
-    }
+    // Initialize services
+    HapticService.init();
+    SoundService.init();
 
     return () => SocketService.disconnect();
   }, []);

@@ -5,6 +5,8 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { getRandomPrompt } from '../data/neverHaveIEverPrompts';
 import { COLORS } from '../constants/theme';
+import HapticService from '../services/HapticService';
+import SoundService from '../services/SoundService';
 
 const NeverHaveIEverScreen = ({ route, navigation }) => {
     const { players, category = 'normal' } = route.params;
@@ -18,18 +20,31 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
         });
         return scores;
     });
+    const [clickedThisRound, setClickedThisRound] = useState({});
+    const [isMuted, setIsMuted] = useState(SoundService.getMuted());
+    const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
 
     const handleNextPrompt = () => {
+        HapticService.impact('light');
         const newPrompt = getRandomPrompt(category, usedPrompts);
         setCurrentPrompt(newPrompt);
         setUsedPrompts([...usedPrompts, newPrompt]);
         setRoundNumber(roundNumber + 1);
+        setClickedThisRound({}); // Reset for new round
     };
 
     const handlePlayerDrink = (playerId) => {
+        HapticService.selection();
+        const isSelected = !!clickedThisRound[playerId];
+        
         setPlayerScores(prev => ({
             ...prev,
-            [playerId]: prev[playerId] + 1
+            [playerId]: isSelected ? Math.max(0, prev[playerId] - 1) : prev[playerId] + 1
+        }));
+
+        setClickedThisRound(prev => ({
+            ...prev,
+            [playerId]: !isSelected
         }));
     };
 
@@ -44,6 +59,36 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
+                <View style={styles.headerControls}>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            const muted = SoundService.toggleMute();
+                            setIsMuted(muted);
+                            HapticService.selection();
+                        }}
+                        style={styles.controlIcon}
+                    >
+                        <Ionicons 
+                            name={isMuted ? "volume-mute" : "volume-high"} 
+                            size={18} 
+                            color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            HapticService.setEnabled(!isHapticsEnabled);
+                            setIsHapticsEnabled(!isHapticsEnabled);
+                            if (!isHapticsEnabled) HapticService.selection();
+                        }}
+                        style={styles.controlIcon}
+                    >
+                        <Ionicons 
+                            name={isHapticsEnabled ? "notifications" : "notifications-off"} 
+                            size={18} 
+                            color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
+                        />
+                    </TouchableOpacity>
+                </View>
                 <NeonText size={28} weight="bold" glow>
                     NEVER HAVE I EVER
                 </NeonText>
@@ -71,21 +116,32 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
             {/* Players */}
             <ScrollView style={styles.playersContainer} showsVerticalScrollIndicator={false}>
                 <View style={styles.playersGrid}>
-                    {players.map(player => (
-                        <TouchableOpacity
-                            key={player.id}
-                            style={styles.playerCard}
-                            onPress={() => handlePlayerDrink(player.id)}
-                        >
-                            <NeonText size={32}>🍺</NeonText>
-                            <NeonText size={16} weight="bold" style={styles.playerName}>
-                                {player.name}
-                            </NeonText>
-                            <NeonText size={14} color={COLORS.hotPink}>
-                                {playerScores[player.id]} drinks
-                            </NeonText>
-                        </TouchableOpacity>
-                    ))}
+                    {players.map(player => {
+                        const isSelected = !!clickedThisRound[player.id];
+                        return (
+                            <TouchableOpacity
+                                key={player.id}
+                                style={[
+                                    styles.playerCard,
+                                    isSelected && { borderColor: COLORS.limeGlow, backgroundColor: 'rgba(198, 255, 74, 0.1)' }
+                                ]}
+                                onPress={() => handlePlayerDrink(player.id)}
+                            >
+                                <NeonText size={32}>{isSelected ? '🍻' : '🍺'}</NeonText>
+                                <NeonText size={16} weight="bold" style={styles.playerName}>
+                                    {player.name}
+                                </NeonText>
+                                <NeonText size={14} color={isSelected ? COLORS.limeGlow : COLORS.hotPink}>
+                                    {playerScores[player.id]} drinks
+                                </NeonText>
+                                {isSelected && (
+                                    <View style={styles.addedBadge}>
+                                        <NeonText size={8} weight="bold" color="#000">+1</NeonText>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
             </ScrollView>
 
@@ -110,6 +166,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
         marginTop: 30,
+        position: 'relative',
+    },
+    headerControls: {
+        position: 'absolute',
+        top: -10,
+        right: 0,
+        flexDirection: 'row',
+        gap: 8,
+    },
+    controlIcon: {
+        padding: 6,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     categoryBadge: {
         marginTop: 10,
@@ -164,6 +235,17 @@ const styles = StyleSheet.create({
     },
     actions: {
         gap: 10,
+    },
+    addedBadge: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: COLORS.limeGlow,
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 });
 
