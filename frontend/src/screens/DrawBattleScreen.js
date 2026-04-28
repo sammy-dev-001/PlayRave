@@ -12,6 +12,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -21,6 +22,12 @@ const BRUSH_COLORS = ['#ffffff', COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlo
 
 const DrawBattleScreen = ({ route, navigation }) => {
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
 
     const [phase, setPhase] = useState('waiting');
     const [currentRound, setCurrentRound] = useState(1);
@@ -77,7 +84,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
         };
 
         const onGameEnded = ({ room: updatedRoom }) => {
-            navigation.navigate('Lobby', { room: updatedRoom, playerName, isHost });
+            try { navigation.navigate('Lobby', { room: updatedRoom, playerName, isHost }); } catch (e) { navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); }
         };
 
         SocketService.on('draw-battle-round-started', onRoundStarted);

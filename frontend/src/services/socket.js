@@ -67,9 +67,12 @@ class SocketService {
 
     // Reconnection settings with exponential backoff
     reconnectAttempts = 0;
-    maxReconnectAttempts = 10;
-    baseReconnectDelay = 1000;
-    maxReconnectDelay = 30000;
+    maxReconnectAttempts = 50;  // ~15 min of retries with backoff
+    baseReconnectDelay = 500;
+    maxReconnectDelay = 15000;
+
+    // Track intentional disconnects so we don't auto-reconnect
+    intentionalDisconnect = false;
 
     // Connection quality monitoring
     pingInterval = null;
@@ -92,13 +95,16 @@ class SocketService {
         console.log('Connecting to socket...', SOCKET_URL);
         this.setConnectionState(ConnectionState.CONNECTING);
 
+        this.intentionalDisconnect = false;
         this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
-            timeout: 10000,
+            timeout: 15000,
             reconnection: true,
             reconnectionAttempts: this.maxReconnectAttempts,
             reconnectionDelay: this.baseReconnectDelay,
             reconnectionDelayMax: this.maxReconnectDelay,
+            // Keep the connection alive even when the tab is backgrounded
+            forceNew: false,
         });
 
         this.socket.on('connect', () => {
@@ -128,10 +134,19 @@ class SocketService {
             this.setConnectionState(ConnectionState.DISCONNECTED);
             this.stopPingMonitoring();
 
+            // Don't auto-reconnect if we intentionally disconnected
+            if (this.intentionalDisconnect) {
+                console.log('Intentional disconnect — not reconnecting.');
+                return;
+            }
+
             // If server disconnected us, attempt reconnection
             if (reason === 'io server disconnect') {
+                console.log('Server disconnected us — forcing reconnect...');
                 this.socket.connect();
             }
+            // For 'transport close' / 'transport error' / 'ping timeout',
+            // socket.io will auto-reconnect thanks to reconnection: true
         });
 
         this.socket.on('connect_error', (err) => {
@@ -235,7 +250,7 @@ class SocketService {
                 this.lastPingTime = Date.now();
                 this.socket.emit('ping');
             }
-        }, 5000); // Ping every 5 seconds
+        }, 15000); // Ping every 15 seconds (less aggressive to avoid false disconnects)
     }
 
     stopPingMonitoring() {
@@ -264,14 +279,27 @@ class SocketService {
     attemptRoomRejoin() {
         if (this.lastRoomId && this.lastPlayerData && this.socket?.connected) {
             console.log('Attempting to rejoin room:', this.lastRoomId);
-            this.socket.emit('join-room', {
-                roomId: this.lastRoomId,
-                playerName: this.lastPlayerData.name,
-                avatar: this.lastPlayerData.avatar,
-                avatarColor: this.lastPlayerData.avatarColor,
-                userId: this.lastPlayerData.userId,
-                isRejoin: true,
-            });
+
+            // Prefer request-room-sync (recovers full game state including in-progress games)
+            // over join-room (only handles lobby-level join)
+            if (this.lastPlayerData.userId) {
+                console.log('Using request-room-sync for full state recovery');
+                this.socket.emit('request-room-sync', {
+                    roomId: this.lastRoomId,
+                    userId: this.lastPlayerData.userId,
+                });
+            } else {
+                // Fallback to join-room if we don't have userId
+                console.log('No userId, falling back to join-room');
+                this.socket.emit('join-room', {
+                    roomId: this.lastRoomId,
+                    playerName: this.lastPlayerData.name,
+                    avatar: this.lastPlayerData.avatar,
+                    avatarColor: this.lastPlayerData.avatarColor,
+                    userId: this.lastPlayerData.userId,
+                    isRejoin: true,
+                });
+            }
         }
     }
 
@@ -297,6 +325,7 @@ class SocketService {
     }
 
     disconnect() {
+        this.intentionalDisconnect = true;
         this.stopPingMonitoring();
         this.clearRoomData();
         if (this.socket) {

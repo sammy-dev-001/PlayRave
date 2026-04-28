@@ -5,10 +5,17 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const HotSeatScreen = ({ route, navigation }) => {
     const { room, playerName, isHost } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [gameState, setGameState] = useState(route.params.initialGameState || null);
     const [questionInput, setQuestionInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +38,13 @@ const HotSeatScreen = ({ route, navigation }) => {
 
         const onGameFinished = ({ message }) => {
             Alert.alert('Game Complete!', message, [
-                { text: 'Back to Lobby', onPress: () => navigation.navigate('Lobby', { room, playerName }) }
+                { text: 'Back to Lobby', onPress: () => {
+                    try {
+                        navigation.navigate('Lobby', { room, playerName });
+                    } catch (e) {
+                        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+                    }
+                } }
             ]);
         };
 

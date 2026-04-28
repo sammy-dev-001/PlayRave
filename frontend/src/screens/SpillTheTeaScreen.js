@@ -12,6 +12,7 @@ import GameOverlay from '../components/GameOverlay';
 import MuteButton from '../components/MuteButton';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
 const GAME_PHASES = {
     WAITING: 'waiting',
@@ -22,6 +23,12 @@ const GAME_PHASES = {
 
 const SpillTheTeaScreen = ({ route, navigation }) => {
     const { room, playerName, isHost } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
 
     const [phase, setPhase] = useState(GAME_PHASES.WAITING);
     const [secret, setSecret] = useState('');

@@ -71,12 +71,27 @@ const GameOverlay = ({
         // Listen for game ended due to insufficient players
         const handleGameEnded = ({ message, finalScores }) => {
             console.log('Game ended:', message);
-            // Navigate back to lobby or show results
+            // Navigate to Home since the room/game may no longer exist
             if (navigation) {
-                navigation.navigate('Lobby', {
-                    gameEndedMessage: message,
-                    finalScores
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Home', params: { gameEndedMessage: message } }],
                 });
+            }
+        };
+
+        // Catch fatal "Game not found" / "Room not found" errors
+        // These mean the server-side game state was cleaned up but the screen is still active
+        const handleError = (error) => {
+            const fatalMessages = ['Game not found', 'Room not found', 'Session expired'];
+            if (fatalMessages.some(msg => error.message?.includes(msg))) {
+                console.log('[GameOverlay] Fatal error, navigating home:', error.message);
+                if (navigation) {
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Home', params: { gameEndedMessage: 'Game session ended' } }],
+                    });
+                }
             }
         };
 
@@ -86,12 +101,14 @@ const GameOverlay = ({
 
         SocketService.on('player-left', handlePlayerLeft);
         SocketService.on('game-ended-insufficient-players', handleGameEnded);
+        SocketService.on('error', handleError);
         SocketService.on('connect', handleConnect);
         SocketService.on('disconnect', handleDisconnect);
 
         return () => {
             SocketService.off('player-left', handlePlayerLeft);
             SocketService.off('game-ended-insufficient-players', handleGameEnded);
+            SocketService.off('error', handleError);
             SocketService.off('connect', handleConnect);
             SocketService.off('disconnect', handleDisconnect);
         };

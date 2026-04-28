@@ -5,11 +5,18 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 
 const QuestionScreen = ({ route, navigation }) => {
     const { room, question: initialQuestion, questionIndex: initialQuestionIndex, hostParticipates, isHost, isTournamentMode } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [question, setQuestion] = useState(initialQuestion);
     const [questionIndex, setQuestionIndex] = useState(initialQuestionIndex || 0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);

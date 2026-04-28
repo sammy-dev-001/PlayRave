@@ -5,11 +5,18 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 
 const WordRushGameScreen = ({ route, navigation }) => {
     const { room, hostParticipates, isHost } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [gameState, setGameState] = useState('waiting'); // waiting, playing, submitted, eliminated
     const [currentLetter, setCurrentLetter] = useState('');
     const [word, setWord] = useState('');

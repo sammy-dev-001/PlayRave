@@ -12,6 +12,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +25,12 @@ const GAME_PHASES = {
 
 const UnpopularOpinionsScreen = ({ route, navigation }) => {
     const { room, playerName, isHost } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
 
     // Game State
     const [phase, setPhase] = useState(GAME_PHASES.WAITING);

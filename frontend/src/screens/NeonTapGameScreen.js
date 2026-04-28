@@ -4,12 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
 const NeonTapGameScreen = ({ route, navigation }) => {
     const { room, hostParticipates, isHost } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [gameState, setGameState] = useState('waiting'); // waiting, countdown, playing, tapped
     const [countdown, setCountdown] = useState(3);
     const [circlePosition, setCirclePosition] = useState(null);

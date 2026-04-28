@@ -147,6 +147,20 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         // Listen for errors
         const handleError = (error) => {
             console.error('Socket error:', error);
+
+            // Fatal errors: game/room no longer exists on server
+            // Navigate out instead of showing a popup that loops
+            const fatalMessages = ['Game not found', 'Room not found', 'Session expired'];
+            if (fatalMessages.some(msg => error.message?.includes(msg))) {
+                console.log('Fatal game error — navigating out:', error.message);
+                navigation.navigate('Scoreboard', {
+                    room: room,
+                    finalScores: players.map(p => ({ playerId: p.id, playerName: p.name, score: p.score || 0 })),
+                    gameEndedMessage: 'Game session ended'
+                });
+                return;
+            }
+
             if (error.invalidWords && error.invalidWords.length > 0) {
                 showAlert(
                     'Invalid Words',
@@ -155,6 +169,16 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             } else {
                 showAlert('Error', error.message || 'An error occurred');
             }
+        };
+
+        // Listen for game ended due to insufficient players (player left mid-game)
+        const handleInsufficientPlayers = ({ message, finalScores }) => {
+            console.log('Game ended - insufficient players:', message);
+            navigation.navigate('Scoreboard', {
+                room: room,
+                finalScores: finalScores ? Object.entries(finalScores).map(([id, score]) => ({ playerId: id, score })) : [],
+                gameEndedMessage: message
+            });
         };
 
         // Listen for tile exchange
@@ -189,6 +213,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         SocketService.on('scrabble-tiles-exchanged', handleTilesExchanged);
         SocketService.on('game-state-sync', handleStateSync);
         SocketService.on('error', handleError);
+        SocketService.on('game-ended-insufficient-players', handleInsufficientPlayers);
 
         return () => {
             SocketService.off('game-started', handleGameStarted);
@@ -198,6 +223,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             SocketService.off('scrabble-tiles-exchanged', handleTilesExchanged);
             SocketService.off('game-state-sync', handleStateSync);
             SocketService.off('error', handleError);
+            SocketService.off('game-ended-insufficient-players', handleInsufficientPlayers);
         };
     }, [navigation, room]);
 

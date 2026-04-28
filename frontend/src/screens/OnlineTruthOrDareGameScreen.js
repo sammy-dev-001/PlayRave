@@ -41,17 +41,43 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
 
         const onGameEnded = () => {
             console.log('Game ended');
-            navigation.navigate('GameSelection', { room, playerName: playerNames[SocketService.socket?.id] });
+            navigation.navigate('GameSelection', { room, playerName: playerNames[SocketService.socket?.id] || 'Player' });
+        };
+
+        // Keep player names in sync when room updates (socket IDs change on reconnect)
+        const onRoomUpdated = (updatedRoom) => {
+            const names = {};
+            updatedRoom.players?.forEach(p => { names[p.id] = p.name; });
+            setPlayerNames(names);
+        };
+
+        // Full game state recovery after reconnection
+        const onStateSync = ({ gameType, gameState: syncedState }) => {
+            if (gameType === 'truth-or-dare' && syncedState) {
+                setGameState(syncedState);
+            }
+        };
+
+        // Game ended because a player left
+        const onInsufficientPlayers = ({ message }) => {
+            console.log('Game ended - not enough players:', message);
+            navigation.navigate('GameSelection', { room, playerName: playerNames[SocketService.socket?.id] || 'Player' });
         };
 
         SocketService.on('truth-or-dare-chosen', onTruthOrDareChosen);
         SocketService.on('truth-or-dare-turn-complete', onTurnComplete);
         SocketService.on('truth-or-dare-ended', onGameEnded);
+        SocketService.on('room-updated', onRoomUpdated);
+        SocketService.on('game-state-sync', onStateSync);
+        SocketService.on('game-ended-insufficient-players', onInsufficientPlayers);
 
         return () => {
             SocketService.off('truth-or-dare-chosen', onTruthOrDareChosen);
             SocketService.off('truth-or-dare-turn-complete', onTurnComplete);
             SocketService.off('truth-or-dare-ended', onGameEnded);
+            SocketService.off('room-updated', onRoomUpdated);
+            SocketService.off('game-state-sync', onStateSync);
+            SocketService.off('game-ended-insufficient-players', onInsufficientPlayers);
         };
     }, [navigation, room, playerNames]);
 

@@ -6,10 +6,17 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import WhotCard from '../components/WhotCard';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const WhotGameScreen = ({ route, navigation }) => {
     const { room, hostParticipates, isHost, initialGameState } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [gameState, setGameState] = useState(initialGameState || null);
     const [showShapeSelector, setShowShapeSelector] = useState(false);
     const [selectedCardId, setSelectedCardId] = useState(null);
@@ -50,7 +57,13 @@ const WhotGameScreen = ({ route, navigation }) => {
                     Alert.alert(
                         'Game Over!',
                         `${winnerPlayer?.name || 'Someone'} wins!`,
-                        [{ text: 'OK', onPress: () => navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name }) }]
+                        [{ text: 'OK', onPress: () => {
+                            try {
+                                navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name });
+                            } catch (e) {
+                                navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+                            }
+                        } }]
                     );
                 }, 500);
             }

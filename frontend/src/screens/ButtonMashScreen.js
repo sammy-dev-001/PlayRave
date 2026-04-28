@@ -100,7 +100,15 @@ const ButtonMashScreen = ({ route, navigation }) => {
         };
 
         const onGameEnded = ({ room: updatedRoom }) => {
-            navigation.navigate('Lobby', { room: updatedRoom, playerName, isHost });
+            try {
+                navigation.navigate('Lobby', { room: updatedRoom, playerName, isHost });
+            } catch (e) {
+                navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+            }
+        };
+
+        const onInsufficientPlayers = () => {
+            navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
         };
 
         SocketService.on('button-mash-go', onGo);
@@ -108,6 +116,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
         SocketService.on('button-mash-leaderboard', onLeaderboard);
         SocketService.on('button-mash-results', onResults);
         SocketService.on('button-mash-game-ended', onGameEnded);
+        SocketService.on('game-ended-insufficient-players', onInsufficientPlayers);
 
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
@@ -116,6 +125,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
             SocketService.off('button-mash-leaderboard', onLeaderboard);
             SocketService.off('button-mash-results', onResults);
             SocketService.off('button-mash-game-ended', onGameEnded);
+            SocketService.off('game-ended-insufficient-players', onInsufficientPlayers);
         };
     }, [navigation, playerName, isHost]);
 

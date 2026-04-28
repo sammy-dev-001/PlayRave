@@ -14,10 +14,17 @@ import NeonButton from '../components/NeonButton';
 import TournamentBracket from '../components/TournamentBracket';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const TicTacToeScreen = ({ route, navigation }) => {
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
 
     const [phase, setPhase] = useState('bracket'); // bracket, playing, matchResult, roundComplete, finished
     const [matches, setMatches] = useState(initialGameState?.matches || []);
@@ -111,7 +118,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
         };
 
         const onGameEnded = ({ room: updatedRoom }) => {
-            navigation.navigate('Lobby', { room: updatedRoom, playerName, isHost });
+            try { navigation.navigate('Lobby', { room: updatedRoom, playerName, isHost }); } catch (e) { navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); }
         };
 
         SocketService.on('ttt-match-started', onMatchStarted);

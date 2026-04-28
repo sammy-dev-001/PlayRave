@@ -9,7 +9,11 @@ app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: "*" }
+    cors: { origin: "*" },
+    // More tolerant ping settings for mobile/weak connections
+    // Prevents premature disconnect detection when switching tabs or brief network hiccups
+    pingTimeout: 60000,   // Wait 60s before considering a client disconnected (default: 20s)
+    pingInterval: 30000,  // Ping every 30s (default: 25s)
 });
 
 // basic socket flow
@@ -338,13 +342,58 @@ io.on("connection", (socket) => {
 
     socket.on("leave-room", ({ roomId }) => {
         console.log("leave-room event received, roomId:", roomId, "socketId:", socket.id);
+
+        // Clear any pending disconnect for this player since they're intentionally leaving
+        const playerInfo = roomManager.getPlayerBySocketId(socket.id);
+        if (playerInfo?.uid && global.pendingDisconnects) {
+            global.pendingDisconnects.delete(playerInfo.uid);
+        }
+
+        // Check if there's an active game BEFORE removing the player
+        const game = gameManager.getGameState(roomId);
+        const room = roomManager.getRoom(roomId);
+        const isSinglePlayer = game?.isSinglePlayer || (room?.players?.length === 1);
+
         const result = roomManager.removePlayer(socket.id);
+
         if (result && !result.roomDeleted) {
             console.log("Player left, emitting room-updated to remaining players");
+
+            // Notify remaining players
+            io.to(result.roomId).emit("player-left", {
+                playerName: playerInfo?.name || "A player",
+                playerId: socket.id,
+                userId: playerInfo?.uid,
+                remainingPlayers: result.room.players.length
+            });
+
             io.to(result.roomId).emit("room-updated", result.room);
+
+            // Check if the game should end due to insufficient players
+            // BUT skip this for single-player games — those are valid with 1 player
+            if (game && !isSinglePlayer) {
+                const minPlayers = gameManager.getMinPlayers(game.type) || 2;
+                if (result.room.players.length < minPlayers) {
+                    console.log(`Game ${game.type} ended: ${result.room.players.length} players remaining, needs ${minPlayers}`);
+                    io.to(result.roomId).emit("game-ended-insufficient-players", {
+                        message: "Game ended - not enough players remaining",
+                        finalScores: game.scores || {}
+                    });
+                    gameManager.clearQuestionTimer(result.roomId);
+                    gameManager.endGame(result.roomId);
+                }
+            }
         } else if (result && result.roomDeleted) {
             console.log("Room deleted as last player left");
+            // Clean up game state for deleted rooms
+            if (game) {
+                gameManager.clearQuestionTimer(roomId);
+                gameManager.endGame(roomId);
+            }
         }
+
+        // Leave the socket.io room
+        socket.leave(roomId);
     });
 
     socket.on("disconnect", () => {
@@ -401,10 +450,16 @@ io.on("connection", (socket) => {
 
             // Never auto-delete single-player local rooms on disconnect
             // (These should persist in memory until explicitly ended or the server reboots)
-            if (roomId.startsWith('local-')) {
+            if (roomId && roomId.startsWith('local-')) {
                 console.log(`Skipping room cleanup for persistent local room: ${roomId}`);
                 return;
             }
+
+            // Check the game state BEFORE removing the player so we can determine
+            // single-player status correctly
+            const game = roomId ? gameManager.getGameState(roomId) : null;
+            const roomBeforeRemoval = roomId ? roomManager.getRoom(roomId) : null;
+            const isSinglePlayer = game?.isSinglePlayer || (roomBeforeRemoval?.players?.length === 1);
 
             const result = roomManager.removePlayer(socket.id);
             if (result && !result.roomDeleted) {
@@ -417,13 +472,24 @@ io.on("connection", (socket) => {
 
                 io.to(result.roomId).emit("room-updated", result.room);
 
-                const game = gameManager.getGameState(result.roomId);
-                if (game && result.room.players.length < 2) {
-                    io.to(result.roomId).emit("game-ended-insufficient-players", {
-                        message: "Game ended - not enough players remaining",
-                        finalScores: game.scores || {}
-                    });
-                    gameManager.endGame(result.roomId);
+                // Only end the game if there aren't enough players AND it's NOT single-player
+                if (game && !isSinglePlayer) {
+                    const minPlayers = gameManager.getMinPlayers(game.type) || 2;
+                    if (result.room.players.length < minPlayers) {
+                        console.log(`Game ${game.type} ended after disconnect: ${result.room.players.length} players remaining, needs ${minPlayers}`);
+                        io.to(result.roomId).emit("game-ended-insufficient-players", {
+                            message: "Game ended - not enough players remaining",
+                            finalScores: game.scores || {}
+                        });
+                        gameManager.clearQuestionTimer(result.roomId);
+                        gameManager.endGame(result.roomId);
+                    }
+                }
+            } else if (result && result.roomDeleted) {
+                // Room was fully emptied — clean up game state
+                if (game && roomId) {
+                    gameManager.clearQuestionTimer(roomId);
+                    gameManager.endGame(roomId);
                 }
             }
         }, DISCONNECT_GRACE_PERIOD);

@@ -31,6 +31,16 @@ class GameManager {
         'hot-seat-mc': 3,
         'tic-tac-toe': 2,
         'unpopular-opinions': 3,
+        'neon-tap': 2,
+        'word-rush': 2,
+        'whot': 2,
+        'button-mash': 2,
+        'type-race': 2,
+        'math-blitz': 2,
+        'color-rush': 2,
+        'draw-battle': 2,
+        'scrabble': 1,  // Supports single-player vs AI
+        'spill-the-tea': 3,
     };
 
     // Check if enough players for a game
@@ -1119,8 +1129,8 @@ class GameManager {
             isCurrentPlayer,
             category: game.category,
             promptType: game.promptType,
-            // Only show prompt to current player
-            currentPrompt: isCurrentPlayer ? game.currentPrompt : null,
+            // Everyone sees the prompt — Truth or Dare is a social game watched by all players
+            currentPrompt: game.currentPrompt,
             turnCount: game.turnCount,
             status: game.status,
             playerOrder: game.playerOrder

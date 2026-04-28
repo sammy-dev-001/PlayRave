@@ -5,6 +5,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
@@ -12,6 +13,12 @@ const QUESTION_TIME = 5;
 
 const OnlineRapidFireScreen = ({ route, navigation }) => {
     const { room, isHost, initialGameState, players } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [gameState, setGameState] = useState(initialGameState || {});
     const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -47,7 +54,7 @@ const OnlineRapidFireScreen = ({ route, navigation }) => {
                 console.error('Error recording stats:', error);
             }
 
-            navigation.navigate('Lobby', { room, isHost, playerName: players.find(p => p.id === currentPlayerId)?.name });
+            try { navigation.navigate('Lobby', { room, isHost, playerName: players.find(p => p.id === currentPlayerId)?.name }); } catch (e) { navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); }
         };
 
         SocketService.on('rapid-fire-update', onUpdate);

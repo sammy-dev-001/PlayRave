@@ -5,10 +5,17 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const MythOrFactQuestionScreen = ({ route, navigation }) => {
     const { room, statement, statementIndex, hostParticipates, isHost } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [timeLeft, setTimeLeft] = useState(15);
     const [hasSubmitted, setHasSubmitted] = useState(false);

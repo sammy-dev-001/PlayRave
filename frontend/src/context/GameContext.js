@@ -188,12 +188,30 @@ export function GameProvider({ children }) {
             }
 
             // 2. If we were in a room, request a full sync
-            if (state.room?.id && user?.id) {
-                console.log('Requesting room sync for user:', user.id);
-                SocketService.emit('request-room-sync', {
-                    roomId: state.room.id,
-                    userId: user.id
-                });
+            // Wait briefly for reconnection to complete before syncing
+            const doSync = () => {
+                if (state.room?.id && user?.id && SocketService.isConnected()) {
+                    console.log('Requesting room sync for user:', user.id);
+                    SocketService.emit('request-room-sync', {
+                        roomId: state.room.id,
+                        userId: user.id
+                    });
+                }
+            };
+
+            if (SocketService.isConnected()) {
+                doSync();
+            } else {
+                // Socket not connected yet — wait for it, then sync
+                const syncTimeout = setTimeout(doSync, 1500);
+                const onConnect = () => {
+                    clearTimeout(syncTimeout);
+                    doSync();
+                    SocketService.off('connect', onConnect);
+                };
+                SocketService.on('connect', onConnect);
+                // Clean up listener if it doesn't fire within 10s
+                setTimeout(() => SocketService.off('connect', onConnect), 10000);
             }
         };
 

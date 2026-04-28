@@ -5,11 +5,18 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
     const { room, isHost, initialGameState, players } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
     const [gameState, setGameState] = useState(initialGameState || {});
     const [hasResponded, setHasResponded] = useState(false);
     const [gameFinished, setGameFinished] = useState(false);
