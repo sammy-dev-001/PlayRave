@@ -10,18 +10,24 @@ import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
-    const { room, isHost, initialGameState, players } = route.params;
+    const { room, isHost, initialGameState, players, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
     const [gameState, setGameState] = useState(initialGameState || {});
     const [hasResponded, setHasResponded] = useState(false);
     const [gameFinished, setGameFinished] = useState(false);
 
-    const currentPlayerId = SocketService.socket?.id;
+    // Find current user's persistent ID safely
+    const myPlayer = players.find(p => p.name === playerName) || players.find(p => p.id === SocketService.socket?.id);
+    const currentPlayerId = myPlayer?.uid;
+
 
     useEffect(() => {
         const onResponse = ({ playerScores, playerResponses, allResponded }) => {

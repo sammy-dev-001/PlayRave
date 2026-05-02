@@ -19,7 +19,7 @@ class LieDetectorEngine {
             type: 'lie-detector',
             roomId,
             questions,
-            players: players.map(p => ({ userId: p.id, name: p.name, avatar: p.avatar })),
+            players: players.map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar })),
             currentPlayerIndex: 0,
             currentQuestionIndex: 0,
             phase: 'answering', // answering, voting, reveal
@@ -31,7 +31,7 @@ class LieDetectorEngine {
             totalRounds: Math.min(players.length * 2, 10)
         };
 
-        players.forEach(p => { gameState.scores[p.id] = 0; });
+        players.forEach(p => { gameState.scores[p.userId] = 0; });
         this.activeGames.set(roomId, gameState);
 
         return {

@@ -106,7 +106,7 @@ class RapidFireEngine {
 
         return {
             action: 'broadcast',
-            event: 'rapid-fire-answered',
+            event: 'rapid-fire-update',
             data: {
                 success: true,
                 answered,
@@ -121,7 +121,7 @@ class RapidFireEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'broadcast', event: 'rapid-fire-ended', data: { message: 'Game ended by host', playerScores: game.playerScores } };
     }
 }
 

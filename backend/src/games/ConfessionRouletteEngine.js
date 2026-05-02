@@ -15,7 +15,7 @@ class ConfessionRouletteEngine {
             type: 'confession-roulette',
             roomId,
             players: players.map(p => ({
-                userId: p.id,
+                userId: p.userId,
                 name: p.name,
                 avatar: p.avatar,
                 score: 0,

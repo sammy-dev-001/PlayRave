@@ -20,7 +20,7 @@ class ImposterEngine {
         const roomId = room.id;
 
         const players = room.players.map(p => ({
-            userId: p.id,
+            userId: p.userId,
             name:   p.name,
             avatar: p.avatar || null,
         }));

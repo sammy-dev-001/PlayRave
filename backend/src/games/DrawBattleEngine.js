@@ -21,7 +21,7 @@ class DrawBattleEngine {
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
             .map(p => ({
-                userId:       p.id,
+                userId:       p.userId,
                 name:         p.name,
                 avatar:       p.avatar || null,
                 score:        0,

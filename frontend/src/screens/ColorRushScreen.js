@@ -20,9 +20,12 @@ const ColorRushScreen = ({ route, navigation }) => {
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
 
     const [phase, setPhase] = useState('waiting');
     const [countdown, setCountdown] = useState(3);

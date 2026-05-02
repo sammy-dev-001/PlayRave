@@ -1,6 +1,35 @@
+// ============================================================================
+// MathBlitzEngine.js — Pure Game Logic Engine
+// ============================================================================
+// Decoupled from Socket.io. Returns instruction payloads to the GameRouter.
+// Player identity uses persistent 'userId' rather than 'socketId'.
+// ============================================================================
+
 class MathBlitzEngine {
     constructor() {
         this.activeGames = new Map();
+    }
+
+    handleEvent(eventName, payload, userId, roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+
+        switch (eventName) {
+            case 'math-blitz-start-round':
+            case 'start-round':
+                return this.startRound(roomId);
+            case 'math-blitz-answer':
+            case 'submit-answer':
+                return this.submitAnswer(roomId, userId, payload.answer);
+            case 'math-blitz-next-round':
+            case 'next-round':
+                return this.nextRound(roomId);
+            case 'math-blitz-end-game':
+            case 'end-game':
+                return this.endGame(roomId);
+            default:
+                return { action: 'error', message: `Unknown Math Blitz event: ${eventName}` };
+        }
     }
 
     generateMathProblem(difficulty = 'medium') {
@@ -20,9 +49,7 @@ class MathBlitzEngine {
                 num1 = Math.floor(Math.random() * 20) + 5;
                 num2 = Math.floor(Math.random() * 15) + 2;
         }
-        if (op === '-' && num2 > num1) {
-            [num1, num2] = [num2, num1];
-        }
+        if (op === '-' && num2 > num1) [num1, num2] = [num2, num1];
         if (op === '*') {
             num1 = Math.floor(Math.random() * 12) + 2;
             num2 = Math.floor(Math.random() * 12) + 2;
@@ -32,12 +59,14 @@ class MathBlitzEngine {
             case '-': answer = num1 - num2; break;
             case '*': answer = num1 * num2; break;
         }
-        return { display: `${num1} ${op} ${num2}`, answer, num1, num2, operation: op };
+        return { display: `${num1} ${op} ${num2}`, answer };
     }
 
-    startGame(room) {
-        const hostParticipates = room.settings?.hostParticipates !== false;
+    startGame(room, options = {}) {
+        const hostParticipates = options.hostParticipates !== false;
+        const roomId = room.id;
         const players = [];
+
         room.players.forEach(player => {
             if (!hostParticipates && player.isHost) return;
             players.push({
@@ -53,9 +82,9 @@ class MathBlitzEngine {
         const problems = [];
         for (let i = 0; i < totalRounds; i++) problems.push(this.generateMathProblem('medium'));
 
-        const gameState = {
+        const game = {
             type: 'math-blitz',
-            roomId: room.roomId,
+            roomId,
             players,
             problems,
             currentRound: 0,
@@ -67,58 +96,192 @@ class MathBlitzEngine {
             hostParticipates
         };
 
-        this.activeGames.set(room.roomId, gameState);
-        return { action: 'broadcast', event: 'game-started', payload: gameState };
+        this.activeGames.set(roomId, game);
+        
+        const instructions = room.players.map(p => ({
+            action: 'emit',
+            targetId: p.userId,
+            event: 'game-started',
+            data: {
+                gameType: 'math-blitz',
+                gameState: this.getGameState(roomId),
+                hostParticipates
+            }
+        }));
+
+        return { action: 'multiple', instructions };
+    }
+
+    getGameState(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return null;
+        return {
+            totalRounds: game.totalRounds,
+            currentRound: game.currentRound + 1,
+            phase: game.phase
+        };
+    }
+
+    startRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
+
+        game.players.forEach(p => { p.answered = false; p.correct = false; });
+        game.phase = 'playing';
+        game.roundStartTime = Date.now();
+        game.roundWinner = null;
+        game.currentProblem = game.problems[game.currentRound];
+
+        return { 
+            action: 'broadcast', 
+            event: 'math-blitz-round-start', 
+            data: { 
+                problem: game.currentProblem.display, 
+                round: game.currentRound + 1, 
+                totalRounds: game.totalRounds 
+            } 
+        };
+    }
+
+    submitAnswer(roomId, userId, answer) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.phase !== 'playing') return { action: 'error', message: 'Round not active' };
+
+        const player = game.players.find(p => p.userId === userId);
+        if (!player || player.answered) return { action: 'error', message: 'Invalid submission' };
+
+        player.answered = true;
+        const isCorrect = parseInt(answer) === game.currentProblem.answer;
+        player.correct = isCorrect;
+
+        const instructions = [];
+
+        if (isCorrect && !game.roundWinner) {
+            game.roundWinner = userId;
+            player.score += 100;
+            
+            // Broadcast the winner immediately
+            instructions.push({
+                action: 'broadcast',
+                event: 'math-blitz-round-won',
+                data: { winnerName: player.name, winnerId: userId, correctAnswer: game.currentProblem.answer }
+            });
+
+            // Send specific success to the winner
+            instructions.push({
+                action: 'emit',
+                targetId: userId,
+                event: 'math-blitz-answer-result',
+                data: { correct: true, isWinner: true }
+            });
+
+            // Automatically transition to results after a short delay
+            instructions.push({
+                action: 'schedule',
+                delay: 2000,
+                roomId,
+                eventToTrigger: 'get-results'
+            });
+        } else {
+            // Send result back to the individual player
+            instructions.push({
+                action: 'emit',
+                targetId: userId,
+                event: 'math-blitz-answer-result',
+                data: { correct: isCorrect, isWinner: false }
+            });
+        }
+
+        return { action: 'multiple', instructions };
     }
 
     handleEvent(eventName, payload, userId, roomId) {
+        // Redefining handleEvent to include 'get-results' which is scheduled
+        if (eventName === 'get-results') return this.getRoundResults(roomId);
+        
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'error', message: 'Game not found' };
 
         switch (eventName) {
-            case 'start-round': {
-                game.players.forEach(p => { p.answered = false; p.correct = false; });
-                game.phase = 'playing';
-                game.roundStartTime = Date.now();
-                game.roundWinner = null;
-                return { action: 'broadcast', event: 'round-started', payload: { problem: game.currentProblem.display, round: game.currentRound + 1, totalRounds: game.totalRounds } };
-            }
-            case 'submit-answer': {
-                if (game.phase !== 'playing') return { action: 'error', message: 'Round not active' };
-                const player = game.players.find(p => p.userId === userId);
-                if (!player) return { action: 'error', message: 'Player not found' };
-                if (player.answered) return { action: 'error', message: 'Already answered' };
-                
-                player.answered = true;
-                const isCorrect = parseInt(payload.answer) === game.currentProblem.answer;
-                player.correct = isCorrect;
-                
-                if (isCorrect && !game.roundWinner) {
-                    game.roundWinner = userId;
-                    player.score += 100;
-                    return { action: 'broadcast', event: 'answer-result', payload: { correct: true, isWinner: true, answer: game.currentProblem.answer, playerName: player.name, winnerId: userId } };
-                }
-                return { action: 'emit', event: 'answer-result', payload: { correct: isCorrect, isWinner: false, correctAnswer: game.currentProblem.answer } };
-            }
-            case 'get-results': {
-                const winner = game.players.find(p => p.userId === game.roundWinner);
-                const standings = [...game.players].sort((a, b) => b.score - a.score).map((p, i) => ({ userId: p.userId, name: p.name, score: p.score, position: i + 1 }));
-                return { action: 'broadcast', event: 'round-results', payload: { correctAnswer: game.currentProblem.answer, problem: game.currentProblem.display, winner: winner ? { userId: winner.userId, name: winner.name } : null, standings, currentRound: game.currentRound + 1, totalRounds: game.totalRounds } };
-            }
-            case 'next-round': {
-                game.currentRound++;
-                if (game.currentRound >= game.totalRounds) {
-                    game.phase = 'finished';
-                    const finalRankings = [...game.players].sort((a, b) => b.score - a.score).map((p, i) => ({ userId: p.userId, name: p.name, score: p.score, position: i + 1 }));
-                    return { action: 'broadcast', event: 'game-over', payload: { finished: true, rankings: finalRankings, winner: finalRankings[0] } };
-                }
-                game.currentProblem = game.problems[game.currentRound];
-                game.phase = 'waiting';
-                return { action: 'broadcast', event: 'next-round-ready', payload: { finished: false, nextRound: game.currentRound + 1 } };
-            }
+            case 'math-blitz-start-round':
+            case 'start-round':
+                return this.startRound(roomId);
+            case 'math-blitz-answer':
+            case 'submit-answer':
+                return this.submitAnswer(roomId, userId, payload.answer);
+            case 'math-blitz-next-round':
+            case 'next-round':
+                return this.nextRound(roomId);
+            case 'math-blitz-end-game':
+            case 'end-game':
+                return this.endGame(roomId);
             default:
-                return { action: 'error', message: 'Unknown event' };
+                return { action: 'error', message: `Unknown Math Blitz event: ${eventName}` };
         }
     }
+
+    getRoundResults(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+
+        game.phase = 'results';
+        const standings = [...game.players]
+            .sort((a, b) => b.score - a.score)
+            .map((p, i) => ({ 
+                id: p.userId, // Map to id for frontend
+                userId: p.userId, 
+                name: p.name, 
+                score: p.score, 
+                position: i + 1 
+            }));
+
+        return { 
+            action: 'broadcast', 
+            event: 'math-blitz-round-results', 
+            data: { 
+                standings, 
+                correctAnswer: game.currentProblem.answer,
+                currentRound: game.currentRound + 1, 
+                totalRounds: game.totalRounds 
+            } 
+        };
+    }
+
+    nextRound(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
+
+        game.currentRound++;
+        if (game.currentRound >= game.totalRounds) {
+            game.phase = 'finished';
+            const rankings = [...game.players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({ 
+                    id: p.userId, 
+                    userId: p.userId, 
+                    name: p.name, 
+                    score: p.score, 
+                    position: i + 1 
+                }));
+            return { 
+                action: 'broadcast', 
+                event: 'math-blitz-game-finished', 
+                data: { finished: true, rankings, winner: rankings[0] } 
+            };
+        }
+
+        game.phase = 'waiting';
+        return { 
+            action: 'broadcast', 
+            event: 'math-blitz-next-round-ready', 
+            data: { finished: false, nextRound: game.currentRound + 1 } 
+        };
+    }
+
+    endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'broadcast', event: 'math-blitz-game-ended', data: { message: 'Game ended' } };
+    }
 }
-module.exports = MathBlitzEngine;
+
+module.exports = new MathBlitzEngine();

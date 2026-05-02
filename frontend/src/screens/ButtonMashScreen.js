@@ -12,12 +12,23 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
+
 
 const GAME_DURATION = 10000; // 10 seconds
 
 const ButtonMashScreen = ({ route, navigation }) => {
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
+
 
     // Game phases: countdown, playing, waiting, results
     const [phase, setPhase] = useState('countdown');

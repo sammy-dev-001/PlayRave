@@ -7,8 +7,19 @@ import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
 
 const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
-    const { room, isHost, category = 'normal', players = [] } = route.params;
+    const { room, isHost, category = 'normal', players = [], playerName } = route.params;
+    
+    // Session persistence and reconnection handling
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'GameSelection',
+        exitParams: { room, playerName }
+    });
+
     const [gameState, setGameState] = useState(null);
+
     const [playerNames, setPlayerNames] = useState({});
 
     // Build player name lookup
@@ -132,10 +143,12 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         );
     }
 
-    const myPlayer = players.find(p => p.uid === route.params.userId || p.id === SocketService.socket?.id);
+    // Find current user's persistent ID safely
+    const myPlayer = players.find(p => p.name === playerName) || players.find(p => p.id === SocketService.socket?.id);
     const myUserId = myPlayer?.uid || route.params.userId;
     const isMyTurn = gameState.currentPlayerId === myUserId;
     const currentPlayerName = playerNames[gameState.currentPlayerId] || 'Someone';
+
 
     return (
         <NeonContainer>

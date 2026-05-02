@@ -185,8 +185,8 @@ class MythOrFactEngine {
 
         return {
             action: 'broadcast',
-            event: 'myth-or-fact-next-statement',
-            data: this.getGameState(roomId)
+            event: 'next-myth-or-fact-statement-ready',
+            data: { statement: this.getGameState(roomId) }
         };
     }
 

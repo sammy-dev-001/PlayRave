@@ -119,7 +119,7 @@ class NeverHaveIEverEngine {
 
         return {
             action: 'broadcast',
-            event: 'never-have-i-ever-response-received',
+            event: 'nhie-response',
             data: payloadData
         };
     }
@@ -132,7 +132,7 @@ class NeverHaveIEverEngine {
             game.status = 'FINISHED';
             return {
                 action: 'broadcast',
-                event: 'never-have-i-ever-game-finished',
+                event: 'nhie-finished',
                 data: {
                     finished: true,
                     playerScores: game.playerScores,
@@ -154,7 +154,7 @@ class NeverHaveIEverEngine {
 
         return {
             action: 'broadcast',
-            event: 'never-have-i-ever-round-updated',
+            event: 'nhie-new-round',
             data: {
                 success: true,
                 currentPrompt: game.currentPrompt,
@@ -167,7 +167,7 @@ class NeverHaveIEverEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'broadcast', event: 'nhie-ended', data: { message: 'Game ended by host' } };
     }
 }
 

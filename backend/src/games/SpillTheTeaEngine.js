@@ -24,7 +24,7 @@ class SpillTheTeaEngine {
         const hostParticipates = room.settings?.hostParticipates !== false;
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
-            .map(p => ({ userId: p.id, name: p.name, avatar: p.avatar || null, score: 0 }));
+            .map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar || null, score: 0 }));
 
         const gameState = {
             type:                  'spill-the-tea',

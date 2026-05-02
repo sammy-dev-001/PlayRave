@@ -10,6 +10,16 @@ import { COLORS } from '../constants/theme';
 
 const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { room, playerName, gameState: initialGameState } = route.params;
+    
+    // Identity persistence and reconnection handling
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost: room.players?.find(p => p.name === playerName)?.isHost }
+    });
+
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Desktop Layout detection
@@ -76,19 +86,8 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             console.log('Initializing from route params:', initialGameState);
             updateGameState(initialGameState);
         }
-
-        // Register room data for auto-rejoin if socket disconnects
-        if (room && playerName) {
-            // Try to find current player's avatar data from the room object
-            const me = room.players?.find(p => p.name === playerName);
-            console.log('Registering room data for persistence:', room.id, { name: playerName });
-            SocketService.setRoomData(room.id, {
-                name: playerName,
-                avatar: me?.avatar,
-                avatarColor: me?.avatarColor
-            });
-        }
     }, []);
+
 
     useEffect(() => {
         // Listen for game start (for late joiners or reconnections)
@@ -153,13 +152,22 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             const fatalMessages = ['Game not found', 'Room not found', 'Session expired'];
             if (fatalMessages.some(msg => error.message?.includes(msg))) {
                 console.log('Fatal game error — navigating out:', error.message);
+                
+                // Map players list for scoreboard - use 'userId' for persistent identity
+                const scoreboardData = players.map(p => ({ 
+                    playerId: p.userId, 
+                    playerName: p.name, 
+                    score: p.score || 0 
+                }));
+
                 navigation.navigate('Scoreboard', {
                     room: room,
-                    finalScores: players.map(p => ({ playerId: p.id, playerName: p.name, score: p.score || 0 })),
+                    finalScores: scoreboardData,
                     gameEndedMessage: 'Game session ended'
                 });
                 return;
             }
+
 
             if (error.invalidWords && error.invalidWords.length > 0) {
                 showAlert(
@@ -174,12 +182,27 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         // Listen for game ended due to insufficient players (player left mid-game)
         const handleInsufficientPlayers = ({ message, finalScores }) => {
             console.log('Game ended - insufficient players:', message);
+            
+            let scoreboardData = [];
+            if (finalScores) {
+                // finalScores from engine might be a map or array
+                if (Array.isArray(finalScores)) {
+                    scoreboardData = finalScores;
+                } else {
+                    scoreboardData = Object.entries(finalScores).map(([id, score]) => ({ 
+                        playerId: id, 
+                        score 
+                    }));
+                }
+            }
+
             navigation.navigate('Scoreboard', {
                 room: room,
-                finalScores: finalScores ? Object.entries(finalScores).map(([id, score]) => ({ playerId: id, score })) : [],
+                finalScores: scoreboardData,
                 gameEndedMessage: message
             });
         };
+
 
         // Listen for tile exchange
         const handleTilesExchanged = (data) => {

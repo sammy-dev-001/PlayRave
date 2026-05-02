@@ -23,7 +23,7 @@ class AuctionBluffEngine {
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
             .map(p => ({
-                userId:          p.id,
+                userId:          p.userId,
                 name:            p.name,
                 avatar:          p.avatar || null,
                 cash:            5000,

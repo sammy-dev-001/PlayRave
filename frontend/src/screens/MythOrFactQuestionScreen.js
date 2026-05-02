@@ -9,13 +9,16 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const MythOrFactQuestionScreen = ({ route, navigation }) => {
-    const { room, statement, statementIndex, hostParticipates, isHost } = route.params;
+    const { room, statement, statementIndex, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [timeLeft, setTimeLeft] = useState(15);
     const [hasSubmitted, setHasSubmitted] = useState(false);

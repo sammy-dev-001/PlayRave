@@ -8,13 +8,16 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
-    const { room, prompt, promptIndex, players, hostParticipates, isHost } = route.params;
+    const { room, prompt, promptIndex, players, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [timeLeft, setTimeLeft] = useState(10);
     const [hasSubmitted, setHasSubmitted] = useState(false);

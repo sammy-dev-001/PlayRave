@@ -21,9 +21,12 @@ const TypeRaceScreen = ({ route, navigation }) => {
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
 
     const [phase, setPhase] = useState('waiting'); // waiting, countdown, typing, results, finished
     const [countdown, setCountdown] = useState(3);

@@ -10,13 +10,16 @@ import { COLORS } from '../constants/theme';
 const { width, height } = Dimensions.get('window');
 
 const NeonTapGameScreen = ({ route, navigation }) => {
-    const { room, hostParticipates, isHost } = route.params;
+    const { room, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
     const [gameState, setGameState] = useState('waiting'); // waiting, countdown, playing, tapped
     const [countdown, setCountdown] = useState(3);
     const [circlePosition, setCirclePosition] = useState(null);

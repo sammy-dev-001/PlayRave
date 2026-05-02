@@ -10,13 +10,16 @@ import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 
 const WordRushGameScreen = ({ route, navigation }) => {
-    const { room, hostParticipates, isHost } = route.params;
+    const { room, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
     const [gameState, setGameState] = useState('waiting'); // waiting, playing, submitted, eliminated
     const [currentLetter, setCurrentLetter] = useState('');
     const [word, setWord] = useState('');

@@ -22,7 +22,7 @@ class UnpopularOpinionsEngine {
         const hostParticipates = room.settings?.hostParticipates !== false;
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
-            .map(p => ({ userId: p.id, name: p.name, avatar: p.avatar || null, score: 0 }));
+            .map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar || null, score: 0 }));
 
         // Shuffle opinions and cap at 10 rounds
         const opinions  = [...UNPOPULAR_OPINIONS].sort(() => 0.5 - Math.random());

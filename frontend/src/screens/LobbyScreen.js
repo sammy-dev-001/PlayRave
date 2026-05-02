@@ -15,6 +15,15 @@ import { COLORS } from '../constants/theme';
 const LobbyScreen = ({ route, navigation }) => {
     const [room, setRoom] = useState(route.params.room);
     const { playerName } = route.params;
+
+    // Session persistence and reconnection handling
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'Home' // If lobby is gone, go home
+    });
+
     const fromGame = route.params.fromGame || false;
     const [selectedGame, setSelectedGame] = useState(route.params.selectedGame || route.params.room.gameType);
     const [hostParticipates, setHostParticipates] = useState(false);
@@ -62,54 +71,57 @@ const LobbyScreen = ({ route, navigation }) => {
         };
 
         const onGameStarted = ({ gameType, question, statement, prompt, players, hostParticipates: hostPlays, gameState }) => {
+            const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
+            
             if (gameType === 'trivia') {
-                navigation.navigate('Question', { room, question, questionIndex: 0, hostParticipates: hostPlays, isHost });
+                navigation.navigate('Question', { ...navParams, question, questionIndex: 0 });
             } else if (gameType === 'myth-or-fact') {
-                navigation.navigate('MythOrFactQuestion', { room, statement, statementIndex: 0, hostParticipates: hostPlays, isHost });
+                navigation.navigate('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
             } else if (gameType === 'whos-most-likely') {
-                navigation.navigate('WhosMostLikelyQuestion', { room, prompt, promptIndex: 0, players, hostParticipates: hostPlays, isHost });
+                navigation.navigate('WhosMostLikelyQuestion', { ...navParams, prompt, promptIndex: 0 });
             } else if (gameType === 'neon-tap') {
-                navigation.navigate('NeonTapGame', { room, hostParticipates: hostPlays, isHost });
+                navigation.navigate('NeonTapGame', navParams);
             } else if (gameType === 'word-rush') {
-                navigation.navigate('WordRushGame', { room, hostParticipates: hostPlays, isHost });
+                navigation.navigate('WordRushGame', navParams);
             } else if (gameType === 'whot') {
-                navigation.navigate('WhotGame', { room, hostParticipates: hostPlays, isHost, initialGameState: gameState });
+                navigation.navigate('WhotGame', navParams);
             } else if (gameType === 'truth-or-dare') {
-                navigation.navigate('OnlineTruthOrDareGame', { room, hostParticipates: hostPlays, isHost, gameState, players, category: gameState?.category || 'normal' });
+                navigation.navigate('OnlineTruthOrDareGame', { ...navParams, category: gameState?.category || 'normal' });
             } else if (gameType === 'never-have-i-ever') {
-                navigation.navigate('OnlineNeverHaveIEver', { room, isHost, initialGameState: gameState, players });
+                navigation.navigate('OnlineNeverHaveIEver', navParams);
             } else if (gameType === 'rapid-fire') {
-                navigation.navigate('OnlineRapidFire', { room, isHost, initialGameState: gameState, players });
+                navigation.navigate('OnlineRapidFire', navParams);
             } else if (gameType === 'confession-roulette') {
-                navigation.navigate('ConfessionRoulette', { room, playerName, isHost });
+                navigation.navigate('ConfessionRoulette', navParams);
             } else if (gameType === 'spill-the-tea') {
-                navigation.navigate('SpillTheTea', { room, playerName, isHost });
+                navigation.navigate('SpillTheTea', navParams);
             } else if (gameType === 'imposter') {
-                navigation.navigate('Imposter', { room, playerName, isHost });
+                navigation.navigate('Imposter', navParams);
             } else if (gameType === 'unpopular-opinions') {
-                navigation.navigate('UnpopularOpinions', { room, playerName, isHost });
+                navigation.navigate('UnpopularOpinions', navParams);
             } else if (gameType === 'hot-seat') {
-                navigation.navigate('HotSeat', { room, playerName, isHost, gameState });
+                navigation.navigate('HotSeat', navParams);
             } else if (gameType === 'hot-seat-mc') {
-                navigation.navigate('HotSeatMC', { room, playerName, isHost, initialGameState: gameState });
+                navigation.navigate('HotSeatMC', navParams);
             } else if (gameType === 'button-mash') {
-                navigation.navigate('ButtonMash', { room, playerName, isHost, gameState });
+                navigation.navigate('ButtonMash', navParams);
             } else if (gameType === 'type-race') {
-                navigation.navigate('TypeRace', { room, playerName, isHost, gameState });
+                navigation.navigate('TypeRace', navParams);
             } else if (gameType === 'math-blitz') {
-                navigation.navigate('MathBlitz', { room, playerName, isHost, gameState });
+                navigation.navigate('MathBlitz', navParams);
             } else if (gameType === 'color-rush') {
-                navigation.navigate('ColorRush', { room, playerName, isHost, gameState });
+                navigation.navigate('ColorRush', navParams);
             } else if (gameType === 'tic-tac-toe') {
-                navigation.navigate('TicTacToe', { room, playerName, isHost, gameState });
+                navigation.navigate('TicTacToe', navParams);
             } else if (gameType === 'draw-battle') {
-                navigation.navigate('DrawBattle', { room, playerName, isHost, gameState });
+                navigation.navigate('DrawBattle', navParams);
             } else if (gameType === 'lie-detector') {
-                navigation.navigate('LieDetector', { room, playerName, isHost, gameState });
+                navigation.navigate('LieDetector', navParams);
             } else if (gameType === 'scrabble') {
-                navigation.navigate('OnlineScrabble', { room, playerName, isHost, gameState });
+                navigation.navigate('OnlineScrabble', navParams);
             }
         };
+
 
         const onHostChanged = ({ newHostName, reason }) => {
             Alert.alert(

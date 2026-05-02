@@ -12,19 +12,25 @@ import { COLORS } from '../constants/theme';
 const QUESTION_TIME = 5;
 
 const OnlineRapidFireScreen = ({ route, navigation }) => {
-    const { room, isHost, initialGameState, players } = route.params;
+    const { room, isHost, initialGameState, players, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
     const [gameState, setGameState] = useState(initialGameState || {});
     const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-    const currentPlayerId = SocketService.socket?.id;
+    // Find current user's persistent ID safely
+    const myPlayer = players.find(p => p.name === playerName) || players.find(p => p.id === SocketService.socket?.id);
+    const currentPlayerId = myPlayer?.uid;
     const isMyTurn = gameState.currentPlayerId === currentPlayerId;
+
     const timerRef = useRef(null);
     const progressAnim = useRef(new Animated.Value(1)).current;
 

@@ -20,7 +20,7 @@ class TicTacToeEngine {
         const hostParticipates = room.settings?.hostParticipates !== false;
 
         const allPlayers = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
-            .map(p => ({ userId: p.id, name: p.name, avatar: p.avatar || null, eliminated: false, wins: 0 }));
+            .map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar || null, eliminated: false, wins: 0 }));
 
         const shuffled = [...allPlayers].sort(() => Math.random() - 0.5);
         const matches  = this._createMatches(shuffled);

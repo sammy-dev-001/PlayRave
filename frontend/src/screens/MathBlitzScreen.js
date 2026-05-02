@@ -21,9 +21,12 @@ const MathBlitzScreen = ({ route, navigation }) => {
 
     useGameDisconnectHandler({
         navigation,
+        room,
+        playerName,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
+
 
     const [phase, setPhase] = useState('waiting'); // waiting, countdown, playing, roundWon, results, finished
     const [countdown, setCountdown] = useState(3);
