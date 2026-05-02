@@ -174,8 +174,9 @@ class NeverHaveIEverEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'nhie-ended', data: { message: 'Game ended by host' } };
+        return { action: 'game-ended', event: 'nhie-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new NeverHaveIEverEngine();

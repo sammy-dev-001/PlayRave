@@ -227,8 +227,9 @@ class WhosMostLikelyEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'game-ended', event: 'whos-most-likely-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new WhosMostLikelyEngine();

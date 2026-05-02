@@ -159,7 +159,16 @@ class GameRouter {
                 }
                 break;
 
+            case 'game-ended':
+                // Special action to transition room back to LOBBY
+                this.roomManager.setGameState(roomId, 'LOBBY');
+                if (instruction.event) {
+                    io.to(roomId).emit(instruction.event, instruction.data || { message: 'Game ended' });
+                }
+                break;
+
             default:
+
                 console.warn(`[GameRouter] Unknown instruction action received: ${instruction.action}`);
                 break;
         }

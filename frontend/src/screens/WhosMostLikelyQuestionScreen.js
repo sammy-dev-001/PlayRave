@@ -73,16 +73,24 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
             navigation.navigate('Scoreboard', { room, finalScores });
         };
 
+        const onGameEnded = () => {
+            console.log('Game ended by host');
+            navigation.navigate('Lobby', { room, isHost });
+        };
+
         SocketService.on('whos-most-likely-results', onResults);
         SocketService.on('next-whos-most-likely-prompt-ready', onNextPrompt);
         SocketService.on('game-finished', onGameFinished);
+        SocketService.on('whos-most-likely-ended', onGameEnded);
 
         return () => {
             clearInterval(timer);
             SocketService.off('whos-most-likely-results', onResults);
             SocketService.off('next-whos-most-likely-prompt-ready', onNextPrompt);
             SocketService.off('game-finished', onGameFinished);
+            SocketService.off('whos-most-likely-ended', onGameEnded);
         };
+
     }, [navigation, room, hasSubmitted, canVote, selectedPlayer]);
 
     const handleSelectPlayer = (playerId) => {

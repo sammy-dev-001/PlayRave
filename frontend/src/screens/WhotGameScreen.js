@@ -87,16 +87,28 @@ const WhotGameScreen = ({ route, navigation }) => {
             setGameState(newState);
         };
 
+        const onGameEnded = () => {
+            console.log('Game ended by host');
+            try {
+                navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name });
+            } catch (e) {
+                navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+            }
+        };
+
         SocketService.on('game-started', onGameStarted);
         SocketService.on('whot-card-played', onCardPlayed);
         SocketService.on('whot-card-drawn', onCardDrawn);
+        SocketService.on('whot-game-ended', onGameEnded);
 
         return () => {
             console.log('WhotGameScreen unmounting, removing listeners');
             SocketService.off('game-started', onGameStarted);
             SocketService.off('whot-card-played', onCardPlayed);
             SocketService.off('whot-card-drawn', onCardDrawn);
+            SocketService.off('whot-game-ended', onGameEnded);
         };
+
     }, [navigation, room, currentPlayerId, isHost]);
 
     const handleCardPress = (card) => {

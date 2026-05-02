@@ -125,9 +125,19 @@ class RapidFireEngine {
     }
 
     endGame(roomId) {
+        const game = this.activeGames.get(roomId);
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'rapid-fire-ended', data: { message: 'Game ended by host', playerScores: game.playerScores } };
+        return { 
+            action: 'game-ended', 
+            event: 'rapid-fire-ended', 
+            data: { 
+                message: 'Game ended by host', 
+                playerScores: game ? game.playerScores : {} 
+            } 
+        };
     }
+
+
 }
 
 module.exports = new RapidFireEngine();

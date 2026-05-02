@@ -213,8 +213,9 @@ class MythOrFactEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'game-ended', event: 'myth-or-fact-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new MythOrFactEngine();
