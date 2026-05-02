@@ -58,9 +58,10 @@ class ScrabbleEngine {
             data: {
                 gameType: 'scrabble',
                 gameState: this.getGameState(roomId, p.userId),
-                players: players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
+                players: players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
+
 
         }));
 
@@ -118,10 +119,11 @@ class ScrabbleEngine {
             data: {
                 gameType: 'scrabble',
                 gameState: this.getGameState(roomId, humanPlayer.userId),
-                players: players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
+                players: players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates: true,
                 isSinglePlayer: true
             }
+
 
         };
     }

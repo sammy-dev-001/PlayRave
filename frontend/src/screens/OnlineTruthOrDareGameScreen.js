@@ -28,12 +28,14 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     useEffect(() => {
         const names = {};
         players.forEach(p => {
-            // Map both socket ID and userId for maximum compatibility
+            // Map both socket ID and multiple userId variants for maximum compatibility
             if (p.id) names[p.id] = p.name;
             if (p.uid) names[p.uid] = p.name;
+            if (p.userId) names[p.userId] = p.name;
         });
         setPlayerNames(names);
     }, [players]);
+
 
     const getCategoryColor = () => {
         switch (category) {
@@ -65,7 +67,9 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             updatedRoom.players?.forEach(p => { 
                 if (p.id) names[p.id] = p.name;
                 if (p.uid) names[p.uid] = p.name;
+                if (p.userId) names[p.userId] = p.name;
             });
+
             setPlayerNames(names);
         };
 
@@ -147,8 +151,9 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
 
     // Find current user's persistent ID safely
     const myPlayer = players.find(p => p.name === playerName) || players.find(p => p.id === SocketService.socket?.id);
-    const myUserId = myPlayer?.uid || route.params.userId;
+    const myUserId = myPlayer?.uid || myPlayer?.userId || route.params.userId;
     const isMyTurn = gameState.currentPlayerId === myUserId;
+
     const currentPlayerName = playerNames[gameState.currentPlayerId] || 'Someone';
 
 
