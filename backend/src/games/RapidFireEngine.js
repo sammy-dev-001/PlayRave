@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getRapidFireQ } = require('../../data/rapidFirePrompts');
+const { getRapidFireQ } = require('../data/rapidFirePrompts');
 
 class RapidFireEngine {
     constructor() {

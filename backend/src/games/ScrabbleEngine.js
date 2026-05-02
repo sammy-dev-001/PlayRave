@@ -5,8 +5,8 @@
 // Every player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { createTileBag, drawTiles, BONUS_SQUARES, isValidWord, CENTER_SQUARE } = require('../../data/scrabbleData');
-const { findBestMove } = require('../../ai/ScrabbleAIEngine');
+const { createTileBag, drawTiles, BONUS_SQUARES, isValidWord, CENTER_SQUARE } = require('../data/scrabbleData');
+const { findBestMove } = require('../ai/ScrabbleAIEngine');
 
 class ScrabbleEngine {
     constructor() {

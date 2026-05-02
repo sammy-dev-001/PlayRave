@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { createWhotDeck, shuffleDeck } = require('../../data/whotCards');
+const { createWhotDeck, shuffleDeck } = require('../data/whotCards');
 
 class WhotEngine {
     constructor() {

@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getRandomPrompts } = require('../../data/whosMostLikelyPrompts');
+const { getRandomPrompts } = require('../data/whosMostLikelyPrompts');
 
 class WhosMostLikelyEngine {
     constructor() {

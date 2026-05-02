@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getNHIEPrompt } = require('../../data/neverHaveIEverPrompts');
+const { getNHIEPrompt } = require('../data/neverHaveIEverPrompts');
 
 class NeverHaveIEverEngine {
     constructor() {

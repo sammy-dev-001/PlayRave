@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getRandomQuestions } = require('../../data/triviaQuestions');
+const { getRandomQuestions } = require('../data/triviaQuestions');
 
 class TriviaEngine {
     constructor() {

@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getRandomTruth, getRandomDare } = require('../../data/truthOrDarePrompts');
+const { getRandomTruth, getRandomDare } = require('../data/truthOrDarePrompts');
 
 class TruthOrDareEngine {
     constructor() {
