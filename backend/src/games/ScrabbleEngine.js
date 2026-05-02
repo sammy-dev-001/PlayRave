@@ -58,8 +58,10 @@ class ScrabbleEngine {
             data: {
                 gameType: 'scrabble',
                 gameState: this.getGameState(roomId, p.userId),
+                players: players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
+
         }));
 
         return { action: 'multiple', instructions };
@@ -116,9 +118,11 @@ class ScrabbleEngine {
             data: {
                 gameType: 'scrabble',
                 gameState: this.getGameState(roomId, humanPlayer.userId),
+                players: players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates: true,
                 isSinglePlayer: true
             }
+
         };
     }
 

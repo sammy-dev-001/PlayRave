@@ -66,8 +66,10 @@ class WhosMostLikelyEngine {
             data: {
                 gameType: 'whos-most-likely',
                 gameState: this.getGameState(roomId, p.userId),
+                players: room.players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
+
         }));
 
         return { action: 'multiple', instructions };

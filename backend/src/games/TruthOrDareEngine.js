@@ -42,9 +42,16 @@ class TruthOrDareEngine {
             playerOrder.push(player.userId);
         });
 
+        console.log(`[TruthOrDareEngine] Starting game in room ${roomId}. Host participates: ${hostParticipates}. Room players: ${room.players.length}. Final playerOrder: ${playerOrder.length}`);
+
         if (playerOrder.length < 2) {
-            return { action: 'error', message: 'Truth or Dare requires at least 2 players' };
+            return { 
+                action: 'error', 
+                message: `Truth or Dare requires at least 2 participating players. (Found ${playerOrder.length}: ${playerOrder.join(', ')})` 
+            };
         }
+
+
 
         const gameState = {
             type: 'truth-or-dare',
@@ -70,8 +77,10 @@ class TruthOrDareEngine {
             data: {
                 gameType: 'truth-or-dare',
                 gameState: this.getGameState(roomId, p.userId),
+                players: room.players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
+
         }));
 
         return { action: 'multiple', instructions };

@@ -66,8 +66,10 @@ class NeverHaveIEverEngine {
             data: {
                 gameType: 'never-have-i-ever',
                 gameState: this.getGameState(roomId),
+                players: room.players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 category
             }
+
         }));
 
         return { action: 'multiple', instructions };

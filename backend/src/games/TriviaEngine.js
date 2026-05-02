@@ -72,8 +72,10 @@ class TriviaEngine {
             data: {
                 gameType: 'trivia',
                 gameState: this.getGameState(roomId, p.userId),
+                players: room.players.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
+
         }));
 
         // Trivia timers are physical actions. We can schedule 'show-results' to force advance.

@@ -28,7 +28,7 @@ const LobbyScreen = ({ route, navigation }) => {
 
     const fromGame = route.params.fromGame || false;
     const [selectedGame, setSelectedGame] = useState(route.params.selectedGame || route.params.room.gameType);
-    const [hostParticipates, setHostParticipates] = useState(false);
+    const [hostParticipates, setHostParticipates] = useState(true);
     const [socketConnected, setSocketConnected] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [myReadyStatus, setMyReadyStatus] = useState(false);

@@ -74,8 +74,10 @@ class WhotEngine {
             data: {
                 gameType: 'whot',
                 gameState: this.getWhotGameState(roomId, p.userId),
+                players: participatingPlayers.map(pl => ({ userId: pl.userId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
+
         }));
 
         return { action: 'multiple', instructions };
