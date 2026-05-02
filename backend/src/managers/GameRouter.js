@@ -7,7 +7,7 @@
 // ============================================================================
 
 const sessionManager = require('./SessionManager');
-const roomManager = require('./RoomManager');
+const roomManager = require('./roomManager');
 
 // ── Engine Registry ─────────────────────────────────────────────────────
 const engineRegistry = {

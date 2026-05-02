@@ -29,7 +29,7 @@ const io = new Server(server, {
 
 // ── Manager Imports ─────────────────────────────────────────────────────
 const sessionManager = require("./managers/SessionManager");
-const roomManager    = require("./managers/RoomManager");
+const roomManager    = require("./managers/roomManager");
     const gameRouter     = require("./managers/GameRouter");
     const authManager    = require("./managers/authManager");
 
