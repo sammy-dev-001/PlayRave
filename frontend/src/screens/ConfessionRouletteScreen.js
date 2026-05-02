@@ -64,8 +64,9 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         SocketService.on('confession-submission-count', handleSubmissionCount);
         SocketService.on('confession-reveal', handleConfessionReveal);
         SocketService.on('confession-votes-update', handleVotesUpdate);
-        SocketService.on('confession-round-results', handleRoundResults);
-        SocketService.on('confession-final-scores', handleFinalScores);
+        SocketService.on('confession-results', handleRoundResults);
+        SocketService.on('confession-game-finished', handleFinalScores);
+
         SocketService.on('room-updated', handleRoomUpdate);
         SocketService.on('game-state-sync', handleGameStateSync);
         SocketService.on('confession-you-are-author', () => setIsAuthor(true));
@@ -79,8 +80,8 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             SocketService.off('confession-submission-count', handleSubmissionCount);
             SocketService.off('confession-reveal', handleConfessionReveal);
             SocketService.off('confession-votes-update', handleVotesUpdate);
-            SocketService.off('confession-round-results', handleRoundResults);
-            SocketService.off('confession-final-scores', handleFinalScores);
+            SocketService.off('confession-results', handleRoundResults);
+            SocketService.off('confession-game-finished', handleFinalScores);
             SocketService.off('room-updated', handleRoomUpdate);
             SocketService.off('game-state-sync', handleGameStateSync);
             SocketService.off('confession-you-are-author');
@@ -155,9 +156,20 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         setRoundResults(prev => prev ? { ...prev, author: authorName } : { author: authorName });
     };
 
-    const handleFinalScores = (finalScores) => {
-        setScores(finalScores);
+    const handleFinalScores = (data) => {
+        // Handle both old object format and new array format for rankings
+        if (data?.rankings && Array.isArray(data.rankings)) {
+            const finalScores = {};
+            data.rankings.forEach(r => {
+                finalScores[r.name] = r.score;
+            });
+            setScores(finalScores);
+        } else {
+            setScores(data || {});
+        }
+        setPhase(GAME_PHASES.FINAL_SCORES);
     };
+
 
     const handleRoomUpdate = (updatedRoom) => {
         setPlayers(updatedRoom.players || []);
@@ -167,7 +179,12 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         if (!data || !data.gameState) return;
         const state = data.gameState;
         
-        setPhase(state.phase || GAME_PHASES.WAITING);
+        // Map backend 'finished' phase to frontend 'final_scores'
+        let currentPhase = state.phase || GAME_PHASES.WAITING;
+        if (currentPhase === 'finished') currentPhase = GAME_PHASES.FINAL_SCORES;
+        
+        setPhase(currentPhase);
+
         if (state.totalConfessions) {
             setTotalConfessions(state.totalConfessions);
         }
