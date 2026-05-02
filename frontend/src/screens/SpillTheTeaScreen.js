@@ -273,7 +273,13 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
             
             <NeonButton
                 title="BACK TO LOBBY"
-                onPress={() => navigation.navigate("Lobby", { room })}
+                onPress={() => {
+                    try {
+                        navigation.navigate("Lobby", { room });
+                    } catch (e) {
+                        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+                    }
+                }}
                 style={{ marginTop: 40 }}
             />
         </View>

@@ -1,0 +1,3099 @@
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*" },
+    // More tolerant ping settings for mobile/weak connections
+    // Prevents premature disconnect detection when switching tabs or brief network hiccups
+    pingTimeout: 60000,   // Wait 60s before considering a client disconnected (default: 20s)
+    pingInterval: 30000,  // Ping every 30s (default: 25s)
+});
+
+// basic socket flow
+const roomManager = require("./managers/roomManager");
+const gameManager = require("./managers/gameManager");
+const authManager = require("./managers/authManager");
+
+// Health check endpoint for LAN mode
+app.get("/health", (req, res) => {
+    res.json({ status: "ok", mode: "playrave-server", timestamp: Date.now() });
+});
+
+// ==================== AUTH REST API ====================
+app.post("/api/auth/register", async (req, res) => {
+    try {
+        const { email, password, username } = req.body;
+        if (!email || !password || !username) {
+            return res.status(400).json({ error: "All fields required" });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+        const result = await authManager.register(email, password, username);
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
+        }
+        res.json(result);
+    } catch (e) {
+        console.error("Register error:", e);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password required" });
+        }
+        const result = await authManager.login(email, password);
+        if (result.error) {
+            return res.status(401).json({ error: result.error });
+        }
+        res.json(result);
+    } catch (e) {
+        console.error("Login error:", e);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+app.get("/api/auth/me", async (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+        return res.status(401).json({ error: "No token provided" });
+    }
+    const user = await authManager.getUserByToken(token);
+    if (!user) {
+        return res.status(401).json({ error: "Invalid token" });
+    }
+    res.json({ user });
+});
+
+app.get("/api/users/:id", async (req, res) => {
+    const user = await authManager.getUserById(req.params.id);
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+    res.json({ user });
+});
+
+app.get("/api/leaderboard", async (req, res) => {
+    const leaderboard = await authManager.getLeaderboard(50);
+    res.json({ leaderboard });
+});
+
+app.post("/api/stats/update", async (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+        return res.status(401).json({ error: "No token" });
+    }
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) {
+        return res.status(401).json({ error: "Invalid token" });
+    }
+    const { gameType, stats } = req.body;
+    const result = await authManager.updateStats(decoded.id, gameType, stats);
+    res.json(result);
+});
+
+// ==================== CUSTOM PACK API ====================
+const customPackManager = require("./managers/customPackManager");
+
+// Create pack
+app.post("/api/packs", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.createPack(decoded.id, req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Get user's packs
+app.get("/api/packs/mine", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const packs = customPackManager.getUserPacks(decoded.id);
+    res.json({ packs });
+});
+
+// Get public packs
+app.get("/api/packs/public", (req, res) => {
+    const { type, limit } = req.query;
+    const packs = customPackManager.getPublicPacks(type, parseInt(limit) || 50);
+    res.json({ packs });
+});
+
+// Get single pack
+app.get("/api/packs/:id", (req, res) => {
+    const pack = customPackManager.getPack(req.params.id);
+    if (!pack) return res.status(404).json({ error: "Pack not found" });
+    res.json({ pack });
+});
+
+// Update pack
+app.put("/api/packs/:id", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.updatePack(req.params.id, decoded.id, req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Delete pack
+app.delete("/api/packs/:id", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.deletePack(req.params.id, decoded.id);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Add item to pack
+app.post("/api/packs/:id/items", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.addItem(req.params.id, decoded.id, req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.json(result);
+});
+
+// Like/unlike pack
+app.post("/api/packs/:id/like", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = customPackManager.toggleLike(req.params.id, decoded.id);
+    res.json(result);
+});
+
+// ==================== CHALLENGES API ====================
+const challengeManager = require("./managers/challengeManager");
+
+// Get user's challenges
+app.get("/api/challenges", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const challenges = challengeManager.getUserChallenges(decoded.id);
+    res.json(challenges);
+});
+
+// Claim challenge reward
+app.post("/api/challenges/:id/claim", (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "No token" });
+    const decoded = authManager.verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: "Invalid token" });
+
+    const result = challengeManager.claimReward(decoded.id, req.params.id);
+    if (result.error) return res.status(400).json({ error: result.error });
+
+    // Add XP to user
+    if (result.xp) {
+        authManager.updateStats(decoded.id, 'challenge', { xp: result.xp });
+    }
+    res.json(result);
+});
+
+// Global registry for setInterval timers (keeps them out of the room object JSON)
+const activeRoomTimers = {};
+
+io.on("connection", (socket) => {
+    console.log("socket connected:", socket.id);
+
+    socket.on("create-room", ({ playerName, avatar, avatarColor, userId }) => {
+        console.log("create-room event received, playerName:", playerName, "userId:", userId);
+        const room = roomManager.createRoom(socket.id, playerName, avatar, avatarColor, userId);
+        console.log("Room created:", room);
+        socket.join(room.id);
+        console.log("Emitting room-created event to socket", socket.id);
+        socket.emit("room-created", room);
+    });
+
+    socket.on("request-room-sync", ({ roomId, userId }) => {
+        console.log("request-room-sync received:", roomId, userId, "socket:", socket.id);
+        
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found during sync" });
+            return;
+        }
+
+        const player = room.players.find(p => p.uid === userId);
+        const oldSocketId = player?.id;
+
+        // Re-bind the player to this new socket ID
+        const result = roomManager.updatePlayerSocket(roomId, userId, socket.id);
+        if (result) {
+            console.log("Player re-bound to socket:", socket.id);
+            socket.join(roomId);
+            
+            // Critical: Also update the game manager's internal state
+            if (oldSocketId) {
+                gameManager.updatePlayerSocket(roomId, oldSocketId, socket.id);
+            }
+
+            // Clear from pending disconnects since they are back
+            if (global.pendingDisconnects) {
+                global.pendingDisconnects.delete(userId);
+            }
+
+            // Clear the disconnected flag now they're back
+            if (result.player) {
+                result.player.isDisconnected = false;
+            }
+            
+            // 1. Send immediate room state
+            socket.emit("room-updated", result.room);
+            io.to(roomId).emit("room-updated", result.room);
+            
+            // 2. Fetch and send full game state if playing
+            if (result.room.gameState === 'PLAYING' || result.room.gameState === 'GAMEOVER') {
+                const gameState = gameManager.getGameState(roomId);
+                
+                // Inject the active timer for Confession Roulette reconnects
+                if (result.room.gameType === 'confession-roulette' && result.room.confessionTimeLeft !== undefined) {
+                    gameState.currentTimer = result.room.confessionTimeLeft;
+                }
+
+                socket.emit("game-state-sync", {
+                    gameState,
+                    gameType: result.room.gameType,
+                    timestamp: Date.now()
+                });
+            }
+            
+            // Notify others that the player is back
+            io.to(roomId).emit("player-reconnected", {
+                playerName: result.player.name,
+                userId: userId
+            });
+        } else {
+            console.log("Sync failed: Player not found in room");
+            socket.emit("error", { message: "Session expired or player not found" });
+        }
+    });
+
+    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor, userId }) => {
+        console.log("join-room event received:", roomId, playerName, socket.id, userId);
+
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+        }
+
+        const joinResult = roomManager.joinRoom(roomId, socket.id, playerName, avatar, avatarColor, userId);
+        if (joinResult.error) {
+            socket.emit("error", { message: joinResult.error });
+            return;
+        }
+        
+        const { room: joinedRoom, oldSocketId: reJoinOldSocketId } = joinResult;
+
+        socket.join(roomId);
+        console.log("Player", playerName, "joined socket room:", roomId);
+
+        // Re-bind in game manager if game is playing
+        if (reJoinOldSocketId && (joinedRoom.gameState === 'PLAYING' || joinedRoom.gameState === 'GAMEOVER')) {
+            console.log(`Re-binding player ${playerName} from ${reJoinOldSocketId} to ${socket.id}`);
+            gameManager.updatePlayerSocket(roomId, reJoinOldSocketId, socket.id);
+        }
+
+        socket.emit("room-joined", joinedRoom);
+        io.to(roomId).emit("room-updated", joinedRoom);
+
+        // If game is already in progress, send a state sync
+        if (joinedRoom.gameState === 'PLAYING' || joinedRoom.gameState === 'GAMEOVER') {
+            const gameState = gameManager.getGameState(roomId);
+            socket.emit("game-state-sync", {
+                gameState,
+                gameType: joinedRoom.gameType,
+                timestamp: Date.now()
+            });
+        }
+    });
+
+    socket.on("leave-room", ({ roomId }) => {
+        console.log("leave-room event received, roomId:", roomId, "socketId:", socket.id);
+
+        // Clear any pending disconnect for this player since they're intentionally leaving
+        const playerInfo = roomManager.getPlayerBySocketId(socket.id);
+        if (playerInfo?.uid && global.pendingDisconnects) {
+            global.pendingDisconnects.delete(playerInfo.uid);
+        }
+
+        // Check if there's an active game BEFORE removing the player
+        const game = gameManager.getGameState(roomId);
+        const room = roomManager.getRoom(roomId);
+        const isSinglePlayer = game?.isSinglePlayer || (room?.players?.length === 1);
+
+        const result = roomManager.removePlayer(socket.id);
+
+        if (result && !result.roomDeleted) {
+            console.log("Player left, emitting room-updated to remaining players");
+
+            // Notify remaining players
+            io.to(result.roomId).emit("player-left", {
+                playerName: playerInfo?.name || "A player",
+                playerId: socket.id,
+                userId: playerInfo?.uid,
+                remainingPlayers: result.room.players.length
+            });
+
+            io.to(result.roomId).emit("room-updated", result.room);
+
+            // Check if the game should end due to insufficient players
+            // BUT skip this for single-player games — those are valid with 1 player
+            if (game && !isSinglePlayer) {
+                const minPlayers = gameManager.getMinPlayers(game.type) || 2;
+                if (result.room.players.length < minPlayers) {
+                    console.log(`Game ${game.type} ended: ${result.room.players.length} players remaining, needs ${minPlayers}`);
+                    io.to(result.roomId).emit("game-ended-insufficient-players", {
+                        message: "Game ended - not enough players remaining",
+                        finalScores: game.scores || {}
+                    });
+                    gameManager.clearQuestionTimer(result.roomId);
+                    gameManager.endGame(result.roomId);
+                }
+            }
+        } else if (result && result.roomDeleted) {
+            console.log("Room deleted as last player left");
+            // Clean up game state for deleted rooms
+            if (game) {
+                gameManager.clearQuestionTimer(roomId);
+                gameManager.endGame(roomId);
+            }
+        }
+
+        // Leave the socket.io room
+        socket.leave(roomId);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("disconnected:", socket.id);
+
+        const playerInfo = roomManager.getPlayerBySocketId(socket.id);
+        const roomId = playerInfo?.roomId;
+        const playerName = playerInfo?.name;
+        const userId = playerInfo?.uid;
+
+        // Extended 30-minute grace period for state recovery to allow users to switch apps/tabs
+        const DISCONNECT_GRACE_PERIOD = 1800000; 
+
+        if (roomId && userId) {
+            if (!global.pendingDisconnects) global.pendingDisconnects = new Map();
+            global.pendingDisconnects.set(userId, { roomId, socketId: socket.id, timestamp: Date.now() });
+
+            // Mark player as disconnected so frontend can show Away indicator
+            const roomForDisconnect = roomManager.getRoom(roomId);
+            if (roomForDisconnect) {
+                const disconnectedPlayer = roomForDisconnect.players.find(p => p.id === socket.id);
+                if (disconnectedPlayer) {
+                    disconnectedPlayer.isDisconnected = true;
+
+                    // Fix 1: Active Host Migration — if the disconnected player was host,
+                    // immediately promote the next connected player so the lobby isn't frozen.
+                    if (roomForDisconnect.hostId === socket.id || disconnectedPlayer.isHost) {
+                        const reassignResult = roomManager.reassignHost(roomId);
+                        if (reassignResult) {
+                            console.log(`Host disconnected in room ${roomId}, migrated to ${reassignResult.newHost.name}`);
+                            io.to(roomId).emit("host-changed", {
+                                newHostId: reassignResult.newHost.id,
+                                newHostName: reassignResult.newHost.name,
+                                reason: "previous_host_disconnected"
+                            });
+                        }
+                    }
+
+                    io.to(roomId).emit('room-updated', roomForDisconnect);
+                }
+            }
+
+            // Notify others that player is "away"
+            io.to(roomId).emit("player-connection-lost", { playerName, userId });
+        }
+
+        setTimeout(() => {
+            // Only remove if they haven't re-synced with a new socket ID
+            const pending = global.pendingDisconnects?.get(userId);
+            if (!pending || pending.socketId !== socket.id) {
+                return;
+            }
+            global.pendingDisconnects.delete(userId);
+
+            // Never auto-delete single-player local rooms on disconnect
+            // (These should persist in memory until explicitly ended or the server reboots)
+            if (roomId && roomId.startsWith('local-')) {
+                console.log(`Skipping room cleanup for persistent local room: ${roomId}`);
+                return;
+            }
+
+            // Check the game state BEFORE removing the player so we can determine
+            // single-player status correctly
+            const game = roomId ? gameManager.getGameState(roomId) : null;
+            const roomBeforeRemoval = roomId ? roomManager.getRoom(roomId) : null;
+            const isSinglePlayer = game?.isSinglePlayer || (roomBeforeRemoval?.players?.length === 1);
+
+            const result = roomManager.removePlayer(socket.id);
+            if (result && !result.roomDeleted) {
+                io.to(result.roomId).emit("player-left", {
+                    playerName: playerName || "A player",
+                    playerId: socket.id,
+                    userId: userId,
+                    remainingPlayers: result.room.players.length
+                });
+
+                io.to(result.roomId).emit("room-updated", result.room);
+
+                // Only end the game if there aren't enough players AND it's NOT single-player
+                if (game && !isSinglePlayer) {
+                    const minPlayers = gameManager.getMinPlayers(game.type) || 2;
+                    if (result.room.players.length < minPlayers) {
+                        console.log(`Game ${game.type} ended after disconnect: ${result.room.players.length} players remaining, needs ${minPlayers}`);
+                        io.to(result.roomId).emit("game-ended-insufficient-players", {
+                            message: "Game ended - not enough players remaining",
+                            finalScores: game.scores || {}
+                        });
+                        gameManager.clearQuestionTimer(result.roomId);
+                        gameManager.endGame(result.roomId);
+                    }
+                }
+            } else if (result && result.roomDeleted) {
+                // Room was fully emptied — clean up game state
+                if (game && roomId) {
+                    gameManager.clearQuestionTimer(roomId);
+                    gameManager.endGame(roomId);
+                }
+            }
+        }, DISCONNECT_GRACE_PERIOD);
+    });
+
+    // Handle game selection from GameSelectionScreen
+    socket.on("game-selected", ({ roomId, gameId, gameName }) => {
+        console.log("game-selected event received, roomId:", roomId, "gameId:", gameId);
+        const result = roomManager.setGameType(roomId, gameId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        console.log("Game selected, emitting room-updated to room:", roomId, "with gameType:", result.room.gameType);
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
+    socket.on("set-game-type", ({ roomId, gameType }) => {
+        console.log("set-game-type event received, roomId:", roomId, "gameType:", gameType);
+        const result = roomManager.setGameType(roomId, gameType);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        console.log("Emitting room-updated to room:", roomId, "with gameType:", result.room.gameType);
+        console.log("Room has", result.room.players.length, "players");
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
+    socket.on("set-custom-questions", ({ roomId, questions }) => {
+        console.log("set-custom-questions event received, roomId:", roomId, "questions count:", questions.length);
+        const result = roomManager.setCustomQuestions(roomId, questions);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        console.log("Custom questions saved, emitting room-updated");
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
+    socket.on("get-room", ({ roomId }) => {
+        console.log("get-room event received, roomId:", roomId, "from socket:", socket.id);
+        const room = roomManager.getRoom(roomId);
+        if (room) {
+            console.log("Sending room-updated to socket:", socket.id, "gameType:", room.gameType);
+            socket.emit("room-updated", room);
+        } else {
+            console.log("Room not found:", roomId);
+        }
+    });
+
+    socket.on("player-ready", ({ roomId, isReady }) => {
+        console.log("player-ready event received, roomId:", roomId, "isReady:", isReady);
+        const result = roomManager.setPlayerReady(roomId, socket.id, isReady);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
+    socket.on("kick-player", ({ roomId, playerIdToKick }) => {
+        console.log("kick-player event received, roomId:", roomId, "playerToKick:", playerIdToKick);
+        const result = roomManager.kickPlayer(roomId, socket.id, playerIdToKick);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        // Notify the kicked player
+        io.to(playerIdToKick).emit("player-kicked", { roomId });
+        // Update all other players
+        io.to(roomId).emit("room-updated", result.room);
+    });
+
+    // Game events
+    socket.on("start-game", ({ roomId, gameType, hostParticipates, category }) => {
+        console.log("start-game event received, roomId:", roomId, "gameType:", gameType, "hostParticipates:", hostParticipates, "category:", category);
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+        }
+
+        if (gameType === "trivia") {
+            const gameState = gameManager.startTriviaGame(roomId, room, hostParticipates, category);
+            const question = gameManager.getCurrentQuestion(roomId);
+            io.to(roomId).emit("game-started", {
+                gameType: "trivia",
+                question,
+                hostParticipates: hostParticipates || false
+            });
+        } else if (gameType === "myth-or-fact") {
+            const gameState = gameManager.startMythOrFactGame(roomId, room, hostParticipates);
+            const statement = gameManager.getCurrentStatement(roomId);
+            io.to(roomId).emit("game-started", {
+                gameType: "myth-or-fact",
+                statement,
+                hostParticipates: hostParticipates || false
+            });
+        } else if (gameType === "whos-most-likely") {
+            const gameState = gameManager.startWhosMostLikelyGame(roomId, room, hostParticipates);
+            const prompt = gameManager.getCurrentPrompt(roomId);
+            io.to(roomId).emit("game-started", {
+                gameType: "whos-most-likely",
+                prompt,
+                players: room.players, // Send player list for voting options
+                hostParticipates: hostParticipates || false
+            });
+        } else if (gameType === "neon-tap") {
+            const gameState = gameManager.startNeonTapGame(roomId, room, hostParticipates);
+            io.to(roomId).emit("game-started", {
+                gameType: "neon-tap",
+                hostParticipates: hostParticipates || false
+            });
+        } else if (gameType === "word-rush") {
+            const gameState = gameManager.startWordRushGame(roomId, room, hostParticipates);
+            io.to(roomId).emit("game-started", {
+                gameType: "word-rush",
+                hostParticipates: hostParticipates || false
+            });
+        } else if (gameType === "whot") {
+            console.log("Starting Whot game for room:", roomId);
+            const gameState = gameManager.startWhotGame(roomId, room, hostParticipates);
+            console.log("Whot game state created:", gameState);
+
+            if (gameState.error) {
+                console.log("Error starting Whot game:", gameState.error);
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to ALL players (including spectators)
+            console.log("Sending game state to all", room.players.length, "players");
+            room.players.forEach(player => {
+                const playerGameState = gameManager.getWhotGameState(roomId, player.id);
+                console.log("Sending to player", player.name, "(", player.id, "):", playerGameState);
+                io.to(player.id).emit("game-started", {
+                    gameType: "whot",
+                    gameState: playerGameState,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Whot game started successfully");
+        } else if (gameType === "truth-or-dare") {
+            console.log("Starting Truth or Dare game for room:", roomId, "category:", category);
+            const gameState = gameManager.startTruthOrDareGame(roomId, room, hostParticipates, category || 'normal');
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to ALL players with their personalized view
+            room.players.forEach(player => {
+                const playerGameState = gameManager.getTruthOrDareGameState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "truth-or-dare",
+                    gameState: playerGameState,
+                    players: room.players,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Truth or Dare game started successfully");
+        } else if (gameType === "never-have-i-ever") {
+            console.log("Starting Never Have I Ever game for room:", roomId, "category:", category);
+            const gameState = gameManager.startNeverHaveIEverGame(roomId, room, category || 'normal');
+
+            // Send game state to all players
+            io.to(roomId).emit("game-started", {
+                gameType: "never-have-i-ever",
+                gameState: gameManager.getNeverHaveIEverState(roomId),
+                players: room.players
+            });
+            console.log("Never Have I Ever game started successfully");
+        } else if (gameType === "rapid-fire") {
+            console.log("Starting Rapid Fire game for room:", roomId, "category:", category);
+            const gameState = gameManager.startRapidFireGame(roomId, room, category || 'normal');
+
+            // Send game state to all players
+            io.to(roomId).emit("game-started", {
+                gameType: "rapid-fire",
+                gameState: gameManager.getRapidFireState(roomId),
+                players: room.players
+            });
+            console.log("Rapid Fire game started successfully");
+        } else if (gameType === "hot-seat") {
+            console.log("Starting Hot Seat game for room:", roomId);
+            const gameState = gameManager.startHotSeatGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to each player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "hot-seat",
+                    gameState: playerState,
+                    players: room.players,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Hot Seat game started successfully");
+        } else if (gameType === "button-mash") {
+            console.log("Starting Button Mash game for room:", roomId);
+            const gameState = gameManager.startButtonMashGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "button-mash",
+                gameState: {
+                    duration: gameState.duration,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Button Mash game started successfully");
+        } else if (gameType === "type-race") {
+            console.log("Starting Type Race game for room:", roomId);
+            const gameState = gameManager.startTypeRaceGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "type-race",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Type Race game started successfully");
+        } else if (gameType === "math-blitz") {
+            console.log("Starting Math Blitz game for room:", roomId);
+            const gameState = gameManager.startMathBlitzGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "math-blitz",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Math Blitz game started successfully");
+        } else if (gameType === "color-rush") {
+            console.log("Starting Color Rush game for room:", roomId);
+            const gameState = gameManager.startColorRushGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "color-rush",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Color Rush game started successfully");
+        } else if (gameType === "tic-tac-toe") {
+            console.log("Starting Tic-Tac-Toe Tournament for room:", roomId);
+            const gameState = gameManager.startTicTacToeTournament(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "tic-tac-toe",
+                gameState: {
+                    players: gameState.players,
+                    matches: gameState.matches.map(m => ({
+                        player1: m.player1.name,
+                        player2: m.player2?.name || 'BYE',
+                        isBye: m.isBye
+                    })),
+                    roundNumber: gameState.roundNumber
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Tic-Tac-Toe Tournament started successfully");
+        } else if (gameType === "draw-battle") {
+            console.log("Starting Draw Battle game for room:", roomId);
+            const gameState = gameManager.startDrawBattleGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "draw-battle",
+                gameState: {
+                    totalRounds: gameState.totalRounds,
+                    players: gameState.players.map(p => ({ id: p.id, name: p.name, score: 0 }))
+                },
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Draw Battle game started successfully");
+        } else if (gameType === "lie-detector") {
+            console.log("Starting Lie Detector game for room:", roomId);
+            const result = gameManager.startLieDetectorGame(roomId, room, hostParticipates);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            io.to(roomId).emit("game-started", {
+                gameType: "lie-detector",
+                gameState: result.gameState,
+                currentPlayer: result.currentPlayer,
+                question: result.question,
+                players: room.players,
+                hostParticipates: hostParticipates || false
+            });
+            console.log("Lie Detector game started successfully");
+        } else if (gameType === "scrabble") {
+            console.log("Starting Scrabble game for room:", roomId);
+            const gameState = gameManager.startScrabbleGame(roomId, room, hostParticipates);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send game state to each player with their own hand
+            room.players.forEach(player => {
+                const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "scrabble",
+                    gameState: playerState,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Scrabble game started successfully");
+        } else if (gameType === "unpopular-opinions") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startUnpopularOpinionsGame(roomId, room);
+                io.to(roomId).emit("game-started", {
+                    gameType: "unpopular-opinions",
+                    hostParticipates: hostParticipates || false
+                });
+            }
+        } else if (gameType === "confession-roulette") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startConfessionRouletteGame(roomId, room);
+                io.to(roomId).emit("game-started", {
+                    gameType: "confession-roulette",
+                    hostParticipates: hostParticipates || false
+                });
+            }
+        } else if (gameType === "imposter") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startImposterGame(roomId, room);
+
+                // Send generic game-started event to everyone
+                io.to(roomId).emit("game-started", {
+                    gameType: "imposter",
+                    hostParticipates: hostParticipates || false
+                });
+
+                // Helper to send individual setup data (can be reused)
+                const sendImposterSetup = (rId, r) => {
+                    r.players.forEach(player => {
+                        const playerState = gameManager.getImposterState(rId, player.id);
+                        if (playerState) {
+                            io.to(player.id).emit("imposter-phase-changed", {
+                                phase: 'word_reveal'
+                            });
+                            io.to(player.id).emit("imposter-word-assigned", {
+                                word: playerState.myWord,
+                                isImposter: playerState.isImposter
+                            });
+                        }
+                    });
+                };
+
+                // Delay individual setup slightly to ensure clients have navigated and mounted
+                setTimeout(() => {
+                    sendImposterSetup(roomId, room);
+                }, 1000);
+            }
+        } else if (gameType === "spill-the-tea") {
+            const room = roomManager.getRoom(roomId);
+            if (room) {
+                room.gameState = "PLAYING";
+                gameManager.startSpillTheTeaGame(roomId, room, hostParticipates);
+                io.to(roomId).emit("game-started", {
+                    gameType: "spill-the-tea",
+                    hostParticipates: hostParticipates || false
+                });
+            }
+        } else if (gameType === "hot-seat-mc") {
+            console.log("Starting Hot Seat MC game for room:", roomId, "category:", category);
+            const gameState = gameManager.startHotSeatMCGame(roomId, room, hostParticipates, category || null);
+
+            if (gameState.error) {
+                socket.emit("error", { message: gameState.error });
+                return;
+            }
+
+            // Send personalized state to each player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+                io.to(player.id).emit("game-started", {
+                    gameType: "hot-seat-mc",
+                    gameState: playerState,
+                    players: room.players,
+                    hostParticipates: hostParticipates || false
+                });
+            });
+            console.log("Hot Seat MC game started successfully");
+        }
+    });
+
+    // ==================== SCRABBLE GAME EVENTS ====================
+
+    socket.on("scrabble-place-tiles", ({ roomId, tiles }) => {
+        console.log("scrabble-place-tiles event received, roomId:", roomId, "tiles:", tiles?.length);
+        try {
+            const result = gameManager.scrabblePlaceTiles(roomId, socket.id, tiles);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            // Broadcast to all players that tiles were placed (for real-time updates)
+            io.to(roomId).emit("scrabble-tiles-placed", {
+                playerId: socket.id,
+                tiles: result.tiles
+            });
+        } catch (err) {
+            console.error("scrabble-place-tiles error:", err);
+            socket.emit("error", { message: "Server error placing tiles" });
+        }
+    });
+
+    socket.on("scrabble-recall-tiles", ({ roomId }) => {
+        console.log("scrabble-recall-tiles event received, roomId:", roomId);
+        try {
+            const result = gameManager.scrabbleRecallTiles(roomId, socket.id);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            // Notify all players
+            io.to(roomId).emit("scrabble-tiles-recalled", {
+                playerId: socket.id
+            });
+        } catch (err) {
+            console.error("scrabble-recall-tiles error:", err);
+            socket.emit("error", { message: "Server error recalling tiles" });
+        }
+    });
+    socket.on("scrabble-single-player-start", ({ difficulty, playerName }) => {
+        console.log("Starting Scrabble Single Player (AI) game, difficulty:", difficulty);
+        const roomId = "local-" + socket.id; // Create a unique local room ID for the single player game
+        
+        // Ensure user is in a room (create a dummy one if needed)
+        let room = roomManager.getRoom(roomId);
+        if (!room) {
+            room = roomManager.createLocalRoom(roomId, socket.id, playerName || "Player 1", null, null, socket.id);
+        }
+
+        const gameState = gameManager.startScrabbleSinglePlayerGame(roomId, room, difficulty);
+
+        if (gameState.error) {
+            socket.emit("error", { message: gameState.error });
+            return;
+        }
+
+        socket.join(roomId);
+
+        // Send game state to the player
+        const playerState = gameManager.getScrabbleGameState(roomId, socket.id);
+        socket.emit("game-started", {
+            gameType: "scrabble",
+            gameState: playerState,
+            hostParticipates: true,
+            isSinglePlayer: true
+        });
+        console.log("Scrabble Single Player game started successfully:", roomId);
+    });
+
+    // Helper to check and execute AI's turn if applicable
+    const checkAndTriggerScrabbleAITurn = (roomId) => {
+        const game = gameManager.activeGames.get(roomId);
+        if (!game || game.type !== 'scrabble' || !game.isSinglePlayer || game.phase !== 'playing') return;
+
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer.isAI) {
+            console.log(`[ScrabbleAI] Scheduling AI turn for room ${roomId}...`);
+            // Add a small delay for realism
+            setTimeout(() => {
+                const aiResult = gameManager.executeScrabbleAITurn(roomId);
+                if (aiResult.error) {
+                    console.error("[ScrabbleAI] Error executing AI turn:", aiResult.error);
+                    return;
+                }
+
+                // Broadcast the AI's action back to the human player
+                const humanPlayer = game.players.find(p => !p.isAI);
+                if (!humanPlayer) return;
+
+                const humanState = gameManager.getScrabbleGameState(roomId, humanPlayer.id);
+
+                if (aiResult.aiAction === 'move') {
+                    io.to(humanPlayer.id).emit("scrabble-move-submitted", {
+                        success: true,
+                        score: aiResult.score,
+                        formedWords: aiResult.formedWords,
+                        gameState: humanState,
+                        gameEnded: aiResult.gameEnded,
+                        finalScores: aiResult.finalScores,
+                        isAITurn: true // Flag so frontend knows this was the AI
+                    });
+                } else if (aiResult.aiAction === 'pass') {
+                    io.to(humanPlayer.id).emit("scrabble-turn-passed", {
+                        gameState: humanState,
+                        gameEnded: aiResult.gameEnded,
+                        finalScores: aiResult.finalScores,
+                        isAITurn: true
+                    });
+                } else if (aiResult.aiAction === 'exchange') {
+                    // Tell human that AI exchanged tiles (acts like a pass from human perspective)
+                    io.to(humanPlayer.id).emit("scrabble-turn-passed", {
+                        gameState: humanState,
+                        gameEnded: aiResult.gameEnded,
+                        finalScores: aiResult.finalScores,
+                        isAITurn: true,
+                        aiExchanged: true
+                    });
+                }
+                
+                // If the game didn't end and somehow it's still the AI's turn, trigger again (shouldn't happen, but safe)
+                if (!aiResult.gameEnded) {
+                    checkAndTriggerScrabbleAITurn(roomId);
+                }
+
+            }, 2500); // 2.5 second thinking delay
+        }
+    };
+
+    socket.on("scrabble-submit-move", ({ roomId, tiles }) => {
+        console.log("scrabble-submit-move event received, roomId:", roomId, "tiles:", tiles?.length);
+        try {
+            const result = gameManager.scrabbleSubmitMove(roomId, socket.id, tiles);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error, invalidWords: result.invalidWords });
+                return;
+            }
+
+            // Get updated game state for all players
+            const room = roomManager.getRoom(roomId);
+            room.players.forEach(player => {
+                const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("scrabble-move-submitted", {
+                    success: true,
+                    score: result.score,
+                    formedWords: result.formedWords,
+                    gameState: playerState,
+                    gameEnded: result.gameEnded,
+                    finalScores: result.finalScores
+                });
+            });
+
+            console.log("Scrabble move submitted successfully, score:", result.score, "words:", result.formedWords);
+            
+            if (!result.gameEnded) {
+                checkAndTriggerScrabbleAITurn(roomId);
+            }
+        } catch (err) {
+            console.error("scrabble-submit-move error:", err);
+            socket.emit("error", { message: "Server error processing move. Please try again." });
+        }
+    });
+
+    socket.on("scrabble-pass-turn", ({ roomId }) => {
+        console.log("scrabble-pass-turn event received, roomId:", roomId);
+        try {
+            const result = gameManager.scrabblePassTurn(roomId, socket.id);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            // Get updated game state for all players
+            const room = roomManager.getRoom(roomId);
+            room.players.forEach(player => {
+                const playerState = gameManager.getScrabbleGameState(roomId, player.id);
+                io.to(player.id).emit("scrabble-turn-passed", {
+                    gameState: playerState,
+                    gameEnded: result.gameEnded,
+                    finalScores: result.finalScores
+                });
+            });
+
+            if (!result.gameEnded) {
+                checkAndTriggerScrabbleAITurn(roomId);
+            }
+        } catch (err) {
+            console.error("scrabble-pass-turn error:", err);
+            socket.emit("error", { message: "Server error passing turn" });
+        }
+    });
+
+    socket.on("scrabble-exchange-tiles", ({ roomId, tileIndices }) => {
+        console.log("scrabble-exchange-tiles event received, roomId:", roomId, "tiles:", tileIndices?.length);
+        try {
+            const result = gameManager.scrabbleExchangeTiles(roomId, socket.id, tileIndices);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            // Get updated game state for the player who exchanged tiles
+            const playerState = gameManager.getScrabbleGameState(roomId, socket.id);
+            socket.emit("scrabble-tiles-exchanged", {
+                success: true,
+                gameState: playerState
+            });
+
+            // Notify other players that tiles were exchanged (turn passed)
+            const room = roomManager.getRoom(roomId);
+            room.players.forEach(player => {
+                if (player.id !== socket.id) {
+                    const otherPlayerState = gameManager.getScrabbleGameState(roomId, player.id);
+                    io.to(player.id).emit("scrabble-turn-passed", {
+                        gameState: otherPlayerState,
+                        gameEnded: result.gameEnded,
+                        finalScores: result.finalScores
+                    });
+                }
+            });
+            console.log("Scrabble tiles exchanged successfully.");
+
+            if (!result.gameEnded) {
+                checkAndTriggerScrabbleAITurn(roomId);
+            }
+        } catch (err) {
+            console.error("scrabble-exchange-tiles error:", err);
+            socket.emit("error", { message: "Server error exchanging tiles" });
+        }
+    });
+
+    socket.on("scrabble-end-game", ({ roomId }) => {
+        console.log("scrabble-end-game event received, roomId:", roomId);
+        try {
+            const result = gameManager.endScrabbleGame(roomId);
+
+            if (result.error) {
+                socket.emit("error", { message: result.error });
+                return;
+            }
+
+            io.to(roomId).emit("scrabble-game-ended", {
+                finished: true,
+                finalScores: result.finalScores,
+                winner: result.winner
+            });
+        } catch (err) {
+            console.error("scrabble-end-game error:", err);
+            socket.emit("error", { message: "Server error ending game" });
+        }
+    });
+
+    socket.on("submit-answer", ({ roomId, answerIndex }) => {
+        console.log("submit-answer event received, roomId:", roomId, "answer:", answerIndex);
+        const result = gameManager.submitAnswer(roomId, socket.id, answerIndex);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else {
+            socket.emit("vote-submitted", { success: true });
+        }
+    });
+
+    socket.on("show-results", ({ roomId }) => {
+        console.log("show-results event received, roomId:", roomId);
+        const results = gameManager.getQuestionResults(roomId);
+        if (results) {
+            io.to(roomId).emit("question-results", results);
+        } else {
+            socket.emit("error", { message: "Results not found" });
+        }
+    });
+
+    socket.on("next-question", ({ roomId }) => {
+        console.log("next-question event received, roomId:", roomId);
+        const result = gameManager.nextQuestion(roomId);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else if (result.finished) {
+            const finalScores = gameManager.getFinalScores(roomId);
+            io.to(roomId).emit("game-finished", { finalScores });
+        } else {
+            io.to(roomId).emit("next-question-ready", { question: result.nextQuestion });
+        }
+    });
+
+    // Myth or Fact game events
+    socket.on("submit-myth-or-fact-answer", ({ roomId, answer }) => {
+        console.log("submit-myth-or-fact-answer event received, roomId:", roomId, "answer:", answer);
+        const result = gameManager.submitMythOrFactAnswer(roomId, socket.id, answer);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else {
+            socket.emit("vote-submitted", { success: true });
+        }
+    });
+
+    socket.on("show-myth-or-fact-results", ({ roomId }) => {
+        console.log("show-myth-or-fact-results event received, roomId:", roomId);
+        const results = gameManager.getMythOrFactResults(roomId);
+        if (results) {
+            io.to(roomId).emit("myth-or-fact-results", results);
+        } else {
+            socket.emit("error", { message: "Results not found" });
+        }
+    });
+
+    socket.on("next-myth-or-fact-statement", ({ roomId }) => {
+        console.log("next-myth-or-fact-statement event received, roomId:", roomId);
+        const result = gameManager.nextMythOrFactStatement(roomId);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else if (result.finished) {
+            const finalScores = gameManager.getFinalScores(roomId);
+            io.to(roomId).emit("game-finished", { finalScores });
+        } else {
+            io.to(roomId).emit("next-myth-or-fact-statement-ready", { statement: result.statement });
+        }
+    });
+
+    // Who's Most Likely game events
+    socket.on("submit-whos-most-likely-vote", ({ roomId, votedForPlayerId }) => {
+        console.log("submit-whos-most-likely-vote event received, roomId:", roomId, "votedFor:", votedForPlayerId);
+        const result = gameManager.submitWhosMostLikelyVote(roomId, socket.id, votedForPlayerId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else {
+            socket.emit("vote-submitted", { success: true });
+
+            // Check if all players have voted
+            const room = roomManager.getRoom(roomId);
+            if (room && result.voteCount >= room.players.length) {
+                console.log("Everyone has voted, showing results early");
+                const results = gameManager.getWhosMostLikelyResults(roomId);
+                io.to(roomId).emit("whos-most-likely-results", results);
+            }
+        }
+    });
+
+    socket.on("show-whos-most-likely-results", ({ roomId }) => {
+        console.log("show-whos-most-likely-results event received, roomId:", roomId);
+        const results = gameManager.getWhosMostLikelyResults(roomId);
+        io.to(roomId).emit("whos-most-likely-results", results);
+    });
+
+    socket.on("next-whos-most-likely-prompt", ({ roomId }) => {
+        console.log("next-whos-most-likely-prompt event received, roomId:", roomId);
+        const result = gameManager.nextWhosMostLikelyPrompt(roomId);
+
+        if (result.finished) {
+            const finalScores = gameManager.getFinalScores(roomId);
+            io.to(roomId).emit("game-finished", { finalScores });
+        } else {
+            io.to(roomId).emit("next-whos-most-likely-prompt-ready", { prompt: result.prompt });
+        }
+    });
+
+    // Neon Tap Frenzy game events
+    socket.on("start-neon-tap-round", ({ roomId }) => {
+        console.log("start-neon-tap-round event received, roomId:", roomId);
+        const roundData = gameManager.startNewRound(roomId);
+        if (roundData) {
+            io.to(roomId).emit("neon-tap-round-started", roundData);
+        }
+    });
+
+    socket.on("submit-neon-tap", ({ roomId, reactionTime }) => {
+        console.log("submit-neon-tap event received, roomId:", roomId, "reactionTime:", reactionTime);
+        const result = gameManager.submitTap(roomId, socket.id, reactionTime);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else {
+            socket.emit("tap-submitted", { success: true });
+        }
+    });
+
+    socket.on("show-neon-tap-results", ({ roomId }) => {
+        console.log("show-neon-tap-results event received, roomId:", roomId);
+        const results = gameManager.getNeonTapResults(roomId);
+        io.to(roomId).emit("neon-tap-results", results);
+    });
+
+    socket.on("next-neon-tap-round", ({ roomId }) => {
+        console.log("next-neon-tap-round event received, roomId:", roomId);
+        const result = gameManager.nextNeonTapRound(roomId);
+
+        if (result.finished) {
+            const finalScores = gameManager.getFinalScores(roomId);
+            io.to(roomId).emit("game-finished", { finalScores });
+        } else {
+            io.to(roomId).emit("neon-tap-ready-for-next");
+        }
+    });
+
+    // Word Rush game events
+    socket.on("start-word-rush-round", ({ roomId }) => {
+        console.log("start-word-rush-round event received, roomId:", roomId);
+        const roundData = gameManager.startWordRushRound(roomId);
+        console.log("Word Rush round data:", roundData);
+        if (roundData && roundData.letter) {
+            io.to(roomId).emit("word-rush-round-started", roundData);
+            console.log("Emitted word-rush-round-started with letter:", roundData.letter);
+        } else {
+            console.error("ERROR: Round data missing or no letter!", roundData);
+        }
+    });
+
+    socket.on("submit-word-rush-word", ({ roomId, word }) => {
+        console.log("submit-word-rush-word event received, roomId:", roomId, "word:", word);
+        const submitTime = Date.now();
+        const result = gameManager.submitWord(roomId, socket.id, word, submitTime);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+        } else {
+            socket.emit("word-submitted", { success: true, isValid: result.isValid });
+        }
+    });
+
+    socket.on("show-word-rush-results", ({ roomId }) => {
+        console.log("show-word-rush-results event received, roomId:", roomId);
+        const results = gameManager.getWordRushResults(roomId);
+        io.to(roomId).emit("word-rush-results", results);
+    });
+
+    socket.on("next-word-rush-round", ({ roomId, eliminated }) => {
+        console.log("next-word-rush-round event received, roomId:", roomId, "eliminated:", eliminated);
+        const result = gameManager.nextWordRushRound(roomId, eliminated);
+
+        if (result.finished) {
+            // Send winner announcement
+            io.to(roomId).emit("word-rush-winner", { winner: result.winner });
+        } else {
+            io.to(roomId).emit("word-rush-ready-for-next");
+        }
+    });
+
+    // Whot card game events
+    socket.on("play-whot-card", ({ roomId, cardId, calledShape }) => {
+        console.log("play-whot-card event received, roomId:", roomId, "cardId:", cardId);
+        const result = gameManager.playWhotCard(roomId, socket.id, cardId, calledShape);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Log winner detection
+        if (result.winner) {
+            console.log("*** WINNER DETECTED ***:", result.winner);
+        }
+
+        // Broadcast updated game state to all players
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerGameState = gameManager.getWhotGameState(roomId, player.id);
+            console.log("Sending whot state to", player.name, "winner in state:", playerGameState?.winner, "result.winner:", result.winner);
+            io.to(player.id).emit("whot-card-played", {
+                gameState: playerGameState,
+                action: result.action,
+                winner: result.winner
+            });
+        });
+    });
+
+    socket.on("draw-whot-card", ({ roomId }) => {
+        console.log("draw-whot-card event received, roomId:", roomId);
+        const result = gameManager.drawWhotCards(roomId, socket.id, 1);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated game state to ALL players
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerGameState = gameManager.getWhotGameState(roomId, player.id);
+            io.to(player.id).emit("whot-card-drawn", {
+                gameState: playerGameState,
+                cardsDrawn: result.cardsDrawn
+            });
+        });
+    });
+
+    // Truth or Dare events
+    socket.on("choose-truth-or-dare", ({ roomId, choice }) => {
+        console.log("choose-truth-or-dare event received, roomId:", roomId, "choice:", choice);
+        const result = gameManager.chooseTruthOrDare(roomId, socket.id, choice);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Send prompt only to current player, status update to everyone
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerGameState = gameManager.getTruthOrDareGameState(roomId, player.id);
+            io.to(player.id).emit("truth-or-dare-chosen", {
+                gameState: playerGameState
+            });
+        });
+    });
+
+    socket.on("complete-truth-or-dare-turn", ({ roomId }) => {
+        console.log("complete-truth-or-dare-turn event received, roomId:", roomId);
+        const result = gameManager.completeTruthOrDareTurn(roomId, socket.id);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Notify all players of the turn change
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerGameState = gameManager.getTruthOrDareGameState(roomId, player.id);
+            io.to(player.id).emit("truth-or-dare-turn-complete", {
+                gameState: playerGameState,
+                turnCount: result.turnCount
+            });
+        });
+    });
+
+    socket.on("end-truth-or-dare", ({ roomId }) => {
+        console.log("end-truth-or-dare event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("truth-or-dare-ended");
+    });
+
+    // Never Have I Ever events
+    socket.on("nhie-respond", ({ roomId, hasDoneIt }) => {
+        console.log("nhie-respond event received, roomId:", roomId, "hasDoneIt:", hasDoneIt);
+        const result = gameManager.respondNeverHaveIEver(roomId, socket.id, hasDoneIt);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated state to all players
+        io.to(roomId).emit("nhie-response", {
+            playerId: socket.id,
+            hasDoneIt,
+            playerScores: result.playerScores,
+            playerResponses: result.playerResponses,
+            allResponded: result.allResponded
+        });
+    });
+
+    socket.on("nhie-next-round", ({ roomId }) => {
+        console.log("nhie-next-round event received, roomId:", roomId);
+        const result = gameManager.nextNeverHaveIEverRound(roomId);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Check if game is finished (30 rounds reached)
+        if (result.finished) {
+            io.to(roomId).emit("nhie-finished", {
+                playerScores: result.playerScores,
+                roundNumber: result.roundNumber,
+                maxRounds: result.maxRounds
+            });
+            return;
+        }
+
+        io.to(roomId).emit("nhie-new-round", {
+            currentPrompt: result.currentPrompt,
+            roundNumber: result.roundNumber,
+            maxRounds: result.maxRounds,
+            playerResponses: result.playerResponses
+        });
+    });
+
+    socket.on("end-nhie", ({ roomId }) => {
+        console.log("end-nhie event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("nhie-ended");
+    });
+
+    // Rapid Fire events
+    socket.on("rapid-fire-answer", ({ roomId, answered }) => {
+        console.log("rapid-fire-answer event received, roomId:", roomId, "answered:", answered);
+        const result = gameManager.answerRapidFire(roomId, socket.id, answered);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated state to all players
+        io.to(roomId).emit("rapid-fire-update", {
+            newQuestion: result.newQuestion,
+            currentPlayerId: result.currentPlayerId,
+            playerScores: result.playerScores,
+            roundNumber: result.roundNumber
+        });
+    });
+
+    socket.on("end-rapid-fire", ({ roomId }) => {
+        console.log("end-rapid-fire event received, roomId:", roomId);
+        const gameState = gameManager.getRapidFireState(roomId);
+        const playerScores = gameState?.playerScores || {};
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("rapid-fire-ended", { playerScores });
+    });
+
+    // ==================== HELPER: END VOTING PHASE ====================
+    const triggerVotingResults = (roomId) => {
+        const room = roomManager.getRoom(roomId);
+        if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
+        }
+
+        const results = gameManager.getConfessionResults(roomId);
+        
+        // Convert correct guessers IDs to names
+        const correctGuessersNames = results?.correctGuessers?.map(id => {
+            const p = room?.players.find(pl => pl.id === id);
+            return p?.name || id;
+        }) || [];
+
+        // Convert scores from IDs to names
+        const namedScores = {};
+        if (results?.scores) {
+            Object.entries(results.scores).forEach(([playerId, score]) => {
+                const player = room?.players.find(p => p.id === playerId);
+                namedScores[player?.name || playerId] = score;
+            });
+        }
+
+        io.to(roomId).emit("confession-phase-changed", {
+            phase: "results",
+            data: {}
+        });
+
+        // Send the results - author will be the name if 50% guessed right, else 'Unknown'
+        const revealedAuthor = results?.author 
+            ? (room?.players.find(p => p.id === results.author)?.name || 'Unknown') 
+            : 'Unknown';
+
+        io.to(roomId).emit("confession-round-results", {
+            confession: results?.confession,
+            author: revealedAuthor,
+            correctGuessers: correctGuessersNames,
+            fooledCount: results?.fooledCount || 0,
+            scores: namedScores
+        });
+
+        // Privately tell the actual author they can reveal themselves
+        if (results?.authorId) {
+            const authorPlayer = room?.players.find(p => p.id === results.authorId);
+            if (authorPlayer) {
+                io.to(results.authorId).emit("confession-you-are-author", {
+                    authorName: authorPlayer.name
+                });
+            }
+        }
+    };
+
+    // ==================== CONFESSION ROULETTE EVENTS ====================
+
+    socket.on("confession-start", ({ roomId }) => {
+        console.log("confession-start event received, roomId:", roomId);
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+        }
+
+        // Cleanup any existing timers for this room to prevent overlap bugs
+        if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+        if (activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
+        }
+
+        const gameState = gameManager.startConfessionRouletteGame(roomId, room);
+        io.to(roomId).emit("confession-phase-changed", {
+            phase: "submission",
+            data: { totalPlayers: room.players.length }
+        });
+
+        // Start submission timer
+        let timeLeft = 120;
+        room.confessionTimeLeft = timeLeft;
+        activeRoomTimers[roomId]['confession'] = setInterval(() => {
+            timeLeft--;
+            room.confessionTimeLeft = timeLeft;
+            io.to(roomId).emit("confession-timer-update", { seconds: timeLeft });
+
+            if (timeLeft <= 0) {
+                clearInterval(activeRoomTimers[roomId]['confession']);
+                // End submission phase
+                const result = gameManager.endConfessionSubmission(roomId);
+                if (result.totalConfessions > 0) {
+                    io.to(roomId).emit("confession-reveal", {
+                        confession: result.firstConfession,
+                        index: 0,
+                        total: result.totalConfessions
+                    });
+                    io.to(roomId).emit("confession-phase-changed", {
+                        phase: "reveal",
+                        data: { totalConfessions: result.totalConfessions }
+                    });
+
+                    // Start Reveal (Discussion) timer
+                    let discussTime = 60;
+                    room.confessionTimeLeft = discussTime;
+                    activeRoomTimers[roomId]['confession'] = setInterval(() => {
+                        discussTime--;
+                        room.confessionTimeLeft = discussTime;
+                        io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
+                        if (discussTime <= 0) {
+                            clearInterval(activeRoomTimers[roomId]['confession']);
+                            // Auto-transition to voting phase
+                            gameManager.setConfessionPhase(roomId, 'voting');
+                            io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+                            
+                            let voteTime = 20;
+                            room.confessionTimeLeft = voteTime;
+                            activeRoomTimers[roomId]['confession'] = setInterval(() => {
+                                voteTime--;
+                                room.confessionTimeLeft = voteTime;
+                                io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+                                if (voteTime <= 0) {
+                                    clearInterval(activeRoomTimers[roomId]['confession']);
+                                    triggerVotingResults(roomId);
+                                }
+                            }, 1000);
+                        }
+                    }, 1000);
+                } else {
+                    io.to(roomId).emit("confession-phase-changed", {
+                        phase: "final_scores",
+                        data: {}
+                    });
+                }
+            }
+        }, 1000);
+    });
+
+    socket.on("confession-submit", ({ roomId, playerName, confession }) => {
+        console.log("confession-submit event received, roomId:", roomId, "player:", playerName);
+        const result = gameManager.submitConfession(roomId, socket.id, confession);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("confession-submission-count", {
+            count: result.submittedCount,
+            total: result.totalPlayers
+        });
+
+        // If everyone submitted, end submission early
+        if (result.submittedCount >= result.totalPlayers) {
+            const room = roomManager.getRoom(roomId);
+            if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+                clearInterval(activeRoomTimers[roomId]['confession']);
+            }
+            
+            const endResult = gameManager.endConfessionSubmission(roomId);
+            if (endResult.totalConfessions > 0) {
+                io.to(roomId).emit("confession-reveal", {
+                    confession: endResult.firstConfession,
+                    index: 0,
+                    total: endResult.totalConfessions
+                });
+                io.to(roomId).emit("confession-phase-changed", {
+                    phase: "reveal",
+                    data: { totalConfessions: endResult.totalConfessions }
+                });
+
+                // Start Reveal (Discussion) timer
+                let discussTime = 60;
+                room.confessionTimeLeft = discussTime;
+                if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+                activeRoomTimers[roomId]['confession'] = setInterval(() => {
+                    discussTime--;
+                    room.confessionTimeLeft = discussTime;
+                    io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
+                    if (discussTime <= 0) {
+                        clearInterval(activeRoomTimers[roomId]['confession']);
+                        // Auto-transition to voting phase
+                        gameManager.setConfessionPhase(roomId, 'voting');
+                        io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+                        
+                        let voteTime = 20;
+                        room.confessionTimeLeft = voteTime;
+                        activeRoomTimers[roomId]['confession'] = setInterval(() => {
+                            voteTime--;
+                            room.confessionTimeLeft = voteTime;
+                            io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+                            if (voteTime <= 0) {
+                                clearInterval(activeRoomTimers[roomId]['confession']);
+                                triggerVotingResults(roomId);
+                            }
+                        }, 1000);
+                    }
+                }, 1000);
+            }
+        }
+    });
+
+    socket.on("confession-vote", ({ roomId, playerName, votedFor }) => {
+        console.log("confession-vote event received, roomId:", roomId, "voter:", playerName, "votedFor:", votedFor);
+
+        // Find the player ID by name
+        const room = roomManager.getRoom(roomId);
+        const votedPlayer = room?.players.find(p => p.name === votedFor);
+
+        if (!votedPlayer) {
+            socket.emit("error", { message: "Voted player not found" });
+            return;
+        }
+
+        const result = gameManager.submitConfessionVote(roomId, socket.id, votedPlayer.id);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("confession-votes-update", { votedCount: result.votedCount });
+
+        // If everyone voted, immediately trigger results
+        if (result.votedCount >= result.totalPlayers) {
+            triggerVotingResults(roomId);
+        }
+    });
+
+    socket.on("confession-next", ({ roomId }) => {
+        console.log("confession-next event received, roomId:", roomId);
+        const room = roomManager.getRoom(roomId);
+        if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
+        }
+        
+        const nextResult = gameManager.nextConfession(roomId);
+
+        if (nextResult.finished) {
+            io.to(roomId).emit("confession-phase-changed", {
+                phase: "final_scores",
+                data: {}
+            });
+            // Convert rankings to namedScores for frontend
+            const namedScores = {};
+            nextResult.rankings.forEach(ranking => {
+                namedScores[ranking.name] = ranking.score;
+            });
+            io.to(roomId).emit("confession-final-scores", namedScores);
+        } else {
+            io.to(roomId).emit("confession-reveal", {
+                confession: nextResult.nextConfession?.confession,
+                index: nextResult.nextConfession?.index,
+                total: nextResult.nextConfession?.total
+            });
+            io.to(roomId).emit("confession-phase-changed", {
+                phase: "reveal",
+                data: {}
+            });
+
+            // Start completely fresh Reveal timer for the next statement
+            let discussTime = 60;
+            room.confessionTimeLeft = discussTime;
+            if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+            activeRoomTimers[roomId]['confession'] = setInterval(() => {
+                discussTime--;
+                room.confessionTimeLeft = discussTime;
+                io.to(roomId).emit("confession-timer-update", { seconds: discussTime });
+                if (discussTime <= 0) {
+                    clearInterval(activeRoomTimers[roomId]['confession']);
+                    gameManager.setConfessionPhase(roomId, 'voting');
+                    io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+                    
+                    let voteTime = 20;
+                    room.confessionTimeLeft = voteTime;
+                    activeRoomTimers[roomId]['confession'] = setInterval(() => {
+                        voteTime--;
+                        room.confessionTimeLeft = voteTime;
+                        io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+                        if (voteTime <= 0) {
+                            clearInterval(activeRoomTimers[roomId]['confession']);
+                            triggerVotingResults(roomId);
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+        }
+    });
+
+    socket.on("confession-start-voting", ({ roomId }) => {
+        console.log("confession-start-voting event manually triggered, roomId:", roomId);
+        const room = roomManager.getRoom(roomId);
+        if (activeRoomTimers[roomId] && activeRoomTimers[roomId]['confession']) {
+            clearInterval(activeRoomTimers[roomId]['confession']);
+        }
+        
+        // Skip discussion phase and transition instantly to voting phase
+        gameManager.setConfessionPhase(roomId, 'voting');
+        io.to(roomId).emit("confession-phase-changed", { phase: "voting", data: {} });
+        
+        let voteTime = 20;
+        room.confessionTimeLeft = voteTime;
+        if (!activeRoomTimers[roomId]) activeRoomTimers[roomId] = {};
+        activeRoomTimers[roomId]['confession'] = setInterval(() => {
+            voteTime--;
+            room.confessionTimeLeft = voteTime;
+            io.to(roomId).emit("confession-timer-update", { seconds: voteTime });
+            if (voteTime <= 0) {
+                clearInterval(activeRoomTimers[roomId]['confession']);
+                triggerVotingResults(roomId);
+            }
+        }, 1000);
+    });
+
+    socket.on("confession-reveal-author", ({ roomId }) => {
+        console.log("confession-reveal-author event received, roomId:", roomId, "from:", socket.id);
+        const room = roomManager.getRoom(roomId);
+        const game = gameManager.getGameState(roomId);
+        if (!room || !game || game.type !== 'confession-roulette') return;
+
+        const currentConfession = game.confessions?.[game.currentConfessionIndex];
+        if (!currentConfession) return;
+
+        // Verify the requester IS actually the author
+        if (currentConfession.authorId !== socket.id) {
+            socket.emit("error", { message: "You are not the author of this confession" });
+            return;
+        }
+
+        const authorPlayer = room.players.find(p => p.id === socket.id);
+        if (!authorPlayer) return;
+
+        // Broadcast the reveal to everyone
+        io.to(roomId).emit("confession-author-revealed", {
+            authorName: authorPlayer.name
+        });
+    });
+
+    // ==================== IMPOSTER EVENTS ====================
+
+    socket.on("imposter-start", ({ roomId }) => {
+        console.log("imposter-start event received, roomId:", roomId);
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+        }
+
+        // Check if an imposter game already exists (prevent double-start)
+        const existingState = gameManager.getImposterState(roomId, socket.id);
+        if (existingState && existingState.phase !== 'waiting') {
+            console.log("Imposter game already active, re-sending state to all players");
+            room.players.forEach(player => {
+                const playerState = gameManager.getImposterState(roomId, player.id);
+                if (playerState) {
+                    io.to(player.id).emit("imposter-phase-changed", {
+                        phase: playerState.phase
+                    });
+                    io.to(player.id).emit("imposter-word-assigned", {
+                        word: playerState.myWord,
+                        isImposter: playerState.isImposter
+                    });
+                }
+            });
+            return;
+        }
+
+        room.gameState = "PLAYING";
+        gameManager.startImposterGame(roomId, room);
+
+        // Notify ALL players to ensure they are on the right screen
+        io.to(roomId).emit("game-started", {
+            gameType: "imposter",
+            hostParticipates: true
+        });
+
+        // Send setup data to each player after short delay for navigation
+        setTimeout(() => {
+            room.players.forEach(player => {
+                const playerState = gameManager.getImposterState(roomId, player.id);
+                if (playerState) {
+                    io.to(player.id).emit("imposter-phase-changed", {
+                        phase: 'word_reveal'
+                    });
+                    io.to(player.id).emit("imposter-word-assigned", {
+                        word: playerState.myWord,
+                        isImposter: playerState.isImposter
+                    });
+                }
+            });
+        }, 800);
+    });
+
+    socket.on("imposter-get-state", ({ roomId }) => {
+        console.log("imposter-get-state event received, roomId:", roomId, "player:", socket.id);
+        const playerState = gameManager.getImposterState(roomId, socket.id);
+        if (playerState) {
+            socket.emit("imposter-phase-changed", { phase: playerState.phase });
+            socket.emit("imposter-word-assigned", {
+                word: playerState.myWord,
+                isImposter: playerState.isImposter
+            });
+            console.log("Sent state recovery to player:", socket.id);
+        }
+    });
+
+    socket.on("imposter-start-discussion", ({ roomId }) => {
+        console.log("imposter-start-discussion event received, roomId:", roomId);
+        gameManager.startImposterDiscussion(roomId);
+
+        io.to(roomId).emit("imposter-phase-changed", {
+            phase: "discussion"
+        });
+
+        // Start discussion timer
+        let timeLeft = 180; // 3 minutes
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            io.to(roomId).emit("imposter-timer-update", { seconds: timeLeft });
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                // Auto move to voting? Or let host decide?
+                // For now just stop timer
+            }
+        }, 1000);
+
+        // Save interval to clear later if needed (simple implementation for now)
+    });
+
+    socket.on("imposter-start-voting", ({ roomId }) => {
+        console.log("imposter-start-voting event received, roomId:", roomId);
+        gameManager.startImposterVoting(roomId);
+
+        io.to(roomId).emit("imposter-phase-changed", {
+            phase: "voting"
+        });
+
+        // Start voting timer
+        let timeLeft = 30;
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            io.to(roomId).emit("imposter-timer-update", { seconds: timeLeft });
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                // End voting
+                const results = gameManager.getImposterResults(roomId);
+                io.to(roomId).emit("imposter-phase-changed", {
+                    phase: "results"
+                });
+                io.to(roomId).emit("imposter-round-results", results);
+            }
+        }, 1000);
+    });
+
+    socket.on("imposter-vote", ({ roomId, playerName, votedFor }) => {
+        console.log("imposter-vote event received, roomId:", roomId);
+        const result = gameManager.submitImposterVote(roomId, socket.id, votedFor);
+
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        io.to(roomId).emit("imposter-votes-update", {
+            votedCount: result.votedCount,
+            totalPlayers: room.players.length
+        });
+
+        // Check if everyone voted
+        if (result.votedCount >= room.players.length) {
+            // End voting early
+            const results = gameManager.getImposterResults(roomId); // This calculates results
+            io.to(roomId).emit("imposter-phase-changed", {
+                phase: "results"
+            });
+            io.to(roomId).emit("imposter-round-results", results);
+        }
+    });
+
+    // ==================== UNPOPULAR OPINIONS EVENTS ====================
+
+    socket.on("opinion-start", ({ roomId }) => {
+        console.log("opinion-start event received, roomId:", roomId);
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startUnpopularOpinionsGame(roomId, room);
+
+        io.to(roomId).emit("opinion-phase-changed", { phase: 'waiting' });
+
+        // Start first round immediately after a short delay
+        setTimeout(() => {
+            const opinion = gameManager.startOpinionRound(roomId);
+            io.to(roomId).emit("opinion-phase-changed", { phase: 'opinion' });
+            io.to(roomId).emit("opinion-new-round", { opinion });
+
+            // Start timer
+            let timeLeft = 15;
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                io.to(roomId).emit("opinion-timer-update", { seconds: timeLeft });
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+
+                    // Force results if time up
+                    const roomNow = roomManager.getRoom(roomId);
+                    const results = gameManager.updateOpinionScores(roomId, roomNow);
+
+                    io.to(roomId).emit("opinion-phase-changed", { phase: 'results' });
+                    io.to(roomId).emit("opinion-round-results", results);
+                }
+            }, 1000);
+        }, 3000);
+    });
+
+    socket.on("opinion-vote", ({ roomId, vote }) => {
+        console.log("opinion-vote event received, roomId:", roomId);
+
+        const result = gameManager.submitOpinionVote(roomId, socket.id, vote);
+        if (result.error) return;
+
+        const room = roomManager.getRoom(roomId);
+
+        // If everyone voted
+        if (result.voteCount >= room.players.length) {
+            // End round early (need to stop timer actually, but for now we just push results and frontend ignores extra timer updates or we move phases)
+            // Ideally we need to store interval ID to clear it. For simple prototypes we just let it run out or rely on phase check.
+
+            const results = gameManager.updateOpinionScores(roomId, room);
+            io.to(roomId).emit("opinion-phase-changed", { phase: 'results' });
+            io.to(roomId).emit("opinion-round-results", results);
+        }
+    });
+
+    socket.on("opinion-next", ({ roomId }) => {
+        console.log("opinion-next event received, roomId:", roomId);
+
+        const result = gameManager.nextOpinion(roomId);
+
+        if (result.finished) {
+            io.to(roomId).emit("opinion-phase-changed", { phase: 'final' });
+            io.to(roomId).emit("opinion-final-scores", result.finalScores);
+        } else {
+            io.to(roomId).emit("opinion-phase-changed", { phase: 'waiting' });
+
+            setTimeout(() => {
+                const opinion = gameManager.startOpinionRound(roomId);
+                io.to(roomId).emit("opinion-phase-changed", { phase: 'opinion' });
+                io.to(roomId).emit("opinion-new-round", { opinion });
+
+                // Start timer again (dup logic, should refactor but this works for now)
+                let timeLeft = 15;
+                const timerInterval = setInterval(() => {
+                    timeLeft--;
+                    io.to(roomId).emit("opinion-timer-update", { seconds: timeLeft });
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        const roomNow = roomManager.getRoom(roomId);
+                        const results = gameManager.updateOpinionScores(roomId, roomNow);
+                        io.to(roomId).emit("opinion-phase-changed", { phase: 'results' });
+                        io.to(roomId).emit("opinion-round-results", results);
+                    }
+                }, 1000);
+            }, 2000);
+        }
+    });
+
+    // Hot Seat game events
+    socket.on("hot-seat-submit-question", ({ roomId, question }) => {
+        console.log("hot-seat-submit-question event received, roomId:", roomId);
+
+        const result = gameManager.submitHotSeatQuestion(roomId, socket.id, question);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("hot-seat-question-submitted", { success: true });
+
+        const room = roomManager.getRoom(roomId);
+
+        // Broadcast updated state to all players
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-state-update", playerState);
+        });
+
+        // If all submitted, notify everyone that answering phase has begun
+        if (result.allSubmitted) {
+            io.to(roomId).emit("hot-seat-answering-started");
+        }
+    });
+
+    socket.on("hot-seat-next-question", ({ roomId }) => {
+        console.log("hot-seat-next-question event received, roomId:", roomId);
+
+        const result = gameManager.nextHotSeatQuestion(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+
+        if (result.finished) {
+            io.to(roomId).emit("hot-seat-game-finished", { message: result.message });
+        } else if (result.hotSeatPlayerId) {
+            // New hot seat player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-new-player", playerState);
+            });
+        } else {
+            // Just next question
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatGameState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-state-update", playerState);
+            });
+        }
+    });
+
+    socket.on("hot-seat-end-game", ({ roomId }) => {
+        console.log("hot-seat-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("hot-seat-game-finished", { message: "Game ended by host" });
+    });
+
+    // ==================== HOT SEAT MC EVENTS ====================
+
+    socket.on("lock-target-answer", ({ roomId, answerIndex }) => {
+        console.log("lock-target-answer received, roomId:", roomId, "answerIndex:", answerIndex);
+
+        const result = gameManager.lockTargetAnswer(roomId, answerIndex);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        // Broadcast updated state to each player
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-mc-state-update", playerState);
+        });
+    });
+
+    socket.on("lock-player-guess", ({ roomId, guessIndex }) => {
+        console.log("lock-player-guess received, roomId:", roomId, "player:", socket.id, "guess:", guessIndex);
+
+        const result = gameManager.lockPlayerGuess(roomId, socket.id, guessIndex);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+
+        // Broadcast updated guess count to all players
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-mc-state-update", playerState);
+        });
+
+        // If all guessed, auto-trigger score calculation
+        if (result.allGuessed) {
+            const scores = gameManager.calculateHotSeatMCScores(roomId);
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-mc-reveal", {
+                    results: scores,
+                    gameState: playerState
+                });
+            });
+        }
+    });
+
+    socket.on("calculate-hot-seat-mc-scores", ({ roomId }) => {
+        console.log("calculate-hot-seat-mc-scores received, roomId:", roomId);
+
+        const scores = gameManager.calculateHotSeatMCScores(roomId);
+        if (scores.error) {
+            socket.emit("error", { message: scores.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+        room.players.forEach(player => {
+            const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+            io.to(player.id).emit("hot-seat-mc-reveal", {
+                results: scores,
+                gameState: playerState
+            });
+        });
+    });
+
+    socket.on("hot-seat-mc-next-round", ({ roomId }) => {
+        console.log("hot-seat-mc-next-round received, roomId:", roomId);
+
+        const result = gameManager.nextHotSeatMCRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        const room = roomManager.getRoom(roomId);
+
+        if (result.finished) {
+            io.to(roomId).emit("hot-seat-mc-game-finished", {
+                message: "All players have been in the Hot Seat!",
+                rankings: result.rankings,
+                winner: result.winner
+            });
+        } else {
+            // Broadcast new round state to each player
+            room.players.forEach(player => {
+                const playerState = gameManager.getHotSeatMCState(roomId, player.id);
+                io.to(player.id).emit("hot-seat-mc-state-update", playerState);
+            });
+        }
+    });
+
+    socket.on("hot-seat-mc-end-game", ({ roomId }) => {
+        console.log("hot-seat-mc-end-game received, roomId:", roomId);
+        gameManager.endGame(roomId);
+        io.to(roomId).emit("hot-seat-mc-game-finished", {
+            message: "Game ended by host",
+            rankings: [],
+            winner: null
+        });
+    });
+
+    socket.on("button-mash-start", ({ roomId }) => {
+        console.log("button-mash-start event received, roomId:", roomId);
+
+        const result = gameManager.startButtonMashRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("button-mash-go", { startTime: result.startTime });
+    });
+
+    socket.on("button-mash-tap", ({ roomId }) => {
+        const result = gameManager.submitButtonMashTap(roomId, socket.id);
+        if (result.error) return;
+
+        // Send back tap count to the player
+        socket.emit("button-mash-tap-ack", { tapCount: result.tapCount });
+
+        // Broadcast leaderboard update to all players
+        const leaderboard = gameManager.getButtonMashLeaderboard(roomId);
+        io.to(roomId).emit("button-mash-leaderboard", { leaderboard });
+    });
+
+    socket.on("button-mash-finish", ({ roomId, finalCount }) => {
+        console.log("button-mash-finish event received, roomId:", roomId, "finalCount:", finalCount);
+
+        const result = gameManager.finishButtonMashPlayer(roomId, socket.id, finalCount);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.allFinished) {
+            const results = gameManager.getButtonMashResults(roomId);
+            io.to(roomId).emit("button-mash-results", results);
+        }
+    });
+
+    socket.on("button-mash-end-game", ({ roomId }) => {
+        console.log("button-mash-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("button-mash-game-ended", { room });
+    });
+
+    // ==================== TYPE RACE EVENTS ====================
+    socket.on("type-race-start-round", ({ roomId }) => {
+        console.log("type-race-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startTypeRaceRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("type-race-round-start", result);
+    });
+
+    socket.on("type-race-progress", ({ roomId, progress, accuracy }) => {
+        const result = gameManager.updateTypeRaceProgress(roomId, socket.id, progress, accuracy);
+        if (result.error) return;
+
+        io.to(roomId).emit("type-race-progress-update", result);
+    });
+
+    socket.on("type-race-finish", ({ roomId, typed, timeTaken }) => {
+        console.log("type-race-finish event received, roomId:", roomId);
+
+        const result = gameManager.finishTypeRaceRound(roomId, socket.id, typed, timeTaken);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("type-race-finish-ack", result);
+
+        if (result.allFinished) {
+            const roundResults = gameManager.getTypeRaceRoundResults(roomId);
+            io.to(roomId).emit("type-race-round-results", roundResults);
+        }
+    });
+
+    socket.on("type-race-next-round", ({ roomId }) => {
+        console.log("type-race-next-round event received, roomId:", roomId);
+
+        const result = gameManager.nextTypeRaceRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("type-race-game-finished", result);
+        } else {
+            io.to(roomId).emit("type-race-next-round-ready", result);
+        }
+    });
+
+    socket.on("type-race-end-game", ({ roomId }) => {
+        console.log("type-race-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("type-race-game-ended", { room });
+    });
+
+    // ==================== MATH BLITZ EVENTS ====================
+    socket.on("math-blitz-start-round", ({ roomId }) => {
+        console.log("math-blitz-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startMathBlitzRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("math-blitz-round-start", result);
+    });
+
+    socket.on("math-blitz-answer", ({ roomId, answer }) => {
+        console.log("math-blitz-answer event received, roomId:", roomId, "answer:", answer);
+
+        const result = gameManager.submitMathBlitzAnswer(roomId, socket.id, answer);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("math-blitz-answer-result", result);
+
+        // If someone won, notify everyone
+        if (result.isWinner) {
+            io.to(roomId).emit("math-blitz-round-won", {
+                winnerId: socket.id,
+                winnerName: result.playerName,
+                correctAnswer: result.answer
+            });
+
+            // Auto-advance to results after a short delay
+            setTimeout(() => {
+                const roundResults = gameManager.getMathBlitzRoundResults(roomId);
+                io.to(roomId).emit("math-blitz-round-results", roundResults);
+            }, 1500);
+        }
+    });
+
+    socket.on("math-blitz-next-round", ({ roomId }) => {
+        console.log("math-blitz-next-round event received, roomId:", roomId);
+
+        const result = gameManager.nextMathBlitzRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("math-blitz-game-finished", result);
+        } else {
+            io.to(roomId).emit("math-blitz-next-round-ready", result);
+        }
+    });
+
+    socket.on("math-blitz-end-game", ({ roomId }) => {
+        console.log("math-blitz-end-game event received, roomId:", roomId);
+        gameManager.endGame(roomId);
+
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("math-blitz-game-ended", { room });
+    });
+
+    // ==================== COLOR RUSH EVENTS ====================
+    socket.on("color-rush-start-round", ({ roomId }) => {
+        console.log("color-rush-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startColorRushRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("color-rush-round-start", result);
+    });
+
+    socket.on("color-rush-answer", ({ roomId, colorName }) => {
+        const result = gameManager.submitColorRushAnswer(roomId, socket.id, colorName);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("color-rush-answer-result", result);
+
+        if (result.isWinner) {
+            io.to(roomId).emit("color-rush-round-won", {
+                winnerId: socket.id,
+                winnerName: result.playerName
+            });
+
+            setTimeout(() => {
+                const roundResults = gameManager.getColorRushRoundResults(roomId);
+                io.to(roomId).emit("color-rush-round-results", roundResults);
+            }, 1000);
+        }
+    });
+
+    socket.on("color-rush-next-round", ({ roomId }) => {
+        const result = gameManager.nextColorRushRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("color-rush-game-finished", result);
+        } else {
+            io.to(roomId).emit("color-rush-next-round-ready", result);
+        }
+    });
+
+    socket.on("color-rush-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("color-rush-game-ended", { room });
+    });
+
+    // ==================== CAPTION THIS EVENTS ====================
+    socket.on("caption-this-start", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startCaptionThisGame(roomId, room);
+        io.to(roomId).emit("caption-this-started", gameState);
+    });
+
+    socket.on("caption-submit", ({ roomId, caption }) => {
+        const result = gameManager.submitCaption(roomId, socket.id, caption);
+        if (result.error) return;
+
+        io.to(roomId).emit("caption-submission-update", result);
+    });
+
+    socket.on("caption-start-voting", ({ roomId }) => {
+        const result = gameManager.startCaptionVoting(roomId);
+        if (result.error) return;
+
+        io.to(roomId).emit("caption-voting-started", result);
+    });
+
+    socket.on("caption-vote", ({ roomId, votedPlayerId }) => {
+        const result = gameManager.submitCaptionVote(roomId, socket.id, votedPlayerId);
+        if (result.error) return;
+
+        io.to(roomId).emit("caption-vote-update", result);
+
+        if (result.allVoted) {
+            const roundResults = gameManager.getCaptionRoundResults(roomId);
+            io.to(roomId).emit("caption-round-results", roundResults);
+        }
+    });
+
+    socket.on("caption-next-round", ({ roomId }) => {
+        const result = gameManager.nextCaptionRound(roomId);
+        if (result.error) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("caption-game-finished", result);
+        } else {
+            io.to(roomId).emit("caption-next-round-ready", result);
+        }
+    });
+
+    socket.on("caption-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("caption-game-ended", { room });
+    });
+
+    // ==================== AUCTION BLUFF EVENTS ====================
+    socket.on("auction-start", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startAuctionBluffGame(roomId, room);
+        io.to(roomId).emit("auction-started", gameState);
+
+        // Start first round automatically after delay
+        setTimeout(() => {
+            const roundData = gameManager.startAuctionRound(roomId);
+            io.to(roomId).emit("auction-round-start", roundData);
+        }, 3000);
+    });
+
+    socket.on("auction-bid", ({ roomId, amount }) => {
+        const result = gameManager.submitAuctionBid(roomId, socket.id, amount);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("auction-bid-update", result);
+
+        // If everyone has bid, end round immediately? Or wait for timer?
+        // Let's end immediately for smoother flow if all are done
+        if (result.allBid) {
+            const roundResults = gameManager.endAuctionRound(roomId);
+            io.to(roomId).emit("auction-round-results", roundResults);
+        }
+    });
+
+    socket.on("auction-next-round", ({ roomId }) => {
+        const result = gameManager.nextAuctionRound(roomId);
+        if (result.error) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("auction-game-finished", result);
+        } else {
+            // Start next round
+            const roundData = gameManager.startAuctionRound(roomId);
+            io.to(roomId).emit("auction-round-start", roundData);
+        }
+    });
+
+    socket.on("auction-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("auction-game-ended", { room });
+    });
+
+    // ==================== SPEED CATEGORIES EVENTS ====================
+    socket.on("speed-categories-start", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        const gameState = gameManager.startSpeedCategoriesGame(roomId, room);
+        io.to(roomId).emit("speed-game-started", gameState);
+
+        setTimeout(() => {
+            const roundData = gameManager.startCategoryRound(roomId);
+            io.to(roomId).emit("speed-round-start", roundData);
+        }, 3000);
+    });
+
+    socket.on("speed-responses-submit", ({ roomId, answers }) => {
+        const result = gameManager.submitCategoryAnswers(roomId, socket.id, answers);
+        if (result.error) return;
+
+        io.to(roomId).emit("speed-responses-update", result);
+
+        if (result.allSubmitted) {
+            const roundResults = gameManager.calculateCategoryScores(roomId);
+            io.to(roomId).emit("speed-round-results", roundResults);
+        }
+    });
+
+    socket.on("speed-next-round", ({ roomId }) => {
+        const result = gameManager.nextCategoryRound(roomId);
+        if (result.error) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("speed-game-finished", result);
+        } else {
+            const roundData = gameManager.startCategoryRound(roomId);
+            io.to(roomId).emit("speed-round-start", roundData);
+        }
+    });
+
+    socket.on("speed-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("speed-game-ended", { room });
+    });
+
+    // ==================== TIC-TAC-TOE TOURNAMENT EVENTS ====================
+    socket.on("ttt-start-match", ({ roomId }) => {
+        console.log("ttt-start-match event received, roomId:", roomId);
+
+        const result = gameManager.startTicTacToeMatch(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("ttt-match-started", result);
+    });
+
+    socket.on("ttt-make-move", ({ roomId, position }) => {
+        const result = gameManager.makeTicTacToeMove(roomId, socket.id, position);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("ttt-move-made", result);
+
+        if (result.gameOver) {
+            // Auto-emit match result after a delay
+            setTimeout(() => {
+                io.to(roomId).emit("ttt-match-ended", {
+                    winner: result.winner,
+                    isDraw: result.isDraw,
+                    board: result.board
+                });
+            }, 1500);
+        } else if (result.isAITurn) {
+            // AI's turn - make AI move after realistic "thinking" delay (1-2 seconds)
+            const thinkingTime = 1000 + Math.random() * 1000;
+            io.to(roomId).emit("ttt-ai-thinking", { thinking: true });
+
+            setTimeout(() => {
+                const aiResult = gameManager.makeAITicTacToeMove(roomId);
+                if (!aiResult.error) {
+                    io.to(roomId).emit("ttt-move-made", aiResult);
+
+                    if (aiResult.gameOver) {
+                        setTimeout(() => {
+                            io.to(roomId).emit("ttt-match-ended", {
+                                winner: aiResult.winner,
+                                isDraw: aiResult.isDraw,
+                                board: aiResult.board
+                            });
+                        }, 1500);
+                    }
+                }
+            }, thinkingTime);
+        }
+    });
+
+    socket.on("ttt-next-match", ({ roomId }) => {
+        const result = gameManager.nextTicTacToeMatch(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("ttt-tournament-finished", result);
+        } else if (result.roundComplete) {
+            io.to(roomId).emit("ttt-round-complete", result);
+        } else {
+            io.to(roomId).emit("ttt-next-match-ready", result);
+        }
+    });
+
+    socket.on("ttt-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("ttt-game-ended", { room });
+    });
+
+    // ==================== DRAW BATTLE EVENTS ====================
+    socket.on("draw-battle-start-round", ({ roomId }) => {
+        console.log("draw-battle-start-round event received, roomId:", roomId);
+
+        const result = gameManager.startDrawBattleRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        io.to(roomId).emit("draw-battle-round-started", result);
+    });
+
+    socket.on("draw-battle-submit-drawing", ({ roomId, drawingData }) => {
+        const result = gameManager.submitDrawing(roomId, socket.id, drawingData);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("draw-battle-drawing-submitted", result);
+        io.to(roomId).emit("draw-battle-submission-update", {
+            submittedCount: result.submittedCount,
+            totalPlayers: result.totalPlayers
+        });
+
+        if (result.allSubmitted) {
+            const votingData = gameManager.startVotingPhase(roomId);
+            io.to(roomId).emit("draw-battle-voting-started", votingData);
+        }
+    });
+
+    socket.on("draw-battle-start-voting", ({ roomId }) => {
+        const result = gameManager.startVotingPhase(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        io.to(roomId).emit("draw-battle-voting-started", result);
+    });
+
+    socket.on("draw-battle-vote", ({ roomId, votedPlayerId }) => {
+        const result = gameManager.submitVote(roomId, socket.id, votedPlayerId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        socket.emit("draw-battle-vote-submitted", result);
+
+        if (result.allVoted) {
+            const roundResults = gameManager.getDrawBattleRoundResults(roomId);
+            io.to(roomId).emit("draw-battle-round-results", roundResults);
+        }
+    });
+
+    socket.on("draw-battle-next-round", ({ roomId }) => {
+        const result = gameManager.nextDrawBattleRound(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+
+        if (result.finished) {
+            io.to(roomId).emit("draw-battle-game-finished", result);
+        } else {
+            io.to(roomId).emit("draw-battle-next-round-ready", result);
+        }
+    });
+
+    socket.on("draw-battle-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("draw-battle-game-ended", { room });
+    });
+
+    // ==================== LIE DETECTOR GAME EVENTS ====================
+    socket.on("lie-detector-submit-answer", ({ roomId, answer, isLie }) => {
+        console.log("lie-detector-submit-answer:", roomId, "isLie:", isLie);
+        const result = gameManager.submitLieDetectorAnswer(roomId, socket.id, answer, isLie);
+        if (result) {
+            io.to(roomId).emit("lie-detector-voting-started", {
+                gameState: result,
+                answer
+            });
+        }
+    });
+
+    socket.on("lie-detector-submit-vote", ({ roomId, vote }) => {
+        console.log("lie-detector-submit-vote:", roomId, "vote:", vote);
+        const result = gameManager.submitLieDetectorVote(roomId, socket.id, vote);
+        if (!result) return;
+
+        if (result.waiting) {
+            io.to(roomId).emit("lie-detector-vote-received", { voteCount: result.voteCount });
+        } else {
+            io.to(roomId).emit("lie-detector-reveal", result);
+        }
+    });
+
+    socket.on("lie-detector-next-round", ({ roomId }) => {
+        console.log("lie-detector-next-round:", roomId);
+        const result = gameManager.nextLieDetectorRound(roomId);
+        if (!result) return;
+
+        if (result.finished) {
+            io.to(roomId).emit("lie-detector-game-finished", result);
+        } else {
+            io.to(roomId).emit("lie-detector-next-round-ready", result);
+        }
+    });
+
+    socket.on("lie-detector-end-game", ({ roomId }) => {
+        gameManager.endGame(roomId);
+        const room = roomManager.getRoom(roomId);
+        io.to(roomId).emit("lie-detector-game-ended", { room });
+    });
+
+    // ==================== REAL-TIME REACTIONS ====================
+    const reactionCooldowns = new Map(); // socketId -> lastReactionTime
+
+    socket.on("send-reaction", ({ roomId, emoji, playerName }) => {
+        const now = Date.now();
+        const lastTime = reactionCooldowns.get(socket.id) || 0;
+
+        // Rate limit: 1 reaction per 1.5 seconds
+        if (now - lastTime < 1500) return;
+
+        reactionCooldowns.set(socket.id, now);
+        io.to(roomId).emit("reaction-received", {
+            emoji,
+            playerName,
+            senderId: socket.id,
+            timestamp: now
+        });
+    });
+
+    // ==================== WIN STREAK TRACKING ====================
+    socket.on("report-game-result", ({ roomId, winnerId, winnerName }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        // Find winner and update streak
+        const winner = room.players.find(p => p.id === winnerId);
+        if (winner) {
+            winner.winStreak = (winner.winStreak || 0) + 1;
+            winner.totalWins = (winner.totalWins || 0) + 1;
+
+            // Reset others' streaks
+            room.players.forEach(p => {
+                if (p.id !== winnerId) p.winStreak = 0;
+            });
+
+            io.to(roomId).emit("streak-updated", {
+                winnerId,
+                winnerName,
+                streak: winner.winStreak,
+                isStreakMilestone: [3, 5, 10, 15, 20].includes(winner.winStreak)
+            });
+        }
+    });
+
+    // ==================== SOUNDBOARD ====================
+    socket.on("play-sound", ({ roomId, soundId, playerName }) => {
+        io.to(roomId).emit("sound-played", { soundId, playerName, senderId: socket.id });
+    });
+
+    // ==================== ACHIEVEMENTS ====================
+    socket.on("unlock-achievement", ({ roomId, playerId, achievementId, achievementName }) => {
+        io.to(roomId).emit("achievement-unlocked", {
+            playerId,
+            achievementId,
+            achievementName,
+            timestamp: Date.now()
+        });
+    });
+
+    // ==================== MULTI-GAME TOURNAMENT ====================
+    socket.on("create-tournament", ({ roomId, gamePlaylist, tournamentName }) => {
+        console.log("create-tournament:", roomId, "games:", gamePlaylist);
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        room.tournament = {
+            name: tournamentName || "Party Tournament",
+            games: gamePlaylist, // Array of game IDs
+            currentGameIndex: 0,
+            scores: {}, // playerId -> cumulative score
+            gameResults: [], // Array of results per game
+            status: 'setup', // setup, playing, between_games, finished
+            startedAt: Date.now()
+        };
+
+        // Initialize scores
+        room.players.forEach(p => {
+            room.tournament.scores[p.id] = 0;
+        });
+
+        io.to(roomId).emit("tournament-created", {
+            tournament: room.tournament,
+            room
+        });
+    });
+
+    socket.on("start-tournament", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room || !room.tournament) return;
+
+        room.tournament.status = 'playing';
+        const currentGame = room.tournament.games[0];
+
+        io.to(roomId).emit("tournament-started", {
+            tournament: room.tournament,
+            currentGame,
+            gameNumber: 1,
+            totalGames: room.tournament.games.length
+        });
+
+        // Actually start the first game after a brief delay
+        setTimeout(() => {
+            // For now, we only support trivia in tournaments
+            if (currentGame === 'trivia') {
+                const gameState = gameManager.startTriviaGame(roomId, room, true, 'All');
+                const currentQuestion = gameManager.getCurrentQuestion(roomId);
+
+                if (currentQuestion) {
+                    io.to(roomId).emit("game-started", {
+                        question: currentQuestion,
+                        gameType: 'trivia'
+                    });
+                }
+            }
+            // Other game types would be handled here
+        }, 3500); // 3.5 seconds to allow countdown
+    });
+
+    socket.on("tournament-game-complete", ({ roomId, gameResults }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room || !room.tournament) return;
+
+        // Add game results to tournament
+        room.tournament.gameResults.push({
+            gameIndex: room.tournament.currentGameIndex,
+            gameId: room.tournament.games[room.tournament.currentGameIndex],
+            results: gameResults
+        });
+
+        // Update cumulative scores
+        Object.entries(gameResults).forEach(([playerId, score]) => {
+            room.tournament.scores[playerId] = (room.tournament.scores[playerId] || 0) + score;
+        });
+
+        room.tournament.currentGameIndex++;
+
+        // Check if tournament is complete
+        if (room.tournament.currentGameIndex >= room.tournament.games.length) {
+            room.tournament.status = 'finished';
+
+            // Determine champion
+            const sortedScores = Object.entries(room.tournament.scores)
+                .sort((a, b) => b[1] - a[1]);
+
+            const champion = room.players.find(p => p.id === sortedScores[0][0]);
+
+            io.to(roomId).emit("tournament-finished", {
+                tournament: room.tournament,
+                champion,
+                finalStandings: sortedScores.map(([id, score], idx) => ({
+                    rank: idx + 1,
+                    player: room.players.find(p => p.id === id),
+                    score
+                }))
+            });
+        } else {
+            room.tournament.status = 'between_games';
+            io.to(roomId).emit("tournament-next-game", {
+                tournament: room.tournament,
+                nextGame: room.tournament.games[room.tournament.currentGameIndex],
+                gameNumber: room.tournament.currentGameIndex + 1,
+                totalGames: room.tournament.games.length,
+                currentStandings: Object.entries(room.tournament.scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([id, score], idx) => ({
+                        rank: idx + 1,
+                        player: room.players.find(p => p.id === id),
+                        score
+                    }))
+            });
+        }
+    });
+
+    socket.on("tournament-continue", ({ roomId }) => {
+        const room = roomManager.getRoom(roomId);
+        if (!room || !room.tournament) return;
+
+        room.tournament.status = 'playing';
+        const currentGame = room.tournament.games[room.tournament.currentGameIndex];
+
+        io.to(roomId).emit("tournament-game-starting", {
+            currentGame,
+            gameNumber: room.tournament.currentGameIndex + 1,
+            totalGames: room.tournament.games.length
+        });
+    });
+
+    // ==================== SPILL THE TEA EVENTS ====================
+
+    socket.on("submit-spill-tea-secret", ({ roomId, text }) => {
+        console.log("submit-spill-tea-secret received", roomId, socket.id);
+        const result = gameManager.submitSpillTeaSecret(roomId, socket.id, text);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        io.to(roomId).emit("spill-tea-state-update", gameManager.getSpillTeaState(roomId));
+    });
+
+    socket.on("host-next-spill-tea", ({ roomId }) => {
+        console.log("host-next-spill-tea received", roomId);
+        const result = gameManager.nextSpillTeaSecret(roomId);
+        if (result.error) {
+            socket.emit("error", { message: result.error });
+            return;
+        }
+        if (result.finished) {
+            io.to(roomId).emit("spill-tea-state-update", { status: 'FINISHED' });
+            // Let the game manager handle ending if there is a method, but roomManager changes gameState
+            const room = roomManager.getRoom(roomId);
+            if (room) room.gameState = "GAMEOVER";
+            // We can emit a game over event instead of calling endGame if not standard
+        } else {
+            // Emits the new secret
+            io.to(roomId).emit("spill-tea-new-secret", {
+                secret: result.secret,
+                authorId: result.authorId,
+                index: result.index,
+                total: result.total
+            });
+            // Update state
+            io.to(roomId).emit("spill-tea-state-update", gameManager.getSpillTeaState(roomId));
+        }
+    });
+
+    socket.on("author-reveal-spill-tea", ({ roomId }) => {
+        console.log("author-reveal-spill-tea received", roomId, socket.id);
+        const game = gameManager.activeGames.get(roomId);
+        if (game && game.type === 'spill-the-tea') {
+            game.hasRevealedIdentity = true;
+            io.to(roomId).emit("spill-tea-author-revealed", { authorId: socket.id });
+        }
+    });
+
+});
+
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Access from your phone using your computer's IP address`);
+});

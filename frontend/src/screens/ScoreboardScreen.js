@@ -9,24 +9,30 @@ import ConfettiEffect from '../components/ConfettiEffect';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import ProfileService from '../services/ProfileService';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const ScoreboardScreen = ({ route, navigation }) => {
     const { room, finalScores } = route.params;
+
+    useGameDisconnectHandler({
+        navigation,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost: room.players.find(p => p.id === SocketService.socket?.id)?.isHost }
+    });
+
     const [isRematchLoading, setIsRematchLoading] = useState(false);
 
     // Check if current player is the winner for rave lights
-    const currentPlayerId = SocketService.socket?.id;
+    const currentUserId = room.players.find(p => p.id === SocketService.socket?.id)?.uid;
     const winner = finalScores[0]; // First place
-    const showRaveLights = winner?.playerId === currentPlayerId;
-    const currentUserId = SocketService.socket?.id;
-    const currentPlayer = room.players.find(p => p.id === currentUserId);
-    const isHost = currentPlayer?.isHost || false;
+    const showRaveLights = winner?.playerId === currentUserId;
+    const isWinner = winner?.playerId === currentUserId;
+    const isHost = room.players.find(p => p.uid === currentUserId)?.isHost || false;
 
     // Get current player's score and position
-    const playerScore = finalScores.find(s => s.playerId === currentPlayerId);
-    const playerRank = finalScores.findIndex(s => s.playerId === currentPlayerId) + 1;
-    const isWinner = playerRank === 1;
+    const playerScore = finalScores.find(s => s.playerId === currentUserId);
+    const playerRank = finalScores.findIndex(s => s.playerId === currentUserId) + 1;
 
     // Record game stats and play sounds
     useEffect(() => {
@@ -103,7 +109,10 @@ const ScoreboardScreen = ({ route, navigation }) => {
     }, [navigation, room, isHost]);
 
     const getPlayerName = (playerId) => {
-        const player = room.players.find(p => p.id === playerId);
+        if (playerId === 'ai-player') return 'Rave AI';
+        
+        // Try to find by uid first (persistent), then legacy id (socketId)
+        const player = room.players.find(p => p.uid === playerId || p.id === playerId);
         return player?.name || 'Unknown';
     };
 
@@ -120,21 +129,25 @@ const ScoreboardScreen = ({ route, navigation }) => {
     };
 
     const handleBackToLobby = () => {
-        if (isHost) {
-            // Host goes back to game selection
-            navigation.navigate('GameSelection', {
-                room,
-                playerName: currentPlayer?.name
-            });
-        } else {
-            // Participants go to lobby with fromGame flag
-            navigation.navigate('Lobby', {
-                room,
-                isHost: false,
-                playerName: currentPlayer?.name,
-                selectedGame: room.gameType,
-                fromGame: true
-            });
+        try {
+            if (isHost) {
+                // Host goes back to game selection
+                navigation.navigate('GameSelection', {
+                    room,
+                    playerName: currentPlayer?.name
+                });
+            } else {
+                // Participants go to lobby with fromGame flag
+                navigation.navigate('Lobby', {
+                    room,
+                    isHost: false,
+                    playerName: currentPlayer?.name,
+                    selectedGame: room.gameType,
+                    fromGame: true
+                });
+            }
+        } catch (e) {
+            navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
         }
     };
 

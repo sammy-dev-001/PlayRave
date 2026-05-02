@@ -123,7 +123,11 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
     };
 
     const endGame = () => {
-        navigation.goBack();
+        try {
+            navigation.navigate('Lobby', { room, isHost, playerName });
+        } catch (e) {
+            navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+        }
     };
 
     // Render Phases

@@ -1,258 +1,273 @@
+// ============================================================================
+// RoomManager.js — Lobby, Room State & Host Migration (userId-keyed)
+// ============================================================================
+// ALL player arrays use the PERSISTENT userId as primary key.
+// socket.id is stored per-player only so the Gateway can emit to them.
+// ============================================================================
+
 class RoomManager {
     constructor() {
         this.rooms = new Map();
     }
 
     generateRoomCode() {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        let code = "";
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let code = '';
         for (let i = 0; i < 4; i++) {
             code += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-        // Simple collision check (for MVP recursion is fine, for prod use better algo)
         if (this.rooms.has(code)) return this.generateRoomCode();
         return code;
     }
 
-    createRoom(hostId, playerName, avatar, avatarColor, userId) {
+    // ── Room CRUD ───────────────────────────────────────────────────────
+
+    createRoom(userId, socketId, playerName, avatar, avatarColor) {
         const roomId = this.generateRoomCode();
-        const newRoom = {
+        const room = {
             id: roomId,
-            hostId: hostId,
-            players: [
-                { 
-                    id: hostId, 
-                    uid: userId || hostId, // Use hostId as fallback if userId not provided
-                    name: playerName, 
-                    score: 0, 
-                    isHost: true, 
-                    avatar, 
-                    avatarColor, 
-                    isReady: true 
-                }
-            ],
+            hostUserId: userId,
             gameState: 'LOBBY',
-            currentRound: 0,
             gameType: null,
+            customQuestions: null,
+            currentRound: 0,
+            players: [{
+                userId, socketId, name: playerName,
+                avatar: avatar || '😎', avatarColor: avatarColor || '#6C63FF',
+                score: 0, isHost: true, isReady: true, isAway: false,
+            }],
         };
-        this.rooms.set(roomId, newRoom);
-        return newRoom;
+        this.rooms.set(roomId, room);
+        console.log(`[RoomManager] Room ${roomId} created by ${playerName} (${userId})`);
+        return room;
     }
 
-    createLocalRoom(roomId, hostId, playerName, avatar, avatarColor, userId) {
-        const newRoom = {
+    createLocalRoom(roomId, userId, socketId, playerName, avatar, avatarColor) {
+        const room = {
             id: roomId,
-            hostId: hostId,
-            players: [
-                { 
-                    id: hostId, 
-                    uid: userId || hostId,
-                    name: playerName, 
-                    score: 0, 
-                    isHost: true, 
-                    avatar, 
-                    avatarColor, 
-                    isReady: true 
-                }
-            ],
+            hostUserId: userId,
             gameState: 'LOBBY',
-            currentRound: 0,
             gameType: null,
+            customQuestions: null,
+            currentRound: 0,
+            players: [{
+                userId, socketId, name: playerName,
+                avatar: avatar || '😎', avatarColor: avatarColor || '#6C63FF',
+                score: 0, isHost: true, isReady: true, isAway: false,
+            }],
         };
-        this.rooms.set(roomId, newRoom);
-        return newRoom;
+        this.rooms.set(roomId, room);
+        return room;
     }
 
-    joinRoom(roomId, playerId, playerName, avatar, avatarColor, userId) {
+    joinRoom(roomId, userId, socketId, playerName, avatar, avatarColor) {
         const room = this.rooms.get(roomId);
-        if (!room) return { error: "Room not found" };
-        
-        const playerExists = room.players.find(p => p.uid === userId || p.id === playerId);
-        
-        if (room.gameState !== 'LOBBY' && !playerExists) {
-            return { error: "Game already in progress" };
+        if (!room) return { error: 'Room not found' };
+
+        const existing = room.players.find(p => p.userId === userId);
+
+        if (existing) {
+            const oldSocketId = existing.socketId;
+            existing.socketId = socketId;
+            existing.isAway = false;
+            if (playerName) existing.name = playerName;
+            if (avatar) existing.avatar = avatar;
+            if (avatarColor) existing.avatarColor = avatarColor;
+            return { room, isRejoin: true, oldSocketId };
         }
 
-        let oldSocketId = null;
-        if (!playerExists) {
-            room.players.push({ 
-                id: playerId, 
-                uid: userId || playerId, 
-                name: playerName, 
-                score: 0, 
-                isHost: false, 
-                avatar, 
-                avatarColor, 
-                isReady: false 
-            });
-        } else {
-            // Update socket ID if rejoining
-            oldSocketId = playerExists.id;
-            playerExists.id = playerId;
-            
-            // If they were host, update hostId
-            if (room.hostId === oldSocketId) {
-                room.hostId = playerId;
-            }
+        if (room.gameState !== 'LOBBY') {
+            return { error: 'Game already in progress' };
         }
-        return { room, oldSocketId };
+
+        room.players.push({
+            userId, socketId, name: playerName,
+            avatar: avatar || '😎', avatarColor: avatarColor || '#6C63FF',
+            score: 0, isHost: false, isReady: false, isAway: false,
+        });
+
+        return { room, isRejoin: false, oldSocketId: null };
     }
 
-    // New helper for state recovery: re-bind player to new socket
+    removePlayer(userId) {
+        for (const [roomId, room] of this.rooms.entries()) {
+            const index = room.players.findIndex(p => p.userId === userId);
+            if (index === -1) continue;
+
+            const removedPlayer = room.players.splice(index, 1)[0];
+
+            if (room.players.length === 0) {
+                this.rooms.delete(roomId);
+                return { roomId, roomDeleted: true, removedPlayer };
+            }
+
+            if (removedPlayer.isHost) {
+                this._migrateHost(room);
+            }
+
+            return { roomId, roomDeleted: false, room, removedPlayer };
+        }
+        return null;
+    }
+
+    removePlayerBySocketId(socketId) {
+        for (const [roomId, room] of this.rooms.entries()) {
+            const index = room.players.findIndex(p => p.socketId === socketId);
+            if (index === -1) continue;
+
+            const removedPlayer = room.players.splice(index, 1)[0];
+
+            if (room.players.length === 0) {
+                this.rooms.delete(roomId);
+                return { roomId, roomDeleted: true, removedPlayer };
+            }
+
+            if (removedPlayer.isHost) this._migrateHost(room);
+            return { roomId, roomDeleted: false, room, removedPlayer };
+        }
+        return null;
+    }
+
+    // ── Lookups ─────────────────────────────────────────────────────────
+
+    getRoom(roomId) {
+        return this.rooms.get(roomId) || null;
+    }
+
+    getPlayerByUserId(userId) {
+        for (const [roomId, room] of this.rooms.entries()) {
+            const player = room.players.find(p => p.userId === userId);
+            if (player) return { ...player, roomId };
+        }
+        return null;
+    }
+
+    getPlayerBySocketId(socketId) {
+        for (const [roomId, room] of this.rooms.entries()) {
+            const player = room.players.find(p => p.socketId === socketId);
+            if (player) return { ...player, roomId };
+        }
+        return null;
+    }
+
+    // ── Socket Re-binding ───────────────────────────────────────────────
+
     updatePlayerSocket(roomId, userId, newSocketId) {
         const room = this.rooms.get(roomId);
         if (!room) return null;
 
-        const player = room.players.find(p => p.uid === userId);
-        if (player) {
-            const oldSocketId = player.id;
-            player.id = newSocketId;
-            
-            // If they were host, update hostId and ensure isHost flag is set
-            if (room.hostId === oldSocketId || player.isHost) {
-                room.hostId = newSocketId;
-                player.isHost = true;
-            }
-            
-            return { room, player };
-        }
-        return null;
+        const player = room.players.find(p => p.userId === userId);
+        if (!player) return null;
+
+        const oldSocketId = player.socketId;
+        player.socketId = newSocketId;
+        player.isAway = false;
+
+        if (player.isHost) room.hostUserId = userId;
+        return { room, player, oldSocketId };
     }
 
-    getRoom(roomId) {
-        return this.rooms.get(roomId);
+    setPlayerAway(roomId, userId, isAway) {
+        const room = this.rooms.get(roomId);
+        if (!room) return null;
+        const player = room.players.find(p => p.userId === userId);
+        if (player) player.isAway = isAway;
+        return room;
     }
 
-    // Get player info by socket ID (for disconnect handling)
-    getPlayerBySocketId(socketId) {
-        for (const [roomId, room] of this.rooms.entries()) {
-            const player = room.players.find(p => p.id === socketId);
-            if (player) {
-                return { ...player, roomId };
-            }
-        }
-        return null;
+    // ── Host Migration ──────────────────────────────────────────────────
+
+    reassignHost(roomId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return null;
+        return this._migrateHost(room);
     }
+
+    _migrateHost(room) {
+        room.players.forEach(p => { p.isHost = false; });
+        const newHost = room.players.find(p => !p.isAway) || room.players[0];
+        if (!newHost) return null;
+
+        newHost.isHost = true;
+        room.hostUserId = newHost.userId;
+        console.log(`[RoomManager] Host migrated to ${newHost.name} (${newHost.userId}) in room ${room.id}`);
+        return { room, newHost };
+    }
+
+    // ── Game State Helpers ──────────────────────────────────────────────
 
     setGameType(roomId, gameType) {
         const room = this.rooms.get(roomId);
-        if (!room) return { error: "Room not found" };
+        if (!room) return { error: 'Room not found' };
         room.gameType = gameType;
         return { room };
     }
 
     setCustomQuestions(roomId, questions) {
         const room = this.rooms.get(roomId);
-        if (!room) return { error: "Room not found" };
+        if (!room) return { error: 'Room not found' };
         room.customQuestions = questions;
         return { room };
     }
 
-    setPlayerReady(roomId, playerId, isReady) {
+    setPlayerReady(roomId, userId, isReady) {
         const room = this.rooms.get(roomId);
-        if (!room) return { error: "Room not found" };
-
-        const player = room.players.find(p => p.id === playerId);
-        if (!player) return { error: "Player not found" };
-
+        if (!room) return { error: 'Room not found' };
+        const player = room.players.find(p => p.userId === userId);
+        if (!player) return { error: 'Player not found' };
         player.isReady = isReady;
         return { room };
     }
 
-    kickPlayer(roomId, hostId, playerIdToKick) {
+    kickPlayer(roomId, hostUserId, targetUserId) {
         const room = this.rooms.get(roomId);
-        if (!room) return { error: "Room not found" };
-        if (room.hostId !== hostId) return { error: "Only host can kick players" };
-        if (hostId === playerIdToKick) return { error: "Host cannot kick themselves" };
+        if (!room) return { error: 'Room not found' };
+        if (room.hostUserId !== hostUserId) return { error: 'Only host can kick players' };
+        if (hostUserId === targetUserId) return { error: 'Host cannot kick themselves' };
 
-        const index = room.players.findIndex(p => p.id === playerIdToKick);
-        if (index === -1) return { error: "Player not found" };
+        const index = room.players.findIndex(p => p.userId === targetUserId);
+        if (index === -1) return { error: 'Player not found' };
 
-        room.players.splice(index, 1);
-        return { room, kickedPlayerId: playerIdToKick };
+        const kicked = room.players.splice(index, 1)[0];
+        return { room, kickedPlayer: kicked };
     }
 
-    // Immediately migrate host status to first connected player when host disconnects.
-    // The disconnected host stays in the player array (flagged isDisconnected) so they
-    // can still reconnect—they just lose host privileges until they manually reclaim.
-    reassignHost(roomId) {
+    setGameState(roomId, state) {
+        const room = this.rooms.get(roomId);
+        if (!room) return null;
+        room.gameState = state;
+        return room;
+    }
+
+    /**
+     * Backwards-compatible snapshot for the frontend.
+     * Maps internal userId-keyed format → legacy id/uid format.
+     */
+    getRoomSnapshot(roomId) {
         const room = this.rooms.get(roomId);
         if (!room) return null;
 
-        // Find the first player who is NOT disconnected
-        const newHost = room.players.find(p => !p.isDisconnected);
-        if (!newHost) {
-            // Everyone is disconnected — nothing to do, grace timers will clean up
-            return null;
-        }
-
-        // Strip host from whoever currently has it
-        room.players.forEach(p => {
-            p.isHost = false;
-        });
-
-        // Promote the new host
-        newHost.isHost = true;
-        room.hostId = newHost.id;
-
-        console.log(`Host reassigned to ${newHost.name} (${newHost.id}) in room ${roomId}`);
-        return { room, newHost };
-    }
-
-    removePlayer(socketId) {
-        // Find room with this player
-        for (const [roomId, room] of this.rooms.entries()) {
-            const index = room.players.findIndex(p => p.id === socketId);
-            if (index !== -1) {
-                room.players.splice(index, 1);
-                // If room empty, delete
-                if (room.players.length === 0) {
-                    this.rooms.delete(roomId);
-                    return { roomId, roomDeleted: true };
-                }
-                // If host left, assign new host (MVP: simple reassignment)
-                // If host left, assign new host (MVP: simple reassignment)
-                if (room.hostId === socketId && room.players.length > 0) {
-                    room.hostId = room.players[0].id;
-                    room.players[0].isHost = true;
-                }
-                return { roomId, roomDeleted: false, room };
-            }
-        }
-        return null;
-    }
-
-    // Restore host status when original host reconnects
-    restoreHost(roomId, newSocketId, playerName) {
-        const room = this.rooms.get(roomId);
-        if (!room) return { error: "Room not found" };
-
-        // Remove old player entry if exists (from same name)
-        const oldIndex = room.players.findIndex(p => p.name === playerName);
-        let oldPlayerData = null;
-        if (oldIndex !== -1) {
-            oldPlayerData = room.players.splice(oldIndex, 1)[0];
-        }
-
-        // Remove current host status from whoever has it
-        room.players.forEach(p => {
-            p.isHost = false;
-        });
-
-        // Add restored host player at the beginning
-        room.players.unshift({
-            id: newSocketId,
-            name: playerName,
-            score: oldPlayerData?.score || 0,
-            isHost: true,
-            avatar: oldPlayerData?.avatar,
-            avatarColor: oldPlayerData?.avatarColor,
-            isReady: true
-        });
-
-        room.hostId = newSocketId;
-
-        return { room };
+        return {
+            id: room.id,
+            hostId: room.players.find(p => p.isHost)?.socketId || room.players[0]?.socketId,
+            hostUserId: room.hostUserId,
+            gameState: room.gameState,
+            gameType: room.gameType,
+            customQuestions: room.customQuestions,
+            currentRound: room.currentRound,
+            players: room.players.map(p => ({
+                id: p.socketId,
+                uid: p.userId,
+                name: p.name,
+                avatar: p.avatar,
+                avatarColor: p.avatarColor,
+                score: p.score,
+                isHost: p.isHost,
+                isReady: p.isReady,
+                isDisconnected: p.isAway,
+                isAway: p.isAway,
+            })),
+        };
     }
 }
 

@@ -15,7 +15,9 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     useEffect(() => {
         const names = {};
         players.forEach(p => {
-            names[p.id] = p.name;
+            // Map both socket ID and userId for maximum compatibility
+            if (p.id) names[p.id] = p.name;
+            if (p.uid) names[p.uid] = p.name;
         });
         setPlayerNames(names);
     }, [players]);
@@ -47,7 +49,10 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         // Keep player names in sync when room updates (socket IDs change on reconnect)
         const onRoomUpdated = (updatedRoom) => {
             const names = {};
-            updatedRoom.players?.forEach(p => { names[p.id] = p.name; });
+            updatedRoom.players?.forEach(p => { 
+                if (p.id) names[p.id] = p.name;
+                if (p.uid) names[p.uid] = p.name;
+            });
             setPlayerNames(names);
         };
 
@@ -127,8 +132,10 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         );
     }
 
-    const currentPlayerName = playerNames[gameState.currentPlayerId] || 'Unknown';
-    const isMyTurn = gameState.isCurrentPlayer;
+    const myPlayer = players.find(p => p.uid === route.params.userId || p.id === SocketService.socket?.id);
+    const myUserId = myPlayer?.uid || route.params.userId;
+    const isMyTurn = gameState.currentPlayerId === myUserId;
+    const currentPlayerName = playerNames[gameState.currentPlayerId] || 'Someone';
 
     return (
         <NeonContainer>
