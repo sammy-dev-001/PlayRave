@@ -9,6 +9,7 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import SoundService from '../services/SoundService';
 import { COLORS } from '../constants/theme';
 
+
 const WordRushGameScreen = ({ route, navigation }) => {
     const { room, hostParticipates, isHost, playerName } = route.params;
 

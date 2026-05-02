@@ -9,6 +9,7 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
+
 const QUESTION_TIME = 5;
 
 const OnlineRapidFireScreen = ({ route, navigation }) => {

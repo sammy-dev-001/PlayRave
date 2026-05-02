@@ -11,6 +11,8 @@ import SettingsToggle from '../components/lobby/SettingsToggle';
 import ActionFooter from '../components/lobby/ActionFooter';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
+
 
 const LobbyScreen = ({ route, navigation }) => {
     const [room, setRoom] = useState(route.params.room);

@@ -5,6 +5,8 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
+
 
 const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     const { room, isHost, category = 'normal', players = [], playerName } = route.params;

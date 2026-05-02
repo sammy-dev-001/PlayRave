@@ -7,6 +7,8 @@ import ScorePopup from '../components/ScorePopup';
 import SocketService from '../services/socket';
 import { BOARD_SIZE, CENTER_SQUARE, BONUS_SQUARES } from '../data/scrabbleData';
 import { COLORS } from '../constants/theme';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
+
 
 const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { room, playerName, gameState: initialGameState } = route.params;
