@@ -68,8 +68,15 @@ class GameRouter {
         if (!room) return;
 
         const gameType = room.gameType;
+        
+        // INTERCEPTOR: Special case for starting a new game session
+        if (eventName === 'start-game') {
+            console.log(`[GameRouter] Intercepted start-game for ${gameType} in room ${roomId}`);
+            return this.startGame(gameType, room, payload, io);
+        }
 
         if (engineRegistry[gameType]) {
+
             console.log(`[GameRouter] Routing ${eventName} → ${gameType} Engine`);
             const engine = engineRegistry[gameType];
             

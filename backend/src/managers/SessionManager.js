@@ -96,6 +96,21 @@ class SessionManager {
     }
 
     /**
+     * Get a session by userId.
+     */
+    getClient(userId) {
+        return this.sessions.get(userId) || null;
+    }
+
+    /**
+     * Reverse lookup: get userId from socketId.
+     */
+    getUserIdBySocket(socketId) {
+        return this.socketToUser.get(socketId) || null;
+    }
+
+
+    /**
      * Hot-swap the socket binding when a tab wakes up and reconnects.
      * Returns the updated session, or null if userId isn't registered.
      */
