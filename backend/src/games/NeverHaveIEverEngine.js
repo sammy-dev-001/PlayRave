@@ -15,14 +15,18 @@ class NeverHaveIEverEngine {
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             case 'never-have-i-ever-respond':
+            case 'nhie-respond':
             case 'respond':
                 return this.respond(roomId, userId, payload.hasDoneIt);
             case 'never-have-i-ever-next-round':
+            case 'nhie-next-round':
             case 'next-round':
                 return this.nextRound(roomId);
             case 'never-have-i-ever-end-game':
+            case 'end-nhie':
             case 'end-game':
                 return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown Never Have I Ever event: ${eventName}` };
         }

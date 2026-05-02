@@ -18,8 +18,10 @@ class RapidFireEngine {
             case 'answer':
                 return this.answer(roomId, userId, payload.answered);
             case 'rapid-fire-end-game':
+            case 'end-rapid-fire':
             case 'end-game':
                 return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown Rapid Fire event: ${eventName}` };
         }

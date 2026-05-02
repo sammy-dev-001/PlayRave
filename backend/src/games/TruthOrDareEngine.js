@@ -15,14 +15,18 @@ class TruthOrDareEngine {
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             case 'truth-or-dare-choose':
+            case 'choose-truth-or-dare':
             case 'choose':
                 return this.choose(roomId, userId, payload.choice);
             case 'truth-or-dare-complete-turn':
+            case 'complete-truth-or-dare-turn':
             case 'complete-turn':
                 return this.completeTurn(roomId, userId);
             case 'truth-or-dare-end-game':
+            case 'end-truth-or-dare':
             case 'end-game':
                 return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown Truth or Dare event: ${eventName}` };
         }

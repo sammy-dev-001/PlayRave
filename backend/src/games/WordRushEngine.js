@@ -24,10 +24,13 @@ class WordRushEngine {
             case 'show-word-rush-results':
             case 'get-results':
                 return this.getResults(roomId);
+            case 'next-word-rush-round':
             case 'next-round':
                 return this.nextRound(roomId, payload.eliminated);
+            case 'end-word-rush':
             case 'end-game':
                 return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown Word Rush event: ${eventName}` };
         }

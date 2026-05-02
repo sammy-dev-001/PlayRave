@@ -15,17 +15,22 @@ class MythOrFactEngine {
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             case 'myth-or-fact-submit-answer':
-            case 'submit-answer': // fallback
+            case 'submit-myth-or-fact-answer':
+            case 'submit-answer':
                 return this.submitAnswer(roomId, userId, payload.answer);
             case 'myth-or-fact-show-results':
+            case 'show-myth-or-fact-results':
             case 'show-results':
                 return this.getResults(roomId);
             case 'myth-or-fact-next-statement':
+            case 'next-myth-or-fact-statement':
             case 'next-statement':
                 return this.nextStatement(roomId);
             case 'myth-or-fact-end-game':
+            case 'end-myth-or-fact':
             case 'end-game':
                 return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown Myth or Fact event: ${eventName}` };
         }

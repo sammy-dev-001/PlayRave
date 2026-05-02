@@ -15,17 +15,22 @@ class WhosMostLikelyEngine {
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             case 'whos-most-likely-submit-vote':
+            case 'submit-whos-most-likely-vote':
             case 'submit-vote':
                 return this.submitVote(roomId, userId, payload.votedForPlayerId);
             case 'whos-most-likely-show-results':
+            case 'show-whos-most-likely-results':
             case 'show-results':
                 return this.getResults(roomId);
             case 'whos-most-likely-next-prompt':
+            case 'next-whos-most-likely-prompt':
             case 'next-prompt':
                 return this.nextPrompt(roomId);
             case 'whos-most-likely-end-game':
+            case 'end-whos-most-likely':
             case 'end-game':
                 return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown Who's Most Likely event: ${eventName}` };
         }
