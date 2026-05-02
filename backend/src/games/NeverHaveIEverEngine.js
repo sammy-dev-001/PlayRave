@@ -71,8 +71,10 @@ class NeverHaveIEverEngine {
                 gameType: 'never-have-i-ever',
                 gameState: this.getGameState(roomId),
                 players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates: room.settings?.hostParticipates !== false,
                 category
             }
+
 
 
         }));

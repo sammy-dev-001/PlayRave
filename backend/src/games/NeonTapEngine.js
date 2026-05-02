@@ -67,9 +67,11 @@ class NeonTapEngine {
             data: {
                 gameType: 'neon-tap',
                 gameState: this.getGameState(roomId),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -195,8 +197,9 @@ class NeonTapEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'game-ended', event: 'neon-tap-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new NeonTapEngine();

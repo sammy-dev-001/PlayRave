@@ -105,9 +105,11 @@ class MathBlitzEngine {
             data: {
                 gameType: 'math-blitz',
                 gameState: this.getGameState(roomId),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -280,8 +282,9 @@ class MathBlitzEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'math-blitz-game-ended', data: { message: 'Game ended' } };
+        return { action: 'game-ended', event: 'math-blitz-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new MathBlitzEngine();

@@ -49,15 +49,17 @@ class ImposterEngine {
         const perPlayerInstructions = players.map(player => ({
             action:   'emit',
             targetId: player.userId,
-            event:    'imposter-word-reveal',
+            event:    'game-started',
             data: {
+                gameType:   'imposter',
                 myWord:     player.userId === imposter.userId ? wordPair.imposterWord : wordPair.normalWord,
                 isImposter: player.userId === imposter.userId,
                 category:   wordPair.category,
-                phase:      'word_reveal',
-                players:    players.map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar })),
+                gameState:  this._publicState(gameState),
+                players:    players.map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar, uid: p.userId })),
             },
         }));
+
 
         return { action: 'multiple', instructions: perPlayerInstructions };
     }
@@ -69,6 +71,8 @@ class ImposterEngine {
             case 'submit-vote':      return this._submitVote(roomId, userId, payload.votedForUserId);
             case 'reveal-results':   return this._resolveVoting(roomId);
             case 'get-state':        return this._getState(roomId, userId);
+            case 'end-game':         return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown imposter event: ${eventName}` };
         }
@@ -193,6 +197,12 @@ class ImposterEngine {
             },
         };
     }
+
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'imposter-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new ImposterEngine();

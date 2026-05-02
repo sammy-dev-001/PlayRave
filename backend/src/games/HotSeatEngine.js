@@ -74,10 +74,11 @@ class HotSeatEngine {
             data: {
                 gameType: 'hot-seat',
                 gameState: this.getGameState(roomId, p.userId),
-                players: room.players,
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -227,11 +228,12 @@ class HotSeatEngine {
     endGame(roomId) {
         this.activeGames.delete(roomId);
         return {
-            action: 'broadcast',
-            event: 'hot-seat-game-finished',
+            action: 'game-ended',
+            event: 'hot-seat-ended',
             data: { message: 'Game ended by host' }
         };
     }
+
 }
 
 module.exports = new HotSeatEngine();

@@ -38,11 +38,14 @@ class LieDetectorEngine {
             action: 'broadcast',
             event: 'game-started',
             data: {
+                gameType: 'lie-detector',
                 gameState: this.getLieDetectorPublicState(gameState),
                 currentPlayer: gameState.players[0],
-                question: questions[0]
+                question: questions[0],
+                players: gameState.players.map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar, uid: p.userId }))
             }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -55,6 +58,9 @@ class LieDetectorEngine {
                 return this.nextLieDetectorRound(roomId);
             case 'get-state':
                 return this.getState(roomId);
+            case 'end-game':
+                return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: 'Unknown event' };
         }
@@ -199,6 +205,12 @@ class LieDetectorEngine {
             }
         };
     }
+
+    endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'lie-detector-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new LieDetectorEngine();

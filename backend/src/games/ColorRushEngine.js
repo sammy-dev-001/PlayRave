@@ -97,9 +97,11 @@ class ColorRushEngine {
             data: {
                 gameType: 'color-rush',
                 gameState: this.getGameState(roomId),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -247,8 +249,9 @@ class ColorRushEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'color-rush-game-ended', data: { message: 'Game ended' } };
+        return { action: 'game-ended', event: 'color-rush-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new ColorRushEngine();

@@ -39,10 +39,11 @@ const TicTacToeScreen = ({ route, navigation }) => {
     const [isAIMatch, setIsAIMatch] = useState(false);
     const [aiThinking, setAiThinking] = useState(false);
 
-    const myId = SocketService.socket?.id;
+    const myId = SocketService.userId || SocketService.socket?.id;
     const isMyTurn = currentTurn === myId;
-    const amInMatch = player1?.id === myId || player2?.id === myId;
-    const mySymbol = player1?.id === myId ? 'X' : 'O';
+    const amInMatch = player1?.userId === myId || player2?.userId === myId;
+    const mySymbol = player1?.userId === myId ? 'X' : 'O';
+
 
     // Animation for AI thinking
     const thinkingAnim = useRef(new Animated.Value(0)).current;
@@ -254,13 +255,15 @@ const TicTacToeScreen = ({ route, navigation }) => {
                     {phase === 'playing' && (
                         <View style={styles.gameContainer}>
                             <View style={styles.playersRow}>
-                                <View style={[styles.playerTag, currentTurn === player1?.id && styles.activePlayer]}>
+                                <View style={[styles.playerTag, currentTurn === player1?.userId && styles.activePlayer]}>
+
                                     <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
                                         {player1?.isAI ? '' : ''}{player1?.name} (X)
                                     </NeonText>
                                 </View>
                                 <NeonText size={16} color="#666">vs</NeonText>
-                                <View style={[styles.playerTag, currentTurn === player2?.id && styles.activePlayer]}>
+                                <View style={[styles.playerTag, currentTurn === player2?.userId && styles.activePlayer]}>
+
                                     <NeonText size={14} weight="bold" color={COLORS.hotPink}>
                                         {player2?.isAI ? '' : ''}{player2?.name} (O)
                                     </NeonText>

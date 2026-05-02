@@ -162,10 +162,20 @@ class GameRouter {
             case 'game-ended':
                 // Special action to transition room back to LOBBY
                 this.roomManager.setGameState(roomId, 'LOBBY');
-                if (instruction.event) {
+                const updatedRoom = this.roomManager.getRoom(roomId);
+                
+                // 1. Emit universal event with full room state
+                io.to(roomId).emit('game-ended', { 
+                    message: instruction.data?.message || 'Game ended',
+                    room: updatedRoom 
+                });
+
+                // 2. Emit specific engine event if provided (for legacy compatibility)
+                if (instruction.event && instruction.event !== 'game-ended') {
                     io.to(roomId).emit(instruction.event, instruction.data || { message: 'Game ended' });
                 }
                 break;
+
 
             default:
 

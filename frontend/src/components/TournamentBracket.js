@@ -23,9 +23,10 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
         const player1Name = match.player1?.name || match.player1 || 'TBD';
         const player2Name = match.player2?.name || match.player2 || 'TBD';
         const isAIMatch = match.isAIMatch || player1Name.includes('AI') || player2Name.includes('AI');
-        const winnerId = match.winner?.id || match.winner;
-        const player1Won = winnerId === (match.player1?.id || match.player1);
-        const player2Won = winnerId === (match.player2?.id || match.player2);
+        const winnerId = match.winner?.userId || match.winner;
+        const player1Won = winnerId === (match.player1?.userId || match.player1);
+        const player2Won = winnerId === (match.player2?.userId || match.player2);
+
 
         const glowStyle = isCurrentMatch ? {
             shadowColor: COLORS.neonCyan,

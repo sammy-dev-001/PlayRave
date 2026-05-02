@@ -46,8 +46,14 @@ class UnpopularOpinionsEngine {
         return {
             action: 'broadcast',
             event:  'game-started',
-            data:   this._publicState(gameState),
+            data:   {
+                gameType: 'unpopular-opinions',
+                gameState: this._publicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -56,6 +62,8 @@ class UnpopularOpinionsEngine {
             case 'end-voting':    return this._endVoting(roomId);
             case 'next-opinion':  return this._nextOpinion(roomId);
             case 'get-state':     return this._getState(roomId, userId);
+            case 'end-game':      return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown unpopular-opinions event: ${eventName}` };
         }
@@ -189,6 +197,12 @@ class UnpopularOpinionsEngine {
             data:   this._publicState(game),
         };
     }
+    
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'opinions-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new UnpopularOpinionsEngine();

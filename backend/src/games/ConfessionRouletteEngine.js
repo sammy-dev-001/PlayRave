@@ -36,8 +36,14 @@ class ConfessionRouletteEngine {
         return {
             action: 'broadcast',
             event: 'game-started',
-            data: this.getPublicState(gameState)
+            data: {
+                gameType: 'confession-roulette',
+                gameState: this.getPublicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates: room.settings?.hostParticipates !== false
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -52,6 +58,9 @@ class ConfessionRouletteEngine {
                 return this.nextConfession(roomId);
             case 'get-state':
                 return this.getState(roomId);
+            case 'end-game':
+                return this.endGame(roomId);
+
             default:
                 return { action: 'error', message: 'Unknown event' };
         }
@@ -235,6 +244,12 @@ class ConfessionRouletteEngine {
             data: this.getPublicState(game)
         };
     }
+
+    endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'confession-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new ConfessionRouletteEngine();

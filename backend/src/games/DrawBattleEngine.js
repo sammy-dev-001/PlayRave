@@ -14,9 +14,9 @@ class DrawBattleEngine {
 
     // ── Standard Interface ──────────────────────────────────────────────────
 
-    startGame(room) {
+    startGame(room, options = {}) {
         const roomId           = room.id;
-        const hostParticipates = room.settings?.hostParticipates !== false;
+        const hostParticipates = options.hostParticipates !== false;
         const { getRandomDrawPrompts } = require('../data/drawBattlePrompts');
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
@@ -49,8 +49,14 @@ class DrawBattleEngine {
         return {
             action: 'broadcast',
             event:  'game-started',
-            data:   this._publicState(gameState),
+            data:   {
+                gameType: 'draw-battle',
+                gameState: this._publicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -62,6 +68,8 @@ class DrawBattleEngine {
             case 'get-results':     return this._getRoundResults(roomId);
             case 'next-round':      return this._nextRound(roomId);
             case 'get-state':       return this._getState(roomId, userId);
+            case 'end-game':        return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown draw-battle event: ${eventName}` };
         }
@@ -257,6 +265,12 @@ class DrawBattleEngine {
             data:   { finished: false, nextRound: game.currentRound + 1, nextPrompt: game.currentPrompt },
         };
     }
+
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'draw-battle-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new DrawBattleEngine();

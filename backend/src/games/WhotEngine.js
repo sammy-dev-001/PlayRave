@@ -28,8 +28,11 @@ class WhotEngine {
     startGame(room, options = {}) {
         const roomId = room.id;
         const hostParticipates = options.hostParticipates !== false;
+        console.log(`[WhotEngine] Starting game in room ${roomId}. hostParticipates: ${hostParticipates}. Total players in room: ${room.players.length}`);
 
         const participatingPlayers = room.players.filter(p => hostParticipates || !p.isHost);
+        console.log(`[WhotEngine] Participating players count: ${participatingPlayers.length}`);
+
         if (participatingPlayers.length < 2) {
             return { action: 'error', message: 'Whot requires at least 2 players' };
         }
@@ -67,19 +70,18 @@ class WhotEngine {
 
         this.activeGames.set(roomId, gameState);
 
-        const instructions = participatingPlayers.map(p => ({
+        const instructions = room.players.map(p => ({
             action: 'emit',
             targetId: p.userId,
             event: 'game-started',
             data: {
                 gameType: 'whot',
                 gameState: this.getWhotGameState(roomId, p.userId),
-                players: participatingPlayers.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
-
-
         }));
+
 
         return { action: 'multiple', instructions };
     }

@@ -14,9 +14,9 @@ class CaptionThisEngine {
 
     // ── Standard Interface ──────────────────────────────────────────────────
 
-    startGame(room) {
+    startGame(room, options = {}) {
         const roomId           = room.id;
-        const hostParticipates = room.settings?.hostParticipates !== false;
+        const hostParticipates = options.hostParticipates !== false;
         const { getRandomPrompts } = require('../data/captionThisPrompts');
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
@@ -50,8 +50,14 @@ class CaptionThisEngine {
         return {
             action: 'broadcast',
             event:  'game-started',
-            data:   this._publicState(gameState),
+            data:   {
+                gameType: 'caption-this',
+                gameState: this._publicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -62,6 +68,8 @@ class CaptionThisEngine {
             case 'get-results':    return this._getRoundResults(roomId);
             case 'next-round':     return this._nextRound(roomId);
             case 'get-state':      return this._getState(roomId, userId);
+            case 'end-game':       return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown caption-this event: ${eventName}` };
         }
@@ -228,6 +236,12 @@ class CaptionThisEngine {
             },
         };
     }
+
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'caption-this-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new CaptionThisEngine();

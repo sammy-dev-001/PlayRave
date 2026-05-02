@@ -72,8 +72,12 @@ const LobbyScreen = ({ route, navigation }) => {
             );
         };
 
-        const onGameStarted = ({ gameType, question, statement, prompt, players, hostParticipates: hostPlays, gameState }) => {
+        const onGameStarted = (payload) => {
+            console.log('[LobbyScreen] Game started payload received:', JSON.stringify(payload, null, 2));
+            const { gameType, question, statement, prompt, players, hostParticipates: hostPlays, gameState } = payload;
             const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
+            console.log(`[LobbyScreen] Navigating to ${gameType} with params:`, Object.keys(navParams));
+
             
             if (gameType === 'trivia') {
                 navigation.navigate('Question', { ...navParams, question, questionIndex: 0 });

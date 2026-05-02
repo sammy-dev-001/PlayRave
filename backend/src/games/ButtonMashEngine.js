@@ -62,9 +62,11 @@ class ButtonMashEngine {
             data: {
                 gameType: 'button-mash',
                 gameState: this.getGameState(roomId),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -160,8 +162,9 @@ class ButtonMashEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'game-ended', event: 'button-mash-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new ButtonMashEngine();

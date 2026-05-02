@@ -45,8 +45,14 @@ class SpillTheTeaEngine {
         return {
             action: 'broadcast',
             event:  'game-started',
-            data:   this._publicState(gameState),
+            data:   {
+                gameType: 'spill-the-tea',
+                gameState: this._publicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -56,6 +62,8 @@ class SpillTheTeaEngine {
             case 'submit-reaction': return this._submitReaction(roomId, userId, payload.reaction);
             case 'next-tea':        return this._nextTea(roomId);
             case 'get-state':       return this._getState(roomId, userId);
+            case 'end-game':        return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown spill-the-tea event: ${eventName}` };
         }
@@ -264,6 +272,12 @@ class SpillTheTeaEngine {
             },
         };
     }
+
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'spill-the-tea-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new SpillTheTeaEngine();

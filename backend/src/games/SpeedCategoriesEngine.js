@@ -17,9 +17,9 @@ class SpeedCategoriesEngine {
 
     // ── Standard Interface ──────────────────────────────────────────────────
 
-    startGame(room) {
+    startGame(room, options = {}) {
         const roomId           = room.id;
-        const hostParticipates = room.settings?.hostParticipates !== false;
+        const hostParticipates = options.hostParticipates !== false;
 
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
             .map(p => ({
@@ -47,8 +47,14 @@ class SpeedCategoriesEngine {
         return {
             action: 'broadcast',
             event:  'game-started',
-            data:   this._publicState(gameState),
+            data:   {
+                gameType: 'speed-categories',
+                gameState: this._publicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -58,6 +64,8 @@ class SpeedCategoriesEngine {
             case 'end-round':        return this._calculateScores(roomId);
             case 'next-round':       return this._nextRound(roomId);
             case 'get-state':        return this._getState(roomId, userId);
+            case 'end-game':         return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown speed-categories event: ${eventName}` };
         }
@@ -211,6 +219,12 @@ class SpeedCategoriesEngine {
             data:   { finished: false, nextRound: game.currentRound + 1 },
         };
     }
+
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'speed-categories-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new SpeedCategoriesEngine();

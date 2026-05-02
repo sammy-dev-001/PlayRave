@@ -13,7 +13,36 @@ class ScrabbleEngine {
         this.activeGames = new Map(); // roomId -> gameState
     }
 
-    startScrabbleGame(roomId, room, hostParticipates = true) {
+    handleEvent(eventName, payload, userId, roomId) {
+        switch (eventName) {
+            case 'scrabble-place-tiles':
+            case 'place-tiles':
+                return this.placeTiles(roomId, userId, payload.tiles);
+            case 'scrabble-recall-tiles':
+            case 'recall-tiles':
+                return this.recallTiles(roomId, userId);
+            case 'scrabble-submit-move':
+            case 'submit-move':
+                return this.submitMove(roomId, userId, payload.tiles);
+            case 'scrabble-pass-turn':
+            case 'pass-turn':
+                return this.passTurn(roomId, userId);
+            case 'scrabble-swap-tiles':
+            case 'swap-tiles':
+                return this.swapTiles(roomId, userId, payload.tiles);
+            case 'get-state':
+                return this.getState(roomId, userId);
+            case 'end-game':
+                return this.endGame(roomId);
+            default:
+                return { action: 'error', message: `Unknown Scrabble event: ${eventName}` };
+        }
+    }
+
+    startGame(room, options = {}) {
+        const roomId = room.id;
+        const hostParticipates = options.hostParticipates !== false;
+
         const players = [];
         room.players.forEach(player => {
             if (!hostParticipates && player.isHost) return;
@@ -51,19 +80,18 @@ class ScrabbleEngine {
 
         this.activeGames.set(roomId, gameState);
 
-        const instructions = players.map(p => ({
+        const instructions = room.players.map(p => ({
             action: 'emit',
             targetId: p.userId,
             event: 'game-started',
             data: {
                 gameType: 'scrabble',
                 gameState: this.getGameState(roomId, p.userId),
-                players: players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
-
-
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -706,6 +734,24 @@ class ScrabbleEngine {
 
         return finalScores.sort((a, b) => b.score - a.score);
     }
+    }
+
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId, userId);
+        if (!state) return { action: 'error', message: 'Game not found' };
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: state
+        };
+    }
+
+    endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'scrabble-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new ScrabbleEngine();

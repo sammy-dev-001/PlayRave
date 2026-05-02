@@ -15,15 +15,20 @@ class TicTacToeEngine {
 
     // ── Standard Interface ──────────────────────────────────────────────────
 
-    startGame(room) {
+    startGame(room, options = {}) {
         const roomId           = room.id;
-        const hostParticipates = room.settings?.hostParticipates !== false;
+        const hostParticipates = options.hostParticipates !== false;
+        console.log(`[TicTacToeEngine] Starting game in room ${roomId}. hostParticipates: ${hostParticipates}. Room players: ${room.players.length}`);
 
         const allPlayers = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
             .map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar || null, eliminated: false, wins: 0 }));
 
+        console.log(`[TicTacToeEngine] Participating players: ${allPlayers.length}`);
+
         const shuffled = [...allPlayers].sort(() => Math.random() - 0.5);
+
         const matches  = this._createMatches(shuffled);
+        console.log(`[TicTacToeEngine] Generated ${matches.length} matches for room ${roomId}`);
 
         const gameState = {
             type:              'tic-tac-toe',
@@ -38,11 +43,20 @@ class TicTacToeEngine {
         };
 
         this.activeGames.set(roomId, gameState);
+        console.log(`[TicTacToeEngine] Game state stored. Returning broadcast...`);
+
+
         return {
             action: 'broadcast',
             event:  'game-started',
-            data:   this._publicState(gameState),
+            data:   {
+                gameType: 'tic-tac-toe',
+                gameState: this._publicState(gameState),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
         };
+
     }
 
     handleEvent(eventName, payload, userId, roomId) {
@@ -52,6 +66,8 @@ class TicTacToeEngine {
             case 'ai-move':        return this._makeAIMove(roomId);
             case 'next-match':     return this._nextMatch(roomId);
             case 'get-state':      return this._getState(roomId, userId);
+            case 'end-game':       return this._endGame(roomId);
+
             default:
                 return { action: 'error', message: `Unknown tic-tac-toe event: ${eventName}` };
         }
@@ -338,6 +354,12 @@ class TicTacToeEngine {
             return best;
         }
     }
+
+    _endGame(roomId) {
+        this.activeGames.delete(roomId);
+        return { action: 'game-ended', event: 'ttt-game-ended', data: { message: 'Game ended by host' } };
+    }
 }
+
 
 module.exports = new TicTacToeEngine();

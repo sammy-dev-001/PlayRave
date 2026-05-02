@@ -85,9 +85,11 @@ class TypeRaceEngine {
             data: {
                 gameType: 'type-race',
                 gameState: this.getGameState(roomId),
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
         }));
+
 
         return { action: 'multiple', instructions };
     }
@@ -259,8 +261,9 @@ class TypeRaceEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'type-race-game-ended', data: { message: 'Game ended' } };
+        return { action: 'game-ended', event: 'type-race-ended', data: { message: 'Game ended by host' } };
     }
+
 }
 
 module.exports = new TypeRaceEngine();
