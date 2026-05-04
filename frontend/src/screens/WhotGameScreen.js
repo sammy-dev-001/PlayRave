@@ -24,7 +24,6 @@ const WhotGameScreen = ({ route, navigation }) => {
 
     const myId = SocketService.userId;
     const isMyTurn = gameState?.currentPlayerId === myId;
-    const isHost = route.params.isHost;
 
     const handleEndGame = () => {
         Alert.alert(
