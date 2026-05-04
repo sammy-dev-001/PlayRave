@@ -507,7 +507,7 @@ class ScrabbleEngine {
         const finalScores = this.getScrabbleFinalScores(game);
 
         return {
-            action: 'broadcast',
+            action: 'game-ended',
             event: 'scrabble-game-ended',
             data: {
                 finished: true,
@@ -565,24 +565,7 @@ class ScrabbleEngine {
         return resultInstruction;
     }
 
-    handleEvent(eventName, payload, userId, roomId) {
-        switch (eventName) {
-            case 'scrabble-place-tiles':
-                return this.placeTiles(roomId, userId, payload.tiles);
-            case 'scrabble-recall-tiles':
-                return this.recallTiles(roomId, userId);
-            case 'scrabble-submit-move':
-                return this.submitMove(roomId, userId, payload.tiles);
-            case 'scrabble-pass-turn':
-                return this.passTurn(roomId, userId);
-            case 'scrabble-exchange-tiles':
-                return this.exchangeTiles(roomId, userId, payload.tileIndices);
-            case 'scrabble-end-game':
-                return this.endGame(roomId);
-            default:
-                return { action: 'error', message: `Unknown Scrabble event: ${eventName}` };
-        }
-    }
+
 
     // --- Helpers ---
 

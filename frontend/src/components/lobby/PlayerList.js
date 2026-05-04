@@ -82,7 +82,7 @@ const PlayerList = ({ players, currentPlayerId, isHost, maxPlayers = 8, onKick }
 
             {/* Player rows */}
             {players && players.map((player) => {
-                const isMe = player.id === currentPlayerId;
+                const isMe = player.uid === currentPlayerId;
                 const canKick = isHost && !player.isHost;
                 return (
                     <PlayerRow

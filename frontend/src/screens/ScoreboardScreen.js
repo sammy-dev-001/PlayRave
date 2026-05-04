@@ -18,17 +18,17 @@ const ScoreboardScreen = ({ route, navigation }) => {
     useGameDisconnectHandler({
         navigation,
         exitScreen: 'Lobby',
-        exitParams: { room, isHost: room.players.find(p => p.id === SocketService.socket?.id)?.isHost }
+        exitParams: { room, isHost: room.players.find(p => p.uid === SocketService.userId || p.userId === SocketService.userId || p.id === SocketService.userId)?.isHost }
     });
 
     const [isRematchLoading, setIsRematchLoading] = useState(false);
 
     // Check if current player is the winner for rave lights
-    const currentUserId = room.players.find(p => p.id === SocketService.socket?.id)?.uid;
+    const currentUserId = SocketService.userId;
     const winner = finalScores[0]; // First place
     const showRaveLights = winner?.playerId === currentUserId;
     const isWinner = winner?.playerId === currentUserId;
-    const isHost = room.players.find(p => p.uid === currentUserId)?.isHost || false;
+    const isHost = room.players.find(p => (p.uid || p.userId) === currentUserId)?.isHost || false;
 
     // Get current player's score and position
     const playerScore = finalScores.find(s => s.playerId === currentUserId);

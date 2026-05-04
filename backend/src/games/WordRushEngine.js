@@ -215,7 +215,7 @@ class WordRushEngine {
             game.status = 'FINISHED';
             const winnerId = game.activePlayers[0] || null;
             return { 
-                action: 'broadcast', 
+                action: 'game-ended', 
                 event: 'word-rush-winner', 
                 data: { finished: true, winner: winnerId } 
             };

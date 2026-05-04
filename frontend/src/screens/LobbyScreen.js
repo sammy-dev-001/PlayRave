@@ -34,12 +34,12 @@ const LobbyScreen = ({ route, navigation }) => {
     const [myReadyStatus, setMyReadyStatus] = useState(false);
 
     // Dynamically determine if current player is host
-    const getCurrentPlayerId = () => SocketService.socket?.id;
+    const getCurrentPlayerId = () => SocketService.userId;
     const currentPlayerIsHost = () => {
-        const currentId = getCurrentPlayerId();
-        if (!currentId || !room) return false;
-        if (room.hostId === currentId) return true;
-        const currentPlayer = room.players.find(p => p.id === currentId);
+        const myUid = getCurrentPlayerId();
+        if (!myUid || !room) return false;
+        if (room.hostUserId === myUid) return true;
+        const currentPlayer = room.players.find(p => p.uid === myUid);
         return currentPlayer?.isHost || false;
     };
     const isHost = currentPlayerIsHost();
@@ -57,8 +57,8 @@ const LobbyScreen = ({ route, navigation }) => {
             if (updatedRoom.gameType) {
                 setSelectedGame(updatedRoom.gameType);
             }
-            const currentId = getCurrentPlayerId();
-            const me = updatedRoom.players.find(p => p.id === currentId);
+            const myUid = getCurrentPlayerId();
+            const me = updatedRoom.players.find(p => p.uid === myUid);
             if (me) {
                 setMyReadyStatus(me.isReady || false);
             }

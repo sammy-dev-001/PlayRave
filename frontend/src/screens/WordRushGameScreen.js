@@ -115,8 +115,8 @@ const WordRushGameScreen = ({ route, navigation }) => {
             clearGameTimer(); // Clear timer when navigating away
 
             // Check if current player was eliminated
-            const currentPlayerId = SocketService.socket?.id;
-            if (results.eliminated.includes(currentPlayerId)) {
+            const myId = SocketService.userId;
+            if (results.eliminated.includes(myId)) {
                 console.log('Current player was eliminated!');
                 setIsEliminated(true);
             }

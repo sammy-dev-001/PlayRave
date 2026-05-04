@@ -80,7 +80,8 @@ class SocketService {
     latency = null;
     latencyListeners = [];
 
-    // Room rejoin data
+    // Identity
+    userId = null;
     lastRoomId = null;
     lastPlayerData = null;
 

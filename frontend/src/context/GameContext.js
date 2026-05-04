@@ -11,7 +11,8 @@ const initialState = {
         name: '',
         avatar: null,
         avatarColor: null,
-        id: null,
+        id: null, // socket ID
+        uid: null, // persistent user ID
     },
 
     // Room state
@@ -71,14 +72,14 @@ function gameReducer(state, action) {
             return {
                 ...state,
                 room: action.payload,
-                isHost: action.payload?.players?.[0]?.id === state.player.id,
+                isHost: action.payload?.players?.[0]?.uid === state.player.uid,
             };
 
         case ActionTypes.UPDATE_ROOM:
             return {
                 ...state,
                 room: action.payload,
-                isHost: action.payload?.players?.find(p => p.id === state.player.id)?.isHost || false,
+                isHost: action.payload?.players?.find(p => (p.uid || p.userId) === state.player.uid)?.isHost || false,
             };
 
         case ActionTypes.CLEAR_ROOM:
@@ -173,9 +174,16 @@ export function GameProvider({ children }) {
     useEffect(() => {
         if (!isAuthLoading) {
             console.log('[BOOT] Auth hydration complete. Connecting socket...');
+            if (user?.id) {
+                SocketService.userId = user.id;
+                dispatch({ 
+                    type: ActionTypes.UPDATE_PLAYER, 
+                    payload: { uid: user.id } 
+                });
+            }
             SocketService.connect();
         }
-    }, [isAuthLoading]);
+    }, [isAuthLoading, user?.id]);
 
     // Handle background -> foreground transitions (State Recovery)
     useEffect(() => {

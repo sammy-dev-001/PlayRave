@@ -219,9 +219,8 @@ class TicTacToeEngine {
 
             if (winners.length === 1) {
                 game.phase = 'finished';
-                this.activeGames.delete(roomId);
                 return {
-                    action: 'broadcast',
+                    action: 'game-ended',
                     event:  'ttt-tournament-finished',
                     data: {
                         finished:  true,

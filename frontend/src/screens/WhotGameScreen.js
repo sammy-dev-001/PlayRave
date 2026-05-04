@@ -22,8 +22,9 @@ const WhotGameScreen = ({ route, navigation }) => {
     const [selectedCardId, setSelectedCardId] = useState(null);
     const [winner, setWinner] = useState(null);
 
-    const currentPlayerId = SocketService.socket?.id;
-    const isMyTurn = gameState?.currentPlayerId === currentPlayerId;
+    const myId = SocketService.userId;
+    const isMyTurn = gameState?.currentPlayerId === myId;
+    const isHost = route.params.isHost;
 
     const handleEndGame = () => {
         Alert.alert(
@@ -68,13 +69,13 @@ const WhotGameScreen = ({ route, navigation }) => {
                 console.log('*** WINNER DETECTED ON FRONTEND ***:', detectedWinner);
                 setWinner(detectedWinner);
                 setTimeout(() => {
-                    const winnerPlayer = room.players.find(p => p.id === detectedWinner);
+                    const winnerPlayer = room.players.find(p => p.uid === detectedWinner);
                     Alert.alert(
                         'Game Over!',
                         `${winnerPlayer?.name || 'Someone'} wins!`,
                         [{ text: 'OK', onPress: () => {
                             try {
-                                navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name });
+                                navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.uid === myId)?.name });
                             } catch (e) {
                                 navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
                             }
@@ -105,7 +106,7 @@ const WhotGameScreen = ({ route, navigation }) => {
         const onGameEnded = () => {
             console.log('Game ended by host');
             try {
-                navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name });
+                navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.uid === myId)?.name });
             } catch (e) {
                 navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
             }
@@ -158,7 +159,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
 
     const getPlayerName = (playerId) => {
-        const player = room.players.find(p => p.id === playerId);
+        const player = room.players.find(p => p.uid === playerId);
         return player?.name || 'Unknown'
     };
 
@@ -181,7 +182,7 @@ const WhotGameScreen = ({ route, navigation }) => {
                 if (isHost) {
                     handleEndGame();
                 } else {
-                    navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name });
+                    navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.uid === myId)?.name });
                 }
             }}
         >
@@ -221,7 +222,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             {/* Other Players */}
             <View style={styles.otherPlayersContainer}>
                 {gameState.otherPlayers
-                    .filter(p => p.id !== currentPlayerId)
+                    .filter(p => p.id !== myId)
                     .map(player => (
                         <View key={player.id} style={[
                             styles.otherPlayer,

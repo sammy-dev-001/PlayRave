@@ -56,7 +56,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
         SocketService.on('game-state-sync', handleGameStateSync);
 
         // Fetch initial state if we reconnected or started
-        SocketService.emit('request-room-sync', { roomId: room.id, userId: SocketService.socket.id });
+        SocketService.emit('request-room-sync', { roomId: room.id, userId: SocketService.userId });
 
         return () => {
             SocketService.off('spill-tea-state-update', handleStateUpdate);
@@ -114,7 +114,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
     const handleAuthorRevealed = ({ authorId }) => {
         setHasRevealedIdentity(true);
         // Map authorId to player name using the room data
-        const authorPlayer = room.players.find(p => p.id === authorId);
+        const authorPlayer = room.players.find(p => p.uid === authorId || p.userId === authorId || p.id === authorId);
         setRevealedAuthorName(authorPlayer ? authorPlayer.name : 'Someone');
         
         // Emphasize animation
@@ -196,7 +196,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
     );
 
     const renderReadingPhase = () => {
-        const isMySecret = SocketService.socket.id === currentAuthorId;
+        const isMySecret = SocketService.userId === currentAuthorId;
 
         // Host hasn't clicked next yet for the first one
         if (currentSecretIndex === -1) {

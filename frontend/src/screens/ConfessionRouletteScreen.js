@@ -196,7 +196,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         
         // Recover Submissions
         if (state.phase === GAME_PHASES.SUBMISSION) {
-            const myPlayer = state.players?.find(p => p.id === SocketService.socket.id || p.name === playerName);
+            const myPlayer = state.players?.find(p => p.uid === SocketService.userId || p.userId === SocketService.userId || p.id === SocketService.userId || p.name === playerName);
             if (myPlayer?.hasSubmitted) {
                 setHasSubmitted(true);
             }

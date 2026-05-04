@@ -18,7 +18,7 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
                 console.log('Single player game started from server');
                 setIsStarting(false);
                 navigation.navigate('OnlineScrabble', {
-                    room: { id: "local-" + SocketService.socket.id, players: data.gameState.players },
+                    room: { id: "local-" + (SocketService.userId || SocketService.socket?.id), players: data.gameState.players },
                     playerName: players[0].name,
                     isHost: true,
                     gameState: data.gameState

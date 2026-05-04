@@ -14,8 +14,8 @@ const ResultsScreen = ({ route, navigation }) => {
     const [countdown, setCountdown] = useState(5);
 
     // Check if current player got it right for rave lights
-    const currentPlayerId = SocketService.socket?.id;
-    const currentPlayerResult = results.playerResults.find(r => r.playerId === currentPlayerId);
+    const myUid = SocketService.userId;
+    const currentPlayerResult = results.playerResults.find(r => r.playerId === myUid);
     const showRaveLights = currentPlayerResult?.isCorrect || false;
 
     // Play sound based on result
@@ -25,7 +25,7 @@ const ResultsScreen = ({ route, navigation }) => {
         } else {
             SoundService.playWrong();
         }
-    }, []);
+    }, [showRaveLights]);
 
     useEffect(() => {
         // Listen for next question
@@ -76,7 +76,7 @@ const ResultsScreen = ({ route, navigation }) => {
     };
 
     const renderPlayerResult = ({ item }) => {
-        const player = room.players.find(p => p.id === item.playerId);
+        const player = room.players.find(p => p.uid === item.playerId || p.userId === item.playerId || p.id === item.playerId);
         const playerName = player?.name || 'Unknown';
 
         return (

@@ -105,6 +105,14 @@ class GameRouter {
             case 'broadcast':
                 // Broadcast to everyone in the room
                 io.to(roomId).emit(instruction.event, instruction.data);
+
+                // AUTO-TRANSITION: If the engine data signals the game is finished, 
+                // move the room back to LOBBY state automatically.
+                if (instruction.data && (instruction.data.finished === true || instruction.data.gameOver === true)) {
+                    console.log(`[GameRouter] Auto-transitioning room ${roomId} to LOBBY (detected end of game)`);
+                    this.endGame(roomId);
+                    roomManager.setGameState(roomId, 'LOBBY');
+                }
                 break;
 
             case 'emit':
@@ -161,8 +169,9 @@ class GameRouter {
 
             case 'game-ended':
                 // Special action to transition room back to LOBBY
-                this.roomManager.setGameState(roomId, 'LOBBY');
-                const updatedRoom = this.roomManager.getRoom(roomId);
+                this.endGame(roomId);
+                roomManager.setGameState(roomId, 'LOBBY');
+                const updatedRoom = roomManager.getRoom(roomId);
                 
                 // 1. Emit universal event with full room state
                 io.to(roomId).emit('game-ended', { 

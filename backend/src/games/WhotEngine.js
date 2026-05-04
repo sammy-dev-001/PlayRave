@@ -274,9 +274,8 @@ class WhotEngine {
     }
 
     endGame(roomId) {
-        this.activeGames.delete(roomId);
         return {
-            action: 'broadcast',
+            action: 'game-ended',
             event: 'whot-game-ended',
             data: { message: 'Game ended by host' }
         };

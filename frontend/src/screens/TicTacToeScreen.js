@@ -40,7 +40,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
     const [isAIMatch, setIsAIMatch] = useState(false);
     const [aiThinking, setAiThinking] = useState(false);
 
-    const myId = SocketService.userId || SocketService.socket?.id;
+    const myId = SocketService.userId;
     const isMyTurn = currentTurn === myId;
     const amInMatch = player1?.userId === myId || player2?.userId === myId;
     const mySymbol = player1?.userId === myId ? 'X' : 'O';
