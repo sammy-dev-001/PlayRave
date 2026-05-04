@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TextInput, Keyboard } from 'react-native';
+import { View, StyleSheet, TextInput, Keyboard, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -168,9 +168,47 @@ const WordRushGameScreen = ({ route, navigation }) => {
         return text.replace(/[^a-zA-Z]/g, '');
     };
 
+    const handleEndGame = () => {
+        Alert.alert(
+            "End Game",
+            "Are you sure you want to end the game for everyone?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "End Game", 
+                    style: "destructive",
+                    onPress: () => SocketService.emit('word-rush-end-game', { roomId: room.id })
+                }
+            ]
+        );
+    };
+
     return (
-        <NeonContainer showMuteButton showBackButton>
+        <NeonContainer 
+            showMuteButton 
+            showBackButton
+            onBackPress={() => {
+                if (isHost) {
+                    handleEndGame();
+                } else {
+                    navigation.navigate('Lobby', { room, isHost, playerName });
+                }
+            }}
+        >
+            {isHost && (
+                <View style={{ position: 'absolute', top: 10, right: 60, zIndex: 100 }}>
+                    <NeonButton 
+                        title="END GAME" 
+                        onPress={handleEndGame} 
+                        variant="secondary" 
+                        size="small"
+                        color={COLORS.hotPink}
+                    />
+                </View>
+            )}
+
             {/* Spectator Banner for Eliminated Players */}
+
             {isEliminated && (
                 <View style={styles.eliminatedBanner}>
                     <NeonText size={16} color={COLORS.hotPink} glow>

@@ -13,6 +13,7 @@ const NeonContainer = ({
     rootStyle,
     showMuteButton = true,
     showBackButton = false,
+    onBackPress = null,
     scrollable = false,
     hideBackground = false,
 }) => {
@@ -44,7 +45,7 @@ const NeonContainer = ({
         <View style={[styles.rootContainer, rootStyle]}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.deepNightBlack} />
             {!hideBackground && <NeonBackground />}
-            {showBackButton && <BackButton />}
+            {showBackButton && <BackButton onPress={onBackPress} />}
             {showMuteButton && <MuteButton />}
             <SafeAreaView style={styles.safeArea}>
                 {content}

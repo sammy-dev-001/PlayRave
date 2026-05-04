@@ -5,7 +5,8 @@ import {
     TouchableOpacity,
     Animated,
     Platform,
-    Vibration
+    Vibration,
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -166,6 +167,22 @@ const TicTacToeScreen = ({ route, navigation }) => {
         SocketService.emit('ttt-end-game', { roomId: room.id });
     };
 
+    const handleEndGame = () => {
+        Alert.alert(
+            "End Game",
+            "Are you sure you want to end the tournament for everyone?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "End Game", 
+                    style: "destructive",
+                    onPress: () => SocketService.emit('ttt-end-game', { roomId: room.id })
+                }
+            ]
+        );
+    };
+
+
     const renderCell = (index) => {
         const value = board[index];
         const scale = cellAnims[index].interpolate({
@@ -200,15 +217,36 @@ const TicTacToeScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer>
+        <NeonContainer 
+            showBackButton 
+            onBackPress={() => {
+                if (isHost) {
+                    handleEndGame();
+                } else {
+                    navigation.navigate('Lobby', { room, isHost, playerName });
+                }
+            }}
+        >
             <GameOverlay roomId={room.id} playerName={playerName}>
                 <View style={styles.container}>
+                    {isHost && (
+                        <View style={{ position: 'absolute', top: 0, right: 10, zIndex: 100 }}>
+                            <NeonButton 
+                                title="END GAME" 
+                                onPress={handleEndGame} 
+                                variant="secondary" 
+                                size="small"
+                                color={COLORS.hotPink}
+                            />
+                        </View>
+                    )}
                     <View style={styles.header}>
                         <NeonText size={22} weight="bold" glow color={COLORS.electricPurple}>
                             TIC-TAC-TOE TOURNAMENT
                         </NeonText>
                         <NeonText size={14} color="#888">Round {roundNumber}</NeonText>
                     </View>
+
 
                     {/* Bracket View */}
                     {phase === 'bracket' && (

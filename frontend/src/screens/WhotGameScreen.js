@@ -10,20 +10,35 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const WhotGameScreen = ({ route, navigation }) => {
-    const { room, hostParticipates, isHost, initialGameState } = route.params;
+    const { room, hostParticipates, isHost, initialGameState, gameState: paramGameState } = route.params;
 
     useGameDisconnectHandler({
         navigation,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
-    const [gameState, setGameState] = useState(initialGameState || null);
+    const [gameState, setGameState] = useState(initialGameState || paramGameState || null);
     const [showShapeSelector, setShowShapeSelector] = useState(false);
     const [selectedCardId, setSelectedCardId] = useState(null);
     const [winner, setWinner] = useState(null);
 
     const currentPlayerId = SocketService.socket?.id;
     const isMyTurn = gameState?.currentPlayerId === currentPlayerId;
+
+    const handleEndGame = () => {
+        Alert.alert(
+            "End Game",
+            "Are you sure you want to end the game for everyone?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "End Game", 
+                    style: "destructive",
+                    onPress: () => SocketService.emit('whot-end-game', { roomId: room.id })
+                }
+            ]
+        );
+    };
 
     // Use ref to avoid stale closures in socket listeners
     const winnerRef = React.useRef(winner);
@@ -159,7 +174,30 @@ const WhotGameScreen = ({ route, navigation }) => {
     }
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer 
+            showBackButton 
+            scrollable
+            onBackPress={() => {
+                if (isHost) {
+                    handleEndGame();
+                } else {
+                    navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.id === currentPlayerId)?.name });
+                }
+            }}
+        >
+            {/* Host Controls */}
+            {isHost && (
+                <View style={styles.hostControls}>
+                    <NeonButton 
+                        title="END GAME" 
+                        onPress={handleEndGame} 
+                        variant="secondary" 
+                        size="small"
+                        color={COLORS.hotPink}
+                    />
+                </View>
+            )}
+
             {/* Spectator Badge */}
             {isSpectator && (
                 <View style={styles.spectatorBadge}>

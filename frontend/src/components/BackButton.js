@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/theme';
 
-const BackButton = () => {
+const BackButton = ({ onPress }) => {
     const navigation = useNavigation();
 
     // Only show if we can go back
@@ -12,11 +12,20 @@ const BackButton = () => {
         return null;
     }
 
+    const handlePress = () => {
+        if (onPress) {
+            onPress();
+        } else {
+            navigation.goBack();
+        }
+    };
+
     return (
         <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handlePress}
         >
+
             <Ionicons name="chevron-back" size={24} color={COLORS.neonCyan} />
         </TouchableOpacity>
     );
