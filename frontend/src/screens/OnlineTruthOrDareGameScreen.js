@@ -56,9 +56,20 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             setGameState(newState);
         };
 
-        const onGameEnded = () => {
-            console.log('Game ended');
-            navigation.navigate('GameSelection', { room, playerName: playerNames[SocketService.socket?.id] || 'Player' });
+        const onGameEnded = (data) => {
+            console.log('Game ended received:', data);
+            // Use reset to avoid navigation loops and ensure clean state
+            navigation.reset({
+                index: 0,
+                routes: [{ 
+                    name: 'Lobby', 
+                    params: { 
+                        room: data?.room || room, 
+                        playerName,
+                        fromGame: true 
+                    } 
+                }]
+            });
         };
 
         // Keep player names in sync when room updates (socket IDs change on reconnect)
@@ -89,6 +100,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         SocketService.on('truth-or-dare-chosen', onTruthOrDareChosen);
         SocketService.on('truth-or-dare-turn-complete', onTurnComplete);
         SocketService.on('truth-or-dare-ended', onGameEnded);
+        SocketService.on('game-ended', onGameEnded);
         SocketService.on('room-updated', onRoomUpdated);
         SocketService.on('game-state-sync', onStateSync);
         SocketService.on('game-ended-insufficient-players', onInsufficientPlayers);
@@ -97,6 +109,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             SocketService.off('truth-or-dare-chosen', onTruthOrDareChosen);
             SocketService.off('truth-or-dare-turn-complete', onTurnComplete);
             SocketService.off('truth-or-dare-ended', onGameEnded);
+            SocketService.off('game-ended', onGameEnded);
             SocketService.off('room-updated', onRoomUpdated);
             SocketService.off('game-state-sync', onStateSync);
             SocketService.off('game-ended-insufficient-players', onInsufficientPlayers);
@@ -158,7 +171,16 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
 
 
     return (
-        <NeonContainer>
+        <NeonContainer 
+            showBackButton 
+            onBackPress={() => {
+                if (isHost) {
+                    handleEndGame();
+                } else {
+                    onGameEnded(); // Just navigate away
+                }
+            }}
+        >
             <View style={styles.header}>
                 <NeonText size={32} weight="bold" glow>
                     TRUTH OR DARE

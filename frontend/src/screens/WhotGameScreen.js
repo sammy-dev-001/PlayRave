@@ -124,7 +124,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             SocketService.off('whot-game-ended', onGameEnded);
         };
 
-    }, [navigation, room, currentPlayerId, isHost]);
+    }, [navigation, room, isHost]);
 
     const handleCardPress = (card) => {
         if (!isMyTurn || winner) return;
@@ -201,9 +201,10 @@ const WhotGameScreen = ({ route, navigation }) => {
             {/* Spectator Badge */}
             {isSpectator && (
                 <View style={styles.spectatorBadge}>
-                    <NeonText size={16} color={COLORS.hotPink} glow>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="eye" size={18} color={COLORS.hotPink} /><NeonText size={16} color={COLORS.hotPink} glow>SPECTATOR MODE</NeonText></View>
-                    </NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name="eye" size={18} color={COLORS.hotPink} />
+                        <NeonText size={16} color={COLORS.hotPink} glow>SPECTATOR MODE</NeonText>
+                    </View>
                 </View>
             )}
 
@@ -242,9 +243,10 @@ const WhotGameScreen = ({ route, navigation }) => {
                         <View style={styles.handHeader}>
                             <NeonText size={16}>YOUR HAND ({gameState.playerHand?.length || 0})</NeonText>
                             {isMyTurn && (
-                                <NeonText size={14} color={COLORS.limeGlow} glow>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><NeonText size={14} color={COLORS.limeGlow} glow>YOUR TURN</NeonText><Ionicons name="flash" size={16} color={COLORS.limeGlow} /></View>
-                                </NeonText>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <NeonText size={14} color={COLORS.limeGlow} glow>YOUR TURN</NeonText>
+                                    <Ionicons name="flash" size={16} color={COLORS.limeGlow} />
+                                </View>
                             )}
                         </View>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>

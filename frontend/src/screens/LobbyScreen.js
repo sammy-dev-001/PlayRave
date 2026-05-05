@@ -74,11 +74,27 @@ const LobbyScreen = ({ route, navigation }) => {
 
         const onGameStarted = (payload) => {
             console.log('[LobbyScreen] Game started payload received:', JSON.stringify(payload, null, 2));
-            const { gameType, question, statement, prompt, players, hostParticipates: hostPlays, gameState } = payload;
-            const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
-            console.log(`[LobbyScreen] Navigating to ${gameType} with params:`, Object.keys(navParams));
-
             
+            // Robust gameType detection with fallbacks
+            const { 
+                gameType: rawGameType, 
+                question, 
+                statement, 
+                prompt, 
+                players, 
+                hostParticipates: hostPlays, 
+                gameState 
+            } = payload;
+            
+            const gameType = rawGameType || payload.type || gameState?.type;
+            const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
+            
+            console.log(`[LobbyScreen] Navigating to ${gameType} (detected from ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')}) with params:`, Object.keys(navParams));
+
+            if (!gameType) {
+                console.error('[LobbyScreen] Failed to determine gameType from payload:', payload);
+                return;
+            }
             if (gameType === 'trivia') {
                 navigation.navigate('Question', { ...navParams, question, questionIndex: 0 });
             } else if (gameType === 'myth-or-fact') {

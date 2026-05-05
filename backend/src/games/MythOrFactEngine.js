@@ -70,6 +70,7 @@ class MythOrFactEngine {
             event: 'game-started',
             data: {
                 gameType: 'myth-or-fact',
+                type: 'myth-or-fact',
                 gameState: this.getGameState(roomId, p.userId),
                 players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates

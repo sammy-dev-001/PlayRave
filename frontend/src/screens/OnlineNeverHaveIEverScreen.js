@@ -69,11 +69,19 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
             }
         };
 
-        const onGameEnded = () => {
-            // Use reset to avoid navigation loop
+        const onGameEnded = (data) => {
+            console.log('Game ended received:', data);
+            // Use reset to avoid navigation loops
             navigation.reset({
                 index: 0,
-                routes: [{ name: 'GameSelection', params: { room, playerName: players.find(p => p.id === currentPlayerId)?.name } }]
+                routes: [{ 
+                    name: 'Lobby', 
+                    params: { 
+                        room: data?.room || room, 
+                        playerName,
+                        fromGame: true 
+                    } 
+                }]
             });
         };
 
@@ -81,12 +89,14 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
         SocketService.on('nhie-new-round', onNewRound);
         SocketService.on('nhie-finished', onGameFinished);
         SocketService.on('nhie-ended', onGameEnded);
+        SocketService.on('game-ended', onGameEnded);
 
         return () => {
             SocketService.off('nhie-response', onResponse);
             SocketService.off('nhie-new-round', onNewRound);
             SocketService.off('nhie-finished', onGameFinished);
             SocketService.off('nhie-ended', onGameEnded);
+            SocketService.off('game-ended', onGameEnded);
         };
     }, [navigation, room, isHost, currentPlayerId, players]);
 
@@ -107,7 +117,14 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
     const handleReturnToLobby = () => {
         navigation.reset({
             index: 0,
-            routes: [{ name: 'GameSelection', params: { room, playerName: players.find(p => p.id === currentPlayerId)?.name } }]
+            routes: [{ 
+                name: 'Lobby', 
+                params: { 
+                    room, 
+                    playerName,
+                    fromGame: true 
+                } 
+            }]
         });
     };
 

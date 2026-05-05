@@ -34,17 +34,22 @@ class LieDetectorEngine {
         players.forEach(p => { gameState.scores[p.userId] = 0; });
         this.activeGames.set(roomId, gameState);
 
-        return {
-            action: 'broadcast',
+        const instructions = room.players.map(p => ({
+            action: 'emit',
+            targetId: p.userId,
             event: 'game-started',
             data: {
                 gameType: 'lie-detector',
+                type: 'lie-detector',
                 gameState: this.getLieDetectorPublicState(gameState),
                 currentPlayer: gameState.players[0],
                 question: questions[0],
-                players: gameState.players.map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar, uid: p.userId }))
+                players: gameState.players.map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar, uid: p.userId })),
+                hostParticipates
             }
-        };
+        }));
+
+        return { action: 'multiple', instructions };
 
     }
 

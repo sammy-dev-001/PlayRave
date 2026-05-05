@@ -33,16 +33,20 @@ class ConfessionRouletteEngine {
 
         this.activeGames.set(roomId, gameState);
 
-        return {
-            action: 'broadcast',
+        const instructions = room.players.map(p => ({
+            action: 'emit',
+            targetId: p.userId,
             event: 'game-started',
             data: {
                 gameType: 'confession-roulette',
+                type: 'confession-roulette',
                 gameState: this.getPublicState(gameState),
                 players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates: room.settings?.hostParticipates !== false
             }
-        };
+        }));
+
+        return { action: 'multiple', instructions };
 
     }
 
