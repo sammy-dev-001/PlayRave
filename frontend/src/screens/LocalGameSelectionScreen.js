@@ -129,6 +129,17 @@ const LOCAL_GAMES = [
         minPlayers: 2,
         maxPlayers: 10,
         vibes: ['hype']
+    },
+    {
+        id: 'tic-tac-toe',
+        name: 'Tic-Tac-Toe',
+        description: 'Classic strategy game vs AI',
+        icon: '⭕',
+        color: COLORS.electricPurple,
+        category: 'competitive',
+        minPlayers: 1,
+        maxPlayers: 2,
+        vibes: ['brain']
     }
 ];
 
@@ -138,7 +149,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedVibe, setSelectedVibe] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['scrabble', 'memory-match', 'memory-chain', 'speed-categories'];
+    const AI_COMPATIBLE_GAMES = ['scrabble', 'tic-tac-toe', 'memory-match', 'memory-chain', 'speed-categories'];
 
     // Process games into categories
     const gamesByCategory = React.useMemo(() => {
@@ -150,7 +161,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         // Filter available games first
         let available = isSinglePlayer
             ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-            : LOCAL_GAMES.filter(game => game.id !== 'scrabble');
+            : LOCAL_GAMES.filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
 
         if (selectedVibe !== 'all') {
             available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
@@ -196,6 +207,12 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             navigation.navigate('MemoryMatch', { players });
         } else if (gameId === 'charades') {
             navigation.navigate('LocalCharades', { players });
+        } else if (gameId === 'tic-tac-toe') {
+            if (isSinglePlayer) {
+                navigation.navigate('TicTacToeDifficulty', { players });
+            } else {
+                navigation.navigate('TicTacToe', { players });
+            }
         }
     };
 

@@ -42,9 +42,8 @@ class SpillTheTeaEngine {
 
         this.activeGames.set(roomId, gameState);
 
-        const instructions = room.players.map(p => ({
-            action: 'emit',
-            targetId: p.userId,
+        return {
+            action: 'broadcast',
             event: 'game-started',
             data: {
                 gameType: 'spill-the-tea',
@@ -53,9 +52,7 @@ class SpillTheTeaEngine {
                 players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
-        }));
-
-        return { action: 'multiple', instructions };
+        };
 
     }
 

@@ -43,20 +43,17 @@ class UnpopularOpinionsEngine {
 
         this.activeGames.set(roomId, gameState);
 
-        const instructions = room.players.map(p => ({
-            action: 'emit',
-            targetId: p.userId,
+        return {
+            action: 'broadcast',
             event: 'game-started',
             data: {
                 gameType: 'unpopular-opinions',
-                type: 'unpopular-opinions', // root alias for robustness
+                type: 'unpopular-opinions',
                 gameState: this._publicState(gameState),
                 players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
-        }));
-        
-        return { action: 'multiple', instructions };
+        };
 
     }
 

@@ -113,7 +113,8 @@ class ScrabbleEngine {
                 score: 0,
                 hand: [],
                 isActive: true,
-                isAI: true
+                isAI: true,
+                socketId: 'ai-bot-socket'
             }
         ];
 
@@ -716,7 +717,6 @@ class ScrabbleEngine {
         }
 
         return finalScores.sort((a, b) => b.score - a.score);
-    }
     }
 
     getState(roomId, userId) {

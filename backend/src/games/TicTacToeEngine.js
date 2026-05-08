@@ -40,6 +40,7 @@ class TicTacToeEngine {
             currentMatch:      matches[0] || null,
             roundNumber:       1,
             phase:             'lobby', // lobby | playing | matchResult | roundComplete | finished
+            difficulty:        options.difficulty || 'medium',
         };
 
         this.activeGames.set(roomId, gameState);
@@ -124,19 +125,28 @@ class TicTacToeEngine {
         match.winner       = null;
         match.completed    = false;
 
-        return {
-            action: 'broadcast',
-            event:  'ttt-match-start',
-            data: {
-                player1:     { userId: match.player1.userId, name: match.player1.name, symbol: 'X', isAI: match.player1.isAI || false },
-                player2:     { userId: match.player2.userId, name: match.player2.name, symbol: 'O', isAI: match.player2.isAI || false },
-                currentTurn: match.currentTurn,
-                board:       match.board,
-                matchNumber: game.currentMatchIndex + 1,
-                roundNumber: game.roundNumber,
-                isAIMatch:   match.isAIMatch || false,
-            },
+        const data = {
+            player1:     { userId: match.player1.userId, name: match.player1.name, symbol: 'X', isAI: match.player1.isAI || false },
+            player2:     { userId: match.player2.userId, name: match.player2.name, symbol: 'O', isAI: match.player2.isAI || false },
+            currentTurn: match.currentTurn,
+            board:       match.board,
+            matchNumber: game.currentMatchIndex + 1,
+            roundNumber: game.roundNumber,
+            isAIMatch:   match.isAIMatch || false,
         };
+
+        if (match.player1.isAI) {
+            return {
+                action: 'multiple',
+                instructions: [
+                    { action: 'broadcast', event: 'ttt-match-started', data },
+                    { action: 'broadcast', event: 'ttt-ai-thinking', data: { userId: match.player1.userId } },
+                    { action: 'schedule', delay: 1500, eventToTrigger: 'ai-move', data: {} }
+                ]
+            };
+        }
+
+        return { action: 'broadcast', event: 'ttt-match-started', data };
     }
 
     _makeMove(roomId, userId, position) {
@@ -155,36 +165,89 @@ class TicTacToeEngine {
         const winnerSymbol = this._checkWinner(match.board);
         const isDraw       = !winnerSymbol && match.board.every(c => c !== null);
 
-        if (winnerSymbol || isDraw) {
+        if (winnerSymbol) {
             match.completed = true;
-            match.winner    = winnerSymbol
-                ? (winnerSymbol === 'X' ? match.player1 : match.player2)
-                : null;
+            match.winner    = (winnerSymbol === 'X' ? match.player1 : match.player2);
             if (match.winner) match.winner.wins++;
             game.phase = 'matchResult';
 
             return {
-                action: 'broadcast',
-                event:  'ttt-move',
-                data: {
-                    board: match.board, position, symbol, gameOver: true,
-                    winner:  match.winner ? { userId: match.winner.userId, name: match.winner.name } : null,
-                    isDraw,
-                },
+                action: 'multiple',
+                instructions: [
+                    {
+                        action: 'broadcast',
+                        event:  'ttt-move-made',
+                        data: {
+                            board: match.board, position, symbol, gameOver: true,
+                            winner:  { userId: match.winner.userId, name: match.winner.name },
+                            isDraw: false,
+                        },
+                    },
+                    {
+                        action: 'broadcast',
+                        event: 'ttt-match-ended',
+                        data: {
+                            winner: { userId: match.winner.userId, name: match.winner.name },
+                            board: match.board
+                        }
+                    }
+                ]
+            };
+        }
+
+        if (isDraw) {
+            // It's a draw - Reset board for replay as per user request
+            console.log(`[TicTacToeEngine] Match draw in room ${roomId}. Replaying...`);
+            
+            // We keep the match active but reset the state
+            // We'll use a schedule to restart after a brief delay so players see the draw
+            return {
+                action: 'multiple',
+                instructions: [
+                    {
+                        action: 'broadcast',
+                        event: 'ttt-move-made',
+                        data: {
+                            board: match.board, position, symbol, 
+                            gameOver: false, 
+                            isDraw: true,
+                            message: "Draw! Replaying round..."
+                        }
+                    },
+                    {
+                        action: 'schedule',
+                        delay: 2000,
+                        eventToTrigger: 'start-match',
+                        data: {}
+                    }
+                ]
             };
         }
 
         match.currentTurn = userId === match.player1.userId ? match.player2.userId : match.player1.userId;
         const nextPlayer  = match.currentTurn === match.player1.userId ? match.player1 : match.player2;
 
+        const moveData = {
+            board: match.board, position, symbol, gameOver: false,
+            currentTurn: match.currentTurn,
+            isAITurn:    nextPlayer.isAI || false,
+        };
+
+        if (nextPlayer.isAI) {
+            return {
+                action: 'multiple',
+                instructions: [
+                    { action: 'broadcast', event: 'ttt-move-made', data: moveData },
+                    { action: 'broadcast', event: 'ttt-ai-thinking', data: { userId: nextPlayer.userId } },
+                    { action: 'schedule', delay: 1500, eventToTrigger: 'ai-move', data: {} }
+                ]
+            };
+        }
+
         return {
             action: 'broadcast',
-            event:  'ttt-move',
-            data: {
-                board: match.board, position, symbol, gameOver: false,
-                currentTurn: match.currentTurn,
-                isAITurn:    nextPlayer.isAI || false,
-            },
+            event:  'ttt-move-made',
+            data: moveData,
         };
     }
 
@@ -201,7 +264,7 @@ class TicTacToeEngine {
 
         const aiSymbol    = aiPlayer === match.player1 ? 'X' : 'O';
         const humanSymbol = aiSymbol === 'X' ? 'O' : 'X';
-        const position    = this._getAIMove([...match.board], aiSymbol, humanSymbol);
+        const position    = this._getAIMove([...match.board], aiSymbol, humanSymbol, game.difficulty);
 
         // Reuse _makeMove by temporarily spoofing turn via the AI userId
         return this._makeMove(roomId, aiPlayer.userId, position);
@@ -256,7 +319,7 @@ class TicTacToeEngine {
         game.currentMatch = game.matches[game.currentMatchIndex];
         return {
             action: 'broadcast',
-            event:  'ttt-next-match',
+            event:  'ttt-next-match-ready',
             data: {
                 finished:       false,
                 roundComplete:  false,
@@ -310,12 +373,19 @@ class TicTacToeEngine {
         return null;
     }
 
-    _getAIMove(board, aiSym, humanSym) {
+    _getAIMove(board, aiSym, humanSym, difficulty = 'medium') {
         const empties = board.reduce((acc, v, i) => { if (!v) acc.push(i); return acc; }, []);
         if (!empties.length) return null;
 
-        // Medium: 60% optimal, 40% random
-        if (Math.random() < 0.6) {
+        // Difficulty mapping: chance of playing optimally
+        const skillMap = {
+            'easy': 0.2,   // 20% optimal
+            'medium': 0.6, // 60% optimal
+            'hard': 0.95   // 95% optimal
+        };
+        const skillLevel = skillMap[difficulty] || 0.6;
+
+        if (Math.random() < skillLevel) {
             let bestScore = -Infinity, bestMove = empties[0];
             for (const i of empties) {
                 board[i] = aiSym;

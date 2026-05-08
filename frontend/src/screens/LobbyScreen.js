@@ -89,7 +89,8 @@ const LobbyScreen = ({ route, navigation }) => {
             const gameType = rawGameType || payload.type || gameState?.type;
             const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
             
-            console.log(`[LobbyScreen] Navigating to ${gameType} (detected from ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')}) with params:`, Object.keys(navParams));
+            console.log(`[LobbyScreen] >>> NAVIGATING TO: ${gameType} <<< (Source: ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')})`);
+            console.log(`[LobbyScreen] NavParams keys:`, Object.keys(navParams));
 
             if (!gameType) {
                 console.error('[LobbyScreen] Failed to determine gameType from payload:', payload);

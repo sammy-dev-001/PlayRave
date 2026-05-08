@@ -32,6 +32,7 @@ const sessionManager = require("./managers/SessionManager");
 const roomManager    = require("./managers/roomManager");
     const gameRouter     = require("./managers/GameRouter");
     const authManager    = require("./managers/authManager");
+    const ScrabbleAIEngine = require('./ai/ScrabbleAIEngine');
 
 // Health check
 app.get("/health", (req, res) => {
@@ -544,6 +545,60 @@ io.on("connection", (socket) => {
         // Forward seamlessly to the decoupled Engine
         gameRouter.handleEvent(eventName, payload, userId, roomId, io);
     });
+
+    // ── 9. SINGLE PLAYER / AI EVENTS ─────────────────────────────────────
+    
+    socket.on("scrabble-single-player-start", ({ difficulty, playerName }) => {
+        console.log("[Gateway] Starting Scrabble AI Game:", playerName, difficulty);
+        
+        // Use existing userId or create a temporary one for this session
+        const userId = sessionManager.getUserIdBySocket(socket.id) || `local-user-${socket.id}`;
+        const roomId = `local-${socket.id}`;
+
+        // Ensure session and room mapping
+        sessionManager.registerClient(userId, socket.id, { playerName });
+        sessionManager.setRoom(userId, roomId);
+
+        // Create the persistent local room
+        const room = roomManager.createLocalRoom(roomId, userId, socket.id, playerName || "Player 1");
+        room.gameType = 'scrabble';
+        room.gameState = 'PLAYING';
+
+        socket.join(roomId);
+
+        // Delegate to GameRouter to initialize the Engine
+        gameRouter.startGame('scrabble', room, { 
+            isSinglePlayer: true, 
+            difficulty: difficulty || 'medium',
+            hostParticipates: true
+        }, io);
+        
+        console.log(`[Gateway] Scrabble AI game initialized in room ${roomId}`);
+    });
+
+    socket.on("tic-tac-toe-single-player-start", ({ difficulty, playerName }) => {
+        console.log("[Gateway] Starting Tic-Tac-Toe AI Game:", playerName, difficulty);
+        
+        const userId = sessionManager.getUserIdBySocket(socket.id) || `local-user-${socket.id}`;
+        const roomId = `local-${socket.id}`;
+
+        sessionManager.registerClient(userId, socket.id, { playerName });
+        sessionManager.setRoom(userId, roomId);
+
+        const room = roomManager.createLocalRoom(roomId, userId, socket.id, playerName || "Player 1");
+        room.gameType = 'tic-tac-toe';
+        room.gameState = 'PLAYING';
+
+        socket.join(roomId);
+
+        gameRouter.startGame('tic-tac-toe', room, { 
+            isSinglePlayer: true, 
+            difficulty: difficulty || 'medium',
+            hostParticipates: true
+        }, io);
+        
+        console.log(`[Gateway] Tic-Tac-Toe AI game initialized in room ${roomId}`);
+    });
 });
 
 // ── Server Start ────────────────────────────────────────────────────────
@@ -551,4 +606,7 @@ const PORT = process.env.PORT || 4000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
     console.log(`Access from your phone using your computer's IP address`);
+    
+    // Warm up AI engines
+    ScrabbleAIEngine.warmUp();
 });

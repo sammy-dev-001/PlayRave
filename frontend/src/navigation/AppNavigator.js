@@ -68,6 +68,7 @@ const JoinSpectatorScreen = lazy(() => import('../screens/JoinSpectatorScreen'))
 const ConfessionRouletteScreen = lazy(() => import('../screens/ConfessionRouletteScreen'));
 const ImposterScreen = lazy(() => import('../screens/ImposterScreen'));
 const UnpopularOpinionsScreen = lazy(() => import('../screens/UnpopularOpinionsScreen'));
+const TicTacToeDifficultyScreen = lazy(() => import('../screens/TicTacToeDifficultyScreen'));
 const SettingsScreen = lazy(() => import('../screens/SettingsScreen'));
 
 // Tournament screens
@@ -118,6 +119,7 @@ const LazyOnlineRapidFireScreen = withSuspense(OnlineRapidFireScreen);
 const LazyScrabbleScreen = withSuspense(ScrabbleScreen);
 const LazyOnlineScrabbleScreen = withSuspense(OnlineScrabbleScreen);
 const LazyScrabbleDifficultyScreen = withSuspense(ScrabbleDifficultyScreen);
+const LazyTicTacToeDifficultyScreen = withSuspense(TicTacToeDifficultyScreen);
 const LazyMVPVotingScreen = withSuspense(MVPVotingScreen);
 const LazyTeamSetupScreen = withSuspense(TeamSetupScreen);
 const LazyPlaylistSetupScreen = withSuspense(PlaylistSetupScreen);
@@ -221,6 +223,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="ColorRush" component={withSuspense(lazy(() => import('../screens/ColorRushScreen')))} />
                             <Stack.Screen name="MemoryMatch" component={withSuspense(lazy(() => import('../screens/MemoryMatchScreen')))} />
                             <Stack.Screen name="TicTacToe" component={withSuspense(lazy(() => import('../screens/TicTacToeScreen')))} />
+                            <Stack.Screen name="TicTacToeDifficulty" component={LazyTicTacToeDifficultyScreen} />
                             <Stack.Screen name="DrawBattle" component={withSuspense(lazy(() => import('../screens/DrawBattleScreen')))} />
                             <Stack.Screen name="Auth" component={withSuspense(AuthScreen)} />
                             <Stack.Screen name="Leaderboard" component={withSuspense(LeaderboardScreen)} />

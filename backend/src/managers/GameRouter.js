@@ -138,7 +138,11 @@ class GameRouter {
                 // Execute AI turn after a specified delay without locking up the engine
                 console.log(`[GameRouter] Scheduling AI turn for room ${roomId} in ${instruction.delay}ms`);
                 setTimeout(() => {
-                    const engine = engineRegistry['scrabble']; // For now hardcoded to scrabble, can be dynamic later
+                    const engine = engineRegistry[room.gameType]; 
+                    if (!engine || typeof engine.executeAITurn !== 'function') {
+                        console.warn(`[GameRouter] Engine ${room.gameType} does not support executeAITurn`);
+                        return;
+                    }
                     const aiInstructionPayload = engine.executeAITurn(roomId);
                     
                     // Recursively execute the AI's chosen instruction
