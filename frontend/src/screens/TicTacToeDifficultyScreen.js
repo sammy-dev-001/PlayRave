@@ -1,44 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
-import SocketService from '../services/socket';
 
 const TicTacToeDifficultyScreen = ({ route, navigation }) => {
     const { players } = route.params;
     const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
-    const [isStarting, setIsStarting] = useState(false);
-
-    useEffect(() => {
-        const handleGameStarted = (data) => {
-            if (data.gameType === 'tic-tac-toe' && data.isSinglePlayer) {
-                console.log('Single player TicTacToe game started from server');
-                setIsStarting(false);
-                navigation.navigate('TicTacToe', {
-                    room: { id: "local-" + (SocketService.userId || SocketService.socket?.id), players: data.gameState.players },
-                    playerName: players[0].name,
-                    isHost: true,
-                    gameState: data.gameState
-                });
-            }
-        };
-
-        const handleError = (err) => {
-            console.error('Socket error starting TicTacToe game:', err);
-            setIsStarting(false);
-        };
-
-        SocketService.on('game-started', handleGameStarted);
-        SocketService.on('error', handleError);
-
-        return () => {
-            SocketService.off('game-started', handleGameStarted);
-            SocketService.off('error', handleError);
-        };
-    }, [navigation, players]);
 
     const difficulties = [
         {
@@ -65,11 +35,9 @@ const TicTacToeDifficultyScreen = ({ route, navigation }) => {
     ];
 
     const handleStartGame = () => {
-        if (isStarting) return;
-        setIsStarting(true);
-        SocketService.emit('tic-tac-toe-single-player-start', {
+        navigation.navigate('LocalTicTacToe', {
+            players,
             difficulty: selectedDifficulty,
-            playerName: players[0].name
         });
     };
 
@@ -123,15 +91,15 @@ const TicTacToeDifficultyScreen = ({ route, navigation }) => {
 
             <View style={styles.buttonContainer}>
                 <NeonButton
-                    title={isStarting ? "PREPARING AI..." : "START DUEL"}
+                    title="START DUEL"
                     onPress={handleStartGame}
-                    disabled={isStarting}
                     style={styles.startButton}
                 />
             </View>
         </NeonContainer>
     );
 };
+
 
 const styles = StyleSheet.create({
     header: {

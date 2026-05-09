@@ -149,7 +149,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedVibe, setSelectedVibe] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['scrabble', 'tic-tac-toe', 'memory-match', 'memory-chain', 'speed-categories'];
+    const AI_COMPATIBLE_GAMES = ['scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories'];
 
     // Process games into categories
     const gamesByCategory = React.useMemo(() => {
@@ -185,33 +185,32 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 
     const handleSelectGame = (gameId) => {
         if (gameId === 'truth-or-dare') {
-            navigation.navigate('TruthOrDareCategorySelection', { players });
+            navigation.navigate('TruthOrDareCategorySelection', { players, isSinglePlayer });
         } else if (gameId === 'would-you-rather') {
-            navigation.navigate('WouldYouRather', { players });
+            navigation.navigate('WouldYouRather', { players, isSinglePlayer });
         } else if (gameId === 'never-have-i-local') {
-            navigation.navigate('NeverHaveIEverCategory', { players });
+            navigation.navigate('NeverHaveIEverCategory', { players, isSinglePlayer });
         } else if (gameId === 'rapid-fire') {
-            navigation.navigate('RapidFireCategory', { players });
+            navigation.navigate('RapidFireCategory', { players, isSinglePlayer });
         } else if (gameId === 'scrabble') {
-            // For single player, go to difficulty selection first
             if (isSinglePlayer) {
-                navigation.navigate('ScrabbleDifficulty', { players });
+                navigation.navigate('ScrabbleDifficulty', { players, isSinglePlayer });
             } else {
-                navigation.navigate('Scrabble', { players });
+                navigation.navigate('Scrabble', { players, isSinglePlayer });
             }
         } else if (gameId === 'speed-categories') {
-            navigation.navigate('SpeedCategories', { players });
+            navigation.navigate('SpeedCategories', { players, isSinglePlayer });
         } else if (gameId === 'memory-chain') {
-            navigation.navigate('MemoryChain', { players });
+            navigation.navigate('MemoryChain', { players, isSinglePlayer });
         } else if (gameId === 'memory-match') {
-            navigation.navigate('MemoryMatch', { players });
+            navigation.navigate('MemoryMatch', { players, isSinglePlayer });
         } else if (gameId === 'charades') {
-            navigation.navigate('LocalCharades', { players });
+            navigation.navigate('LocalCharades', { players, isSinglePlayer });
         } else if (gameId === 'tic-tac-toe') {
             if (isSinglePlayer) {
-                navigation.navigate('TicTacToeDifficulty', { players });
+                navigation.navigate('TicTacToeDifficulty', { players, isSinglePlayer });
             } else {
-                navigation.navigate('TicTacToe', { players });
+                navigation.navigate('TicTacToe', { players, isSinglePlayer });
             }
         }
     };

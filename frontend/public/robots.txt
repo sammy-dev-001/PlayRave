@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://playrave.vercel.app/sitemap.xml
+Sitemap: https://play-rave.vercel.app/sitemap.xml
