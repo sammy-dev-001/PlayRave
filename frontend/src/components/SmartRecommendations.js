@@ -47,14 +47,6 @@ const GAME_DATA = {
         duration: 20,
         tags: ['spicy', 'confessions']
     },
-    'rapid-fire': {
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibe: 'competitive',
-        energy: 'high',
-        duration: 5,
-        tags: ['speed', 'quick']
-    },
     'type-race': {
         minPlayers: 2,
         maxPlayers: 8,

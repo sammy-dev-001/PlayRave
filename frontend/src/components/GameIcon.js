@@ -12,7 +12,6 @@ const gameIcons = {
     'trivia': require('../../assets/images/game_trivia.png'),
     'charades': require('../../assets/images/game_charades.png'),
     'never-have-i-ever': require('../../assets/images/game_never_have_i_ever.png'),
-    'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
 
     // Expanded Set
     'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),

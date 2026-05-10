@@ -38,7 +38,6 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
         trivia: 'Trivia',
         'truth-or-dare': 'Truth or Dare',
         'would-you-rather': 'Would You Rather',
-        'rapid-fire': 'Rapid Fire',
         'memory-match': 'Memory Match',
         'memory-chain': 'Memory Chain',
     };

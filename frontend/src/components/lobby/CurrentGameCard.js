@@ -15,7 +15,6 @@ const GAME_NAMES = {
     'neon-tap': 'Neon Tap',
     'word-rush': 'Word Rush',
     'whot': 'Naija Whot',
-    'rapid-fire': 'Rapid Fire',
     'confession-roulette': 'Confession Roulette',
     'imposter': 'Imposter',
     'hot-seat': 'Hot Seat',
