@@ -30,7 +30,12 @@ const neverHaveIEverPrompts = {
         "Never have I ever used someone else's toothbrush",
         "Never have I ever eaten breakfast for dinner",
         "Never have I ever stayed in my pajamas all day",
-        "Never have I ever talked to an animal like it was a person"
+        "Never have I ever talked to an animal like it was a person",
+        "Never have I ever accidentally liked a really old post while stalking someone",
+        "Never have I ever cut my own bangs and regretted it immediately",
+        "Never have I ever worn my clothes inside out for a whole day",
+        "Never have I ever pretended to be on my phone to avoid someone",
+        "Never have I ever dropped my phone on my face while lying down"
     ],
     spicy: [
         "Never have I ever had a crush on my friend's sibling",
@@ -62,7 +67,12 @@ const neverHaveIEverPrompts = {
         "Never have I ever lied on a dating app",
         "Never have I ever gotten back with an ex",
         "Never have I ever had a vacation fling",
-        "Never have I ever been in a long-distance relationship"
+        "Never have I ever been in a long-distance relationship",
+        "Never have I ever had a crush on a teacher or professor",
+        "Never have I ever kissed someone in a dare",
+        "Never have I ever sent a risky text and immediately turned my phone on airplane mode",
+        "Never have I ever lied about my relationship status to get out of a conversation",
+        "Never have I ever dated someone my parents explicitly told me not to"
     ],
     naughty: [
         "Never have I ever sent a dirty text",
@@ -94,7 +104,12 @@ const neverHaveIEverPrompts = {
         "Never have I ever been intimate with a friend's ex",
         "Never have I ever been intimate in a parent's house",
         "Never have I ever had an affair",
-        "Never have I ever been intimate in an airplane"
+        "Never have I ever been intimate in an airplane",
+        "Never have I ever gone commando in public",
+        "Never have I ever accidentally sent a naughty text to the wrong person",
+        "Never have I ever joined the mile-high club",
+        "Never have I ever been caught in the act by a family member",
+        "Never have I ever used handcuffs in the bedroom"
     ]
 };
 

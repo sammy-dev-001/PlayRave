@@ -103,7 +103,10 @@ const truthOrDarePrompts = {
             "What is the most embarrassing thing you have done in public?",
             "If you could switch lives with someone for a day, who would it be?",
             "What is a habit you wish you could break?",
-            "What is the weirdest thing you collect?"
+            "What is the weirdest thing you collect?",
+            "What is your most embarrassing Google search?",
+            "If you had to delete one app from your phone, what would it be?",
+            "What is the worst lie you've ever told your parents?"
         ],
         dares: [
             "Do 20 pushups right now",
@@ -614,7 +617,9 @@ const truthOrDarePrompts = {
             "Send a flirty text to a random contact",
             "Perform a strip tease (keep underwear on)",
             "Blindfold yourself and let someone kiss you",
-            "Take a selfie in a compromising position (no need to share)"
+            "Take a selfie in a compromising position (no need to share)",
+            "Send a risky text to someone in your contacts",
+            "Show the group the last photo saved in your hidden folder"
         ]
     }
 };

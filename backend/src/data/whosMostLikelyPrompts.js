@@ -105,7 +105,13 @@ const whosMostLikelyPrompts = [
     { prompt: "Who's most likely to be the first one drunk?", category: "Party" },
     { prompt: "Who's most likely to start a conga line?", category: "Party" },
     { prompt: "Who's most likely to take the most selfies?", category: "Party" },
-    { prompt: "Who's most likely to remember everyone's names?", category: "Party" }
+    { prompt: "Who's most likely to remember everyone's names?", category: "Party" },
+
+    // Work/School
+    { prompt: "Who's most likely to fall asleep in a meeting?", category: "Work/School" },
+    { prompt: "Who's most likely to become the boss?", category: "Work/School" },
+    { prompt: "Who's most likely to reply 'reply all' by accident?", category: "Work/School" },
+    { prompt: "Who's most likely to work on the weekend?", category: "Work/School" }
 ];
 
 

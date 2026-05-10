@@ -229,7 +229,17 @@ const mythOrFactStatements = [
         answer: true,
         category: "Nature",
         explanation: "This is a fact! Botanically speaking, a strawberry is an 'aggregate fruit'. Avocados and watermelon, however, are true berries."
-    }
+    },
+    { statement: "Cracking your knuckles causes arthritis", answer: false, category: "Science", explanation: "This is a myth. Studies have shown no link between knuckle cracking and arthritis." },
+    { statement: "Wombat poop is cube-shaped", answer: true, category: "Nature", explanation: "This is a fact! They are the only animals in the world known to produce cube-shaped scat." },
+    { statement: "Humans and giraffes have the same number of neck vertebrae", answer: true, category: "Nature", explanation: "This is a fact! Both humans and giraffes have seven neck vertebrae." },
+    { statement: "Peanuts are not actually nuts", answer: true, category: "Nature", explanation: "This is a fact! Peanuts are legally and botanically considered legumes, like beans and lentils." },
+    { statement: "Shaving hair makes it grow back thicker and darker", answer: false, category: "Science", explanation: "This is a myth. Shaving gives hair a blunt tip, which might feel coarser as it grows out, but it doesn't change its thickness or color." },
+    { statement: "Sloths can hold their breath longer than dolphins", answer: true, category: "Nature", explanation: "This is a fact! Sloths can slow their heart rate and hold their breath for up to 40 minutes, while dolphins usually need air every 8-10 minutes." },
+    { statement: "Dogs only see in black and white", answer: false, category: "Nature", explanation: "This is a myth. Dogs can see colors, primarily in shades of blue and yellow." },
+    { statement: "Different parts of your tongue taste different things", answer: false, category: "Science", explanation: "This is a myth. The 'tongue map' is a misconception; all taste sensations come from all regions of the tongue." },
+    { statement: "A jiffy is an actual unit of time", answer: true, category: "Science", explanation: "This is a fact! In physics, a jiffy is the time it takes for light to travel one centimeter in a vacuum." },
+    { statement: "Toilets flush in opposite directions in the Northern and Southern Hemispheres", answer: false, category: "Science", explanation: "This is a myth. The Coriolis effect is too weak to affect small bodies of water like toilets." }
 ];
 
 function getRandomStatements(count = 5) {
