@@ -59,11 +59,22 @@ class UnpopularOpinionsEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
-            case 'submit-vote':   return this._submitVote(roomId, userId, payload.vote);
-            case 'end-voting':    return this._endVoting(roomId);
-            case 'next-opinion':  return this._nextOpinion(roomId);
-            case 'get-state':     return this._getState(roomId, userId);
-            case 'end-game':      return this._endGame(roomId);
+            case 'unpopular-opinions-vote':
+            case 'opinion-vote':
+            case 'submit-vote':   
+                return this._submitVote(roomId, userId, payload.vote);
+            case 'end-voting':    
+                return this._endVoting(roomId);
+            case 'unpopular-opinions-next':
+            case 'opinion-next':
+            case 'next-opinion':  
+                return this._nextOpinion(roomId);
+            case 'unpopular-opinions-get-state':
+            case 'opinion-get-state':
+            case 'get-state':     
+                return this._getState(roomId, userId);
+            case 'end-game':      
+                return this._endGame(roomId);
 
             default:
                 return { action: 'error', message: `Unknown unpopular-opinions event: ${eventName}` };
@@ -152,7 +163,7 @@ class UnpopularOpinionsEngine {
 
         return {
             action: 'broadcast',
-            event:  'opinion-results',
+            event:  'opinion-round-results',
             data: {
                 opinion:      game.currentOpinion,
                 agreeCount,
@@ -183,8 +194,8 @@ class UnpopularOpinionsEngine {
             this.activeGames.delete(roomId);
             return {
                 action: 'broadcast',
-                event:  'opinions-game-finished',
-                data:   { finished: true, rankings: finalRankings, winner: finalRankings[0] },
+                event:  'opinion-final-scores',
+                data:   game.players.reduce((acc, p) => { acc[p.userId] = p.score; return acc; }, {}),
             };
         }
 
@@ -193,9 +204,19 @@ class UnpopularOpinionsEngine {
         game.phase = 'opinion';
 
         return {
-            action: 'broadcast',
-            event:  'opinion-next',
-            data:   this._publicState(game),
+            action: 'multiple',
+            instructions: [
+                {
+                    action: 'broadcast',
+                    event:  'opinion-phase-changed',
+                    data:   { phase: 'opinion' },
+                },
+                {
+                    action: 'broadcast',
+                    event:  'opinion-new-round',
+                    data:   { opinion: game.currentOpinion },
+                }
+            ]
         };
     }
     

@@ -52,21 +52,33 @@ class ConfessionRouletteEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
+            case 'confession-start':
+                return this.startConfessionSubmission(roomId);
+            case 'confession-submit':
             case 'submit-confession':
                 return this.submitConfession(roomId, userId, payload.confession);
+            case 'confession-end-submission':
             case 'end-submission':
                 return this.endConfessionSubmission(roomId);
+            case 'confession-start-voting':
+            case 'start-voting':
+                return this.startVoting(roomId);
+            case 'confession-vote':
             case 'submit-vote':
-                return this.submitConfessionVote(roomId, userId, payload.votedPlayerId);
+                return this.submitConfessionVote(roomId, userId, payload.votedFor || payload.votedPlayerId);
+            case 'confession-next':
             case 'next-confession':
                 return this.nextConfession(roomId);
+            case 'confession-reveal-author':
+            case 'reveal-author':
+                return this.revealAuthor(roomId, userId);
             case 'get-state':
                 return this.getState(roomId);
             case 'end-game':
                 return this.endGame(roomId);
 
             default:
-                return { action: 'error', message: 'Unknown event' };
+                return { action: 'error', message: `Unknown event: ${eventName}` };
         }
     }
 
@@ -97,6 +109,30 @@ class ConfessionRouletteEngine {
             currentConfession: game.phase !== 'submission' && game.confessions[game.currentConfessionIndex] 
                 ? game.confessions[game.currentConfessionIndex].confession 
                 : null
+        };
+    }
+
+    startConfessionSubmission(roomId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+
+        game.phase = 'submission';
+        
+        return {
+            action: 'multiple',
+            instructions: [
+                {
+                    action: 'broadcast',
+                    event: 'confession-phase-changed',
+                    data: { phase: 'submission', seconds: game.submissionTime }
+                },
+                {
+                    action: 'schedule',
+                    eventToTrigger: 'confession-end-submission',
+                    delay: game.submissionTime * 1000,
+                    data: {}
+                }
+            ]
         };
     }
 
@@ -134,30 +170,80 @@ class ConfessionRouletteEngine {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'error', message: 'Game not found' };
 
+        if (game.confessions.length === 0) {
+            return { action: 'broadcast', event: 'error', data: { message: 'No confessions were submitted!' } };
+        }
+
         game.confessions = game.confessions.sort(() => 0.5 - Math.random());
         game.phase = 'reveal';
         game.currentConfessionIndex = 0;
 
         return {
-            action: 'broadcast',
-            event: 'confession-submission-ended',
-            data: this.getPublicState(game)
+            action: 'multiple',
+            instructions: [
+                {
+                    action: 'broadcast',
+                    event: 'confession-phase-changed',
+                    data: { phase: 'reveal', totalConfessions: game.confessions.length, seconds: 15 }
+                },
+                this.getRevealInstruction(game)
+            ]
         };
     }
 
-    submitConfessionVote(roomId, voterId, votedPlayerId) {
+    getRevealInstruction(game) {
+        const currentConfession = game.confessions[game.currentConfessionIndex];
+        return {
+            action: 'broadcast',
+            event: 'confession-reveal',
+            data: {
+                confession: currentConfession.confession,
+                index: game.currentConfessionIndex,
+                total: game.confessions.length,
+                seconds: 15
+            }
+        };
+    }
+
+    startVoting(roomId) {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'error', message: 'Game not found' };
-        if (game.phase !== 'reveal') return { action: 'error', message: 'Not in reveal/voting phase' };
 
-        const voter = game.players.find(p => p.userId === voterId);
+        game.phase = 'voting';
+        game.players.forEach(p => p.hasVoted = false);
+
+        return {
+            action: 'multiple',
+            instructions: [
+                {
+                    action: 'broadcast',
+                    event: 'confession-phase-changed',
+                    data: { phase: 'voting', seconds: game.votingTime }
+                },
+                {
+                    action: 'schedule',
+                    eventToTrigger: 'confession-next',
+                    delay: game.votingTime * 1000,
+                    data: {}
+                }
+            ]
+        };
+    }
+
+    submitConfessionVote(roomId, voterId, votedPlayerName) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+        if (game.phase !== 'voting' && game.phase !== 'reveal') return { action: 'error', message: 'Not in voting phase' };
+
+        const voter = game.players.find(p => p.userId === voterId || p.name === voterId);
         if (!voter) return { action: 'error', message: 'Voter not found' };
         if (voter.hasVoted) return { action: 'error', message: 'Already voted' };
 
-        const votedPlayer = game.players.find(p => p.userId === votedPlayerId);
+        const votedPlayer = game.players.find(p => p.name === votedPlayerName || p.userId === votedPlayerName);
         if (!votedPlayer) return { action: 'error', message: 'Invalid vote target' };
 
-        votedPlayer.votes.push(voterId);
+        votedPlayer.votes = votedPlayer.votes || [];
+        votedPlayer.votes.push(voter.userId);
         voter.hasVoted = true;
 
         const votedCount = game.players.filter(p => p.hasVoted).length;
@@ -168,7 +254,7 @@ class ConfessionRouletteEngine {
 
         return {
             action: 'broadcast',
-            event: 'confession-vote-update',
+            event: 'confession-votes-update',
             data: { votedCount, totalPlayers: game.players.length }
         };
     }
@@ -179,7 +265,12 @@ class ConfessionRouletteEngine {
         const authorId = currentConfession.authorId;
         const author = game.players.find(p => p.userId === authorId);
 
-        const correctGuessers = (author.votes || []).filter(voterId => voterId !== authorId);
+        const correctGuessers = (author?.votes || []).filter(voterId => voterId !== authorId);
+        const correctGuesserNames = correctGuessers.map(id => {
+            const p = game.players.find(pl => pl.userId === id);
+            return p ? p.name : 'Unknown';
+        });
+
         const fooledCount = game.players.length - correctGuessers.length - 1;
 
         correctGuessers.forEach(voterId => {
@@ -192,23 +283,47 @@ class ConfessionRouletteEngine {
         }
 
         const scores = {};
-        game.players.forEach(p => { scores[p.userId] = p.score; });
+        game.players.forEach(p => { scores[p.name] = p.score; });
 
         const isAnonymous = correctGuessers.length <= (game.players.length / 2);
         
         game.phase = 'results';
 
+        const instructions = [
+            {
+                action: 'broadcast',
+                event: 'confession-results',
+                data: {
+                    confession: currentConfession.confession,
+                    author: isAnonymous ? 'Unknown' : author.name,
+                    authorId: authorId,
+                    correctGuessers: correctGuesserNames,
+                    fooledCount,
+                    scores
+                }
+            },
+            {
+                action: 'emit',
+                targetId: authorId,
+                event: 'confession-you-are-author',
+                data: { authorId }
+            }
+        ];
+
+        return { action: 'multiple', instructions };
+    }
+
+    revealAuthor(roomId, userId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+        
+        const author = game.players.find(p => p.userId === userId);
+        if (!author) return { action: 'error', message: 'Author not found' };
+
         return {
             action: 'broadcast',
-            event: 'confession-results',
-            data: {
-                confession: currentConfession.confession,
-                author: isAnonymous ? null : authorId,
-                authorId: authorId,
-                correctGuessers,
-                fooledCount,
-                scores
-            }
+            event: 'confession-author-revealed',
+            data: { authorName: author.name }
         };
     }
 

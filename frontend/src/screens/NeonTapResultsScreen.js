@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import RaveLights from '../components/RaveLights';
@@ -16,7 +15,6 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
     const showRaveLights = results.winner === currentPlayerId;
 
     useEffect(() => {
-        // Listen for next round or game finished events
         const onReadyForNext = () => {
             console.log('Ready for next round - navigating back to game');
             navigation.navigate('NeonTapGame', { room, hostParticipates, isHost });
@@ -27,17 +25,22 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
             navigation.navigate('Scoreboard', { room, finalScores });
         };
 
+        const onGameStateSync = (data) => {
+            console.log('Neon Tap results sync:', data);
+        };
+
         SocketService.on('neon-tap-ready-for-next', onReadyForNext);
         SocketService.on('game-finished', onGameFinished);
+        SocketService.on('game-state-sync', onGameStateSync);
 
-        // Countdown timer
+        // Fetch state on mount
+        SocketService.emit('get-state', { roomId: room.id });
+
         const timer = setInterval(() => {
             setCountdown(prev => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    if (isHost) {
-                        handleNext();
-                    }
+                    if (isHost) handleNext();
                     return 0;
                 }
                 return prev - 1;
@@ -48,8 +51,9 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
             clearInterval(timer);
             SocketService.off('neon-tap-ready-for-next', onReadyForNext);
             SocketService.off('game-finished', onGameFinished);
+            SocketService.off('game-state-sync', onGameStateSync);
         };
-    }, [isHost, navigation, room, hostParticipates]);
+    }, [isHost, navigation, room.id]);
 
     const handleNext = () => {
         console.log('Host requesting next round');
@@ -57,13 +61,13 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
     };
 
     const getPlayerName = (playerId) => {
-        const player = room.players.find(p => p.id === playerId);
+        const player = room.players.find(p => p.id === playerId || p.uid === playerId);
         return player?.name || 'Unknown';
     };
 
     const renderTapResult = ({ item, index }) => {
-        const playerName = getPlayerName(item.playerId);
-        const isWinner = item.playerId === results.winner;
+        const playerName = getPlayerName(item.userId || item.playerId);
+        const isWinner = (item.userId || item.playerId) === results.winner;
 
         return (
             <View style={[styles.tapRow, isWinner && styles.winnerRow]}>
@@ -73,7 +77,6 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
                     </NeonText>
                 </View>
                 <View style={styles.playerInfo}>
-                    {isWinner && <NeonText size={20}></NeonText>}
                     <NeonText size={18} weight={isWinner ? 'bold' : 'normal'}>
                         {playerName}
                     </NeonText>
@@ -88,7 +91,7 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton scrollable onBackPress={() => navigation.navigate('Lobby', { room, isHost })}>
             <RaveLights trigger={showRaveLights} intensity="high" />
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow style={styles.title}>
@@ -108,7 +111,7 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
 
             <FlatList
                 data={results.roundTaps}
-                keyExtractor={item => item.playerId}
+                keyExtractor={(item, index) => index.toString()}
                 renderItem={renderTapResult}
                 contentContainerStyle={styles.list}
             />
@@ -123,64 +126,18 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    header: {
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    title: {
-        letterSpacing: 2,
-    },
-    winnerAnnouncement: {
-        marginBottom: 25,
-        padding: 15,
-        backgroundColor: 'rgba(198, 255, 74, 0.1)',
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: COLORS.limeGlow,
-    },
-    winnerText: {
-        textAlign: 'center',
-    },
-    sectionTitle: {
-        marginBottom: 15,
-        textAlign: 'center',
-    },
-    list: {
-        paddingBottom: 20,
-    },
-    tapRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 63, 164, 0.3)',
-    },
-    winnerRow: {
-        borderColor: COLORS.limeGlow,
-        backgroundColor: 'rgba(198, 255, 74, 0.1)',
-        borderWidth: 2,
-    },
-    rankContainer: {
-        width: 40,
-    },
-    playerInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    timeInfo: {
-        alignItems: 'flex-end',
-    },
-    autoAdvance: {
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 16,
-        color: COLORS.limeGlow,
-    }
+    header: { alignItems: 'center', marginBottom: 20 },
+    title: { letterSpacing: 2 },
+    winnerAnnouncement: { marginBottom: 25, padding: 15, backgroundColor: 'rgba(198, 255, 74, 0.1)', borderRadius: 12, borderWidth: 2, borderColor: COLORS.limeGlow },
+    winnerText: { textAlign: 'center' },
+    sectionTitle: { marginBottom: 15, textAlign: 'center' },
+    list: { paddingBottom: 20 },
+    tapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 63, 164, 0.3)' },
+    winnerRow: { borderColor: COLORS.limeGlow, backgroundColor: 'rgba(198, 255, 74, 0.1)', borderWidth: 2 },
+    rankContainer: { width: 40 },
+    playerInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    timeInfo: { alignItems: 'flex-end' },
+    autoAdvance: { textAlign: 'center', marginTop: 20, fontSize: 16, color: COLORS.limeGlow }
 });
 
 export default NeonTapResultsScreen;

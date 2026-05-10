@@ -240,6 +240,9 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         SocketService.on('error', handleError);
         SocketService.on('game-ended-insufficient-players', handleInsufficientPlayers);
 
+        // Fetch state on mount
+        SocketService.emit('scrabble-get-state', { roomId: room.id });
+
         return () => {
             SocketService.off('game-started', handleGameStarted);
             SocketService.off('scrabble-move-submitted', handleMoveSubmitted);

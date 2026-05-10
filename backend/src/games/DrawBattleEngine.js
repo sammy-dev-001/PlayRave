@@ -61,14 +61,30 @@ class DrawBattleEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
-            case 'start-round':     return this._startRound(roomId);
-            case 'submit-drawing':  return this._submitDrawing(roomId, userId, payload.drawingData);
-            case 'start-voting':    return this._startVoting(roomId);
-            case 'submit-vote':     return this._submitVote(roomId, userId, payload.votedForUserId);
-            case 'get-results':     return this._getRoundResults(roomId);
-            case 'next-round':      return this._nextRound(roomId);
-            case 'get-state':       return this._getState(roomId, userId);
-            case 'end-game':        return this._endGame(roomId);
+            case 'draw-battle-start-round':
+            case 'start-round':     
+                return this._startRound(roomId);
+            case 'draw-battle-submit-drawing':
+            case 'submit-drawing':  
+                return this._submitDrawing(roomId, userId, payload.drawingData);
+            case 'draw-battle-start-voting':
+            case 'start-voting':    
+                return this._startVoting(roomId);
+            case 'draw-battle-vote':
+            case 'submit-vote':     
+                return this._submitVote(roomId, userId, payload.votedForUserId || payload.votedPlayerId);
+            case 'draw-battle-get-results':
+            case 'get-results':     
+                return this._getRoundResults(roomId);
+            case 'draw-battle-next-round':
+            case 'next-round':      
+                return this._nextRound(roomId);
+            case 'draw-battle-get-state':
+            case 'get-state':       
+                return this._getState(roomId, userId);
+            case 'draw-battle-end-game':
+            case 'end-game':        
+                return this._endGame(roomId);
 
             default:
                 return { action: 'error', message: `Unknown draw-battle event: ${eventName}` };
@@ -122,7 +138,7 @@ class DrawBattleEngine {
 
         return {
             action: 'broadcast',
-            event:  'draw-battle-round-start',
+            event:  'draw-battle-round-started',
             data: {
                 prompt:      game.currentPrompt,
                 drawingTime: game.drawingTimeSec,
@@ -170,7 +186,7 @@ class DrawBattleEngine {
 
         return {
             action: 'broadcast',
-            event:  'draw-battle-voting-start',
+            event:  'draw-battle-voting-started',
             data:   { drawings, prompt: game.currentPrompt },
         };
     }
@@ -261,7 +277,7 @@ class DrawBattleEngine {
 
         return {
             action: 'broadcast',
-            event:  'draw-battle-next-round',
+            event:  'draw-battle-next-round-ready',
             data:   { finished: false, nextRound: game.currentRound + 1, nextPrompt: game.currentPrompt },
         };
     }

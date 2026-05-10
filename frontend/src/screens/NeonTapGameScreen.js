@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
@@ -31,13 +30,6 @@ const NeonTapGameScreen = ({ route, navigation }) => {
     const canTap = !isHost || hostParticipates;
 
     useEffect(() => {
-        // Start first round
-        if (isHost) {
-            setTimeout(() => {
-                SocketService.emit('start-neon-tap-round', { roomId: room.id });
-            }, 1000);
-        }
-
         const onRoundStarted = ({ circlePosition: pos, roundStartTime: startTime, currentRound: round, totalRounds: total }) => {
             console.log('Round started:', pos, startTime);
             setCirclePosition(pos);
@@ -47,7 +39,6 @@ const NeonTapGameScreen = ({ route, navigation }) => {
             setGameState('countdown');
             setCountdown(3);
 
-            // Countdown before showing circle
             let count = 3;
             const countdownInterval = setInterval(() => {
                 count--;
@@ -77,91 +68,81 @@ const NeonTapGameScreen = ({ route, navigation }) => {
         };
 
         const onGameFinished = ({ finalScores }) => {
-            console.log('Game finished:', finalScores);
             navigation.navigate('Scoreboard', { room, finalScores });
+        };
+
+        const onGameStateSync = (data) => {
+            console.log('Neon Tap state sync:', data);
+            if (data.gameState) {
+                setCurrentRound(data.gameState.currentRound || 0);
+                setTotalRounds(data.gameState.totalRounds || 10);
+            }
         };
 
         SocketService.on('neon-tap-round-started', onRoundStarted);
         SocketService.on('neon-tap-results', onResults);
         SocketService.on('neon-tap-ready-for-next', onReadyForNext);
         SocketService.on('game-finished', onGameFinished);
+        SocketService.on('game-state-sync', onGameStateSync);
+
+        // Fetch state on mount
+        SocketService.emit('get-state', { roomId: room.id });
+
+        // Start first round if host
+        if (isHost && currentRound === 0 && gameState === 'waiting') {
+            setTimeout(() => {
+                SocketService.emit('start-neon-tap-round', { roomId: room.id });
+            }, 1000);
+        }
 
         return () => {
             SocketService.off('neon-tap-round-started', onRoundStarted);
             SocketService.off('neon-tap-results', onResults);
             SocketService.off('neon-tap-ready-for-next', onReadyForNext);
             SocketService.off('game-finished', onGameFinished);
+            SocketService.off('game-state-sync', onGameStateSync);
         };
-    }, [navigation, room, isHost, hostParticipates]);
+    }, [navigation, room.id, isHost]);
 
     const startPulseAnimation = () => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1.2,
-                    duration: 500,
-                    useNativeDriver: true
-                }),
-                Animated.timing(pulseAnim, {
-                    toValue: 1,
-                    duration: 500,
-                    useNativeDriver: true
-                })
+                Animated.timing(pulseAnim, { toValue: 1.2, duration: 500, useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true })
             ])
         ).start();
     };
 
     const handleTap = () => {
         if (gameState !== 'playing' || !canTap) return;
-
         const tapTime = Date.now();
         const reactionTime = tapTime - roundStartTime;
-
-        console.log('Tapped! Reaction time:', reactionTime);
         setGameState('tapped');
         pulseAnim.stopAnimation();
-
         SocketService.emit('submit-neon-tap', { roomId: room.id, reactionTime });
 
-        // Auto-show results after 2 seconds
-        setTimeout(() => {
-            if (isHost) {
+        if (isHost) {
+            setTimeout(() => {
                 SocketService.emit('show-neon-tap-results', { roomId: room.id });
-            }
-        }, 2000);
+            }, 2000);
+        }
     };
 
     const renderCircle = () => {
         if (!circlePosition || gameState !== 'playing') return null;
-
         const circleSize = 100;
         const left = (width - circleSize) * circlePosition.x;
         const top = (height - circleSize) * circlePosition.y;
 
         return (
-            <Animated.View
-                style={[
-                    styles.circle,
-                    {
-                        left,
-                        top,
-                        width: circleSize,
-                        height: circleSize,
-                        transform: [{ scale: pulseAnim }]
-                    }
-                ]}
-            >
-                <TouchableOpacity
-                    style={styles.circleTouchable}
-                    onPress={handleTap}
-                    activeOpacity={0.8}
-                />
+            <Animated.View style={[styles.circle, { left, top, width: circleSize, height: circleSize, transform: [{ scale: pulseAnim }] }]}>
+                <TouchableOpacity style={styles.circleTouchable} onPress={handleTap} activeOpacity={0.8} />
             </Animated.View>
         );
     };
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton onBackPress={() => navigation.navigate('Lobby', { room, isHost })}>
             <View style={styles.header}>
                 <NeonText size={14} color={COLORS.hotPink}>
                     ROUND {currentRound + 1} / {totalRounds}
@@ -169,72 +150,23 @@ const NeonTapGameScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.gameArea}>
-                {gameState === 'waiting' && (
-                    <NeonText size={24} weight="bold" style={styles.centerText}>
-                        GET READY...
-                    </NeonText>
-                )}
-
-                {gameState === 'countdown' && (
-                    <NeonText size={72} weight="bold" color={COLORS.limeGlow} style={styles.centerText}>
-                        {countdown}
-                    </NeonText>
-                )}
-
+                {gameState === 'waiting' && <NeonText size={24} weight="bold" style={styles.centerText}>GET READY...</NeonText>}
+                {gameState === 'countdown' && <NeonText size={72} weight="bold" color={COLORS.limeGlow} style={styles.centerText}>{countdown}</NeonText>}
                 {gameState === 'playing' && renderCircle()}
-
-                {gameState === 'tapped' && (
-                    <NeonText size={32} weight="bold" color={COLORS.limeGlow} style={styles.centerText}>
-                        TAPPED!
-                    </NeonText>
-                )}
-
-                {!canTap && gameState === 'playing' && (
-                    <NeonText style={styles.spectatorText}>
-                        (Spectating)
-                    </NeonText>
-                )}
+                {gameState === 'tapped' && <NeonText size={32} weight="bold" color={COLORS.limeGlow} style={styles.centerText}>TAPPED!</NeonText>}
+                {!canTap && gameState === 'playing' && <NeonText style={styles.spectatorText}>(Spectating)</NeonText>}
             </View>
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
-    header: {
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    gameArea: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    centerText: {
-        textAlign: 'center',
-    },
-    circle: {
-        position: 'absolute',
-        borderRadius: 1000,
-        backgroundColor: COLORS.limeGlow,
-        shadowColor: COLORS.limeGlow,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 30,
-        elevation: 10,
-    },
-    circleTouchable: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 1000,
-    },
-    spectatorText: {
-        position: 'absolute',
-        bottom: 50,
-        textAlign: 'center',
-        fontStyle: 'italic',
-        color: '#888',
-        fontSize: 14,
-    }
+    header: { alignItems: 'center', marginBottom: 20 },
+    gameArea: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    centerText: { textAlign: 'center' },
+    circle: { position: 'absolute', borderRadius: 1000, backgroundColor: COLORS.limeGlow, shadowColor: COLORS.limeGlow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 30, elevation: 10 },
+    circleTouchable: { width: '100%', height: '100%', borderRadius: 1000 },
+    spectatorText: { position: 'absolute', bottom: 50, textAlign: 'center', fontStyle: 'italic', color: '#888', fontSize: 14 }
 });
 
 export default NeonTapGameScreen;

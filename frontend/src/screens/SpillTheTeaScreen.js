@@ -4,8 +4,10 @@ import {
     StyleSheet,
     TextInput,
     Animated,
-    Dimensions
+    Dimensions,
+    ScrollView
 } from 'react-native';
+import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
@@ -22,7 +24,7 @@ const GAME_PHASES = {
 };
 
 const SpillTheTeaScreen = ({ route, navigation }) => {
-    const { room, playerName, isHost } = route.params;
+    const { room, playerName, isHost, gameState, players: initialPlayers } = route.params;
 
     useGameDisconnectHandler({
         navigation,
@@ -30,39 +32,43 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
         exitParams: { room, isHost }
     });
 
-    const [phase, setPhase] = useState(GAME_PHASES.WAITING);
+    const [phase, setPhase] = useState(gameState?.phase || gameState?.status || GAME_PHASES.WAITING);
     const [secret, setSecret] = useState('');
     const [hasSubmitted, setHasSubmitted] = useState(false);
     
     // Server state
-    const [submissionsCount, setSubmissionsCount] = useState(0);
-    const [totalNeeded, setTotalNeeded] = useState(room.players.length);
-    const [currentSecret, setCurrentSecret] = useState(null);
-    const [currentSecretIndex, setCurrentSecretIndex] = useState(0);
-    const [totalSecrets, setTotalSecrets] = useState(0);
-    const [currentAuthorId, setCurrentAuthorId] = useState(null);
-    const [hasRevealedIdentity, setHasRevealedIdentity] = useState(false);
+    const [submissionsCount, setSubmissionsCount] = useState(gameState?.submittedCount || 0);
+    const [totalNeeded, setTotalNeeded] = useState(initialPlayers?.length || room?.players?.length || 0);
+    const [currentSecret, setCurrentSecret] = useState(gameState?.currentSecret || null);
+    const [currentSecretIndex, setCurrentSecretIndex] = useState(gameState?.currentSecretIndex || 0);
+    const [totalSecrets, setTotalSecrets] = useState(gameState?.totalSecrets || 0);
+    const [currentAuthorId, setCurrentAuthorId] = useState(gameState?.currentAuthorId || null);
+    const [hasRevealedIdentity, setHasRevealedIdentity] = useState(gameState?.hasRevealedIdentity || false);
     const [revealedAuthorName, setRevealedAuthorName] = useState(null);
+    const [players, setPlayers] = useState(initialPlayers || room?.players || []);
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
     useEffect(() => {
-        // We sync state directly when the game starts or reconnects
+        SocketService.on('game-started', handleGameStarted);
         SocketService.on('spill-tea-state-update', handleStateUpdate);
         SocketService.on('spill-tea-new-secret', handleNewSecret);
         SocketService.on('spill-tea-author-revealed', handleAuthorRevealed);
         SocketService.on('game-state-sync', handleGameStateSync);
+        SocketService.on('room-updated', handleRoomUpdate);
 
-        // Fetch initial state if we reconnected or started
-        SocketService.emit('request-room-sync', { roomId: room.id, userId: SocketService.userId });
+        // Fetch initial state
+        SocketService.emit('get-state', { roomId: room.id });
 
         return () => {
+            SocketService.off('game-started', handleGameStarted);
             SocketService.off('spill-tea-state-update', handleStateUpdate);
             SocketService.off('spill-tea-new-secret', handleNewSecret);
             SocketService.off('spill-tea-author-revealed', handleAuthorRevealed);
             SocketService.off('game-state-sync', handleGameStateSync);
+            SocketService.off('room-updated', handleRoomUpdate);
         };
     }, [room.id]);
 
@@ -81,26 +87,37 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
         ]).start();
     }, [currentSecretIndex, phase]);
 
+    const handleGameStarted = (data) => {
+        if (data.gameState) {
+            handleStateUpdate(data.gameState);
+        }
+    };
+
+    const handleRoomUpdate = (updatedRoom) => {
+        setPlayers(updatedRoom.players || []);
+        setTotalNeeded(updatedRoom.players.length);
+    };
+
     const handleStateUpdate = (state) => {
         if (!state) return;
-        setPhase(state.status);
-        if (state.status === GAME_PHASES.SUBMISSION) {
-            setSubmissionsCount(state.submissionsCount);
-            setTotalNeeded(state.totalNeeded);
-        } else if (state.status === GAME_PHASES.READING) {
-            setCurrentSecretIndex(state.currentSecretIndex);
-            setTotalSecrets(state.totalSecrets);
-            setCurrentSecret(state.currentSecret);
-            setCurrentAuthorId(state.currentAuthorId);
-            setHasRevealedIdentity(state.hasRevealedIdentity);
-            if (!state.hasRevealedIdentity) {
-                setRevealedAuthorName(null);
-            }
+        const newStatus = state.status || state.phase;
+        if (newStatus) setPhase(newStatus);
+        
+        if (state.submissionsCount !== undefined) setSubmissionsCount(state.submissionsCount);
+        if (state.totalNeeded !== undefined) setTotalNeeded(state.totalNeeded);
+        
+        if (state.currentSecretIndex !== undefined) setCurrentSecretIndex(state.currentSecretIndex);
+        if (state.totalSecrets !== undefined) setTotalSecrets(state.totalSecrets);
+        if (state.currentSecret !== undefined) setCurrentSecret(state.currentSecret);
+        if (state.currentAuthorId !== undefined) setCurrentAuthorId(state.currentAuthorId);
+        if (state.hasRevealedIdentity !== undefined) setHasRevealedIdentity(state.hasRevealedIdentity);
+        
+        if (state.rankings) {
+            // Handle results if needed
         }
     };
 
     const handleNewSecret = (data) => {
-        // Trigger animation reset
         fadeAnim.setValue(0);
         scaleAnim.setValue(0.8);
         setCurrentSecret(data.secret);
@@ -109,15 +126,14 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
         setTotalSecrets(data.total);
         setHasRevealedIdentity(false);
         setRevealedAuthorName(null);
+        setPhase(GAME_PHASES.READING);
     };
 
     const handleAuthorRevealed = ({ authorId }) => {
         setHasRevealedIdentity(true);
-        // Map authorId to player name using the room data
-        const authorPlayer = room.players.find(p => p.uid === authorId || p.userId === authorId || p.id === authorId);
+        const authorPlayer = players.find(p => p.userId === authorId || p.uid === authorId || p.id === authorId);
         setRevealedAuthorName(authorPlayer ? authorPlayer.name : 'Someone');
         
-        // Emphasize animation
         scaleAnim.setValue(1.2);
         Animated.spring(scaleAnim, {
             toValue: 1,
@@ -127,8 +143,8 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
     };
 
     const handleGameStateSync = (data) => {
-        if (data && data.gameType === 'spill-the-tea') {
-            handleStateUpdate(data.gameState);
+        if (data && (data.gameType === 'spill-the-tea' || data.type === 'spill-the-tea')) {
+            handleStateUpdate(data.gameState || data);
         }
     };
 
@@ -196,28 +212,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
     );
 
     const renderReadingPhase = () => {
-        const isMySecret = SocketService.userId === currentAuthorId;
-
-        // Host hasn't clicked next yet for the first one
-        if (currentSecretIndex === -1) {
-            return (
-                <View style={styles.centeredContainer}>
-                    <NeonText size={22} weight="bold" glow color={COLORS.hotPink}>
-                        ALL SECRETS GATHERED!
-                    </NeonText>
-                    <NeonText size={16} color="#888" style={{ marginTop: 15 }}>
-                        Host, it's time to spill the tea...
-                    </NeonText>
-                    {isHost && (
-                        <NeonButton
-                            title="REVEAL FIRST SECRET"
-                            onPress={revealNext}
-                            style={styles.nextButton}
-                        />
-                    )}
-                </View>
-            );
-        }
+        const isMySecret = SocketService.userId === currentAuthorId || SocketService.socketId === currentAuthorId;
 
         return (
             <View style={styles.readingContainer}>
@@ -236,7 +231,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
                         <View style={styles.revealedBox}>
                             <NeonText size={18} color="#aaa">This tea belongs to:</NeonText>
                             <NeonText size={32} weight="bold" color={COLORS.hotPink} glow style={styles.revealedName}>
-                                {revealedAuthorName || 'Unknown'}
+                                {revealedAuthorName || 'Someone'}
                             </NeonText>
                         </View>
                     ) : (
@@ -273,22 +268,14 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
             
             <NeonButton
                 title="BACK TO LOBBY"
-                onPress={() => {
-                    try {
-                        navigation.navigate("Lobby", { room });
-                    } catch (e) {
-                        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-                    }
-                }}
+                onPress={() => navigation.goBack()}
                 style={{ marginTop: 40 }}
             />
         </View>
     );
 
     const renderPhase = () => {
-        // If we haven't received state yet or haven't started explicitly
         if (phase === GAME_PHASES.WAITING) {
-            // Assume submission phase kicks in based on state sync
             return (
                 <View style={styles.centeredContainer}>
                     <NeonText size={24} weight="bold" glow>
@@ -302,28 +289,31 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
             case GAME_PHASES.SUBMISSION: return renderSubmissionPhase();
             case GAME_PHASES.READING: return renderReadingPhase();
             case GAME_PHASES.FINISHED: return renderFinishedPhase();
-            default: return null;
+            default: return renderSubmissionPhase(); // Default fallback
         }
     };
 
     return (
-        <GameOverlay roomId={room.id} playerName={playerName}>
-            <MuteButton />
-            <View style={styles.header}>
-                <NeonText size={18} color={COLORS.hotPink} weight="bold">SPILL THE TEA</NeonText>
-            </View>
-            {renderPhase()}
-        </GameOverlay>
+        <NeonContainer>
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <View style={styles.header}>
+                    <NeonText size={18} color={COLORS.hotPink} weight="bold">SPILL THE TEA</NeonText>
+                </View>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                    {renderPhase()}
+                </ScrollView>
+            </GameOverlay>
+        </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingTop: 10,
+        paddingBottom: 20,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,105,180,0.3)',
-        backgroundColor: 'rgba(0,0,0,0.3)'
     },
     centeredContainer: {
         flex: 1,

@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getNHIEPrompt } = require('../data/neverHaveIEverPrompts');
+const { getRandomPrompt } = require('../data/neverHaveIEverPrompts');
 
 class NeverHaveIEverEngine {
     constructor() {
@@ -37,7 +37,7 @@ class NeverHaveIEverEngine {
         const category = options.category || 'normal';
         
         const playerOrder = room.players.map(p => p.userId);
-        const firstPrompt = getNHIEPrompt(category, []);
+        const firstPrompt = getRandomPrompt(category, []);
 
         const MAX_ROUNDS = 30;
 
@@ -151,7 +151,7 @@ class NeverHaveIEverEngine {
             };
         }
 
-        const newPrompt = getNHIEPrompt(game.category, game.usedPrompts);
+        const newPrompt = getRandomPrompt(game.category, game.usedPrompts);
         game.currentPrompt = newPrompt;
         game.usedPrompts.push(newPrompt);
         game.roundNumber++;

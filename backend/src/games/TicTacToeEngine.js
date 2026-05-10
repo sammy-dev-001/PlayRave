@@ -62,12 +62,30 @@ class TicTacToeEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
-            case 'start-match':    return this._startMatch(roomId);
-            case 'make-move':      return this._makeMove(roomId, userId, payload.position);
-            case 'ai-move':        return this._makeAIMove(roomId);
-            case 'next-match':     return this._nextMatch(roomId);
-            case 'get-state':      return this._getState(roomId, userId);
-            case 'end-game':       return this._endGame(roomId);
+            case 'tic-tac-toe-start-match':
+            case 'ttt-start-match':
+            case 'start-match':    
+                return this._startMatch(roomId);
+            case 'tic-tac-toe-make-move':
+            case 'ttt-make-move':
+            case 'make-move':      
+                return this._makeMove(roomId, userId, payload.position);
+            case 'tic-tac-toe-ai-move':
+            case 'ttt-ai-move':
+            case 'ai-move':        
+                return this._makeAIMove(roomId);
+            case 'tic-tac-toe-next-match':
+            case 'ttt-next-match':
+            case 'next-match':     
+                return this._nextMatch(roomId);
+            case 'tic-tac-toe-get-state':
+            case 'ttt-get-state':
+            case 'get-state':      
+                return this._getState(roomId, userId);
+            case 'tic-tac-toe-end-game':
+            case 'ttt-end-game':
+            case 'end-game':       
+                return this._endGame(roomId);
 
             default:
                 return { action: 'error', message: `Unknown tic-tac-toe event: ${eventName}` };

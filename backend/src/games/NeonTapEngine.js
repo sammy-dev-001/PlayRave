@@ -24,8 +24,12 @@ class NeonTapEngine {
             case 'show-neon-tap-results':
             case 'get-results':
                 return this.getResults(roomId);
+            case 'next-neon-tap-round':
             case 'next-round':
                 return this.nextRound(roomId);
+            case 'neon-tap-get-state':
+            case 'get-state':
+                return this.getState(roomId, userId);
             case 'end-game':
                 return this.endGame(roomId);
             default:
@@ -83,6 +87,20 @@ class NeonTapEngine {
             currentRound: game.currentRound,
             totalRounds: game.totalRounds,
             status: game.status
+        };
+    }
+
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId);
+        if (!state) return { action: 'error', message: 'Game not found' };
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: {
+                gameType: 'neon-tap',
+                gameState: state
+            }
         };
     }
 

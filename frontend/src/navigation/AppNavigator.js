@@ -49,10 +49,6 @@ const NeverHaveIEverCategoryScreen = lazy(() => import('../screens/NeverHaveIEve
 const NeverHaveIEverScreen = lazy(() => import('../screens/NeverHaveIEverScreen'));
 const OnlineNHIECategoryScreen = lazy(() => import('../screens/OnlineNHIECategoryScreen'));
 const OnlineNeverHaveIEverScreen = lazy(() => import('../screens/OnlineNeverHaveIEverScreen'));
-const RapidFireCategoryScreen = lazy(() => import('../screens/RapidFireCategoryScreen'));
-const RapidFireScreen = lazy(() => import('../screens/RapidFireScreen'));
-const OnlineRapidFireCategoryScreen = lazy(() => import('../screens/OnlineRapidFireCategoryScreen'));
-const OnlineRapidFireScreen = lazy(() => import('../screens/OnlineRapidFireScreen'));
 const ScrabbleScreen = lazy(() => import('../screens/ScrabbleScreen'));
 const OnlineScrabbleScreen = lazy(() => import('../screens/OnlineScrabbleScreen'));
 const ScrabbleDifficultyScreen = lazy(() => import('../screens/ScrabbleDifficultyScreen'));
@@ -71,6 +67,20 @@ const UnpopularOpinionsScreen = lazy(() => import('../screens/UnpopularOpinionsS
 const TicTacToeDifficultyScreen = lazy(() => import('../screens/TicTacToeDifficultyScreen'));
 const LocalTicTacToeScreen = lazy(() => import('../screens/LocalTicTacToeScreen'));
 const SettingsScreen = lazy(() => import('../screens/SettingsScreen'));
+const SpillTheTeaScreen = lazy(() => import('../screens/SpillTheTeaScreen'));
+const HotSeatScreen = lazy(() => import('../screens/HotSeatScreen'));
+const HotSeatCategoryScreen = lazy(() => import('../screens/HotSeatCategoryScreen'));
+const HotSeatMCScreen = lazy(() => import('../screens/HotSeatMCScreen'));
+const ButtonMashScreen = lazy(() => import('../screens/ButtonMashScreen'));
+const TypeRaceScreen = lazy(() => import('../screens/TypeRaceScreen'));
+const MathBlitzScreen = lazy(() => import('../screens/MathBlitzScreen'));
+const ColorRushScreen = lazy(() => import('../screens/ColorRushScreen'));
+const MemoryMatchScreen = lazy(() => import('../screens/MemoryMatchScreen'));
+const TicTacToeScreen = lazy(() => import('../screens/TicTacToeScreen'));
+const DrawBattleScreen = lazy(() => import('../screens/DrawBattleScreen'));
+const LieDetectorScreen = lazy(() => import('../screens/LieDetectorScreen'));
+const LANModeScreen = lazy(() => import('../screens/LANModeScreen'));
+const LocalCharadesScreen = lazy(() => import('../screens/LocalCharadesScreen'));
 
 // Tournament screens
 const TournamentSetupScreen = lazy(() => import('../screens/TournamentSetupScreen'));
@@ -113,10 +123,6 @@ const LazyNeverHaveIEverCategoryScreen = withSuspense(NeverHaveIEverCategoryScre
 const LazyNeverHaveIEverScreen = withSuspense(NeverHaveIEverScreen);
 const LazyOnlineNHIECategoryScreen = withSuspense(OnlineNHIECategoryScreen);
 const LazyOnlineNeverHaveIEverScreen = withSuspense(OnlineNeverHaveIEverScreen);
-const LazyRapidFireCategoryScreen = withSuspense(RapidFireCategoryScreen);
-const LazyRapidFireScreen = withSuspense(RapidFireScreen);
-const LazyOnlineRapidFireCategoryScreen = withSuspense(OnlineRapidFireCategoryScreen);
-const LazyOnlineRapidFireScreen = withSuspense(OnlineRapidFireScreen);
 const LazyScrabbleScreen = withSuspense(ScrabbleScreen);
 const LazyOnlineScrabbleScreen = withSuspense(OnlineScrabbleScreen);
 const LazyScrabbleDifficultyScreen = withSuspense(ScrabbleDifficultyScreen);
@@ -138,6 +144,20 @@ const LazySettingsScreen = withSuspense(SettingsScreen);
 const LazyTournamentSetupScreen = withSuspense(TournamentSetupScreen);
 const LazyTournamentLobbyScreen = withSuspense(TournamentLobbyScreen);
 const LazyTournamentResultsScreen = withSuspense(TournamentResultsScreen);
+const LazySpillTheTeaScreen = withSuspense(SpillTheTeaScreen);
+const LazyHotSeatScreen = withSuspense(HotSeatScreen);
+const LazyHotSeatCategoryScreen = withSuspense(HotSeatCategoryScreen);
+const LazyHotSeatMCScreen = withSuspense(HotSeatMCScreen);
+const LazyButtonMashScreen = withSuspense(ButtonMashScreen);
+const LazyTypeRaceScreen = withSuspense(TypeRaceScreen);
+const LazyMathBlitzScreen = withSuspense(MathBlitzScreen);
+const LazyColorRushScreen = withSuspense(ColorRushScreen);
+const LazyMemoryMatchScreen = withSuspense(MemoryMatchScreen);
+const LazyTicTacToeScreen = withSuspense(TicTacToeScreen);
+const LazyDrawBattleScreen = withSuspense(DrawBattleScreen);
+const LazyLieDetectorScreen = withSuspense(LieDetectorScreen);
+const LazyLANModeScreen = withSuspense(LANModeScreen);
+const LazyLocalCharadesScreen = withSuspense(LocalCharadesScreen);
 
 const AppNavigator = () => {
     return (
@@ -195,10 +215,6 @@ const AppNavigator = () => {
                             <Stack.Screen name="NeverHaveIEver" component={LazyNeverHaveIEverScreen} />
                             <Stack.Screen name="OnlineNHIECategory" component={LazyOnlineNHIECategoryScreen} />
                             <Stack.Screen name="OnlineNeverHaveIEver" component={LazyOnlineNeverHaveIEverScreen} />
-                            <Stack.Screen name="RapidFireCategory" component={LazyRapidFireCategoryScreen} />
-                            <Stack.Screen name="RapidFire" component={LazyRapidFireScreen} />
-                            <Stack.Screen name="OnlineRapidFireCategory" component={LazyOnlineRapidFireCategoryScreen} />
-                            <Stack.Screen name="OnlineRapidFire" component={LazyOnlineRapidFireScreen} />
                             <Stack.Screen name="Scrabble" component={LazyScrabbleScreen} />
                             <Stack.Screen name="OnlineScrabble" component={LazyOnlineScrabbleScreen} />
                             <Stack.Screen name="ScrabbleDifficulty" component={LazyScrabbleDifficultyScreen} />
@@ -215,28 +231,28 @@ const AppNavigator = () => {
                             <Stack.Screen name="ConfessionRoulette" component={LazyConfessionRouletteScreen} />
                             <Stack.Screen name="Imposter" component={LazyImposterScreen} />
                             <Stack.Screen name="UnpopularOpinions" component={LazyUnpopularOpinionsScreen} />
-                            <Stack.Screen name="SpillTheTea" component={withSuspense(lazy(() => import('../screens/SpillTheTeaScreen')))} />
-                            <Stack.Screen name="HotSeat" component={withSuspense(lazy(() => import('../screens/HotSeatScreen')))} />
-                            <Stack.Screen name="HotSeatCategory" component={withSuspense(lazy(() => import('../screens/HotSeatCategoryScreen')))} />
-                            <Stack.Screen name="HotSeatMC" component={withSuspense(lazy(() => import('../screens/HotSeatMCScreen')))} />
-                            <Stack.Screen name="ButtonMash" component={withSuspense(lazy(() => import('../screens/ButtonMashScreen')))} />
-                            <Stack.Screen name="TypeRace" component={withSuspense(lazy(() => import('../screens/TypeRaceScreen')))} />
-                            <Stack.Screen name="MathBlitz" component={withSuspense(lazy(() => import('../screens/MathBlitzScreen')))} />
-                            <Stack.Screen name="ColorRush" component={withSuspense(lazy(() => import('../screens/ColorRushScreen')))} />
-                            <Stack.Screen name="MemoryMatch" component={withSuspense(lazy(() => import('../screens/MemoryMatchScreen')))} />
-                            <Stack.Screen name="TicTacToe" component={withSuspense(lazy(() => import('../screens/TicTacToeScreen')))} />
+                            <Stack.Screen name="SpillTheTea" component={LazySpillTheTeaScreen} />
+                            <Stack.Screen name="HotSeat" component={LazyHotSeatScreen} />
+                            <Stack.Screen name="HotSeatCategory" component={LazyHotSeatCategoryScreen} />
+                            <Stack.Screen name="HotSeatMC" component={LazyHotSeatMCScreen} />
+                            <Stack.Screen name="ButtonMash" component={LazyButtonMashScreen} />
+                            <Stack.Screen name="TypeRace" component={LazyTypeRaceScreen} />
+                            <Stack.Screen name="MathBlitz" component={LazyMathBlitzScreen} />
+                            <Stack.Screen name="ColorRush" component={LazyColorRushScreen} />
+                            <Stack.Screen name="MemoryMatch" component={LazyMemoryMatchScreen} />
+                            <Stack.Screen name="TicTacToe" component={LazyTicTacToeScreen} />
                             <Stack.Screen name="TicTacToeDifficulty" component={LazyTicTacToeDifficultyScreen} />
                             <Stack.Screen name="LocalTicTacToe" component={LazyLocalTicTacToeScreen} />
-                            <Stack.Screen name="DrawBattle" component={withSuspense(lazy(() => import('../screens/DrawBattleScreen')))} />
+                            <Stack.Screen name="DrawBattle" component={LazyDrawBattleScreen} />
                             <Stack.Screen name="Auth" component={withSuspense(AuthScreen)} />
                             <Stack.Screen name="Leaderboard" component={withSuspense(LeaderboardScreen)} />
                             <Stack.Screen name="MyPacks" component={withSuspense(MyPacksScreen)} />
                             <Stack.Screen name="CommunityPacks" component={withSuspense(CommunityPacksScreen)} />
                             <Stack.Screen name="CustomPackEditor" component={withSuspense(CustomPackEditorScreen)} />
                             <Stack.Screen name="Challenges" component={withSuspense(ChallengesScreen)} />
-                            <Stack.Screen name="LieDetector" component={withSuspense(lazy(() => import('../screens/LieDetectorScreen')))} />
-                            <Stack.Screen name="LANMode" component={withSuspense(lazy(() => import('../screens/LANModeScreen')))} />
-                            <Stack.Screen name="LocalCharades" component={withSuspense(lazy(() => import('../screens/LocalCharadesScreen')))} />
+                            <Stack.Screen name="LieDetector" component={LazyLieDetectorScreen} />
+                            <Stack.Screen name="LANMode" component={LazyLANModeScreen} />
+                            <Stack.Screen name="LocalCharades" component={LazyLocalCharadesScreen} />
                         </Stack.Navigator>
                     </NavigationContainer>
                 </GameProvider>

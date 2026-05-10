@@ -26,6 +26,9 @@ class MythOrFactEngine {
             case 'next-myth-or-fact-statement':
             case 'next-statement':
                 return this.nextStatement(roomId);
+            case 'myth-or-fact-get-state':
+            case 'get-state':
+                return this.getState(roomId, userId);
             case 'myth-or-fact-end-game':
             case 'end-myth-or-fact':
             case 'end-game':
@@ -86,15 +89,33 @@ class MythOrFactEngine {
         const game = this.activeGames.get(roomId);
         if (!game || game.type !== 'myth-or-fact') return null;
 
-        const statement = game.statements[game.currentStatementIndex];
+        const currentStatement = game.statements[game.currentStatementIndex];
         return {
             status: game.status,
             statementIndex: game.currentStatementIndex,
             totalStatements: game.statements.length,
-            statement: statement.statement,
-            category: statement.category,
+            statement: {
+                statement: currentStatement.statement,
+                category: currentStatement.category,
+                totalStatements: game.statements.length,
+                statementIndex: game.currentStatementIndex
+            },
             scores: game.scores,
             hasAnswered: userId ? !!(game.playerAnswers[userId] && game.playerAnswers[userId][game.currentStatementIndex] !== undefined) : false
+        };
+    }
+
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId, userId);
+        if (!state) return { action: 'error', message: 'Game not found' };
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: {
+                gameType: 'myth-or-fact',
+                gameState: state
+            }
         };
     }
 

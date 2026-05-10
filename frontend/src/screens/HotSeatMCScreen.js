@@ -11,9 +11,9 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
-import { useAuth } from '../context/AuthContext';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
@@ -109,10 +109,9 @@ const chipStyles = StyleSheet.create({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 const HotSeatMCScreen = ({ route, navigation }) => {
-    const { room: initialRoom, playerName, isHost, players: initialPlayers } = route.params;
-    const { user } = useAuth();
+    const { room: initialRoom, playerName, isHost, players: initialPlayers, gameState: initialGameState } = route.params;
 
-    const [gameState, setGameState] = useState(route.params.initialGameState || null);
+    const [gameState, setGameState] = useState(initialGameState || null);
     const [room, setRoom] = useState(initialRoom);
     const [players, setPlayers] = useState(initialPlayers || initialRoom?.players || []);
     const [selectedOption, setSelectedOption] = useState(null);
@@ -130,6 +129,13 @@ const HotSeatMCScreen = ({ route, navigation }) => {
 
     // ── Socket listeners ──────────────────────────────────────────────────────
     useEffect(() => {
+        const onGameStarted = (data) => {
+            console.log('Hot Seat MC game started:', data);
+            if (data.gameState) setGameState(data.gameState);
+            setRevealData(null);
+            setGameFinished(false);
+        };
+
         const onStateUpdate = (state) => {
             setGameState(state);
             if (!state.hasGuessed && state.gamePhase === 'guessing-phase') {
@@ -164,16 +170,29 @@ const HotSeatMCScreen = ({ route, navigation }) => {
             setPlayers(updatedRoom.players || []);
         };
 
+        const onGameStateSync = (data) => {
+            if (data && (data.gameType === 'hot-seat-mc' || data.type === 'hot-seat-mc')) {
+                setGameState(data.gameState || data);
+            }
+        };
+
+        SocketService.on('game-started', onGameStarted);
         SocketService.on('hot-seat-mc-state-update', onStateUpdate);
         SocketService.on('hot-seat-mc-reveal', onReveal);
         SocketService.on('hot-seat-mc-game-finished', onGameFinished);
         SocketService.on('room-updated', onRoomUpdated);
+        SocketService.on('game-state-sync', onGameStateSync);
+
+        // Fetch initial state
+        SocketService.emit('get-state', { roomId: room.id });
 
         return () => {
+            SocketService.off('game-started', onGameStarted);
             SocketService.off('hot-seat-mc-state-update', onStateUpdate);
             SocketService.off('hot-seat-mc-reveal', onReveal);
             SocketService.off('hot-seat-mc-game-finished', onGameFinished);
             SocketService.off('room-updated', onRoomUpdated);
+            SocketService.off('game-state-sync', onGameStateSync);
         };
     }, [room.id]);
 
@@ -228,7 +247,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
         return (
             <NeonContainer>
                 <View style={styles.center}>
-                    <NeonText size={24} glow>Loading…</NeonText>
+                    <NeonText size={24} glow>LOADING HOT SEAT...</NeonText>
                 </View>
             </NeonContainer>
         );
@@ -238,48 +257,50 @@ const HotSeatMCScreen = ({ route, navigation }) => {
     if (gameFinished && finishedData) {
         return (
             <NeonContainer>
-                <ScrollView contentContainerStyle={styles.finishedContainer}>
-                    <NeonText size={13} color={COLORS.hotPink} style={{ letterSpacing: 3 }}>GAME OVER</NeonText>
-                    <View style={styles.flameRow}>
-                        <Ionicons name="flame" size={28} color={COLORS.hotPink} />
-                        <NeonText size={30} weight="bold" glow>THE HOT SEAT</NeonText>
-                        <Ionicons name="flame" size={28} color={COLORS.hotPink} />
-                    </View>
-
-                    {finishedData.winner && (
-                        <View style={styles.winnerCard}>
-                            <NeonText size={13} color="#888" style={{ letterSpacing: 2 }}>👑 WINNER</NeonText>
-                            <NeonText size={30} weight="bold" color={COLORS.neonCyan} glow style={{ marginTop: 8 }}>
-                                {finishedData.winner.name}
-                            </NeonText>
-                            <NeonText size={20} color={COLORS.limeGlow} style={{ marginTop: 4 }}>
-                                {finishedData.winner.score} pts
-                            </NeonText>
+                <GameOverlay roomId={room.id} playerName={playerName}>
+                    <ScrollView contentContainerStyle={styles.finishedContainer}>
+                        <NeonText size={13} color={COLORS.hotPink} style={{ letterSpacing: 3 }}>GAME OVER</NeonText>
+                        <View style={styles.flameRow}>
+                            <Ionicons name="flame" size={28} color={COLORS.hotPink} />
+                            <NeonText size={30} weight="bold" glow>THE HOT SEAT</NeonText>
+                            <Ionicons name="flame" size={28} color={COLORS.hotPink} />
                         </View>
-                    )}
 
-                    {finishedData.rankings?.length > 0 && (
-                        <View style={styles.rankingsContainer}>
-                            <NeonText size={14} weight="bold" color="#aaa" style={{ marginBottom: 12, letterSpacing: 2 }}>
-                                FINAL SCORES
-                            </NeonText>
-                            {finishedData.rankings.map((p, i) => (
-                                <View key={p.id} style={[styles.rankRow, i === 0 && styles.rankRowFirst]}>
-                                    <NeonText size={16} weight="bold" color={i === 0 ? COLORS.neonCyan : '#bbb'}>
-                                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}{'  '}{p.name}
-                                    </NeonText>
-                                    <NeonText size={16} color={COLORS.limeGlow} weight="bold">{p.score} pts</NeonText>
-                                </View>
-                            ))}
-                        </View>
-                    )}
+                        {finishedData.winner && (
+                            <View style={styles.winnerCard}>
+                                <NeonText size={13} color="#888" style={{ letterSpacing: 2 }}>👑 WINNER</NeonText>
+                                <NeonText size={30} weight="bold" color={COLORS.neonCyan} glow style={{ marginTop: 8 }}>
+                                    {finishedData.winner.name}
+                                </NeonText>
+                                <NeonText size={20} color={COLORS.limeGlow} style={{ marginTop: 4 }}>
+                                    {finishedData.winner.score} pts
+                                </NeonText>
+                            </View>
+                        )}
 
-                    <NeonButton
-                        title="BACK TO LOBBY"
-                        onPress={() => navigation.navigate('Lobby', { room, playerName })}
-                        style={{ marginTop: 30 }}
-                    />
-                </ScrollView>
+                        {finishedData.rankings?.length > 0 && (
+                            <View style={styles.rankingsContainer}>
+                                <NeonText size={14} weight="bold" color="#aaa" style={{ marginBottom: 12, letterSpacing: 2 }}>
+                                    FINAL SCORES
+                                </NeonText>
+                                {finishedData.rankings.map((p, i) => (
+                                    <View key={p.id} style={[styles.rankRow, i === 0 && styles.rankRowFirst]}>
+                                        <NeonText size={16} weight="bold" color={i === 0 ? COLORS.neonCyan : '#bbb'}>
+                                            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}{'  '}{p.name}
+                                        </NeonText>
+                                        <NeonText size={16} color={COLORS.limeGlow} weight="bold">{p.score} pts</NeonText>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+                        <NeonButton
+                            title="BACK TO LOBBY"
+                            onPress={() => navigation.navigate('Lobby', { room, playerName })}
+                            style={{ marginTop: 30 }}
+                        />
+                    </ScrollView>
+                </GameOverlay>
             </NeonContainer>
         );
     }
@@ -383,9 +404,8 @@ const HotSeatMCScreen = ({ route, navigation }) => {
         </View>
     );
 
-    // Guesser progress chips — shows all non-target players with Away state
     const renderGuesserChips = () => {
-        const guessers = players.filter(p => p.id !== targetUserId && p.uid !== targetUserId);
+        const guessers = players.filter(p => p.userId !== targetUserId);
         if (guessers.length === 0) return null;
 
         const guessedIds = Object.keys(gameState.playerGuesses || {});
@@ -398,9 +418,9 @@ const HotSeatMCScreen = ({ route, navigation }) => {
                 <View style={styles.chipRow}>
                     {guessers.map(p => (
                         <PlayerChip
-                            key={p.id}
+                            key={p.userId}
                             player={p}
-                            guessed={guessedIds.includes(p.id) || guessedIds.includes(p.uid)}
+                            guessed={guessedIds.includes(p.userId)}
                         />
                     ))}
                 </View>
@@ -414,238 +434,197 @@ const HotSeatMCScreen = ({ route, navigation }) => {
         </TouchableOpacity>
     );
 
-    // ── Phase 1: Target answers ───────────────────────────────────────────────
-    if (gamePhase === 'waiting-for-target') {
-        return (
-            <NeonContainer>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    {renderHeader()}
-                    {renderTargetBadge()}
+    const renderPhase = () => {
+        if (gamePhase === 'waiting-for-target') {
+            return (
+                <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+                    {isTarget ? (
+                        <View style={styles.phaseContainer}>
+                            <NeonText size={13} color={COLORS.limeGlow} style={styles.phaseHint}>
+                                Answer honestly — everyone else will try to guess what you picked!
+                            </NeonText>
 
-                    <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
-                        {isTarget ? (
-                            <View style={styles.phaseContainer}>
-                                <NeonText size={13} color={COLORS.limeGlow} style={styles.phaseHint}>
-                                    Answer honestly — everyone else will try to guess what you picked!
-                                </NeonText>
-
-                                <View style={styles.questionCard}>
-                                    <NeonText size={20} weight="bold" style={styles.questionText}>
-                                        "{currentQuestion}"
-                                    </NeonText>
-                                </View>
-
-                                {renderOptions((i) => setSelectedOption(i), hasLocked)}
-
-                                <NeonButton
-                                    title={hasLocked ? 'LOCKED IN ✓' : 'LOCK IN MY ANSWER'}
-                                    onPress={handleLockTargetAnswer}
-                                    disabled={selectedOption === null || hasLocked}
-                                    style={styles.actionButton}
-                                />
-                            </View>
-                        ) : (
-                            <View style={styles.waitingContainer}>
-                                <Ionicons name="hourglass-outline" size={50} color={COLORS.neonCyan} />
-                                <NeonText size={18} weight="bold" style={{ marginTop: 16 }}>
-                                    {targetUserName} is answering…
-                                </NeonText>
-                                <NeonText size={13} color="#777" style={{ marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
-                                    They're picking their truth. Get ready to guess!
+                            <View style={styles.questionCard}>
+                                <NeonText size={20} weight="bold" style={styles.questionText}>
+                                    "{currentQuestion}"
                                 </NeonText>
                             </View>
-                        )}
-                    </Animated.View>
 
-                    {renderEndButton()}
-                </ScrollView>
-            </NeonContainer>
-        );
-    }
+                            {renderOptions((i) => setSelectedOption(i), hasLocked)}
 
-    // ── Phase 2: Guessing ─────────────────────────────────────────────────────
-    if (gamePhase === 'guessing-phase') {
-        return (
-            <NeonContainer>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    {renderHeader()}
-                    {renderTargetBadge()}
-
-                    <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
-                        {isTarget ? (
-                            <View style={styles.waitingContainer}>
-                                <Ionicons name="people-outline" size={50} color={COLORS.electricPurple} />
-                                <NeonText size={18} weight="bold" style={{ marginTop: 16 }}>
-                                    Waiting for guesses…
-                                </NeonText>
-                                <NeonText size={13} color="#777" style={{ marginTop: 8 }}>
-                                    Everyone's trying to read your mind!
-                                </NeonText>
-
-                                {/* Guesser chips with Away overlays */}
-                                {renderGuesserChips()}
-
-                                <View style={styles.progressBadge}>
-                                    <NeonText size={16} color={COLORS.limeGlow} weight="bold">
-                                        {guessCount} / {expectedGuessers} guessed
-                                    </NeonText>
-                                </View>
-                            </View>
-                        ) : (
-                            <View style={styles.phaseContainer}>
-                                <NeonText size={13} color={COLORS.electricPurple} style={styles.phaseHint}>
-                                    What do you think {targetUserName} picked?
-                                </NeonText>
-
-                                <View style={styles.questionCard}>
-                                    <NeonText size={20} weight="bold" style={styles.questionText}>
-                                        "{currentQuestion}"
-                                    </NeonText>
-                                </View>
-
-                                {hasGuessed || hasLocked ? (
-                                    <View style={styles.lockedInView}>
-                                        <Ionicons name="checkmark-circle" size={52} color={COLORS.limeGlow} />
-                                        <NeonText size={18} weight="bold" style={{ marginTop: 14 }}>
-                                            Guess Locked In!
-                                        </NeonText>
-                                        <NeonText size={13} color="#777" style={{ marginTop: 8 }}>
-                                            Waiting for others… ({guessCount}/{expectedGuessers})
-                                        </NeonText>
-                                        {renderGuesserChips()}
-                                    </View>
-                                ) : (
-                                    <>
-                                        {renderOptions((i) => setSelectedOption(i))}
-                                        <NeonButton
-                                            title="LOCK IN MY GUESS"
-                                            onPress={handleLockGuess}
-                                            disabled={selectedOption === null}
-                                            style={styles.actionButton}
-                                        />
-                                    </>
-                                )}
-                            </View>
-                        )}
-                    </Animated.View>
-
-                    {renderEndButton()}
-                </ScrollView>
-            </NeonContainer>
-        );
-    }
-
-    // ── Phase 3: Reveal ───────────────────────────────────────────────────────
-    if (gamePhase === 'reveal-phase' && revealData) {
-        const { correctAnswerIndex, correctAnswerText, guessResults, correctGuessCount, targetBonus } = revealData;
-
-        return (
-            <NeonContainer>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    {renderHeader()}
-                    {renderTargetBadge()}
-
-                    <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
-
-                        {/* Question recap */}
-                        <View style={styles.questionCard}>
-                            <NeonText size={17} weight="bold" style={styles.questionText}>
-                                "{currentQuestion}"
-                            </NeonText>
-                        </View>
-
-                        {/* THE BIG REVEAL — correct answer with massive glow */}
-                        <View style={styles.revealCard}>
-                            <NeonText size={12} color="#777" style={{ letterSpacing: 2, marginBottom: 8 }}>
-                                THE ANSWER WAS
-                            </NeonText>
-                            <View style={styles.revealAnswerRow}>
-                                <View style={styles.revealLabel}>
-                                    <NeonText size={20} weight="bold" color={COLORS.limeGlow}>
-                                        {OPTION_LABELS[correctAnswerIndex]}
-                                    </NeonText>
-                                </View>
-                                <NeonText size={20} weight="bold" color={COLORS.limeGlow} glow style={{ flex: 1, lineHeight: 28 }}>
-                                    {correctAnswerText}
-                                </NeonText>
-                                <Ionicons name="checkmark-circle" size={28} color={COLORS.limeGlow} />
-                            </View>
-                        </View>
-
-                        {/* Who guessed what */}
-                        <View style={styles.guessResultsContainer}>
-                            <NeonText size={13} weight="bold" color="#aaa" style={{ marginBottom: 12, letterSpacing: 2 }}>
-                                WHO GUESSED WHAT
-                            </NeonText>
-                            {Object.values(guessResults).map((gr, i) => (
-                                <View
-                                    key={i}
-                                    style={[
-                                        styles.guessRow,
-                                        gr.isCorrect && styles.guessRowCorrect,
-                                    ]}
-                                >
-                                    {/* Left: name + guess */}
-                                    <View style={styles.guessRowLeft}>
-                                        <View style={[styles.guessInitial, { backgroundColor: gr.isCorrect ? 'rgba(198,255,74,0.2)' : 'rgba(255,255,255,0.06)' }]}>
-                                            <NeonText size={14} weight="bold" color={gr.isCorrect ? COLORS.limeGlow : '#bbb'}>
-                                                {gr.playerName?.charAt(0) || '?'}
-                                            </NeonText>
-                                        </View>
-                                        <View>
-                                            <NeonText size={14} weight="bold" color={gr.isCorrect ? '#fff' : '#bbb'}>
-                                                {gr.playerName}
-                                            </NeonText>
-                                            <NeonText size={12} color="#777">
-                                                {OPTION_LABELS[gr.guessIndex]}. {gr.guessText}
-                                            </NeonText>
-                                        </View>
-                                    </View>
-
-                                    {/* Right: score badge */}
-                                    {gr.isCorrect ? (
-                                        <Animated.View style={[styles.correctBadge, { transform: [{ scale: bonusScale }], opacity: bonusOpacity }]}>
-                                            <NeonText size={14} weight="bold" color={COLORS.limeGlow}>+100</NeonText>
-                                        </Animated.View>
-                                    ) : (
-                                        <Ionicons name="close-circle" size={22} color="rgba(255,59,100,0.5)" />
-                                    )}
-                                </View>
-                            ))}
-                        </View>
-
-                        {/* Target bonus */}
-                        <Animated.View style={[styles.targetBonusCard, { transform: [{ scale: bonusScale }], opacity: bonusOpacity }]}>
-                            <NeonText size={13} color="#888">{targetUserName} earned</NeonText>
-                            <NeonText size={32} weight="bold" color={COLORS.neonCyan} glow style={{ marginVertical: 4 }}>
-                                +{targetBonus} pts
-                            </NeonText>
-                            <NeonText size={12} color="#555">
-                                {correctGuessCount} correct guess{correctGuessCount !== 1 ? 'es' : ''} × 50
-                            </NeonText>
-                        </Animated.View>
-
-                        {isHost && (
                             <NeonButton
-                                title={round >= totalRounds ? 'SEE FINAL RESULTS' : 'NEXT ROUND →'}
-                                onPress={handleNextRound}
+                                title={hasLocked ? 'LOCKED IN ✓' : 'LOCK IN MY ANSWER'}
+                                onPress={handleLockTargetAnswer}
+                                disabled={selectedOption === null || hasLocked}
                                 style={styles.actionButton}
                             />
-                        )}
+                        </View>
+                    ) : (
+                        <View style={styles.waitingContainer}>
+                            <Ionicons name="hourglass-outline" size={50} color={COLORS.neonCyan} />
+                            <NeonText size={18} weight="bold" style={{ marginTop: 16 }}>
+                                {targetUserName} is answering…
+                            </NeonText>
+                            <NeonText size={13} color="#777" style={{ marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+                                They're picking their truth. Get ready to guess!
+                            </NeonText>
+                        </View>
+                    )}
+                </Animated.View>
+            );
+        }
+
+        if (gamePhase === 'guessing-phase') {
+            return (
+                <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+                    {isTarget ? (
+                        <View style={styles.waitingContainer}>
+                            <Ionicons name="people-outline" size={50} color={COLORS.electricPurple} />
+                            <NeonText size={18} weight="bold" style={{ marginTop: 16 }}>
+                                Waiting for guesses…
+                            </NeonText>
+                            <NeonText size={13} color="#777" style={{ marginTop: 8 }}>
+                                Everyone's trying to read your mind!
+                            </NeonText>
+                            {renderGuesserChips()}
+                            <View style={styles.progressBadge}>
+                                <NeonText size={16} color={COLORS.limeGlow} weight="bold">
+                                    {guessCount} / {expectedGuessers} guessed
+                                </NeonText>
+                            </View>
+                        </View>
+                    ) : (
+                        <View style={styles.phaseContainer}>
+                            <NeonText size={13} color={COLORS.electricPurple} style={styles.phaseHint}>
+                                What do you think {targetUserName} picked?
+                            </NeonText>
+
+                            <View style={styles.questionCard}>
+                                <NeonText size={20} weight="bold" style={styles.questionText}>
+                                    "{currentQuestion}"
+                                </NeonText>
+                            </View>
+
+                            {hasGuessed || hasLocked ? (
+                                <View style={styles.lockedInView}>
+                                    <Ionicons name="checkmark-circle" size={52} color={COLORS.limeGlow} />
+                                    <NeonText size={18} weight="bold" style={{ marginTop: 14 }}>
+                                        Guess Locked In!
+                                    </NeonText>
+                                    <NeonText size={13} color="#777" style={{ marginTop: 8 }}>
+                                        Waiting for others… ({guessCount}/{expectedGuessers})
+                                    </NeonText>
+                                    {renderGuesserChips()}
+                                </View>
+                            ) : (
+                                <>
+                                    {renderOptions((i) => setSelectedOption(i))}
+                                    <NeonButton
+                                        title="LOCK IN MY GUESS"
+                                        onPress={handleLockGuess}
+                                        disabled={selectedOption === null}
+                                        style={styles.actionButton}
+                                    />
+                                </>
+                            )}
+                        </View>
+                    )}
+                </Animated.View>
+            );
+        }
+
+        if (gamePhase === 'reveal-phase' && revealData) {
+            const { correctAnswerIndex, correctAnswerText, guessResults, correctGuessCount, targetBonus } = revealData;
+            return (
+                <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+                    <View style={styles.questionCard}>
+                        <NeonText size={17} weight="bold" style={styles.questionText}>
+                            "{currentQuestion}"
+                        </NeonText>
+                    </View>
+
+                    <View style={styles.revealCard}>
+                        <NeonText size={12} color="#777" style={{ letterSpacing: 2, marginBottom: 8 }}>
+                            THE ANSWER WAS
+                        </NeonText>
+                        <View style={styles.revealAnswerRow}>
+                            <View style={styles.revealLabel}>
+                                <NeonText size={20} weight="bold" color={COLORS.limeGlow}>
+                                    {OPTION_LABELS[correctAnswerIndex]}
+                                </NeonText>
+                            </View>
+                            <NeonText size={20} weight="bold" color={COLORS.limeGlow} glow style={{ flex: 1, lineHeight: 28 }}>
+                                {correctAnswerText}
+                            </NeonText>
+                            <Ionicons name="checkmark-circle" size={28} color={COLORS.limeGlow} />
+                        </View>
+                    </View>
+
+                    <View style={styles.guessResultsContainer}>
+                        <NeonText size={13} weight="bold" color="#aaa" style={{ marginBottom: 12, letterSpacing: 2 }}>
+                            WHO GUESSED WHAT
+                        </NeonText>
+                        {guessResults.map((gr, i) => (
+                            <View key={i} style={[styles.guessRow, gr.isCorrect && styles.guessRowCorrect]}>
+                                <View style={styles.guessRowLeft}>
+                                    <View style={[styles.guessInitial, { backgroundColor: gr.isCorrect ? 'rgba(198,255,74,0.2)' : 'rgba(255,255,255,0.06)' }]}>
+                                        <NeonText size={14} weight="bold" color={gr.isCorrect ? COLORS.limeGlow : '#bbb'}>
+                                            {gr.playerName?.charAt(0) || '?'}
+                                        </NeonText>
+                                    </View>
+                                    <View>
+                                        <NeonText size={14} weight="bold" color={gr.isCorrect ? '#fff' : '#bbb'}>
+                                            {gr.playerName}
+                                        </NeonText>
+                                        <NeonText size={12} color="#777">
+                                            {OPTION_LABELS[gr.guessIndex]}. {gr.guessText}
+                                        </NeonText>
+                                    </View>
+                                </View>
+                                {gr.isCorrect ? (
+                                    <Animated.View style={[styles.correctBadge, { transform: [{ scale: bonusScale }], opacity: bonusOpacity }]}>
+                                        <NeonText size={14} weight="bold" color={COLORS.limeGlow}>+100</NeonText>
+                                    </Animated.View>
+                                ) : (
+                                    <Ionicons name="close-circle" size={22} color="rgba(255,59,100,0.5)" />
+                                )}
+                            </View>
+                        ))}
+                    </View>
+
+                    <Animated.View style={[styles.targetBonusCard, { transform: [{ scale: bonusScale }], opacity: bonusOpacity }]}>
+                        <NeonText size={13} color="#888">{targetUserName} earned</NeonText>
+                        <NeonText size={32} weight="bold" color={COLORS.neonCyan} glow style={{ marginVertical: 4 }}>
+                            +{targetBonus} pts
+                        </NeonText>
+                        <NeonText size={12} color="#555">
+                            {correctGuessCount} correct guess{correctGuessCount !== 1 ? 'es' : ''} × 50
+                        </NeonText>
                     </Animated.View>
 
-                    {renderEndButton()}
-                </ScrollView>
-            </NeonContainer>
-        );
-    }
+                    {isHost && (
+                        <NeonButton
+                            title={round >= totalRounds ? 'SEE FINAL RESULTS' : 'NEXT ROUND →'}
+                            onPress={handleNextRound}
+                            style={styles.actionButton}
+                        />
+                    )}
+                </Animated.View>
+            );
+        }
+        return null;
+    };
 
-    // ── Fallback ──────────────────────────────────────────────────────────────
     return (
         <NeonContainer>
-            <View style={styles.center}>
-                <NeonText size={24} glow>Game in progress…</NeonText>
-            </View>
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    {renderHeader()}
+                    {renderTargetBadge()}
+                    {renderPhase()}
+                    {renderEndButton()}
+                </ScrollView>
+            </GameOverlay>
         </NeonContainer>
     );
 };
@@ -663,7 +642,7 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginTop: 36,
+        marginTop: 10,
         marginBottom: 14,
         gap: 6,
     },
@@ -674,17 +653,13 @@ const styles = StyleSheet.create({
     },
     targetBadge: {
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 240, 255, 0.07)',
+        backgroundColor: 'rgba(0, 240, 255, 0.05)',
         borderRadius: 18,
         paddingVertical: 14,
         paddingHorizontal: 20,
         marginBottom: 18,
         borderWidth: 2,
         borderColor: COLORS.neonCyan,
-        shadowColor: COLORS.neonCyan,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
     },
     phaseContainer: {
         alignItems: 'center',
@@ -693,7 +668,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 16,
         lineHeight: 20,
-        paddingHorizontal: 10,
     },
     questionCard: {
         backgroundColor: 'rgba(148, 0, 211, 0.1)',
@@ -704,10 +678,6 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(148,0,211,0.5)',
         width: '100%',
         alignItems: 'center',
-        shadowColor: COLORS.electricPurple,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
     },
     questionText: {
         textAlign: 'center',
@@ -742,7 +712,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 40,
-        gap: 0,
     },
     lockedInView: {
         alignItems: 'center',
@@ -767,19 +736,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 12,
     },
-    // ── REVEAL ──
     revealCard: {
-        backgroundColor: 'rgba(198, 255, 74, 0.07)',
+        backgroundColor: 'rgba(198, 255, 74, 0.05)',
         borderRadius: 20,
         padding: 24,
         marginBottom: 20,
-        borderWidth: 3,
+        borderWidth: 2,
         borderColor: COLORS.limeGlow,
-        shadowColor: COLORS.limeGlow,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.35,
-        shadowRadius: 16,
-        elevation: 6,
     },
     revealAnswerRow: {
         flexDirection: 'row',
@@ -802,97 +765,77 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        padding: 12,
         backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 14,
-        padding: 14,
+        borderRadius: 12,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(255,255,255,0.05)',
     },
     guessRowCorrect: {
-        backgroundColor: 'rgba(198,255,74,0.06)',
-        borderColor: 'rgba(198,255,74,0.25)',
+        borderColor: 'rgba(198, 255, 74, 0.3)',
+        backgroundColor: 'rgba(198, 255, 74, 0.05)',
     },
     guessRowLeft: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        flex: 1,
     },
     guessInitial: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
     },
     correctBadge: {
-        backgroundColor: 'rgba(198, 255, 74, 0.15)',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 5,
-        borderWidth: 1,
-        borderColor: 'rgba(198,255,74,0.4)',
+        backgroundColor: 'rgba(198, 255, 74, 0.2)',
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 8,
     },
     targetBonusCard: {
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 240, 255, 0.07)',
-        borderRadius: 18,
         padding: 20,
-        marginBottom: 20,
-        borderWidth: 2,
-        borderColor: 'rgba(0, 240, 255, 0.3)',
-        shadowColor: COLORS.neonCyan,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+        backgroundColor: 'rgba(0, 240, 255, 0.05)',
+        borderRadius: 18,
+        marginBottom: 30,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 240, 255, 0.2)',
     },
-    // ── FINISHED ──
+    finishedContainer: {
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
     winnerCard: {
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 240, 255, 0.08)',
-        borderRadius: 20,
-        padding: 28,
-        marginTop: 20,
-        marginBottom: 20,
+        padding: 30,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        borderRadius: 24,
+        marginVertical: 30,
         borderWidth: 2,
         borderColor: COLORS.neonCyan,
-        shadowColor: COLORS.neonCyan,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 14,
-        width: '100%',
+        width: '90%',
     },
     rankingsContainer: {
-        width: '100%',
-        marginBottom: 10,
+        width: '90%',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 20,
+        padding: 20,
     },
     rankRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
         paddingVertical: 12,
-        paddingHorizontal: 16,
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 12,
-        marginBottom: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
     },
     rankRowFirst: {
-        backgroundColor: 'rgba(0,240,255,0.06)',
-        borderColor: 'rgba(0,240,255,0.2)',
-    },
-    finishedContainer: {
-        flexGrow: 1,
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 40,
+        borderBottomColor: 'rgba(0, 240, 255, 0.2)',
     },
     endButton: {
         alignItems: 'center',
-        marginTop: 28,
+        marginTop: 20,
         padding: 10,
     },
 });

@@ -56,12 +56,12 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
             navigation.navigate('WhosMostLikelyResults', { room, results, players, hostParticipates, isHost });
         };
 
-        const onNextPrompt = ({ prompt: nextPrompt }) => {
-            console.log('Next prompt ready:', nextPrompt);
+        const onNextPrompt = (nextGameState) => {
+            console.log('Next prompt ready:', nextGameState);
             navigation.replace('WhosMostLikelyQuestion', {
                 room,
-                prompt: nextPrompt,
-                promptIndex: nextPrompt.promptIndex,
+                prompt: nextGameState,
+                promptIndex: nextGameState.promptIndex,
                 players,
                 hostParticipates,
                 isHost
@@ -79,33 +79,32 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
         };
 
         SocketService.on('whos-most-likely-results', onResults);
-        SocketService.on('next-whos-most-likely-prompt-ready', onNextPrompt);
+        SocketService.on('whos-most-likely-next-prompt', onNextPrompt);
         SocketService.on('game-finished', onGameFinished);
         SocketService.on('whos-most-likely-ended', onGameEnded);
 
         return () => {
             clearInterval(timer);
             SocketService.off('whos-most-likely-results', onResults);
-            SocketService.off('next-whos-most-likely-prompt-ready', onNextPrompt);
+            SocketService.off('whos-most-likely-next-prompt', onNextPrompt);
             SocketService.off('game-finished', onGameFinished);
             SocketService.off('whos-most-likely-ended', onGameEnded);
         };
 
     }, [navigation, room, hasSubmitted, canVote, selectedPlayer]);
 
-    const handleSelectPlayer = (playerId) => {
+    const handleSelectPlayer = (playerUid) => {
         if (hasSubmitted || !canVote) return;
-        setSelectedPlayer(playerId);
+        setSelectedPlayer(playerUid);
     };
-
-    const handleSubmitVote = (votedForPlayerId) => {
+    const handleSubmitVote = (votedForPlayerUid) => {
         if (hasSubmitted || !canVote) return;
 
-        const finalVote = votedForPlayerId !== undefined ? votedForPlayerId : selectedPlayer;
+        const finalVote = votedForPlayerUid !== undefined ? votedForPlayerUid : selectedPlayer;
         setSelectedPlayer(finalVote);
         setHasSubmitted(true);
 
-        console.log('Submitting vote for player:', finalVote);
+        console.log('Submitting vote for player UID:', finalVote);
         SocketService.emit('submit-whos-most-likely-vote', { roomId: room.id, votedForPlayerId: finalVote });
     };
 
@@ -136,10 +135,10 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
                     <ScrollView style={styles.playersContainer} contentContainerStyle={styles.playersContent}>
                         {votablePlayers.map((player) => (
                             <NeonButton
-                                key={player.id}
+                                key={player.uid || player.id}
                                 title={player.name}
-                                variant={selectedPlayer === player.id ? 'primary' : 'secondary'}
-                                onPress={() => handleSelectPlayer(player.id)}
+                                variant={selectedPlayer === (player.uid || player.id) ? 'primary' : 'secondary'}
+                                onPress={() => handleSelectPlayer(player.uid || player.id)}
                                 style={styles.playerButton}
                                 disabled={hasSubmitted}
                             />

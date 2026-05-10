@@ -101,7 +101,7 @@ const LobbyScreen = ({ route, navigation }) => {
             } else if (gameType === 'myth-or-fact') {
                 navigation.navigate('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
             } else if (gameType === 'whos-most-likely') {
-                navigation.navigate('WhosMostLikelyQuestion', { ...navParams, prompt, promptIndex: 0 });
+                navigation.navigate('WhosMostLikelyQuestion', { ...navParams, prompt: gameState, promptIndex: 0 });
             } else if (gameType === 'neon-tap') {
                 navigation.navigate('NeonTapGame', navParams);
             } else if (gameType === 'word-rush') {
@@ -112,8 +112,6 @@ const LobbyScreen = ({ route, navigation }) => {
                 navigation.navigate('OnlineTruthOrDareGame', { ...navParams, category: gameState?.category || 'normal' });
             } else if (gameType === 'never-have-i-ever') {
                 navigation.navigate('OnlineNeverHaveIEver', navParams);
-            } else if (gameType === 'rapid-fire') {
-                navigation.navigate('OnlineRapidFire', navParams);
             } else if (gameType === 'confession-roulette') {
                 navigation.navigate('ConfessionRoulette', navParams);
             } else if (gameType === 'spill-the-tea') {
@@ -138,10 +136,10 @@ const LobbyScreen = ({ route, navigation }) => {
                 navigation.navigate('TicTacToe', navParams);
             } else if (gameType === 'draw-battle') {
                 navigation.navigate('DrawBattle', navParams);
-            } else if (gameType === 'lie-detector') {
-                navigation.navigate('LieDetector', navParams);
             } else if (gameType === 'scrabble') {
                 navigation.navigate('OnlineScrabble', navParams);
+            } else if (gameType === 'trivia') {
+                navigation.navigate('Question', navParams);
             }
         };
 
@@ -182,10 +180,6 @@ const LobbyScreen = ({ route, navigation }) => {
         }
         if (selectedGame === 'never-have-i-ever') {
             navigation.navigate('OnlineNHIECategory', { room, isHost, playerName });
-            return;
-        }
-        if (selectedGame === 'rapid-fire') {
-            navigation.navigate('OnlineRapidFireCategory', { room, isHost, playerName });
             return;
         }
         if (selectedGame === 'hot-seat-mc') {

@@ -13,8 +13,8 @@ const WhosMostLikelyResultsScreen = ({ route }) => {
     const [countdown, setCountdown] = useState(5);
 
     // Check if current player won for rave lights
-    const currentPlayerId = SocketService.socket?.id;
-    const currentPlayerResult = results.voteResults.find(r => r.playerId === currentPlayerId);
+    const currentUserId = SocketService.userId;
+    const currentPlayerResult = results.voteResults.find(r => r.playerId === currentUserId);
     const showRaveLights = currentPlayerResult?.isWinner || false;
 
     useEffect(() => {
@@ -42,7 +42,7 @@ const WhosMostLikelyResultsScreen = ({ route }) => {
     };
 
     const renderVoteResult = ({ item }) => {
-        const player = players.find(p => p.id === item.playerId);
+        const player = players.find(p => p.uid === item.playerId || p.userId === item.playerId);
         const playerName = player?.name || 'Unknown';
 
         return (

@@ -13,10 +13,16 @@ class HotSeatEngine {
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             case 'hot-seat-submit-question':
+            case 'submit-question':
                 return this.submitHotSeatQuestion(roomId, userId, payload.question);
             case 'hot-seat-next-question':
+            case 'next-question':
                 return this.nextHotSeatQuestion(roomId);
+            case 'hot-seat-get-state':
+            case 'get-state':
+                return { action: 'emit', targetId: userId, event: 'hot-seat-state-update', data: this.getGameState(roomId, userId) };
             case 'hot-seat-end-game':
+            case 'end-game':
                 return this.endGame(roomId);
             default:
                 return { action: 'error', message: `Unknown Hot Seat event: ${eventName}` };
@@ -67,20 +73,18 @@ class HotSeatEngine {
         playerOrder[0].hasBeenHotSeat = true;
         this.activeGames.set(roomId, gameState);
 
-        const instructions = room.players.map(p => ({
-            action: 'emit',
-            targetId: p.userId,
+        const gameStateData = this.getGameState(roomId, room.hostId); // Sample state for general broadcast
+
+        return {
+            action: 'broadcast',
             event: 'game-started',
             data: {
                 gameType: 'hot-seat',
-                gameState: this.getGameState(roomId, p.userId),
+                gameState: gameStateData,
                 players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates
             }
-        }));
-
-
-        return { action: 'multiple', instructions };
+        };
     }
 
     getGameState(roomId, userId) {

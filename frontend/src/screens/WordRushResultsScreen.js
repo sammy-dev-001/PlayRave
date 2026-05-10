@@ -11,9 +11,8 @@ const WordRushResultsScreen = ({ route, navigation }) => {
     const [countdown, setCountdown] = useState(3);
 
     useEffect(() => {
-        // Check if current player was eliminated and play sound
-        const currentPlayerId = SocketService.socket?.id;
-        if (results.eliminated.includes(currentPlayerId)) {
+        const currentUserId = SocketService.userId;
+        if (results.eliminated.includes(currentUserId)) {
             SoundService.playElimination();
         }
 
@@ -21,9 +20,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
             setCountdown(prev => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    if (isHost) {
-                        handleNext();
-                    }
+                    if (isHost) handleNext();
                     return 0;
                 }
                 return prev - 1;
@@ -31,12 +28,10 @@ const WordRushResultsScreen = ({ route, navigation }) => {
         }, 1000);
 
         const onReadyForNext = () => {
-            console.log('Results screen received ready for next round - navigating back');
             navigation.goBack();
         };
 
         const onWinner = ({ winner }) => {
-            console.log('Results screen received winner - navigating to winner screen');
             navigation.navigate('WordRushWinner', { room, winner });
         };
 
@@ -48,10 +43,9 @@ const WordRushResultsScreen = ({ route, navigation }) => {
             SocketService.off('word-rush-ready-for-next', onReadyForNext);
             SocketService.off('word-rush-winner', onWinner);
         };
-    }, [isHost, navigation]);
+    }, [isHost, navigation, room.id]);
 
     const handleNext = () => {
-        console.log('Host requesting next round');
         SocketService.emit('next-word-rush-round', {
             roomId: room.id,
             eliminated: results.eliminated
@@ -59,13 +53,15 @@ const WordRushResultsScreen = ({ route, navigation }) => {
     };
 
     const getPlayerName = (playerId) => {
-        const player = room.players.find(p => p.id === playerId);
+        if (!playerId) return 'Unknown';
+        const player = room.players.find(p => p.uid === playerId || p.userId === playerId || p.id === playerId);
         return player?.name || 'Unknown';
     };
 
     const renderSubmission = ({ item }) => {
-        const playerName = getPlayerName(item.playerId);
-        const isEliminated = results.eliminated.includes(item.playerId);
+        const targetId = item.userId || item.playerId;
+        const playerName = getPlayerName(targetId);
+        const isEliminated = results.eliminated.includes(targetId);
 
         return (
             <View style={[styles.submissionRow, isEliminated && styles.eliminatedRow]}>
@@ -89,7 +85,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showMuteButton showBackButton>
+        <NeonContainer showMuteButton showBackButton onBackPress={() => navigation.goBack()}>
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow style={styles.title}>
                     ROUND {results.currentRound + 1} RESULTS
@@ -117,7 +113,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
 
             <FlatList
                 data={results.submissions}
-                keyExtractor={item => item.playerId}
+                keyExtractor={(item, index) => index.toString()}
                 renderItem={renderSubmission}
                 contentContainerStyle={styles.list}
             />
@@ -132,71 +128,20 @@ const WordRushResultsScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    header: {
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    title: {
-        letterSpacing: 2,
-    },
-    letterDisplay: {
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    eliminationAnnouncement: {
-        marginBottom: 25,
-        padding: 15,
-        backgroundColor: 'rgba(255, 63, 164, 0.1)',
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: COLORS.hotPink,
-    },
-    eliminationText: {
-        textAlign: 'center',
-        marginBottom: 10,
-    },
-    eliminatedNames: {
-        textAlign: 'center',
-        color: COLORS.white,
-    },
-    sectionTitle: {
-        marginBottom: 15,
-        textAlign: 'center',
-    },
-    list: {
-        paddingBottom: 20,
-    },
-    submissionRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 63, 164, 0.3)',
-    },
-    eliminatedRow: {
-        borderColor: COLORS.hotPink,
-        backgroundColor: 'rgba(255, 63, 164, 0.1)',
-        borderWidth: 2,
-    },
-    playerInfo: {
-        flex: 1,
-    },
-    wordInfo: {
-        alignItems: 'flex-end',
-    },
-    time: {
-        marginTop: 4,
-    },
-    autoAdvance: {
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 16,
-        color: COLORS.limeGlow,
-    }
+    header: { alignItems: 'center', marginBottom: 20 },
+    title: { letterSpacing: 2 },
+    letterDisplay: { alignItems: 'center', marginBottom: 20 },
+    eliminationAnnouncement: { marginBottom: 25, padding: 15, backgroundColor: 'rgba(255, 63, 164, 0.1)', borderRadius: 12, borderWidth: 2, borderColor: COLORS.hotPink },
+    eliminationText: { textAlign: 'center', marginBottom: 10 },
+    eliminatedNames: { textAlign: 'center', color: COLORS.white },
+    sectionTitle: { marginBottom: 15, textAlign: 'center' },
+    list: { paddingBottom: 20 },
+    submissionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 63, 164, 0.3)' },
+    eliminatedRow: { borderColor: COLORS.hotPink, backgroundColor: 'rgba(255, 63, 164, 0.1)', borderWidth: 2 },
+    playerInfo: { flex: 1 },
+    wordInfo: { alignItems: 'flex-end' },
+    time: { marginTop: 4 },
+    autoAdvance: { textAlign: 'center', marginTop: 20, fontSize: 16, color: COLORS.limeGlow }
 });
 
 export default WordRushResultsScreen;

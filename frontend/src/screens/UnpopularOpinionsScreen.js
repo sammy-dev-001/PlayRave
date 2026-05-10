@@ -24,7 +24,7 @@ const GAME_PHASES = {
 };
 
 const UnpopularOpinionsScreen = ({ route, navigation }) => {
-    const { room, playerName, isHost } = route.params;
+    const { room, playerName, isHost, gameState } = route.params;
 
     useGameDisconnectHandler({
         navigation,
@@ -33,12 +33,12 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
     });
 
     // Game State
-    const [phase, setPhase] = useState(GAME_PHASES.WAITING);
-    const [currentOpinion, setCurrentOpinion] = useState(null);
+    const [phase, setPhase] = useState(gameState?.phase || GAME_PHASES.WAITING);
+    const [currentOpinion, setCurrentOpinion] = useState(gameState?.currentOpinion || null);
     const [timer, setTimer] = useState(0);
     const [myVote, setMyVote] = useState(null); // 'agree' or 'disagree'
     const [roundResults, setRoundResults] = useState(null);
-    const [scores, setScores] = useState({});
+    const [scores, setScores] = useState(gameState?.scores || {});
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -46,18 +46,18 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
 
     useEffect(() => {
         // Socket listeners
+        SocketService.on('game-started', handleGameStarted);
         SocketService.on('opinion-phase-changed', handlePhaseChange);
         SocketService.on('opinion-new-round', handleNewRound);
         SocketService.on('opinion-timer-update', handleTimerUpdate);
         SocketService.on('opinion-round-results', handleRoundResults);
         SocketService.on('opinion-final-scores', handleFinalScores);
 
-        // Start game if host
-        if (isHost) {
-            SocketService.emit('opinion-start', { roomId: room.id });
-        }
+        // Request state on mount for recovery
+        SocketService.emit('get-state', { roomId: room.id });
 
         return () => {
+            SocketService.off('game-started', handleGameStarted);
             SocketService.off('opinion-phase-changed', handlePhaseChange);
             SocketService.off('opinion-new-round', handleNewRound);
             SocketService.off('opinion-timer-update', handleTimerUpdate);
@@ -85,7 +85,19 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
         ]).start();
     }, [phase, currentOpinion]);
 
-    const handlePhaseChange = ({ phase: newPhase }) => {
+    const handleGameStarted = (data) => {
+        console.log("Unpopular Opinions game started:", data);
+        if (data.gameState) {
+            setPhase(data.gameState.phase || GAME_PHASES.OPINION);
+            if (data.gameState.currentOpinion) setCurrentOpinion(data.gameState.currentOpinion);
+            if (data.gameState.scores) setScores(data.gameState.scores);
+        } else {
+            setPhase(GAME_PHASES.OPINION);
+        }
+    };
+
+    const handlePhaseChange = (data) => {
+        const newPhase = typeof data === 'string' ? data : data.phase;
         setPhase(newPhase);
         if (newPhase === GAME_PHASES.OPINION) {
             setMyVote(null);
@@ -102,11 +114,14 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
     };
 
     const handleRoundResults = (results) => {
+        console.log("Round results received:", results);
         setRoundResults(results);
+        setPhase(GAME_PHASES.RESULTS);
     };
 
     const handleFinalScores = (finalScores) => {
         setScores(finalScores);
+        setPhase(GAME_PHASES.FINAL);
     };
 
     const submitVote = (vote) => {
@@ -315,7 +330,8 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingTop: 10,
+        paddingBottom: 20,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.1)'
     },

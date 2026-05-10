@@ -15,10 +15,19 @@ class WhotEngine {
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             case 'whot-play-card':
+            case 'play-whot-card':
+            case 'play-card':
                 return this.playWhotCard(roomId, userId, payload.cardId, payload.calledShape);
             case 'whot-draw-cards':
+            case 'whot-draw-card':
+            case 'draw-whot-card':
+            case 'draw-card':
                 return this.drawWhotCards(roomId, userId, payload.count);
+            case 'whot-get-state':
+            case 'get-state':
+                return { action: 'emit', targetId: userId, event: 'whot-state-update', data: { gameState: this.getWhotGameState(roomId, userId) } };
             case 'whot-end-game':
+            case 'end-game':
                 return this.endGame(roomId);
             default:
                 return { action: 'error', message: `Unknown Whot event: ${eventName}` };

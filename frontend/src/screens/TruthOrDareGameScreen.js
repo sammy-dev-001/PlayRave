@@ -107,18 +107,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     };
 
     const handleEndGame = () => {
-        Alert.alert(
-            'End Game',
-            'Are you sure you want to end the game?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'End Game',
-                    onPress: () => navigation.navigate('LocalGameSelection', { players }),
-                    style: 'destructive'
-                }
-            ]
-        );
+        navigation.navigate('LocalGameSelection', { players });
     };
 
     return (

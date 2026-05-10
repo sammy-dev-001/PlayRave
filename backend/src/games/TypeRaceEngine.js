@@ -1,9 +1,6 @@
 // ============================================================================
 // TypeRaceEngine.js — Pure Game Logic Engine
 // ============================================================================
-// Decoupled from Socket.io. Returns instruction payloads to the GameRouter.
-// Player identity uses persistent 'userId' rather than 'socketId'.
-// ============================================================================
 
 const { getRandomSentences } = require('../data/typeRaceSentences');
 
@@ -29,9 +26,14 @@ class TypeRaceEngine {
             case 'type-race-next-round':
             case 'next-round':
                 return this.nextRound(roomId);
+            case 'type-race-skip-round':
+            case 'skip-round':
+                return this.getRoundResults(roomId);
             case 'type-race-end-game':
             case 'end-game':
                 return this.endGame(roomId);
+            case 'get-state':
+                return this.getState(roomId, userId);
             default:
                 return { action: 'error', message: `Unknown Type Race event: ${eventName}` };
         }
@@ -51,17 +53,24 @@ class TypeRaceEngine {
                 currentProgress: 0,
                 finished: false,
                 finishTime: null,
-                accuracy: 0
+                accuracy: 0,
+                roundPoints: 0
             });
         });
 
-        const sentences = getRandomSentences ? getRandomSentences(5) : [
-            "The quick brown fox jumps over the lazy dog.",
-            "Programming is the art of telling a computer what to do.",
-            "React Native makes mobile development accessible to web developers.",
-            "Type as fast as you can to win the race!",
-            "Accuracy is just as important as speed in this challenge."
-        ];
+        // Fallback sentences if helper fails
+        let sentences = [];
+        try {
+            sentences = getRandomSentences(5);
+        } catch (e) {
+            sentences = [
+                "The quick brown fox jumps over the lazy dog.",
+                "Programming is the art of telling a computer what to do.",
+                "React Native makes mobile development accessible to web developers.",
+                "Type as fast as you can to win the race!",
+                "Accuracy is just as important as speed in this challenge."
+            ];
+        }
 
         const game = {
             type: 'type-race',
@@ -90,7 +99,6 @@ class TypeRaceEngine {
             }
         }));
 
-
         return { action: 'multiple', instructions };
     }
 
@@ -100,7 +108,22 @@ class TypeRaceEngine {
         return {
             totalRounds: game.totalRounds,
             currentRound: game.currentRound + 1,
-            phase: game.phase
+            phase: game.phase,
+            currentSentence: game.currentSentence
+        };
+    }
+
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId);
+        if (!state) return { action: 'error', message: 'Game not found' };
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: {
+                gameType: 'type-race',
+                gameState: state
+            }
         };
     }
 
@@ -113,6 +136,7 @@ class TypeRaceEngine {
             p.finished = false; 
             p.finishTime = null; 
             p.accuracy = 0;
+            p.roundPoints = 0;
         });
         
         game.phase = 'playing';
@@ -132,10 +156,10 @@ class TypeRaceEngine {
 
     updateProgress(roomId, userId, progress, accuracy) {
         const game = this.activeGames.get(roomId);
-        if (!game) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Game not found' } };
+        if (!game) return null;
 
         const player = game.players.find(p => p.userId === userId);
-        if (!player) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Player not found' } };
+        if (!player) return null;
 
         player.currentProgress = progress;
         player.accuracy = accuracy;
@@ -149,15 +173,14 @@ class TypeRaceEngine {
 
     finishRound(roomId, userId, typed, timeTaken) {
         const game = this.activeGames.get(roomId);
-        if (!game) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Game not found' } };
+        if (!game) return null;
 
         const player = game.players.find(p => p.userId === userId);
-        if (!player || player.finished) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Already finished' } };
+        if (!player || player.finished) return null;
 
         player.finished = true;
         player.finishTime = timeTaken;
         
-        // Simple accuracy check
         const target = game.currentSentence;
         let correct = 0;
         for (let i = 0; i < Math.min(typed.length, target.length); i++) {
@@ -167,15 +190,11 @@ class TypeRaceEngine {
         player.accuracy = accuracy;
 
         // Calculate points
-        if (accuracy >= 80) {
-            const finishedPlayers = game.players.filter(p => p.finished && p.accuracy >= 80);
-            const position = finishedPlayers.length;
-            const points = position === 1 ? 100 : position === 2 ? 75 : position === 3 ? 50 : 25;
-            player.score += points;
-            player.roundPoints = points;
-        } else {
-            player.roundPoints = 0;
-        }
+        const finishedPlayers = game.players.filter(p => p.finished);
+        const position = finishedPlayers.length;
+        const points = position === 1 ? 100 : position === 2 ? 75 : position === 3 ? 50 : 25;
+        player.score += points;
+        player.roundPoints = points;
 
         const allFinished = game.players.every(p => p.finished);
         const instructions = [
@@ -183,17 +202,20 @@ class TypeRaceEngine {
                 action: 'emit',
                 targetId: userId,
                 event: 'type-race-finish-ack',
-                data: { 
-                    accuracy, 
-                    timeTaken, 
-                    points: player.roundPoints, 
-                    position: game.players.filter(p => p.finished).length 
-                }
+                data: { accuracy, timeTaken, points: player.roundPoints, position }
             }
         ];
 
         if (allFinished) {
             instructions.push(this.getRoundResults(roomId));
+        } else if (position === 1) {
+            // Auto-end round after 30 seconds once first person finishes
+            instructions.push({
+                action: 'schedule',
+                delay: 30000,
+                roomId,
+                eventToTrigger: 'type-race-skip-round'
+            });
         }
 
         return { action: 'multiple', instructions };
@@ -201,20 +223,24 @@ class TypeRaceEngine {
 
     getRoundResults(roomId) {
         const game = this.activeGames.get(roomId);
-        if (!game) return { action: 'error', message: 'Game not found' };
+        if (!game || game.phase === 'results') return null;
 
+        game.phase = 'results';
         const roundResults = game.players
-            .filter(p => p.finished)
-            .sort((a, b) => (a.finishTime || 99999) - (b.finishTime || 99999))
             .map((p, index) => ({
-                id: p.userId, // Map to 'id' for frontend
+                id: p.userId,
                 userId: p.userId,
                 name: p.name,
                 time: p.finishTime,
                 accuracy: p.accuracy,
                 points: p.roundPoints,
-                position: index + 1
-            }));
+                finished: p.finished
+            }))
+            .sort((a, b) => {
+                if (a.finished && !b.finished) return -1;
+                if (!a.finished && b.finished) return 1;
+                return (a.time || 999) - (b.time || 999);
+            });
 
         return { 
             action: 'broadcast', 
@@ -229,7 +255,7 @@ class TypeRaceEngine {
 
     nextRound(roomId) {
         const game = this.activeGames.get(roomId);
-        if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
+        if (!game) return null;
 
         game.currentRound++;
         if (game.currentRound >= game.totalRounds) {
@@ -261,7 +287,7 @@ class TypeRaceEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'game-ended', event: 'type-race-ended', data: { message: 'Game ended by host' } };
+        return { action: 'broadcast', event: 'type-race-game-ended', data: { room: { id: roomId } } };
     }
 
 }

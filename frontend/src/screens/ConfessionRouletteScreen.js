@@ -61,6 +61,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         // Socket event listeners
         SocketService.on('confession-phase-changed', handlePhaseChange);
         SocketService.on('confession-timer-update', handleTimerUpdate);
+        SocketService.on('confession-submitted', handleSubmissionCount);
         SocketService.on('confession-submission-count', handleSubmissionCount);
         SocketService.on('confession-reveal', handleConfessionReveal);
         SocketService.on('confession-votes-update', handleVotesUpdate);
@@ -72,11 +73,10 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         SocketService.on('confession-you-are-author', () => setIsAuthor(true));
         SocketService.on('confession-author-revealed', handleAuthorRevealed);
 
-        // Host must manually click "START GAME" now to prevent accidental double-timers
-
         return () => {
             SocketService.off('confession-phase-changed', handlePhaseChange);
             SocketService.off('confession-timer-update', handleTimerUpdate);
+            SocketService.off('confession-submitted', handleSubmissionCount);
             SocketService.off('confession-submission-count', handleSubmissionCount);
             SocketService.off('confession-reveal', handleConfessionReveal);
             SocketService.off('confession-votes-update', handleVotesUpdate);
@@ -88,6 +88,17 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             SocketService.off('confession-author-revealed', handleAuthorRevealed);
         };
     }, []);
+
+    // Local countdown timer
+    useEffect(() => {
+        let interval;
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer(prev => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timer > 0]);
 
     useEffect(() => {
         // Animate on phase change
@@ -105,13 +116,17 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         ]).start();
     }, [phase]);
 
-    const handlePhaseChange = ({ phase: newPhase, data }) => {
+    const handlePhaseChange = (data) => {
+        const newPhase = typeof data === 'string' ? data : data.phase;
         setPhase(newPhase);
         fadeAnim.setValue(0);
         scaleAnim.setValue(0.8);
 
         if (data?.totalConfessions) {
             setTotalConfessions(data.totalConfessions);
+        }
+        if (data?.seconds) {
+            setTimer(data.seconds);
         }
         if (newPhase === GAME_PHASES.SUBMISSION) {
             setHasSubmitted(false);
@@ -132,15 +147,17 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         setTimer(seconds);
     };
 
-    const handleSubmissionCount = ({ count, total }) => {
-        setSubmissionCount(count);
+    const handleSubmissionCount = (data) => {
+        const count = data.count || data.submittedCount;
+        if (count !== undefined) setSubmissionCount(count);
     };
 
-    const handleConfessionReveal = ({ confession, index, total }) => {
+    const handleConfessionReveal = ({ confession, index, total, seconds }) => {
         setCurrentConfession(confession);
         setConfessionIndex(index);
         setTotalConfessions(total);
         setSelectedPlayer(null);
+        if (seconds) setTimer(seconds);
     };
 
     const handleVotesUpdate = (votesData) => {
@@ -258,7 +275,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     // Render functions for each phase
     const renderWaitingPhase = () => (
         <View style={styles.centeredContent}>
-            <NeonText size={24} weight="bold" glow>
+            <NeonText size={32} weight="bold" glow style={{ marginBottom: 20 }}>
                 ⏳ WAITING FOR HOST
             </NeonText>
             <NeonText size={16} color="#888" style={styles.subtitle}>
@@ -526,21 +543,23 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     };
 
     return (
-        <GameOverlay roomId={room.id} playerName={playerName}>
-            <MuteButton />
-            <View style={styles.header}>
-                <NeonText size={16} color={COLORS.hotPink}>CONFESSION ROULETTE</NeonText>
-                <NeonText size={12} color="#666">Room: {room.id}</NeonText>
-            </View>
-            {renderPhase()}
-        </GameOverlay>
+        <NeonContainer>
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <View style={styles.header}>
+                    <NeonText size={18} color={COLORS.hotPink} weight="bold">CONFESSION ROULETTE</NeonText>
+                    <NeonText size={12} color="#666">Room: {room.id}</NeonText>
+                </View>
+                {renderPhase()}
+            </GameOverlay>
+        </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingTop: 10,
+        paddingBottom: 20,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.1)'
     },
@@ -554,8 +573,8 @@ const styles = StyleSheet.create({
         marginTop: 10
     },
     startButton: {
-        marginTop: 30,
-        minWidth: 200
+        marginTop: 50,
+        minWidth: 240
     },
     submissionContainer: {
         flex: 1,

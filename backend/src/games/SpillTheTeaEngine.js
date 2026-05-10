@@ -1,3 +1,4 @@
+
 // ============================================================================
 // SpillTheTeaEngine.js — Anonymous Secret Sharing & Reaction Game
 // ============================================================================
@@ -17,7 +18,8 @@ class SpillTheTeaEngine {
         this.activeGames = new Map(); // roomId → gameState
     }
 
-    // ── Standard Interface ──────────────────────────────────────────────────
+    // ── Standard Interface ──────────
+    // ────────────────────────────────────────
 
     startGame(room) {
         const roomId           = room.id;
@@ -58,12 +60,23 @@ class SpillTheTeaEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
-            case 'submit-tea':      return this._submitTea(roomId, userId, payload.tea);
-            case 'end-submission':  return this._endSubmission(roomId);
-            case 'submit-reaction': return this._submitReaction(roomId, userId, payload.reaction);
-            case 'next-tea':        return this._nextTea(roomId);
-            case 'get-state':       return this._getState(roomId, userId);
-            case 'end-game':        return this._endGame(roomId);
+            case 'submit-spill-tea-secret':
+            case 'submit-tea':      
+                return this._submitTea(roomId, userId, payload.tea || payload.text);
+            case 'end-submission':  
+                return this._endSubmission(roomId);
+            case 'submit-reaction': 
+                return this._submitReaction(roomId, userId, payload.reaction);
+            case 'host-next-spill-tea':
+            case 'next-tea':        
+                return this._nextTea(roomId);
+            case 'author-reveal-spill-tea':
+            case 'reveal-identity':
+                return this._revealIdentity(roomId, userId);
+            case 'get-state':       
+                return this._getState(roomId, userId);
+            case 'end-game':        
+                return this._endGame(roomId);
 
             default:
                 return { action: 'error', message: `Unknown spill-the-tea event: ${eventName}` };
@@ -126,8 +139,12 @@ class SpillTheTeaEngine {
 
         return {
             action: 'broadcast',
-            event:  'tea-submitted',
-            data:   { submittedCount: game.submittedCount, totalPlayers: game.players.length },
+            event:  'spill-tea-state-update',
+            data:   { 
+                status: 'SUBMISSION',
+                submissionsCount: game.submittedCount, 
+                totalNeeded: game.players.length 
+            },
         };
     }
 
@@ -150,14 +167,18 @@ class SpillTheTeaEngine {
 
         return {
             action: 'broadcast',
-            event:  'tea-reaction-start',
+            event:  'spill-tea-state-update',
             data: {
-                phase:        'reaction',
+                status:       'READING',
                 currentTea:   entries[0]?.tea ?? null,
-                currentTeaIndex: 0,
+                currentSecret: entries[0]?.tea ?? null,
+                currentSecretIndex: 0,
+                totalSecrets: entries.length,
                 totalTeas:    entries.length,
                 reactionCount: 0,
-                totalPlayers: game.players.length,
+                totalNeeded:  game.players.length,
+                currentAuthorId: entries[0]?.authorId ?? null,
+                hasRevealedIdentity: false
             },
         };
     }
@@ -215,15 +236,11 @@ class SpillTheTeaEngine {
 
         return {
             action: 'broadcast',
-            event:  'tea-reveal',
+            event:  'spill-tea-reveal',
             data: {
                 tea:           current.tea,
                 authorId:      current.authorId,
                 authorName:    author?.name ?? 'Unknown',
-                reactions:     game.currentReactions,
-                breakdown,
-                pointsEarned:  earned,
-                scores:        game.players.reduce((acc, p) => { acc[p.userId] = p.score; return acc; }, {}),
                 currentTeaIndex: game.currentTeaIndex,
                 totalTeas:     game.shuffledTeas.length,
                 isLast,
@@ -252,8 +269,8 @@ class SpillTheTeaEngine {
             this.activeGames.delete(roomId);
             return {
                 action: 'broadcast',
-                event:  'spill-the-tea-finished',
-                data:   { finished: true, rankings: finalRankings, winner: finalRankings[0], allTeas },
+                event:  'spill-tea-state-update',
+                data:   { status: 'FINISHED', finished: true, rankings: finalRankings, winner: finalRankings[0], allTeas },
             };
         }
 
@@ -262,15 +279,29 @@ class SpillTheTeaEngine {
 
         return {
             action: 'broadcast',
-            event:  'tea-next',
+            event:  'spill-tea-new-secret',
             data: {
-                currentTea:      next.tea,
-                currentTeaIndex: game.currentTeaIndex,
-                totalTeas:       game.shuffledTeas.length,
-                reactionCount:   0,
-                totalPlayers:    game.players.length,
-                scores:          game.players.reduce((acc, p) => { acc[p.userId] = p.score; return acc; }, {}),
+                secret:          next.tea,
+                authorId:        next.authorId,
+                index:           game.currentTeaIndex,
+                total:           game.shuffledTeas.length,
             },
+        };
+    }
+
+    _revealIdentity(roomId, userId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+
+        const current = game.shuffledTeas[game.currentTeaIndex];
+        if (!current || current.authorId !== userId) {
+            return { action: 'error', message: 'Not your secret to reveal' };
+        }
+
+        return {
+            action: 'broadcast',
+            event: 'spill-tea-author-revealed',
+            data: { authorId: userId }
         };
     }
 

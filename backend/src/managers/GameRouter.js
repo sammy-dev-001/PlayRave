@@ -16,13 +16,13 @@ const engineRegistry = {
     'whot':                 require('../games/WhotEngine'),
     'trivia':               require('../games/TriviaEngine'),
     'hot-seat':             require('../games/HotSeatEngine'),
+    'hot-seat-mc':          require('../games/HotSeatMCEngine'),
     
     // ── Party Games (Phase 1) ───────────────────────────────────────────
     'myth-or-fact':         require('../games/MythOrFactEngine'),
     'whos-most-likely':     require('../games/WhosMostLikelyEngine'),
     'truth-or-dare':        require('../games/TruthOrDareEngine'),
     'never-have-i-ever':    require('../games/NeverHaveIEverEngine'),
-    'rapid-fire':           require('../games/RapidFireEngine'),
 
     // ── Speed & Reaction Games (Phase 1) ────────────────────────────────
     'neon-tap':             require('../games/NeonTapEngine'),
@@ -33,7 +33,6 @@ const engineRegistry = {
     'color-rush':           require('../games/ColorRushEngine'),
 
     // ── Social Deduction & Secrets (Phase 2) ────────────────────────────
-    'lie-detector':         require('../games/LieDetectorEngine'),
     'confession-roulette':  require('../games/ConfessionRouletteEngine'),
     'imposter':             require('../games/ImposterEngine'),
     'unpopular-opinions':   require('../games/UnpopularOpinionsEngine'),
@@ -212,7 +211,7 @@ class GameRouter {
                 if (options.isSinglePlayer || room.isSinglePlayer) {
                     instruction = engine.startSinglePlayerGame(room.id, room, options.difficulty || 'medium');
                 } else {
-                    instruction = engine.startScrabbleGame(room.id, room, options.hostParticipates);
+                    instruction = engine.startGame(room, options);
                 }
             } else {
                 instruction = engine.startGame(room, options);

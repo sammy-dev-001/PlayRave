@@ -4,26 +4,34 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
 const HotSeatScreen = ({ route, navigation }) => {
-    const { room, playerName, isHost } = route.params;
+    const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({
         navigation,
         exitScreen: 'Lobby',
         exitParams: { room, isHost }
     });
-    const [gameState, setGameState] = useState(route.params.initialGameState || null);
+
+    const [gameState, setGameState] = useState(initialGameState || null);
     const [questionInput, setQuestionInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
+        const onGameStarted = (data) => {
+            console.log('Hot seat game started/restarted:', data);
+            if (data.gameState) setGameState(data.gameState);
+        };
+
         const onStateUpdate = (state) => {
             console.log('Hot seat state update:', state);
             setGameState(state);
+            setIsSubmitting(false);
         };
 
         const onAnsweringStarted = () => {
@@ -34,6 +42,13 @@ const HotSeatScreen = ({ route, navigation }) => {
             console.log('New hot seat player:', state);
             setGameState(state);
             setQuestionInput('');
+            setIsSubmitting(false);
+        };
+
+        const onGameStateSync = (data) => {
+            if (data && (data.gameType === 'hot-seat' || data.type === 'hot-seat')) {
+                setGameState(data.gameState || data);
+            }
         };
 
         const onGameFinished = ({ message }) => {
@@ -48,16 +63,23 @@ const HotSeatScreen = ({ route, navigation }) => {
             ]);
         };
 
+        SocketService.on('game-started', onGameStarted);
         SocketService.on('hot-seat-state-update', onStateUpdate);
         SocketService.on('hot-seat-answering-started', onAnsweringStarted);
         SocketService.on('hot-seat-new-player', onNewPlayer);
         SocketService.on('hot-seat-game-finished', onGameFinished);
+        SocketService.on('game-state-sync', onGameStateSync);
+
+        // Fetch initial state
+        SocketService.emit('get-state', { roomId: room.id });
 
         return () => {
+            SocketService.off('game-started', onGameStarted);
             SocketService.off('hot-seat-state-update', onStateUpdate);
             SocketService.off('hot-seat-answering-started', onAnsweringStarted);
             SocketService.off('hot-seat-new-player', onNewPlayer);
             SocketService.off('hot-seat-game-finished', onGameFinished);
+            SocketService.off('game-state-sync', onGameStateSync);
         };
     }, [navigation, room, playerName]);
 
@@ -92,7 +114,7 @@ const HotSeatScreen = ({ route, navigation }) => {
         return (
             <NeonContainer>
                 <View style={styles.center}>
-                    <NeonText size={24}>Loading...</NeonText>
+                    <NeonText size={24} glow>LOADING HOT SEAT...</NeonText>
                 </View>
             </NeonContainer>
         );
@@ -100,192 +122,185 @@ const HotSeatScreen = ({ route, navigation }) => {
 
     const { isHotSeat, hotSeatPlayerName, phase, questions, currentQuestionIndex, hasSubmitted, submittedCount, totalExpected, round } = gameState;
 
-    // Submitting Phase - Players enter questions
-    if (phase === 'submitting') {
-        return (
-            <NeonContainer>
-                <View style={styles.header}>
-                    <NeonText size={14} color={COLORS.hotPink}>ROUND {round}</NeonText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="flame" size={26} color={COLORS.hotPink} /><NeonText size={28} weight="bold" glow>HOT SEAT</NeonText><Ionicons name="flame" size={26} color={COLORS.hotPink} /></View>
-                </View>
-
-                <View style={styles.hotSeatPlayerCard}>
-                    <NeonText size={14} color="#888">IN THE HOT SEAT:</NeonText>
-                    <NeonText size={32} weight="bold" glow color={COLORS.neonCyan}>
-                        {hotSeatPlayerName}
-                    </NeonText>
-                </View>
-
-                {isHotSeat ? (
-                    <View style={styles.waitingView}>
-                        <Ionicons name="person" size={48} color={COLORS.hotPink} />
-                        <NeonText size={20} weight="bold" style={styles.marginTop}>
-                            You're in the hot seat!
-                        </NeonText>
-                        <NeonText size={14} color="#888" style={styles.marginTop}>
-                            Waiting for others to submit questions for you...
-                        </NeonText>
-                        <View style={styles.progressContainer}>
-                            <NeonText size={16} color={COLORS.limeGlow}>
-                                {submittedCount} / {totalExpected} questions received
-                            </NeonText>
-                        </View>
-                    </View>
-                ) : (
-                    <View style={styles.questionInputView}>
-                        {hasSubmitted ? (
-                            <View style={styles.submittedView}>
-                                <Ionicons name="checkmark-circle" size={48} color={COLORS.limeGlow} />
-                                <NeonText size={18} weight="bold" style={styles.marginTop}>
-                                    Question Submitted!
-                                </NeonText>
-                                <NeonText size={14} color="#888" style={styles.marginTop}>
-                                    Waiting for others... ({submittedCount}/{totalExpected})
-                                </NeonText>
-                            </View>
-                        ) : (
-                            <>
-                                <NeonText size={16} style={styles.label}>
-                                    Ask {hotSeatPlayerName} a question:
-                                </NeonText>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Type your question..."
-                                    placeholderTextColor="#666"
-                                    value={questionInput}
-                                    onChangeText={setQuestionInput}
-                                    multiline
-                                    maxLength={200}
-                                />
-                                <NeonButton
-                                    title="SUBMIT QUESTION"
-                                    onPress={handleSubmitQuestion}
-                                    disabled={isSubmitting || !questionInput.trim()}
-                                />
-                            </>
-                        )}
-                    </View>
-                )}
-
-                {isHost && (
-                    <TouchableOpacity style={styles.endButton} onPress={handleEndGame}>
-                        <NeonText size={14} color={COLORS.hotPink}>End Game</NeonText>
-                    </TouchableOpacity>
-                )}
-            </NeonContainer>
-        );
-    }
-
-    // Answering Phase - Hot seat player sees and answers questions
-    if (phase === 'answering') {
-        const currentQuestion = questions[currentQuestionIndex];
-        const isLastQuestion = currentQuestionIndex >= questions.length - 1;
-
-        return (
-            <NeonContainer>
-                <View style={styles.header}>
-                    <NeonText size={14} color={COLORS.hotPink}>ROUND {round}</NeonText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="flame" size={26} color={COLORS.hotPink} /><NeonText size={28} weight="bold" glow>HOT SEAT</NeonText><Ionicons name="flame" size={26} color={COLORS.hotPink} /></View>
-                </View>
-
-                <View style={styles.hotSeatPlayerCard}>
-                    <NeonText size={14} color="#888">ANSWERING:</NeonText>
-                    <NeonText size={24} weight="bold" glow color={COLORS.neonCyan}>
-                        {hotSeatPlayerName}
-                    </NeonText>
-                </View>
-
-                <View style={styles.questionProgress}>
-                    <NeonText size={14} color="#888">
-                        Question {currentQuestionIndex + 1} of {questions.length}
-                    </NeonText>
-                </View>
-
-                {currentQuestion && (
-                    <View style={styles.questionCard}>
-                        <NeonText size={12} color={COLORS.electricPurple}>
-                            FROM: {currentQuestion.fromPlayerName}
-                        </NeonText>
-                        <NeonText size={22} weight="bold" style={styles.questionText}>
-                            "{currentQuestion.question}"
-                        </NeonText>
-                    </View>
-                )}
-
-                {isHotSeat && (
-                    <NeonText size={14} color={COLORS.limeGlow} style={styles.answerPrompt}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>Answer this question out loud! <Ionicons name="mic" size={16} color={COLORS.neonCyan} /></View>
-                    </NeonText>
-                )}
-
-                <NeonButton
-                    title={isLastQuestion ? "NEXT PLAYER" : "NEXT QUESTION"}
-                    onPress={handleNextQuestion}
-                    style={styles.nextButton}
-                />
-
-                {isHost && (
-                    <TouchableOpacity style={styles.endButton} onPress={handleEndGame}>
-                        <NeonText size={14} color={COLORS.hotPink}>End Game</NeonText>
-                    </TouchableOpacity>
-                )}
-            </NeonContainer>
-        );
-    }
-
-    // Fallback
     return (
         <NeonContainer>
-            <View style={styles.center}>
-                <NeonText size={24}>Game in progress...</NeonText>
-            </View>
+            <GameOverlay roomId={room.id} playerName={playerName}>
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.header}>
+                        <NeonText size={14} color={COLORS.hotPink}>ROUND {round}</NeonText>
+                        <View style={styles.titleRow}>
+                            <Ionicons name="flame" size={26} color={COLORS.hotPink} />
+                            <NeonText size={28} weight="bold" glow>HOT SEAT</NeonText>
+                            <Ionicons name="flame" size={26} color={COLORS.hotPink} />
+                        </View>
+                    </View>
+
+                    <View style={styles.hotSeatPlayerCard}>
+                        <NeonText size={14} color="#888">IN THE HOT SEAT:</NeonText>
+                        <NeonText size={32} weight="bold" glow color={COLORS.neonCyan}>
+                            {hotSeatPlayerName}
+                        </NeonText>
+                    </View>
+
+                    {phase === 'submitting' ? (
+                        isHotSeat ? (
+                            <View style={styles.waitingView}>
+                                <Ionicons name="person" size={48} color={COLORS.hotPink} />
+                                <NeonText size={20} weight="bold" style={styles.marginTop}>
+                                    You're in the hot seat!
+                                </NeonText>
+                                <NeonText size={14} color="#888" style={styles.marginTop}>
+                                    Waiting for others to submit questions for you...
+                                </NeonText>
+                                <View style={styles.progressContainer}>
+                                    <NeonText size={16} color={COLORS.limeGlow}>
+                                        {submittedCount} / {totalExpected} questions received
+                                    </NeonText>
+                                </View>
+                            </View>
+                        ) : (
+                            <View style={styles.questionInputView}>
+                                {hasSubmitted ? (
+                                    <View style={styles.submittedView}>
+                                        <Ionicons name="checkmark-circle" size={48} color={COLORS.limeGlow} />
+                                        <NeonText size={18} weight="bold" style={styles.marginTop}>
+                                            Question Submitted!
+                                        </NeonText>
+                                        <NeonText size={14} color="#888" style={styles.marginTop}>
+                                            Waiting for others... ({submittedCount}/{totalExpected})
+                                        </NeonText>
+                                    </View>
+                                ) : (
+                                    <>
+                                        <NeonText size={16} style={styles.label}>
+                                            Ask {hotSeatPlayerName} a question:
+                                        </NeonText>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Type your question..."
+                                            placeholderTextColor="#666"
+                                            value={questionInput}
+                                            onChangeText={setQuestionInput}
+                                            multiline
+                                            maxLength={200}
+                                        />
+                                        <NeonButton
+                                            title="SUBMIT QUESTION"
+                                            onPress={handleSubmitQuestion}
+                                            disabled={isSubmitting || !questionInput.trim()}
+                                        />
+                                    </>
+                                )}
+                            </View>
+                        )
+                    ) : phase === 'answering' ? (
+                        <View style={styles.answeringContainer}>
+                            <View style={styles.questionProgress}>
+                                <NeonText size={14} color="#888">
+                                    Question {currentQuestionIndex + 1} of {questions?.length || 0}
+                                </NeonText>
+                            </View>
+
+                            {questions && questions[currentQuestionIndex] && (
+                                <View style={styles.questionCard}>
+                                    <NeonText size={12} color={COLORS.electricPurple}>
+                                        FROM: {questions[currentQuestionIndex].fromPlayerName}
+                                    </NeonText>
+                                    <NeonText size={22} weight="bold" style={styles.questionText}>
+                                        "{questions[currentQuestionIndex].question}"
+                                    </NeonText>
+                                </View>
+                            )}
+
+                            {isHotSeat && (
+                                <View style={styles.answerPrompt}>
+                                    <NeonText size={14} color={COLORS.limeGlow}>Answer this question out loud! <Ionicons name="mic" size={16} color={COLORS.neonCyan} /></NeonText>
+                                </View>
+                            )}
+
+                            <NeonButton
+                                title={currentQuestionIndex >= (questions?.length || 0) - 1 ? "NEXT PLAYER" : "NEXT QUESTION"}
+                                onPress={handleNextQuestion}
+                                style={styles.nextButton}
+                            />
+                        </View>
+                    ) : (
+                        <View style={styles.center}>
+                            <NeonText size={20}>Game in progress...</NeonText>
+                        </View>
+                    )}
+
+                    {isHost && (
+                        <TouchableOpacity style={styles.endButton} onPress={handleEndGame}>
+                            <NeonText size={14} color={COLORS.hotPink}>End Game</NeonText>
+                        </TouchableOpacity>
+                    )}
+                </ScrollView>
+            </GameOverlay>
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: 40,
+    },
     header: {
         alignItems: 'center',
-        marginTop: 40,
+        paddingTop: 10,
         marginBottom: 20,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 5,
     },
     hotSeatPlayerCard: {
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        backgroundColor: 'rgba(0, 240, 255, 0.05)',
         borderRadius: 16,
         padding: 20,
         marginBottom: 20,
         borderWidth: 2,
         borderColor: COLORS.neonCyan,
+        marginHorizontal: 10,
     },
     waitingView: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 20,
+        marginTop: 20,
     },
     questionInputView: {
         flex: 1,
-        paddingHorizontal: 10,
+        paddingHorizontal: 15,
+    },
+    answeringContainer: {
+        flex: 1,
+        paddingHorizontal: 15,
     },
     submittedView: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 40,
     },
     label: {
         marginBottom: 15,
         textAlign: 'center',
     },
     input: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 12,
         borderWidth: 2,
         borderColor: COLORS.electricPurple,
         padding: 15,
         fontSize: 16,
         color: COLORS.white,
-        minHeight: 100,
+        minHeight: 120,
         textAlignVertical: 'top',
         marginBottom: 20,
     },
@@ -299,7 +314,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     questionCard: {
-        backgroundColor: 'rgba(148, 0, 211, 0.15)',
+        backgroundColor: 'rgba(148, 0, 211, 0.1)',
         borderRadius: 16,
         padding: 25,
         marginVertical: 20,
@@ -317,7 +332,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     answerPrompt: {
-        textAlign: 'center',
+        alignItems: 'center',
         marginBottom: 20,
     },
     nextButton: {
@@ -325,7 +340,7 @@ const styles = StyleSheet.create({
     },
     endButton: {
         alignItems: 'center',
-        marginTop: 30,
+        marginTop: 40,
         padding: 10,
     },
     center: {

@@ -66,12 +66,27 @@ class ImposterEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
-            case 'start-discussion': return this._startDiscussion(roomId);
-            case 'start-voting':     return this._startVoting(roomId);
-            case 'submit-vote':      return this._submitVote(roomId, userId, payload.votedForUserId);
-            case 'reveal-results':   return this._resolveVoting(roomId);
-            case 'get-state':        return this._getState(roomId, userId);
-            case 'end-game':         return this._endGame(roomId);
+            case 'imposter-start':
+            case 'start-game':
+                // Note: startGame is usually called by GameRouter, but we handle the event too
+                return this.startGame(payload.room || { id: roomId, players: [] });
+            case 'imposter-start-discussion':
+            case 'start-discussion': 
+                return this._startDiscussion(roomId);
+            case 'imposter-start-voting':
+            case 'start-voting':     
+                return this._startVoting(roomId);
+            case 'imposter-vote':
+            case 'submit-vote':      
+                return this._submitVote(roomId, userId, payload.votedFor || payload.votedForUserId);
+            case 'reveal-results':   
+            case 'imposter-reveal-results':
+                return this._resolveVoting(roomId);
+            case 'imposter-get-state':
+            case 'get-state':        
+                return this._getState(roomId, userId);
+            case 'end-game':         
+                return this._endGame(roomId);
 
             default:
                 return { action: 'error', message: `Unknown imposter event: ${eventName}` };
@@ -115,8 +130,8 @@ class ImposterEngine {
         game.phase = 'discussion';
         return {
             action: 'broadcast',
-            event:  'imposter-discussion-started',
-            data:   { phase: 'discussion', category: game.category, players: game.players },
+            event:  'imposter-phase-changed',
+            data:   { phase: 'discussion', category: game.category, players: game.players, seconds: 120 },
         };
     }
 
@@ -128,10 +143,11 @@ class ImposterEngine {
         game.votes = {};
         return {
             action: 'broadcast',
-            event:  'imposter-voting-started',
+            event:  'imposter-phase-changed',
             data: {
                 phase:   'voting',
                 players: game.players.map(p => ({ userId: p.userId, name: p.name })),
+                seconds: 30
             },
         };
     }
@@ -152,7 +168,7 @@ class ImposterEngine {
 
         return {
             action: 'broadcast',
-            event:  'imposter-vote-update',
+            event:  'imposter-votes-update',
             data:   { votedCount, totalPlayers: game.players.length },
         };
     }
@@ -172,17 +188,26 @@ class ImposterEngine {
 
         // Find the most-voted player
         let mostVotedId = null;
-        let maxVotes    = -1;
+        let maxVotes    = 0;
+        let tie         = false;
+
         Object.entries(voteCounts).forEach(([uid, count]) => {
-            if (count > maxVotes) { maxVotes = count; mostVotedId = uid; }
+            if (count > maxVotes) {
+                maxVotes = count;
+                mostVotedId = uid;
+                tie = false;
+            } else if (count === maxVotes && count > 0) {
+                tie = true;
+            }
         });
 
-        const imposterCaught = mostVotedId === game.imposterId;
+        // Imposter wins on a tie or if not most voted
+        const imposterCaught = !tie && mostVotedId === game.imposterId;
 
         this.activeGames.delete(roomId);
         return {
             action: 'broadcast',
-            event:  'imposter-results',
+            event:  'imposter-round-results',
             data: {
                 phase:          'results',
                 imposterId:     game.imposterId,

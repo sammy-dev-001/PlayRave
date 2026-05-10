@@ -11,9 +11,9 @@ export const COLORS = {
 };
 
 export const FONTS = {
-    // mapping to system fonts for MVP, can add custom fonts later
-    bold: 'System',
-    regular: 'System',
+    // Using Outfit from Google Fonts for a modern, premium feel
+    bold: 'Outfit',
+    regular: 'Outfit',
 };
 
 export const SHADOWS = {

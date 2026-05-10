@@ -1,9 +1,6 @@
 // ============================================================================
 // ButtonMashEngine.js — Pure Game Logic Engine
 // ============================================================================
-// Decoupled from Socket.io. Returns instruction payloads to the GameRouter.
-// Player identity uses persistent 'userId' rather than 'socketId'.
-// ============================================================================
 
 class ButtonMashEngine {
     constructor() {
@@ -15,14 +12,20 @@ class ButtonMashEngine {
         if (!game) return { action: 'error', message: 'Game not found' };
 
         switch (eventName) {
+            case 'button-mash-start':
             case 'start-round':
                 return this.startRound(roomId);
+            case 'button-mash-tap':
             case 'submit-tap':
                 return this.submitTap(roomId, userId);
+            case 'button-mash-finish':
             case 'time-up':
                 return this.handleTimeUp(roomId);
+            case 'button-mash-end-game':
             case 'end-game':
                 return this.endGame(roomId);
+            case 'get-state':
+                return this.getState(roomId, userId);
             default:
                 return { action: 'error', message: `Unknown Button Mash event: ${eventName}` };
         }
@@ -37,6 +40,7 @@ class ButtonMashEngine {
             if (!hostParticipates && player.isHost) return;
             players.push({
                 userId: player.userId,
+                socketId: player.socketId,
                 name: player.name,
                 tapCount: 0,
                 finished: false
@@ -47,7 +51,7 @@ class ButtonMashEngine {
             type: 'button-mash',
             roomId,
             players,
-            duration: 10000, // 10 seconds
+            duration: 10000,
             startTime: null,
             phase: 'countdown',
             hostParticipates
@@ -67,7 +71,6 @@ class ButtonMashEngine {
             }
         }));
 
-
         return { action: 'multiple', instructions };
     }
 
@@ -76,8 +79,22 @@ class ButtonMashEngine {
         if (!game) return null;
         return {
             phase: game.phase,
-            players: game.players.map(p => ({ userId: p.userId, name: p.name, tapCount: p.tapCount })),
+            players: game.players.map(p => ({ id: p.socketId, userId: p.userId, name: p.name, tapCount: p.tapCount })),
             duration: game.duration
+        };
+    }
+
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId);
+        if (!state) return { action: 'error', message: 'Game not found' };
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: {
+                gameType: 'button-mash',
+                gameState: state
+            }
         };
     }
 
@@ -97,12 +114,12 @@ class ButtonMashEngine {
             instructions: [
                 { 
                     action: 'broadcast', 
-                    event: 'round-started', 
+                    event: 'button-mash-go', 
                     data: { startTime: game.startTime, duration: game.duration } 
                 },
                 { 
                     action: 'schedule', 
-                    delay: game.duration, 
+                    delay: game.duration + 500, // Small buffer
                     roomId,
                     eventToTrigger: 'time-up' 
                 }
@@ -117,36 +134,51 @@ class ButtonMashEngine {
         const player = game.players.find(p => p.userId === userId);
         if (!player || player.finished) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Invalid tap' } };
 
-        const elapsed = Date.now() - game.startTime;
-        if (elapsed >= game.duration) {
-            player.finished = true;
-            return { 
+        player.tapCount++;
+
+        // Send ack to the player
+        const instructions = [
+            { 
                 action: 'emit', 
                 targetId: userId, 
-                event: 'tap-registered', 
-                data: { tapCount: player.tapCount, finished: true } 
-            };
+                event: 'button-mash-tap-ack', 
+                data: { tapCount: player.tapCount, finished: false } 
+            }
+        ];
+
+        // Periodically broadcast leaderboard
+        if (player.tapCount % 5 === 0) {
+            instructions.push({
+                action: 'broadcast',
+                event: 'button-mash-leaderboard',
+                data: {
+                    leaderboard: [...game.players].sort((a, b) => b.tapCount - a.tapCount).map(p => ({
+                        id: p.socketId,
+                        userId: p.userId,
+                        name: p.name,
+                        tapCount: p.tapCount
+                    }))
+                }
+            });
         }
 
-        player.tapCount++;
-        return { 
-            action: 'emit', 
-            targetId: userId, 
-            event: 'tap-registered', 
-            data: { tapCount: player.tapCount, finished: false } 
-        };
+        return { action: 'multiple', instructions };
     }
 
     handleTimeUp(roomId) {
         const game = this.activeGames.get(roomId);
-        if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
+        if (!game || game.phase === 'results') return null;
 
         game.players.forEach(p => p.finished = true);
         game.phase = 'results';
         
-        const rankings = [...game.players].sort((a, b) => b.tapCount - a.tapCount);
+        const rankings = [...game.players].sort((a, b) => b.tapCount - a.tapCount).map(p => ({
+            id: p.socketId,
+            userId: p.userId,
+            name: p.name,
+            tapCount: p.tapCount
+        }));
         
-        // Map to finalScores format for Scoreboard compatibility
         const finalScores = rankings.map((p, index) => ({
             playerId: p.userId,
             score: p.tapCount,
@@ -155,14 +187,14 @@ class ButtonMashEngine {
 
         return {
             action: 'broadcast',
-            event: 'game-over',
+            event: 'button-mash-results',
             data: { rankings, winner: rankings[0], finalScores }
         };
     }
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'game-ended', event: 'button-mash-ended', data: { message: 'Game ended by host' } };
+        return { action: 'broadcast', event: 'button-mash-game-ended', data: { room: { id: roomId } } };
     }
 
 }

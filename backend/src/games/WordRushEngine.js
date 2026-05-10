@@ -27,6 +27,7 @@ class WordRushEngine {
             case 'next-word-rush-round':
             case 'next-round':
                 return this.nextRound(roomId, payload.eliminated);
+            case 'word-rush-end-game':
             case 'end-word-rush':
             case 'end-game':
                 return this.endGame(roomId);
@@ -146,13 +147,14 @@ class WordRushEngine {
             if (submission) {
                 submissions.push({
                     userId: pid,
+                    playerId: pid,
                     word: submission.word,
                     submitTime: submission.submitTime,
                     isValid: submission.isValid,
                     reactionTime: submission.submitTime - game.roundStartTime
                 });
             } else {
-                submissions.push({ userId: pid, word: null, submitTime: null, isValid: false, reactionTime: null });
+                submissions.push({ userId: pid, playerId: pid, word: null, submitTime: null, isValid: false, reactionTime: null });
             }
         });
 

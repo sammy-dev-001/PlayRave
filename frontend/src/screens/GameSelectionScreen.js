@@ -110,17 +110,6 @@ const AVAILABLE_GAMES = [
         vibes: ['hype']
     },
     {
-        id: 'rapid-fire',
-        name: 'Rapid Fire',
-        description: 'Quick questions, faster answers!',
-        icon: '⚡',
-        color: COLORS.limeGlow,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['hype']
-    },
-    {
         id: 'confession-roulette',
         name: 'Confession Roulette',
         description: 'Anonymous confessions - guess who wrote it!',
@@ -251,17 +240,6 @@ const AVAILABLE_GAMES = [
         minPlayers: 3,
         maxPlayers: 8,
         vibes: ['hype']
-    },
-    {
-        id: 'lie-detector',
-        name: 'Lie Detector',
-        description: 'Guess if they\'re lying!',
-        icon: '🔍',
-        color: COLORS.electricPurple,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['chill']
     },
     {
         id: 'scrabble',

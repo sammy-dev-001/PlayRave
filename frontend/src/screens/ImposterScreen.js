@@ -4,7 +4,8 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Animated
+    Animated,
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -24,13 +25,13 @@ const GAME_PHASES = {
 };
 
 const ImposterScreen = ({ route, navigation }) => {
-    const { room, playerName, isHost } = route.params;
+    const { room, playerName, isHost, gameState, players: initialPlayers } = route.params;
 
     // Game state
-    const [phase, setPhase] = useState(GAME_PHASES.WAITING);
-    const [myWord, setMyWord] = useState(null);
-    const [isImposter, setIsImposter] = useState(false);
-    const [players, setPlayers] = useState(room?.players || []);
+    const [phase, setPhase] = useState(gameState?.phase || GAME_PHASES.WAITING);
+    const [myWord, setMyWord] = useState(gameState?.myWord || null);
+    const [isImposter, setIsImposter] = useState(gameState?.isImposter || false);
+    const [players, setPlayers] = useState(initialPlayers || room?.players || []);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [votes, setVotes] = useState({});
     const [roundResults, setRoundResults] = useState(null);
@@ -42,6 +43,7 @@ const ImposterScreen = ({ route, navigation }) => {
 
     useEffect(() => {
         // Socket event listeners
+        SocketService.on('game-started', handleGameStarted);
         SocketService.on('imposter-phase-changed', handlePhaseChange);
         SocketService.on('imposter-word-assigned', handleWordAssigned);
         SocketService.on('imposter-timer-update', handleTimerUpdate);
@@ -54,6 +56,7 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.emit('imposter-get-state', { roomId: room.id || room.roomId });
 
         return () => {
+            SocketService.off('game-started', handleGameStarted);
             SocketService.off('imposter-phase-changed', handlePhaseChange);
             SocketService.off('imposter-word-assigned', handleWordAssigned);
             SocketService.off('imposter-timer-update', handleTimerUpdate);
@@ -73,8 +76,22 @@ const ImposterScreen = ({ route, navigation }) => {
         }).start();
     }, [phase, myWord]);
 
-    const handlePhaseChange = ({ phase: newPhase }) => {
+    const handleGameStarted = (data) => {
+        console.log("Imposter game started:", data);
+        if (data.gameState) {
+            setPhase(data.gameState.phase || GAME_PHASES.WORD_REVEAL);
+        } else {
+            setPhase(GAME_PHASES.WORD_REVEAL);
+        }
+        if (data.myWord) setMyWord(data.myWord);
+        if (data.isImposter !== undefined) setIsImposter(data.isImposter);
+        if (data.players) setPlayers(data.players);
+    };
+
+    const handlePhaseChange = (data) => {
+        const newPhase = typeof data === 'string' ? data : data.phase;
         setPhase(newPhase);
+        if (data.seconds) setTimer(data.seconds);
         if (newPhase === GAME_PHASES.VOTING) {
             setSelectedPlayer(null);
         }
@@ -95,6 +112,7 @@ const ImposterScreen = ({ route, navigation }) => {
 
     const handleRoundResults = (results) => {
         setRoundResults(results);
+        setPhase(GAME_PHASES.RESULTS);
     };
 
     const handleRoomUpdate = (updatedRoom) => {
@@ -138,19 +156,27 @@ const ImposterScreen = ({ route, navigation }) => {
                 Waiting for host to start...
             </NeonText>
             {isHost && (
-                <NeonButton
-                    title="START GAME"
-                    onPress={() => {
-                        console.log("Manual START GAME clicked");
-                        if (!SocketService.isConnected()) {
-                            Alert.alert("Error", "Socket not connected. Please wait...");
-                            return;
-                        }
-                        SocketService.emit('imposter-start', { roomId: room.id || room.roomId });
-                    }}
-                    style={styles.startButton}
-                    sound={false}
-                />
+                <>
+                    {players.length < 3 && (
+                        <NeonText size={14} color={COLORS.hotPink} style={{ marginBottom: 15, marginTop: 20 }}>
+                            ⚠️ At least 3 players required
+                        </NeonText>
+                    )}
+                    <NeonButton
+                        title="START GAME"
+                        onPress={() => {
+                            console.log("Manual START GAME clicked");
+                            if (!SocketService.isConnected()) {
+                                Alert.alert("Error", "Socket not connected. Please wait...");
+                                return;
+                            }
+                            SocketService.emit('imposter-start', { roomId: room.id || room.roomId });
+                        }}
+                        style={styles.startButton}
+                        disabled={players.length < 3}
+                        sound={false}
+                    />
+                </>
             )}
         </View>
     );
@@ -273,24 +299,21 @@ const ImposterScreen = ({ route, navigation }) => {
             <ScrollView style={styles.playersList} contentContainerStyle={styles.playersContent}>
                 {players.filter(p => p.name !== playerName).map((player) => (
                     <TouchableOpacity
-                        key={player.name}
+                        key={player.userId || player.name}
                         style={[
                             styles.playerOption,
-                            selectedPlayer === player.name && styles.selectedPlayer
+                            (selectedPlayer === player.userId || selectedPlayer === player.name) && styles.selectedPlayer
                         ]}
-                        onPress={() => setSelectedPlayer(player.name)}
+                        onPress={() => setSelectedPlayer(player.userId || player.name)}
                     >
                         <NeonText size={18}>{player.avatar || '👤'}</NeonText>
                         <NeonText
                             size={18}
-                            color={selectedPlayer === player.name ? COLORS.neonCyan : COLORS.white}
+                            color={(selectedPlayer === player.userId || selectedPlayer === player.name) ? COLORS.neonCyan : COLORS.white}
                             style={{ flex: 1 }}
                         >
                             {player.name}
                         </NeonText>
-                        {selectedPlayer === player.name && (
-                            <NeonText size={18} color={COLORS.neonCyan}></NeonText>
-                        )}
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -317,7 +340,7 @@ const ImposterScreen = ({ route, navigation }) => {
                 </NeonText>
                 <NeonText size={20} color={COLORS.limeGlow} style={{ marginTop: 10 }}>
                     ({roundResults?.imposterWord || '?'})
-                    object</NeonText>
+                </NeonText>
             </View>
 
             <View style={styles.wordComparison}>
@@ -398,7 +421,9 @@ const ImposterScreen = ({ route, navigation }) => {
                     <NeonText size={16} color={COLORS.electricPurple}>IMPOSTER</NeonText>
                     <NeonText size={12} color="#666">Room: {room.id}</NeonText>
                 </View>
-                {renderPhase()}
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                    {renderPhase()}
+                </ScrollView>
             </GameOverlay>
         </NeonContainer>
     );
@@ -407,7 +432,8 @@ const ImposterScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingTop: 10,
+        paddingBottom: 20,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.1)'
     },

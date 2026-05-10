@@ -39,14 +39,6 @@ const GAME_DATA = {
         duration: 15,
         tags: ['deception', 'social']
     },
-    'lie-detector': {
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibe: 'social',
-        energy: 'medium',
-        duration: 15,
-        tags: ['deception', 'fun']
-    },
     'confession-roulette': {
         minPlayers: 3,
         maxPlayers: 15,

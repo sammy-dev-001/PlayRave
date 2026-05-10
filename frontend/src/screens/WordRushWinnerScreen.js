@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -12,25 +11,20 @@ import { COLORS } from '../constants/theme';
 
 const WordRushWinnerScreen = ({ route, navigation }) => {
     const { room, winner } = route.params;
-    const currentPlayerId = SocketService.socket?.id;
-    const isWinner = winner && winner === currentPlayerId;
-    const noWinner = !winner; // Everyone lost
+    const currentUserId = SocketService.userId;
+    const isWinner = winner && winner === currentUserId;
+    const noWinner = !winner;
 
-    // Play sounds, music, and record stats
     useEffect(() => {
-        // Record stats
         const recordStats = async () => {
             try {
-                // Word Rush doesn't have points, just win/lose
                 await ProfileService.recordGame('word-rush', isWinner, isWinner ? 100 : 0);
-                console.log('Word Rush stats recorded:', { won: isWinner });
             } catch (error) {
                 console.error('Error recording stats:', error);
             }
         };
         recordStats();
 
-        // Play sounds
         if (noWinner) {
             SoundService.playDefeatMusic();
         } else if (isWinner) {
@@ -41,28 +35,26 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
         }
 
         return () => SoundService.stopMusic();
-    }, []);
+    }, [isWinner, noWinner]);
 
     const getPlayerName = (playerId) => {
         if (!playerId) return 'No One';
-        const player = room.players.find(p => p.id === playerId);
+        // Check for uid (from engine) against room players
+        const player = room.players.find(p => p.uid === playerId || p.userId === playerId || p.id === playerId);
         return player?.name || 'Unknown';
     };
 
     const handleBackToLobby = () => {
-        const currentPlayer = room.players.find(p => p.id === currentPlayerId);
-        const isHost = currentPlayer?.isHost || false;
+        const me = room.players.find(p => p.uid === currentUserId || p.userId === currentUserId);
+        const isHost = me?.isHost || false;
 
         if (isHost) {
-            navigation.navigate('GameSelection', {
-                room,
-                playerName: currentPlayer?.name
-            });
+            navigation.navigate('GameSelection', { room, playerName: me?.name });
         } else {
             navigation.navigate('Lobby', {
                 room,
                 isHost: false,
-                playerName: currentPlayer?.name,
+                playerName: me?.name,
                 selectedGame: room.gameType,
                 fromGame: true
             });
@@ -70,7 +62,7 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton onBackPress={handleBackToLobby}>
             <RaveLights trigger={isWinner} intensity="high" duration={4000} />
             <View style={styles.container}>
                 <NeonText size={36} weight="bold" glow style={styles.title}>
@@ -112,38 +104,13 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    title: {
-        letterSpacing: 4,
-        marginBottom: 40,
-    },
-    winnerContainer: {
-        alignItems: 'center',
-        marginBottom: 40,
-        padding: 30,
-        backgroundColor: 'rgba(198, 255, 74, 0.1)',
-        borderRadius: 20,
-        borderWidth: 3,
-        borderColor: COLORS.limeGlow,
-    },
-    winnerLabel: {
-        marginBottom: 20,
-    },
-    winnerName: {
-        textAlign: 'center',
-    },
-    message: {
-        textAlign: 'center',
-        marginBottom: 40,
-        color: '#888',
-    },
-    button: {
-        minWidth: 200,
-    }
+    container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    title: { letterSpacing: 4, marginBottom: 40 },
+    winnerContainer: { alignItems: 'center', marginBottom: 40, padding: 30, backgroundColor: 'rgba(198, 255, 74, 0.1)', borderRadius: 20, borderWidth: 3, borderColor: COLORS.limeGlow },
+    winnerLabel: { marginBottom: 20 },
+    winnerName: { textAlign: 'center' },
+    message: { textAlign: 'center', marginBottom: 40, color: '#888' },
+    button: { minWidth: 200 }
 });
 
 export default WordRushWinnerScreen;

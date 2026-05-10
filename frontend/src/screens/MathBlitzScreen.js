@@ -110,6 +110,15 @@ const MathBlitzScreen = ({ route, navigation }) => {
             }
         };
 
+        const onGameStateSync = (data) => {
+            console.log('Math Blitz state sync:', data);
+            if (data.gameState) {
+                setTotalRounds(data.gameState.totalRounds || 10);
+                setCurrentRound(data.gameState.currentRound || 1);
+                setPhase(data.gameState.phase || 'waiting');
+            }
+        };
+
         SocketService.on('math-blitz-round-start', onRoundStart);
         SocketService.on('math-blitz-answer-result', onAnswerResult);
         SocketService.on('math-blitz-round-won', onRoundWon);
@@ -117,6 +126,10 @@ const MathBlitzScreen = ({ route, navigation }) => {
         SocketService.on('math-blitz-next-round-ready', onNextRoundReady);
         SocketService.on('math-blitz-game-finished', onGameFinished);
         SocketService.on('math-blitz-game-ended', onGameEnded);
+        SocketService.on('game-state-sync', onGameStateSync);
+
+        // Fetch state on mount
+        SocketService.emit('get-state', { roomId: room.id });
 
         return () => {
             SocketService.off('math-blitz-round-start', onRoundStart);
@@ -126,6 +139,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
             SocketService.off('math-blitz-next-round-ready', onNextRoundReady);
             SocketService.off('math-blitz-game-finished', onGameFinished);
             SocketService.off('math-blitz-game-ended', onGameEnded);
+            SocketService.off('game-state-sync', onGameStateSync);
         };
     }, [navigation, playerName, isHost]);
 

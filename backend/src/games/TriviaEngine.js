@@ -14,13 +14,20 @@ class TriviaEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
+            case 'trivia-submit-answer':
             case 'submit-answer':
                 return this.submitAnswer(roomId, userId, payload.answerIndex);
+            case 'trivia-show-results':
             case 'show-results':
             case 'force-results':
                 return this.getQuestionResults(roomId);
+            case 'trivia-next-question':
             case 'next-question':
                 return this.nextQuestion(roomId);
+            case 'trivia-get-state':
+            case 'get-state':
+                return this.getState(roomId, userId);
+            case 'trivia-end-game':
             case 'end-game':
                 return this.endGame(roomId);
             default:
@@ -95,14 +102,18 @@ class TriviaEngine {
         const game = this.activeGames.get(roomId);
         if (!game || game.type !== 'trivia') return null;
 
-        const question = game.questions[game.currentQuestionIndex];
+        const currentQuestion = game.questions[game.currentQuestionIndex];
         return {
             status: game.status,
             currentQuestionIndex: game.currentQuestionIndex,
             totalQuestions: game.questions.length,
-            question: question.question,
-            options: question.options,
-            category: question.category,
+            question: {
+                question: currentQuestion.question,
+                options: currentQuestion.options,
+                category: currentQuestion.category,
+                totalQuestions: game.questions.length,
+                questionIndex: game.currentQuestionIndex
+            },
             scores: game.scores,
             hasAnswered: userId ? !!(game.playerAnswers[userId] && game.playerAnswers[userId][game.currentQuestionIndex] !== undefined) : false
         };
@@ -208,7 +219,7 @@ class TriviaEngine {
         const instructions = [
             {
                 action: 'broadcast',
-                event: 'next-question-started',
+                event: 'next-question-ready',
                 data: this.getGameState(roomId)
             },
             {
@@ -233,6 +244,20 @@ class TriviaEngine {
 
         scores.sort((a, b) => b.score - a.score);
         return scores;
+    }
+
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId, userId);
+        if (!state) return { action: 'error', message: 'Game not found' };
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: {
+                gameType: 'trivia',
+                gameState: state
+            }
+        };
     }
 
     endGame(roomId) {

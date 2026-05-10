@@ -28,10 +28,14 @@ class ScrabbleEngine {
             case 'pass-turn':
                 return this.passTurn(roomId, userId);
             case 'scrabble-swap-tiles':
+            case 'scrabble-exchange-tiles':
             case 'swap-tiles':
-                return this.swapTiles(roomId, userId, payload.tiles);
+            case 'exchange-tiles':
+                return this.exchangeTiles(roomId, userId, payload.tiles || payload.tileIndices);
+            case 'scrabble-get-state':
             case 'get-state':
                 return this.getState(roomId, userId);
+            case 'scrabble-end-game':
             case 'end-game':
                 return this.endGame(roomId);
             default:

@@ -136,20 +136,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     };
 
     const handleEndGame = () => {
-        Alert.alert(
-            'End Game',
-            'Are you sure you want to end the game?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'End Game',
-                    onPress: () => {
-                        SocketService.emit('end-truth-or-dare', { roomId: room.id });
-                    },
-                    style: 'destructive'
-                }
-            ]
-        );
+        SocketService.emit('end-truth-or-dare', { roomId: room.id });
     };
 
     if (!gameState) {
