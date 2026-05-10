@@ -53,13 +53,6 @@ const RecommendationService = {
             players: { min: 3, ideal: 6 },
             duration: 15
         },
-        'rapid-fire': {
-            name: 'Rapid Fire',
-            category: 'knowledge',
-            energy: 'high',
-            players: { min: 2, ideal: 4 },
-            duration: 10
-        },
         'speed-categories': {
             name: 'Speed Categories',
             category: 'knowledge',
@@ -176,7 +169,7 @@ const RecommendationService = {
             'chill': ['myth-or-fact', 'never-have-i'],
             'social': ['truth-or-dare', 'whos-most-likely', 'never-have-i'],
             'creative': [],
-            'fast': ['neon-tap', 'word-rush', 'rapid-fire', 'speed-categories'],
+            'fast': ['neon-tap', 'word-rush', 'speed-categories'],
             'strategic': ['memory-chain', 'trivia']
         };
 

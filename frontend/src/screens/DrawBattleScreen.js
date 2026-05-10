@@ -339,7 +339,6 @@ const DrawBattleScreen = ({ route, navigation }) => {
                             <NeonButton title="BACK TO LOBBY" onPress={handleBackToLobby} style={styles.lobbyBtn} />
                         </View>
                     )}
-                </View>
             </ScrollView>
         </GameOverlay>
     </NeonContainer>

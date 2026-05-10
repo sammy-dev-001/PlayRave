@@ -65,17 +65,6 @@ const LOCAL_GAMES = [
         vibes: ['chill']
     },
     {
-        id: 'rapid-fire',
-        name: 'Rapid Fire',
-        description: 'Quick questions, 5 seconds to answer!',
-        icon: '⚡',
-        color: COLORS.limeGlow,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['hype']
-    },
-    {
         id: 'scrabble',
         name: 'Scrabble',
         description: 'Create words from letter tiles!',
