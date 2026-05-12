@@ -17,6 +17,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     const [currentPrompt, setCurrentPrompt] = useState(null);
     const [promptType, setPromptType] = useState(null);
     const [usedDares, setUsedDares] = useState([]);
+    const [usedTruths, setUsedTruths] = useState([]);
     const [playerSkips, setPlayerSkips] = useState({});
     const [isMuted, setIsMuted] = useState(SoundService.getMuted());
     const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
