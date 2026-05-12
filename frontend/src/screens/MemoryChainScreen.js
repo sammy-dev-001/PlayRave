@@ -20,7 +20,15 @@ const MEMORY_ITEMS = [
 ];
 
 const MemoryChainScreen = ({ route, navigation }) => {
-    const { players } = route.params;
+    const { players = [] } = route.params || {};
+
+    // Early validation
+    React.useEffect(() => {
+        if (!players || players.length === 0) {
+            console.error('[MemoryChain] No players provided');
+            navigation.goBack();
+        }
+    }, []);
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [phase, setPhase] = useState('show'); // 'show', 'input', 'result', 'gameover'
     const [playerSequences, setPlayerSequences] = useState({}); // Store sequences per player

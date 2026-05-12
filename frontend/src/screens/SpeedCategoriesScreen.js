@@ -14,7 +14,16 @@ import { COLORS, SHADOWS } from '../constants/theme';
 import { getRandomCategories } from '../data/speedCategories';
 
 const SpeedCategoriesScreen = ({ route, navigation }) => {
-    const { players } = route.params;
+    const { players = [] } = route.params || {};
+
+    // Early validation
+    React.useEffect(() => {
+        if (!players || players.length === 0) {
+            console.error('[SpeedCategories] No players provided');
+            navigation.goBack();
+        }
+    }, []);
+
     // Generate different categories for each player
     const [playerCategories] = useState(() => {
         const categories = {};
@@ -39,14 +48,6 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
 
     const currentCategory = playerCategories[currentPlayerIndex]?.[currentCategoryIndex];
     const currentPlayer = players[currentPlayerIndex];
-
-    if (!currentCategory) {
-        return (
-            <NeonContainer>
-                <NeonText>Loading category...</NeonText>
-            </NeonContainer>
-        );
-    }
 
     // Timer logic for playing phase
     useEffect(() => {
@@ -110,7 +111,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
     const handleSuccess = () => {
         // Player successfully named 5 things
         if (timerRef.current) clearInterval(timerRef.current);
-
+        
         // Award points based on time remaining
         const points = Math.max(5, countdown * 2); // 2 points per second remaining, min 5
         setScores(prev => ({
@@ -146,7 +147,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
         // Move to next player or next category
         if (currentPlayerIndex < players.length - 1) {
             setCurrentPlayerIndex(currentPlayerIndex + 1);
-        } else if (currentCategoryIndex < playerCategories[0].length - 1) {
+        } else if (currentCategoryIndex < (playerCategories[0]?.length || 10) - 1) {
             setCurrentCategoryIndex(currentCategoryIndex + 1);
             setCurrentPlayerIndex(0);
         } else {
@@ -166,6 +167,14 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
     const sortedScores = Object.entries(scores)
         .sort(([, a], [, b]) => b - a);
 
+    if (!currentCategory && !showWinner) {
+        return (
+            <NeonContainer>
+                <NeonText>Loading category...</NeonText>
+            </NeonContainer>
+        );
+    }
+
     // Winner Screen
     if (showWinner) {
         const winner = sortedScores[0];
@@ -173,11 +182,9 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
-                    <NeonText size={24}></NeonText>
                     <NeonText size={32} weight="bold" glow style={styles.winnerTitle}>
                         SPEED CHAMPION
                     </NeonText>
-                    <NeonText size={48}></NeonText>
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
                         {winner[0]}
                     </NeonText>
@@ -360,28 +367,22 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
 
     // Results Phase
     if (phase === 'results') {
-        const earnedPoints = scores[currentPlayer.name] -
-            (sortedScores.find(([name]) => name === currentPlayer.name)?.[1] || 0);
-
         return (
             <NeonContainer>
                 <View style={styles.resultsContainer}>
-                    <NeonText size={48}>
-                        {earnedPoints > 0 ? '' : ''}
-                    </NeonText>
                     <NeonText size={24} weight="bold" style={styles.resultsTitle}>
-                        {earnedPoints > 0 ? 'WELL DONE!' : 'BETTER LUCK NEXT TIME!'}
+                        ROUND COMPLETE!
                     </NeonText>
 
                     <View style={styles.pointsEarned}>
                         <NeonText size={48} weight="bold" color={COLORS.limeGlow}>
-                            +{scores[currentPlayer.name]}
+                            {scores[currentPlayer.name]}
                         </NeonText>
-                        <NeonText size={16} color="#888">points for {currentPlayer.name}</NeonText>
+                        <NeonText size={16} color="#888">total points for {currentPlayer.name}</NeonText>
                     </View>
 
                     <NeonButton
-                        title={currentCategoryIndex < playerCategories[0].length - 1 || currentPlayerIndex < players.length - 1
+                        title={currentCategoryIndex < (playerCategories[0]?.length || 10) - 1 || currentPlayerIndex < players.length - 1
                             ? "NEXT TURN"
                             : "SEE FINAL SCORES"}
                         onPress={handleNextTurn}

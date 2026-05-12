@@ -7,8 +7,16 @@ import NeonButton from '../components/NeonButton';
 import { COLORS } from '../constants/theme';
 
 const NeverHaveIEverCategoryScreen = ({ route, navigation }) => {
-    const { players } = route.params;
+    const { players = [] } = route.params || {};
     const [selectedCategory, setSelectedCategory] = useState('normal');
+
+    // Early validation
+    React.useEffect(() => {
+        if (!players || players.length === 0) {
+            console.error('[NeverHaveIEverCategory] No players provided');
+            navigation.goBack();
+        }
+    }, []);
 
     const categories = [
         {

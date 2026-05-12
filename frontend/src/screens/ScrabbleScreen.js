@@ -19,9 +19,8 @@ import PlayerStatsService from '../services/PlayerStatsService';
 
 const HAND_SIZE = 7;
 
-
 const ScrabbleScreen = ({ route, navigation }) => {
-    const { players = [] } = route.params || {};
+    const { players = [], difficulty = 'medium' } = route.params || {};
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Debug logging
@@ -39,16 +38,16 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const gamePlayers = players || [];
 
     // Calculate tile size dynamically based on screen dimensions
-    // For desktop (wider screens), use a larger minimum tile size
     const isDesktop = screenWidth > 768;
-    const availableSize = Math.min(screenWidth * 0.9, screenHeight - 300); // Use 90% width, leave space for header/controls
-    const minTileSize = isDesktop ? 28 : 18; // Larger minimum on desktop
-    const maxTileSize = isDesktop ? 40 : 30; // Cap tile size
+    const availableSize = Math.min(screenWidth * 0.9, screenHeight - 300);
+    const minTileSize = isDesktop ? 28 : 18;
+    const maxTileSize = isDesktop ? 40 : 30;
     const tileSize = Math.min(maxTileSize, Math.max(Math.floor(availableSize / BOARD_SIZE), minTileSize));
-    const rackTileSize = Math.min(Math.max(tileSize * 1.3, 40), 55); // Rack tiles slightly larger
+    const rackTileSize = Math.min(Math.max(tileSize * 1.3, 40), 55);
 
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [tileBag, setTileBag] = useState(() => createTileBag());
+    const scrollViewRef = useRef(null);
 
     // Game State
     const [board, setBoard] = useState({}); // { "x,y": { letter: 'A', value: 1, isLocked: true } }
@@ -68,12 +67,17 @@ const ScrabbleScreen = ({ route, navigation }) => {
         return scores;
     });
 
+    const currentPlayer = gamePlayers[currentPlayerIndex];
+    const currentHand = playerHands[currentPlayer?.id] || [];
+
     const [selectedTileIndex, setSelectedTileIndex] = useState(null); // Index in hand
     const [placedTiles, setPlacedTiles] = useState([]); // Array of { x, y, letter, value, handIndex }
     const [placementHistory, setPlacementHistory] = useState([]); // Track for undo
     const [turnNumber, setTurnNumber] = useState(1);
     const [consecutivePasses, setConsecutivePasses] = useState(0); // Track passes for end game
     const [endGameModalVisible, setEndGameModalVisible] = useState(false);
+    const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
+    const [pendingBlankPlacement, setPendingBlankPlacement] = useState(null);
 
     // Tile exchange state
     const [exchangeMode, setExchangeMode] = useState(false);
@@ -974,6 +978,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
         </NeonContainer>
     );
 };
+
 
 const styles = StyleSheet.create({
     header: {

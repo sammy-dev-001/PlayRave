@@ -9,7 +9,15 @@ import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
 
 const NeverHaveIEverScreen = ({ route, navigation }) => {
-    const { players, category = 'normal' } = route.params;
+    const { players = [], category = 'normal' } = route.params || {};
+
+    // Early validation
+    React.useEffect(() => {
+        if (!players || players.length === 0) {
+            console.error('[NeverHaveIEver] No players provided');
+            navigation.goBack();
+        }
+    }, []);
     const [currentPrompt, setCurrentPrompt] = useState(() => getRandomPrompt(category, []));
     const [usedPrompts, setUsedPrompts] = useState([currentPrompt]);
     const [roundNumber, setRoundNumber] = useState(1);
