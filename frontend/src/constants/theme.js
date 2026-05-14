@@ -11,9 +11,11 @@ export const COLORS = {
 };
 
 export const FONTS = {
-    // Using Outfit from Google Fonts for a modern, premium feel
+    // Using Outfit for modern feel, Righteous for headers, Orbitron for arcade feel
     bold: 'Outfit',
     regular: 'Outfit',
+    display: 'Righteous', // Retro-futuristic party font
+    arcade: 'Orbitron',   // High-tech sci-fi gaming font
 };
 
 export const SHADOWS = {

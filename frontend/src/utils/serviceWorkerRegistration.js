@@ -16,6 +16,16 @@ export const register = async () => {
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (refreshing) return;
+                
+                // Prevent infinite reload loops by checking session storage
+                const lastReload = sessionStorage.getItem('sw-reload-timestamp');
+                const now = Date.now();
+                if (lastReload && (now - parseInt(lastReload)) < 10000) {
+                    console.log('[SW] Prevented duplicate reload loop');
+                    return;
+                }
+                
+                sessionStorage.setItem('sw-reload-timestamp', now.toString());
                 refreshing = true;
                 console.log('[SW] Controller changed, reloading page...');
                 window.location.reload();

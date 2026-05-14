@@ -1,7 +1,7 @@
 // Service Worker for PlayRave - Offline Support
-const CACHE_NAME = 'playrave-v1';
-const STATIC_CACHE = 'playrave-static-v1';
-const DYNAMIC_CACHE = 'playrave-dynamic-v1';
+const CACHE_NAME = 'playrave-v1.1'; // Bumped version
+const STATIC_CACHE = 'playrave-static-v1.1';
+const DYNAMIC_CACHE = 'playrave-dynamic-v1.1';
 
 // Assets to cache for offline use
 const STATIC_ASSETS = [
@@ -20,7 +20,7 @@ self.addEventListener('install', (event) => {
                 console.log('[SW] Caching static assets');
                 return cache.addAll(STATIC_ASSETS);
             })
-            .then(() => self.skipWaiting())
+            // We NO LONGER skipWaiting here automatically to avoid reload loops
     );
 });
 
@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter((name) => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
+                    .filter((name) => name.startsWith('playrave-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
                     .map((name) => {
                         console.log('[SW] Deleting old cache:', name);
                         return caches.delete(name);
@@ -52,6 +52,11 @@ self.addEventListener('fetch', (event) => {
     // Skip chrome extensions and other non-http(s) requests
     if (!url.protocol.startsWith('http')) return;
 
+    // Network-only for socket.io (very important to avoid interference)
+    if (url.pathname.includes('socket.io')) {
+        return; 
+    }
+
     // Network-first strategy for API calls
     if (url.pathname.startsWith('/api')) {
         event.respondWith(networkFirst(request));
@@ -68,23 +73,20 @@ async function cacheFirst(request) {
     const cached = await cache.match(request);
 
     if (cached) {
-        console.log('[SW] Serving from cache:', request.url);
         return cached;
     }
 
     try {
         const response = await fetch(request);
-        // Cache successful responses
-        if (response.status === 200) {
+        // Cache successful responses from our own domain
+        if (response.status === 200 && new URL(request.url).origin === self.location.origin) {
             cache.put(request, response.clone());
         }
         return response;
     } catch (error) {
-        console.log('[SW] Fetch failed, checking static cache:', request.url);
         const staticCached = await caches.match(request);
         if (staticCached) return staticCached;
 
-        // Return offline page for navigation requests
         if (request.mode === 'navigate') {
             return caches.match('/index.html');
         }
@@ -97,12 +99,12 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
     try {
         const response = await fetch(request);
-        // Cache API responses
-        const cache = await caches.open(DYNAMIC_CACHE);
-        cache.put(request, response.clone());
+        if (response.status === 200) {
+            const cache = await caches.open(DYNAMIC_CACHE);
+            cache.put(request, response.clone());
+        }
         return response;
     } catch (error) {
-        console.log('[SW] Network failed, serving from cache:', request.url);
         const cached = await caches.match(request);
         if (cached) return cached;
         throw error;

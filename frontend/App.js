@@ -12,6 +12,10 @@ import { register as registerServiceWorker } from './src/utils/serviceWorkerRegi
 export default function App() {
 
   useEffect(() => {
+    // Pre-warm the backend (wake up Render from sleep)
+    const backendUrl = 'https://playrave-59ud.onrender.com/api/health';
+    fetch(backendUrl).catch(() => {/* ignore errors, we just want to wake it up */});
+
     // Register service worker for offline support and auto-updates (web only)
     if (typeof window !== 'undefined' && !window.__EXPO_LOCAL_DEV__) {
       registerServiceWorker();

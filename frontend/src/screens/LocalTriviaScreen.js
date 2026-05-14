@@ -206,11 +206,11 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                     <NeonText size={16} color={COLORS.neonCyan}>
                         {currentQuestionIndex + 1} / {questions.length}
                     </NeonText>
-                    <NeonText size={32} weight="bold" color={timeLeft <= 3 ? COLORS.hotPink : COLORS.limeGlow}>
+                    <NeonText size={32} weight="bold" variant="arcade" color={timeLeft <= 3 ? COLORS.hotPink : COLORS.limeGlow}>
                         {timeLeft}s
                     </NeonText>
                     {isSinglePlayer && (
-                        <NeonText size={16} color={COLORS.limeGlow}>SCORE: {scores['Player 1']}</NeonText>
+                        <NeonText size={16} color={COLORS.limeGlow} variant="arcade">SCORE: {scores['Player 1']}</NeonText>
                     )}
                 </View>
 

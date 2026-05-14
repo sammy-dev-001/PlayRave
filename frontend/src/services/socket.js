@@ -100,7 +100,7 @@ class SocketService {
         this.intentionalDisconnect = false;
         this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
-            timeout: 15000,
+            timeout: 45000,
             reconnection: true,
             reconnectionAttempts: this.maxReconnectAttempts,
             reconnectionDelay: this.baseReconnectDelay,
