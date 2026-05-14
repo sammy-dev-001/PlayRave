@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 
 // MongoDB connection string - password is URL encoded (& = %26, % = %25)
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://samueldaniyan564_db_user:sammy123%26%25@cluster0.0ykmcom.mongodb.net/playrave?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://playrave_user:PlayRave2024%21@cluster0.0ykmcom.mongodb.net/playrave?retryWrites=true&w=majority&appName=Cluster0';
 
 let client = null;
 let db = null;
