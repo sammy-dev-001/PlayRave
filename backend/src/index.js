@@ -613,12 +613,49 @@ io.on("connection", (socket) => {
     });
 });
 
+// ==================== GRACEFUL SHUTDOWN ====================
+async function handleShutdown(signal) {
+    console.log(`\n[Server] Received ${signal}. Starting graceful shutdown...`);
+    
+    // Stop accepting new connections
+    server.close(() => {
+        console.log('[Server] HTTP server closed.');
+    });
+
+    try {
+        // Save all active rooms to DB one last time
+        if (roomManager && roomManager.rooms) {
+            const rooms = roomManager.rooms;
+            if (rooms.size > 0) {
+                console.log(`[Server] Saving ${rooms.size} rooms before exit...`);
+                for (const [id, room] of rooms) {
+                    await roomManager._saveToDb(room);
+                }
+            }
+        }
+        
+        // Save all live game states (cards, board positions, etc.)
+        if (gameRouter) {
+            await gameRouter.saveAllGames();
+        }
+
+        console.log('[Server] Graceful shutdown complete.');
+        process.exit(0);
+    } catch (err) {
+        console.error('[Server] Error during shutdown:', err);
+        process.exit(1);
+    }
+}
+
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+
 // ── Server Start ────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
     console.log(`Access from your phone using your computer's IP address`);
     
-    // Warm up AI engines
-    ScrabbleAIEngine.warmUp();
+    // Warm up AI engines (Commented out to save memory on Render Free Tier)
+    // ScrabbleAIEngine.warmUp();
 });

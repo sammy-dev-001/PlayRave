@@ -8,6 +8,7 @@
 
 const sessionManager = require('./SessionManager');
 const roomManager = require('./roomManager');
+const gamePersistence = require('./GamePersistenceManager');
 
 // ── Engine Registry ─────────────────────────────────────────────────────
 const engineRegistry = {
@@ -84,6 +85,12 @@ class GameRouter {
             
             // Execute the returned payload instruction
             this.executeInstruction(instruction, io, roomId);
+
+            // Auto-persist state after every valid move
+            const updatedState = engine.activeGames.get(roomId);
+            if (updatedState) {
+                gamePersistence.saveGame(roomId, gameType, updatedState);
+            }
             return;
         }
 
@@ -223,7 +230,14 @@ class GameRouter {
             if (io) {
                 this.executeInstruction(instruction, io, room.id);
             }
-            return this.getGameState(room.id, gameType);
+
+            // Persist initial game state
+            const initialState = engine.activeGames.get(room.id);
+            if (initialState) {
+                gamePersistence.saveGame(room.id, gameType, initialState);
+            }
+
+            return instruction;
         }
 
         console.error(`[GameRouter] Cannot start game. Engine not found for: ${gameType}`);
@@ -238,8 +252,20 @@ class GameRouter {
             if (room) gameType = room.gameType;
         }
 
-        if (gameType && engineRegistry[gameType] && engineRegistry[gameType].activeGames.has(roomId)) {
-            return engineRegistry[gameType].activeGames.get(roomId);
+        if (gameType && engineRegistry[gameType]) {
+            const engine = engineRegistry[gameType];
+            let state = engine.activeGames.get(roomId);
+
+            if (!state) {
+                // Attempt to restore from DB
+                const record = await gamePersistence.loadGame(roomId);
+                if (record && record.gameType === gameType) {
+                    console.log(`[GameRouter] Restoring game state for room ${roomId} from MongoDB`);
+                    state = record.state;
+                    engine.activeGames.set(roomId, state);
+                }
+            }
+            return state || null;
         }
         return null;
     }
@@ -286,6 +312,17 @@ class GameRouter {
 
         if (gameType && engineRegistry[gameType] && engineRegistry[gameType].activeGames.has(roomId)) {
             engineRegistry[gameType].activeGames.delete(roomId);
+            gamePersistence.deleteGame(roomId);
+        }
+    }
+
+    async saveAllGames() {
+        console.log('[GameRouter] Saving all active games to DB...');
+        for (const gameType in engineRegistry) {
+            const engine = engineRegistry[gameType];
+            for (const [roomId, state] of engine.activeGames) {
+                await gamePersistence.saveGame(roomId, gameType, state);
+            }
         }
     }
 

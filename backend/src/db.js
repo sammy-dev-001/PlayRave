@@ -1,7 +1,12 @@
+require('dotenv').config();
 const { MongoClient } = require('mongodb');
 
-// MongoDB connection string - password is URL encoded (& = %26, % = %25)
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://playrave_user:PlayRave2024%21@cluster0.0ykmcom.mongodb.net/playrave?retryWrites=true&w=majority&appName=Cluster0';
+// MongoDB connection string from environment variables
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+    console.error('CRITICAL: MONGODB_URI environment variable is not defined!');
+}
 
 let client = null;
 let db = null;
