@@ -53,6 +53,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const [board, setBoard] = useState({});
     const [myHand, setMyHand] = useState([]);
     const [players, setPlayers] = useState([]);
+    const playersRef = useRef([]);
     const [isMyTurn, setIsMyTurn] = useState(false);
     const [currentPlayerName, setCurrentPlayerName] = useState('');
 
@@ -156,8 +157,10 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 console.log('Fatal game error — navigating out:', error.message);
                 
                 // Map players list for scoreboard - use 'userId' for persistent identity
-                const scoreboardData = players.map(p => ({ 
-                    playerId: p.userId, 
+                // Fallback to room.players if state is empty, or use the latest players ref
+                const activePlayers = playersRef.current.length > 0 ? playersRef.current : (room.players || []);
+                const scoreboardData = activePlayers.map(p => ({ 
+                    playerId: p.userId || p.uid || p.id, 
                     playerName: p.name, 
                     score: p.score || 0 
                 }));
@@ -262,6 +265,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         setBoard(state.board || {});
         setMyHand(state.myHand || []);
         setPlayers(state.players || []);
+        playersRef.current = state.players || [];
         setIsMyTurn(state.isMyTurn || false);
         setCurrentPlayerName(state.currentPlayerName || '');
         setTilesInBag(state.tilesInBag ?? null); // Bug 2: capture remaining tile count

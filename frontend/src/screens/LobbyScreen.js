@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Image, Share, Alert, StatusBar, Platform, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import NeonBackground from '../components/NeonBackground';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -44,134 +45,135 @@ const LobbyScreen = ({ route, navigation }) => {
     };
     const isHost = currentPlayerIsHost();
 
-    useEffect(() => {
-        const checkConnection = () => {
-            const connected = SocketService.socket?.connected || false;
-            setSocketConnected(connected);
-        };
+    useFocusEffect(
+        useCallback(() => {
+            const checkConnection = () => {
+                const connected = SocketService.socket?.connected || false;
+                setSocketConnected(connected);
+            };
 
-        checkConnection();
-
-        const onRoomUpdated = (updatedRoom) => {
-            setRoom(updatedRoom);
-            if (updatedRoom.gameType) {
-                setSelectedGame(updatedRoom.gameType);
-            }
-            const myUid = getCurrentPlayerId();
-            const me = updatedRoom.players.find(p => p.uid === myUid);
-            if (me) {
-                setMyReadyStatus(me.isReady || false);
-            }
-        };
-
-        const onPlayerKicked = () => {
-            Alert.alert(
-                'Kicked from Lobby',
-                'You have been removed from this lobby by the host.',
-                [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
-            );
-        };
-
-        const onGameStarted = (payload) => {
-            console.log('[LobbyScreen] Game started payload received:', JSON.stringify(payload, null, 2));
-            
-            // Robust gameType detection with fallbacks
-            const { 
-                gameType: rawGameType, 
-                question, 
-                statement, 
-                prompt, 
-                players, 
-                hostParticipates: hostPlays, 
-                gameState 
-            } = payload;
-            
-            const gameType = rawGameType || payload.type || gameState?.type;
-            const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
-            
-            console.log(`[LobbyScreen] >>> NAVIGATING TO: ${gameType} <<< (Source: ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')})`);
-            console.log(`[LobbyScreen] NavParams keys:`, Object.keys(navParams));
-
-            if (!gameType) {
-                console.error('[LobbyScreen] Failed to determine gameType from payload:', payload);
-                return;
-            }
-            if (gameType === 'trivia') {
-                navigation.navigate('Question', { ...navParams, question, questionIndex: 0 });
-            } else if (gameType === 'myth-or-fact') {
-                navigation.navigate('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
-            } else if (gameType === 'whos-most-likely') {
-                navigation.navigate('WhosMostLikelyQuestion', { ...navParams, prompt: gameState, promptIndex: 0 });
-            } else if (gameType === 'neon-tap') {
-                navigation.navigate('NeonTapGame', navParams);
-            } else if (gameType === 'word-rush') {
-                navigation.navigate('WordRushGame', navParams);
-            } else if (gameType === 'whot') {
-                navigation.navigate('WhotGame', navParams);
-            } else if (gameType === 'truth-or-dare') {
-                navigation.navigate('OnlineTruthOrDareGame', { ...navParams, category: gameState?.category || 'normal' });
-            } else if (gameType === 'never-have-i-ever') {
-                navigation.navigate('OnlineNeverHaveIEver', navParams);
-            } else if (gameType === 'confession-roulette') {
-                navigation.navigate('ConfessionRoulette', navParams);
-            } else if (gameType === 'spill-the-tea') {
-                navigation.navigate('SpillTheTea', navParams);
-            } else if (gameType === 'imposter') {
-                navigation.navigate('Imposter', navParams);
-            } else if (gameType === 'unpopular-opinions') {
-                navigation.navigate('UnpopularOpinions', navParams);
-            } else if (gameType === 'hot-seat') {
-                navigation.navigate('HotSeat', navParams);
-            } else if (gameType === 'hot-seat-mc') {
-                navigation.navigate('HotSeatMC', navParams);
-            } else if (gameType === 'button-mash') {
-                navigation.navigate('ButtonMash', navParams);
-            } else if (gameType === 'type-race') {
-                navigation.navigate('TypeRace', navParams);
-            } else if (gameType === 'math-blitz') {
-                navigation.navigate('MathBlitz', navParams);
-            } else if (gameType === 'color-rush') {
-                navigation.navigate('ColorRush', navParams);
-            } else if (gameType === 'tic-tac-toe') {
-                navigation.navigate('TicTacToe', navParams);
-            } else if (gameType === 'draw-battle') {
-                navigation.navigate('DrawBattle', navParams);
-            } else if (gameType === 'scrabble') {
-                navigation.navigate('OnlineScrabble', navParams);
-            } else if (gameType === 'trivia') {
-                navigation.navigate('Question', navParams);
-            }
-        };
-
-
-        const onHostChanged = ({ newHostName, reason }) => {
-            Alert.alert(
-                '👑 Host Migrated',
-                `${newHostName} is now the lobby host!`,
-                [{ text: 'OK' }]
-            );
-        };
-
-        SocketService.on('room-updated', onRoomUpdated);
-        SocketService.on('game-started', onGameStarted);
-        SocketService.on('player-kicked', onPlayerKicked);
-        SocketService.on('host-changed', onHostChanged);
-
-        const pollInterval = setInterval(() => {
             checkConnection();
-            if (SocketService.socket?.connected) {
-                SocketService.emit('get-room', { roomId: room.id });
-            }
-        }, 2000);
 
-        return () => {
-            clearInterval(pollInterval);
-            SocketService.off('room-updated', onRoomUpdated);
-            SocketService.off('game-started', onGameStarted);
-            SocketService.off('player-kicked', onPlayerKicked);
-            SocketService.off('host-changed', onHostChanged);
-        };
-    }, [navigation, room]);
+            const onRoomUpdated = (updatedRoom) => {
+                setRoom(updatedRoom);
+                if (updatedRoom.gameType) {
+                    setSelectedGame(updatedRoom.gameType);
+                }
+                const myUid = getCurrentPlayerId();
+                const me = updatedRoom.players.find(p => p.uid === myUid);
+                if (me) {
+                    setMyReadyStatus(me.isReady || false);
+                }
+            };
+
+            const onPlayerKicked = () => {
+                Alert.alert(
+                    'Kicked from Lobby',
+                    'You have been removed from this lobby by the host.',
+                    [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
+                );
+            };
+
+            const onGameStarted = (payload) => {
+                console.log('[LobbyScreen] Game started payload received:', JSON.stringify(payload, null, 2));
+                
+                // Robust gameType detection with fallbacks
+                const { 
+                    gameType: rawGameType, 
+                    question, 
+                    statement, 
+                    prompt, 
+                    players, 
+                    hostParticipates: hostPlays, 
+                    gameState 
+                } = payload;
+                
+                const gameType = rawGameType || payload.type || gameState?.type;
+                const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
+                
+                console.log(`[LobbyScreen] >>> NAVIGATING TO: ${gameType} <<< (Source: ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')})`);
+                console.log(`[LobbyScreen] NavParams keys:`, Object.keys(navParams));
+
+                if (!gameType) {
+                    console.error('[LobbyScreen] Failed to determine gameType from payload:', payload);
+                    return;
+                }
+                if (gameType === 'trivia') {
+                    navigation.navigate('Question', { ...navParams, question, questionIndex: 0 });
+                } else if (gameType === 'myth-or-fact') {
+                    navigation.navigate('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
+                } else if (gameType === 'whos-most-likely') {
+                    navigation.navigate('WhosMostLikelyQuestion', { ...navParams, prompt: gameState, promptIndex: 0 });
+                } else if (gameType === 'neon-tap') {
+                    navigation.navigate('NeonTapGame', navParams);
+                } else if (gameType === 'word-rush') {
+                    navigation.navigate('WordRushGame', navParams);
+                } else if (gameType === 'whot') {
+                    navigation.navigate('WhotGame', navParams);
+                } else if (gameType === 'truth-or-dare') {
+                    navigation.navigate('OnlineTruthOrDareGame', { ...navParams, category: gameState?.category || 'normal' });
+                } else if (gameType === 'never-have-i-ever') {
+                    navigation.navigate('OnlineNeverHaveIEver', navParams);
+                } else if (gameType === 'confession-roulette') {
+                    navigation.navigate('ConfessionRoulette', navParams);
+                } else if (gameType === 'spill-the-tea') {
+                    navigation.navigate('SpillTheTea', navParams);
+                } else if (gameType === 'imposter') {
+                    navigation.navigate('Imposter', navParams);
+                } else if (gameType === 'unpopular-opinions') {
+                    navigation.navigate('UnpopularOpinions', navParams);
+                } else if (gameType === 'hot-seat') {
+                    navigation.navigate('HotSeat', navParams);
+                } else if (gameType === 'hot-seat-mc') {
+                    navigation.navigate('HotSeatMC', navParams);
+                } else if (gameType === 'button-mash') {
+                    navigation.navigate('ButtonMash', navParams);
+                } else if (gameType === 'type-race') {
+                    navigation.navigate('TypeRace', navParams);
+                } else if (gameType === 'math-blitz') {
+                    navigation.navigate('MathBlitz', navParams);
+                } else if (gameType === 'color-rush') {
+                    navigation.navigate('ColorRush', navParams);
+                } else if (gameType === 'tic-tac-toe') {
+                    navigation.navigate('TicTacToe', navParams);
+                } else if (gameType === 'draw-battle') {
+                    navigation.navigate('DrawBattle', navParams);
+                } else if (gameType === 'scrabble') {
+                    navigation.navigate('OnlineScrabble', navParams);
+                } else if (gameType === 'trivia') {
+                    navigation.navigate('Question', navParams);
+                }
+            };
+
+            const onHostChanged = ({ newHostName, reason }) => {
+                Alert.alert(
+                    '👑 Host Migrated',
+                    `${newHostName} is now the lobby host!`,
+                    [{ text: 'OK' }]
+                );
+            };
+
+            SocketService.on('room-updated', onRoomUpdated);
+            SocketService.on('game-started', onGameStarted);
+            SocketService.on('player-kicked', onPlayerKicked);
+            SocketService.on('host-changed', onHostChanged);
+
+            const pollInterval = setInterval(() => {
+                checkConnection();
+                if (SocketService.socket?.connected) {
+                    SocketService.emit('get-room', { roomId: room.id });
+                }
+            }, 2000);
+
+            return () => {
+                clearInterval(pollInterval);
+                SocketService.off('room-updated', onRoomUpdated);
+                SocketService.off('game-started', onGameStarted);
+                SocketService.off('player-kicked', onPlayerKicked);
+                SocketService.off('host-changed', onHostChanged);
+            };
+        }, [navigation, room, playerName, isHost])
+    );
 
     const handleStartGame = () => {
         if (selectedGame === 'truth-or-dare') {
