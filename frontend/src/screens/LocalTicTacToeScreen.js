@@ -170,7 +170,7 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
             return;
         }
         setBoard(newBoard);
-    }, [animateCell, animateResult]);
+    }, [animateCell, animateResult, playerSym, aiSym]);
 
     // AI turn
     useEffect(() => {

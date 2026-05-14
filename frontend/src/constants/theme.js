@@ -11,9 +11,9 @@ export const COLORS = {
 };
 
 export const FONTS = {
-    // Using Outfit for modern feel, Righteous for headers, Orbitron for arcade feel
-    bold: 'Outfit',
-    regular: 'Outfit',
+    // Using Outfit for body, Righteous for all bold headers, Orbitron for arcade feel
+    bold: 'Righteous',    // Global header font
+    regular: 'Outfit',    // Global body font
     display: 'Righteous', // Retro-futuristic party font
     arcade: 'Orbitron',   // High-tech sci-fi gaming font
 };

@@ -16,8 +16,10 @@ const GAME_NAMES = {
     'word-rush': 'Word Rush',
     'whot': 'Naija Whot',
     'confession-roulette': 'Confession Roulette',
+    'spill-the-tea': 'Spill The Tea',
     'imposter': 'Imposter',
     'hot-seat': 'Hot Seat',
+    'hot-seat-mc': 'Hot Seat (MC)',
     'button-mash': 'Button Mash',
     'type-race': 'Type Race',
     'math-blitz': 'Math Blitz',
@@ -26,7 +28,10 @@ const GAME_NAMES = {
     'draw-battle': 'Draw Battle',
     'lie-detector': 'Lie Detector',
     'scrabble': 'Scrabble',
-    'unpopular-opinions': 'Unpopular Opinions',
+    'unpopular-opinions': 'Hot Takes',
+    'auction-bluff': 'Auction Bluff',
+    'speed-categories': 'Speed Categories',
+    'memory-match': 'Memory Match',
     'kings-cup': "King's Cup",
 };
 

@@ -80,15 +80,19 @@ const WhispersHubScreen = ({ route, navigation }) => {
     const handleStartGame = () => {
         if (!selectedMode || starting) return;
         setStarting(true);
-        
-        // Safety timeout
-        setTimeout(() => setStarting(false), 10000);
 
         const mode = MODES.find(m => m.id === selectedMode);
-        SocketService.emit('start-game', {
+        
+        // Set the sub-game type
+        SocketService.emit('set-game-type', {
             roomId: room.id,
-            gameType: mode.engine,
-            hostParticipates: true
+            gameType: mode.engine
+        });
+
+        // Go back to lobby so everyone can join
+        navigation.navigate('Lobby', { 
+            room: { ...room, gameType: mode.engine }, 
+            playerName 
         });
     };
 

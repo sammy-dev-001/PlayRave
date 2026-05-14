@@ -123,20 +123,20 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
     const handleStartGame = () => {
         if (!selectedCategory || starting) return;
         setStarting(true);
-        
-        // Safety timeout: reset button if game fails to start
-        setTimeout(() => {
-            setStarting(false);
-        }, 10000);
 
         const cat = CATEGORIES.find(c => c.id === selectedCategory);
         const gameType = cat?.engine || 'hot-seat-mc';
 
-        SocketService.emit('start-game', {
+        // Update the room's game type on the server
+        SocketService.emit('set-game-type', {
             roomId: room.id,
-            gameType: gameType,
-            hostParticipates: true,
-            category: selectedCategory === 'Classic' ? null : selectedCategory,
+            gameType: gameType
+        });
+
+        // Navigate back to lobby so other players can join/see the choice
+        navigation.navigate('Lobby', { 
+            room: { ...room, gameType: gameType }, 
+            playerName 
         });
     };
 

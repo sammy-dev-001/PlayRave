@@ -126,7 +126,7 @@ const NeonButton = ({
                 ) : (
                     <View style={styles.content}>
                         {icon && <NeonText size={currentSize.fontSize} style={styles.icon}>{icon}</NeonText>}
-                        <NeonText weight="bold" size={currentSize.fontSize} color={borderColor} glow>
+                        <NeonText weight="bold" variant="arcade" size={currentSize.fontSize} color={borderColor} glow>
                             {title.toUpperCase()}
                         </NeonText>
                     </View>

@@ -66,7 +66,11 @@ const LobbyScreen = ({ route, navigation }) => {
                 }
             };
 
-            const onPlayerKicked = () => {
+            const onPlayerKicked = ({ userId }) => {
+                const myUid = getCurrentPlayerId();
+                // Only act if I am the one who was kicked
+                if (userId && userId !== myUid) return;
+
                 Alert.alert(
                     'Kicked from Lobby',
                     'You have been removed from this lobby by the host.',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -110,7 +110,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
         clearInterval(timerRef.current);
         setBuzzedPlayer(playerName);
         setGameState('BUZZED');
-        SoundService.playClick();
+        SoundService.playButtonClick();
     };
 
     const handleAnswerSelect = (index) => {
@@ -127,14 +127,14 @@ const LocalTriviaScreen = ({ route, navigation }) => {
         setGameState('RESULTS');
 
         if (isCorrect) {
-            SoundService.playSuccess();
+            SoundService.playCorrect();
             const playerKey = isSinglePlayer ? 'Player 1' : buzzedPlayer;
             setScores(prev => ({
                 ...prev,
                 [playerKey]: (prev[playerKey] || 0) + 10
             }));
         } else {
-            SoundService.playError();
+            SoundService.playWrong();
         }
 
         // Auto-advance with safety check
@@ -164,7 +164,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
         return (
             <NeonContainer showBackButton onBackPress={() => navigation.goBack()}>
                 <View style={styles.center}>
-                    <NeonText size={48} weight="bold" glow color={COLORS.neonCyan}>GAME OVER</NeonText>
+                    <NeonText size={48} weight="bold" glow color={COLORS.neonCyan} variant="display">GAME OVER</NeonText>
                     <View style={styles.scoreBoard}>
                         {Object.entries(scores)
                             .sort((a, b) => b[1] - a[1])
@@ -173,7 +173,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                                     <NeonText size={24} color={i === 0 ? COLORS.limeGlow : '#FFF'}>
                                         {i === 0 ? '🏆 ' : ''}{name}
                                     </NeonText>
-                                    <NeonText size={24} weight="bold" color={i === 0 ? COLORS.limeGlow : '#FFF'}>
+                                    <NeonText size={24} weight="bold" color={i === 0 ? COLORS.limeGlow : '#FFF'} variant="arcade">
                                         {score}
                                     </NeonText>
                                 </View>
@@ -191,7 +191,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer>
-            {/* Buzzer Areas for Local Multi-player */}
+            {/* Buzzer Areas are FIXED and do not scroll */}
             {!isSinglePlayer && (
                 <View style={StyleSheet.absoluteFill}>
                     {players[0] && renderBuzzerArea(players[0].name, COLORS.neonCyan, 'topLeft')}
@@ -201,65 +201,71 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                 </View>
             )}
 
-            <View style={styles.gameArea}>
-                <View style={styles.header}>
-                    <NeonText size={16} color={COLORS.neonCyan}>
-                        {currentQuestionIndex + 1} / {questions.length}
-                    </NeonText>
-                    <NeonText size={32} weight="bold" variant="arcade" color={timeLeft <= 3 ? COLORS.hotPink : COLORS.limeGlow}>
-                        {timeLeft}s
-                    </NeonText>
-                    {isSinglePlayer && (
-                        <NeonText size={16} color={COLORS.limeGlow} variant="arcade">SCORE: {scores['Player 1']}</NeonText>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.gameArea}>
+                    <View style={styles.header}>
+                        <NeonText size={16} color={COLORS.neonCyan}>
+                            {currentQuestionIndex + 1} / {questions.length}
+                        </NeonText>
+                        <NeonText size={32} weight="bold" variant="arcade" color={timeLeft <= 3 ? COLORS.hotPink : COLORS.limeGlow}>
+                            {timeLeft}s
+                        </NeonText>
+                        {isSinglePlayer && (
+                            <NeonText size={16} color={COLORS.limeGlow} variant="arcade">SCORE: {scores['Player 1']}</NeonText>
+                        )}
+                    </View>
+
+                    <Animated.View style={[styles.questionCard, { opacity: fadeAnim }]}>
+                        <NeonText size={14} color="#888" style={{ marginBottom: 10 }}>{currentQuestion.category}</NeonText>
+                        <NeonText size={24} weight="bold" style={styles.questionText}>
+                            {currentQuestion.question}
+                        </NeonText>
+                    </Animated.View>
+
+                    <View style={styles.optionsContainer}>
+                        {currentQuestion.options.map((option, index) => {
+                            let variant = 'secondary';
+                            if (gameState === 'RESULTS') {
+                                if (index === correctAnswer) variant = 'success';
+                                else if (index === selectedAnswer) variant = 'danger';
+                            } else if (selectedAnswer === index) {
+                                variant = 'primary';
+                            }
+
+                            return (
+                                <NeonButton
+                                    key={index}
+                                    title={option}
+                                    variant={variant}
+                                    onPress={() => handleAnswerSelect(index)}
+                                    disabled={gameState === 'RESULTS' || (gameState === 'QUESTION' && !isSinglePlayer)}
+                                    style={styles.optionButton}
+                                />
+                            );
+                        })}
+                    </View>
+
+                    {gameState === 'BUZZED' && (
+                        <View style={styles.buzzedOverlay}>
+                            <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
+                                {buzzedPlayer}'s TURN!
+                            </NeonText>
+                            <NeonText size={14} color="#AAA">Choose your answer now</NeonText>
+                        </View>
                     )}
                 </View>
-
-                <Animated.View style={[styles.questionCard, { opacity: fadeAnim }]}>
-                    <NeonText size={14} color="#888" style={{ marginBottom: 10 }}>{currentQuestion.category}</NeonText>
-                    <NeonText size={24} weight="bold" style={styles.questionText}>
-                        {currentQuestion.question}
-                    </NeonText>
-                </Animated.View>
-
-                <View style={styles.optionsContainer}>
-                    {currentQuestion.options.map((option, index) => {
-                        let variant = 'secondary';
-                        if (gameState === 'RESULTS') {
-                            if (index === correctAnswer) variant = 'success';
-                            else if (index === selectedAnswer) variant = 'danger';
-                        } else if (selectedAnswer === index) {
-                            variant = 'primary';
-                        }
-
-                        return (
-                            <NeonButton
-                                key={index}
-                                title={option}
-                                variant={variant}
-                                onPress={() => handleAnswerSelect(index)}
-                                disabled={gameState === 'RESULTS' || (gameState === 'QUESTION' && !isSinglePlayer)}
-                                style={styles.optionButton}
-                            />
-                        );
-                    })}
-                </View>
-
-                {gameState === 'BUZZED' && (
-                    <View style={styles.buzzedOverlay}>
-                        <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
-                            {buzzedPlayer}'s TURN!
-                        </NeonText>
-                        <NeonText size={14} color="#AAA">Choose your answer now</NeonText>
-                    </View>
-                )}
-            </View>
+            </ScrollView>
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    gameArea: { flex: 1, padding: 20, justifyContent: 'center', zIndex: 10 },
+    scrollContent: { flexGrow: 1, justifyContent: 'center' },
+    gameArea: { padding: 20, zIndex: 10 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 },
     questionCard: {
         backgroundColor: 'rgba(255,255,255,0.08)',
@@ -269,10 +275,6 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.15)',
         marginBottom: 40,
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
     },
     questionText: { textAlign: 'center' },
     optionsContainer: { gap: 12 },
@@ -302,9 +304,6 @@ const styles = StyleSheet.create({
         borderColor: COLORS.neonCyan,
         alignItems: 'center',
         zIndex: 100,
-        shadowColor: COLORS.neonCyan,
-        shadowRadius: 15,
-        shadowOpacity: 0.5
     },
     scoreBoard: { width: '100%', marginTop: 40, gap: 15 },
     scoreRow: {

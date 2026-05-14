@@ -1,257 +1,73 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform, TextInput, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
-import GameIcon from '../components/GameIcon';
 import SmartGameRecommendations from '../components/SmartRecommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isDesktop = SCREEN_WIDTH > 768;
 
-// Game categories for organization
+const GAME_IMAGES = {
+    'trivia': require('../../assets/images/game_trivia.png'),
+    'whos-most-likely': require('../../assets/images/game_whos_most_likely.png'),
+    'scrabble': require('../../assets/images/game_scrabble.png'),
+    'neon-tap': require('../../assets/images/game_neon_tap.png'),
+    'word-rush': require('../../assets/images/game_word_rush.png'),
+    'whot': require('../../assets/images/game_whot.png'),
+    'truth-or-dare': require('../../assets/images/game_truth_dare.png'),
+    'never-have-i-ever': require('../../assets/images/game_never_have_i_ever.png'),
+    'whispers': require('../../assets/images/game_spill_the_tea.png'),
+    'imposter': require('../../assets/images/game_imposter.png'),
+    'unpopular-opinions': require('../../assets/images/game_unpopular_opinions.png'),
+    'hot-seat': require('../../assets/images/game_hot_seat.png'),
+    'button-mash': require('../../assets/images/game_rapid_fire.png'),
+    'type-race': require('../../assets/images/game_word_rush.png'),
+    'math-blitz': require('../../assets/images/game_math_blitz.png'),
+    'color-rush': require('../../assets/images/game_neon_tap.png'),
+    'tic-tac-toe': require('../../assets/images/game_tic_tac_toe.png'),
+    'draw-battle': require('../../assets/images/game_art.png'),
+    'caption-this': require('../../assets/images/game_charades.png'),
+    'auction-bluff': require('../../assets/images/game_kings_cup.png'),
+    'speed-categories': require('../../assets/images/game_rapid_fire.png'),
+    'memory-match': require('../../assets/images/game_memory_match.png'),
+    'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),
+    'rapid-fire': require('../../assets/images/game_rapid_fire.png')
+};
+
 const GAME_CATEGORIES = {
-    party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
-    competitive: { name: 'Competitive', icon: 'trophy', color: COLORS.neonCyan },
-    trivia: { name: 'Trivia & Knowledge', icon: 'bulb', color: COLORS.limeGlow },
-    speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
+    party: { name: 'Party', icon: 'ribbon', color: COLORS.hotPink },
+    competitive: { name: 'Versus', icon: 'trophy', color: COLORS.neonCyan },
+    trivia: { name: 'Knowledge', icon: 'bulb', color: COLORS.limeGlow },
+    speed: { name: 'Speed', icon: 'flash', color: COLORS.electricPurple },
 };
 
 const AVAILABLE_GAMES = [
-    {
-        id: 'trivia',
-        name: 'Quick Trivia',
-        description: 'Test your knowledge with rapid-fire questions & Myth or Fact.',
-        icon: '🧠',
-        color: COLORS.neonCyan,
-        category: 'trivia',
-        minPlayers: 1,
-        maxPlayers: 10,
-        vibes: ['brain']
-    },
-    {
-        id: 'whos-most-likely',
-        name: "Who's Most Likely To",
-        description: 'Vote for your friends',
-        icon: '👥',
-        color: COLORS.electricPurple,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'scrabble',
-        name: 'Classic Scrabble',
-        description: 'The world\'s favorite word game.',
-        icon: '🔤',
-        color: COLORS.neonCyan,
-        category: 'competitive',
-        minPlayers: 2,
-        maxPlayers: 4,
-        vibes: ['brain']
-    },
-    {
-        id: 'neon-tap',
-        name: 'Neon Tap Frenzy',
-        description: 'Test your reflexes - tap the circle first!',
-        icon: '⚡',
-        color: COLORS.limeGlow,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['hype']
-    },
-    {
-        id: 'word-rush',
-        name: 'Word Rush',
-        description: 'Type words fast - last one loses!',
-        icon: '⚡',
-        color: COLORS.hotPink,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 6,
-        vibes: ['hype']
-    },
-    {
-        id: 'whot',
-        name: 'Naija Whot',
-        description: 'Classic Nigerian card game (Supports AI Bots!)',
-        icon: '🃏',
-        color: COLORS.electricPurple,
-        category: 'competitive',
-        minPlayers: 1,
-        maxPlayers: 8,
-        vibes: ['chill']
-    },
-    {
-        id: 'truth-or-dare',
-        name: 'Truth or Dare',
-        description: 'Take turns with truths and dares',
-        icon: '🎲',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'never-have-i-ever',
-        name: 'Never Have I Ever',
-        description: 'Confess your secrets - who has done it?',
-        icon: '🤫',
-        color: COLORS.limeGlow,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'whispers',
-        name: 'Whispers',
-        description: 'Anonymous secrets, confessions, and hot takes.',
-        icon: '🤫',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['chill', 'hype']
-    },
-    {
-        id: 'imposter',
-        name: 'Imposter',
-        description: 'Find the player with the different word!',
-        icon: '🕵️',
-        color: COLORS.electricPurple,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'unpopular-opinions',
-        name: 'Unpopular Opinions',
-        description: 'Hot takes - agree or disagree?',
-        icon: '🔥',
-        color: COLORS.limeGlow,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['chill']
-    },
-    {
-        id: 'hot-seat',
-        name: 'The Hot Seat',
-        description: 'Classic Questions, MC Mode, and Personal Challenges.',
-        icon: '🔥',
-        color: '#FF6B35',
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['chill']
-    },
-    {
-        id: 'button-mash',
-        name: 'Button Mash',
-        description: 'Tap as fast as you can!',
-        icon: '⚡',
-        color: COLORS.limeGlow,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 6,
-        vibes: ['hype']
-    },
-    {
-        id: 'type-race',
-        name: 'Type Race',
-        description: 'Race to type sentences the fastest!',
-        icon: '⌨️',
-        color: COLORS.neonCyan,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 6,
-        vibes: ['brain']
-    },
-    {
-        id: 'math-blitz',
-        name: 'Math Blitz',
-        description: 'Quick math - first correct answer wins!',
-        icon: '🧮',
-        color: COLORS.hotPink,
-        category: 'trivia',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['brain']
-    },
-    {
-        id: 'color-rush',
-        name: 'Color Rush',
-        description: 'Tap the matching color - don\'t get tricked!',
-        icon: '🎨',
-        color: COLORS.electricPurple,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 6,
-        vibes: ['hype']
-    },
-    {
-        id: 'tic-tac-toe',
-        name: 'Tic-Tac-Toe',
-        description: 'Bracket-style tournament!',
-        icon: '⭕',
-        color: COLORS.neonCyan,
-        category: 'competitive',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['brain']
-    },
-    {
-        id: 'draw-battle',
-        name: 'Draw Battle',
-        description: 'Draw the prompt and vote for the best!',
-        icon: '🎨',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 8,
-        vibes: ['hype']
-    },
-    {
-        id: 'caption-this',
-        name: 'Caption This',
-        description: 'Write the funniest caption for the image!',
-        icon: '🖼️',
-        color: COLORS.limeGlow,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'auction-bluff',
-        name: 'Auction Bluff',
-        description: 'Bid on items, but don\'t get bluffed!',
-        icon: '🔨',
-        color: COLORS.neonCyan,
-        category: 'competitive',
-        minPlayers: 3,
-        maxPlayers: 6,
-        vibes: ['brain']
-    },
-    {
-        id: 'speed-categories',
-        name: 'Speed Categories',
-        description: 'Type words in a category - don\'t repeat!',
-        icon: '🔠',
-        color: COLORS.electricPurple,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['hype']
-    }
+    { id: 'trivia', name: 'Trivia Hub', description: 'Quick Trivia, Myth or Fact, and more.', color: COLORS.neonCyan, category: 'trivia', minPlayers: 1, maxPlayers: 10, vibes: ['brain'] },
+    { id: 'whos-most-likely', name: "Who's Most Likely To", description: 'Vote for your friends', color: COLORS.electricPurple, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'] },
+    { id: 'scrabble', name: 'Scrabble', description: 'Classic word game.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
+    { id: 'neon-tap', name: 'Neon Tap', description: 'Fast reflexes only!', color: COLORS.limeGlow, category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'] },
+    { id: 'word-rush', name: 'Word Rush', description: 'Type words fast.', color: COLORS.hotPink, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
+    { id: 'whot', name: 'Naija Whot', description: 'Classic card game.', color: COLORS.electricPurple, category: 'competitive', minPlayers: 1, maxPlayers: 8, vibes: ['chill'] },
+    { id: 'truth-or-dare', name: 'Truth or Dare', description: 'Party classic.', color: COLORS.hotPink, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'] },
+    { id: 'never-have-i-ever', name: 'Never Have I Ever', description: 'Confess your secrets.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
+    { id: 'whispers', name: 'Whispers Hub', description: 'Spill the tea.', color: COLORS.hotPink, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['chill'] },
+    { id: 'imposter', name: 'Imposter', description: 'Find the traitor.', color: COLORS.electricPurple, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
+    { id: 'unpopular-opinions', name: 'Hot Takes', description: 'Agree or disagree?', color: COLORS.limeGlow, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['chill'] },
+    { id: 'hot-seat', name: 'The Hot Seat', description: 'Challenges & Questions.', color: '#FF6B35', category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['chill'] },
+    { id: 'button-mash', name: 'Button Mash', description: 'Tap as fast as you can.', color: COLORS.limeGlow, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
+    { id: 'type-race', name: 'Type Race', description: 'Sentence typing race.', color: COLORS.neonCyan, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['brain'] },
+    { id: 'math-blitz', name: 'Math Blitz', description: 'Rapid math challenges.', color: COLORS.hotPink, category: 'trivia', minPlayers: 2, maxPlayers: 8, vibes: ['brain'] },
+    { id: 'color-rush', name: 'Color Rush', description: 'Match the colors fast.', color: COLORS.electricPurple, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
+    { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', description: 'Bracket tournament.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 8, vibes: ['brain'] },
+    { id: 'draw-battle', name: 'Draw Battle', description: 'Sketch and vote.', color: COLORS.hotPink, category: 'party', minPlayers: 3, maxPlayers: 8, vibes: ['hype'] },
+    { id: 'caption-this', name: 'Caption This', description: 'Funny image captions.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
+    { id: 'auction-bluff', name: 'Auction Bluff', description: 'Bid and bluff.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 3, maxPlayers: 6, vibes: ['brain'] },
+    { id: 'speed-categories', name: 'Speed Categories', description: 'Category word race.', color: COLORS.electricPurple, category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'] },
+    { id: 'memory-match', name: 'Memory Match', description: 'Flip and find pairs.', color: COLORS.limeGlow, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
 ];
 
 const GameSelectionScreen = ({ route, navigation }) => {
@@ -269,27 +85,52 @@ const GameSelectionScreen = ({ route, navigation }) => {
 
     const handleGameSelect = (game) => {
         if (waitingForNavigation) return;
-        
         setWaitingForNavigation(true);
         
-        // Hub Routing - redirect to special selection screens
         if (game.id === 'hot-seat') {
             navigation.navigate('HotSeatCategory', { room, playerName, isHost: true });
-            return;
-        }
-        if (game.id === 'whispers') {
+        } else if (game.id === 'whispers') {
             navigation.navigate('WhispersHub', { room, playerName, isHost: true });
-            return;
-        }
-        if (game.id === 'trivia') {
+        } else if (game.id === 'trivia') {
             navigation.navigate('TriviaHub', { room, playerName, isHost: true });
-            return;
+        } else {
+            SocketService.emit('game-selected', { roomId: room.id, gameType: game.id });
+            navigation.navigate('Lobby', { room: { ...room, gameType: game.id }, playerName });
         }
-
-        // Standard Game Selection
-        SocketService.emit('game-selected', { roomId: room.id, gameType: game.id });
-        navigation.navigate('Lobby', { room: { ...room, gameType: game.id }, playerName });
     };
+
+    const renderGameCard = (game) => (
+        <TouchableOpacity
+            key={game.id}
+            style={styles.gameCard}
+            onPress={() => handleGameSelect(game)}
+            disabled={waitingForNavigation}
+        >
+            <ImageBackground 
+                source={GAME_IMAGES[game.id] || GAME_IMAGES['trivia']} 
+                style={styles.cardImage}
+                imageStyle={{ borderRadius: 15 }}
+            >
+                <View style={styles.cardOverlay}>
+                    <View style={styles.cardHeader}>
+                        <View style={styles.playerBadge}>
+                            <Ionicons name="people" size={10} color="#fff" />
+                            <NeonText size={10} color="#fff">{game.minPlayers}-{game.maxPlayers}</NeonText>
+                        </View>
+                    </View>
+                    
+                    <View style={styles.cardFooter}>
+                        <NeonText size={16} weight="bold" color="#fff" glow variant="arcade">
+                            {game.name.toUpperCase()}
+                        </NeonText>
+                        <NeonText size={9} color="rgba(255,255,255,0.7)" numberOfLines={1}>
+                            {game.description}
+                        </NeonText>
+                    </View>
+                </View>
+            </ImageBackground>
+        </TouchableOpacity>
+    );
 
     const renderCategoryTab = (id, name, icon, color) => (
         <TouchableOpacity
@@ -300,67 +141,29 @@ const GameSelectionScreen = ({ route, navigation }) => {
             ]}
             onPress={() => setSelectedCategory(id)}
         >
-            <Ionicons name={icon} size={20} color={selectedCategory === id ? color : '#777'} />
-            <NeonText size={14} color={selectedCategory === id ? color : '#777'} weight={selectedCategory === id ? 'bold' : 'normal'}>
+            <Ionicons name={icon} size={18} color={selectedCategory === id ? color : '#777'} />
+            <NeonText size={12} color={selectedCategory === id ? color : '#777'} weight={selectedCategory === id ? 'bold' : 'normal'}>
                 {name}
             </NeonText>
-        </TouchableOpacity>
-    );
-
-    const renderGameCard = (game) => (
-        <TouchableOpacity
-            key={game.id}
-            style={[styles.gameCard, { borderColor: game.color || COLORS.neonCyan }]}
-            onPress={() => handleGameSelect(game)}
-            disabled={waitingForNavigation}
-        >
-            <View style={styles.cardHeader}>
-                <NeonText size={32} style={styles.gameIcon}>{game.icon}</NeonText>
-                <View style={styles.playerBadge}>
-                    <Ionicons name="people" size={12} color="#888" />
-                    <NeonText size={10} color="#888">{game.minPlayers}-{game.maxPlayers}</NeonText>
-                </View>
-            </View>
-            
-            <NeonText size={18} weight="bold" color={game.color || COLORS.neonCyan} style={styles.gameName}>
-                {game.name}
-            </NeonText>
-            
-            <NeonText size={12} color="#aaa" style={styles.gameDesc} numberOfLines={2}>
-                {game.description}
-            </NeonText>
-
-            <View style={styles.vibeContainer}>
-                {game.vibes.map(vibe => (
-                    <View key={vibe} style={styles.vibeBadge}>
-                        <NeonText size={9} color="#777">{vibe.toUpperCase()}</NeonText>
-                    </View>
-                ))}
-            </View>
         </TouchableOpacity>
     );
 
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
-                <NeonText size={32} weight="bold" glow>SELECT GAME</NeonText>
-                <NeonText size={14} color="#777">Choose your next challenge</NeonText>
+                <NeonText size={32} weight="bold" glow variant="display">GAME ARCADE</NeonText>
+                <NeonText size={14} color="#777">Experience the rave</NeonText>
             </View>
 
             <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color="#555" style={styles.searchIcon} />
+                <Ionicons name="search" size={18} color="#555" style={{ marginRight: 10 }} />
                 <TextInput
                     style={styles.searchInput}
-                    placeholder="Search games..."
+                    placeholder="Find a game..."
                     placeholderTextColor="#555"
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                 />
-                {searchQuery !== '' && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <Ionicons name="close-circle" size={20} color="#555" />
-                    </TouchableOpacity>
-                )}
             </View>
 
             <SmartGameRecommendations room={room} onSelect={handleGameSelect} />
@@ -369,9 +172,9 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 horizontal 
                 showsHorizontalScrollIndicator={false} 
                 style={styles.categoryScroll}
-                contentContainerStyle={styles.categoryContent}
+                contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
             >
-                {renderCategoryTab('all', 'All Games', 'grid', COLORS.neonCyan)}
+                {renderCategoryTab('all', 'All', 'grid', COLORS.neonCyan)}
                 {Object.entries(GAME_CATEGORIES).map(([id, cat]) => 
                     renderCategoryTab(id, cat.name, cat.icon, cat.color)
                 )}
@@ -381,24 +184,13 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 {filteredGames.map(renderGameCard)}
             </View>
 
-            {filteredGames.length === 0 && (
-                <View style={styles.noResults}>
-                    <Ionicons name="search-outline" size={64} color="#333" />
-                    <NeonText size={18} color="#555" style={{ marginTop: 16 }}>No games found matching your search</NeonText>
-                </View>
-            )}
-
-            <View style={styles.footer} />
+            <View style={{ height: 60 }} />
         </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
-    header: {
-        marginTop: 20,
-        marginBottom: 20,
-        paddingHorizontal: 20,
-    },
+    header: { marginTop: 20, marginBottom: 20, paddingHorizontal: 20 },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -406,98 +198,59 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginHorizontal: 20,
         paddingHorizontal: 15,
-        height: 50,
+        height: 45,
         marginBottom: 20,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
     },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchInput: {
-        flex: 1,
-        color: '#fff',
-        fontSize: 16,
-    },
-    categoryScroll: {
-        maxHeight: 50,
-        marginBottom: 20,
-    },
-    categoryContent: {
-        paddingHorizontal: 20,
-        gap: 12,
-    },
+    searchInput: { flex: 1, color: '#fff', fontSize: 14 },
+    categoryScroll: { maxHeight: 45, marginBottom: 20 },
     categoryTab: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 6,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        gap: 8,
+        gap: 6,
     },
     gameGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: 15,
+        paddingHorizontal: 12,
         justifyContent: 'space-between',
     },
     gameCard: {
         width: isDesktop ? '31%' : '47%',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 20,
-        padding: 16,
+        height: 180,
         marginBottom: 16,
-        borderWidth: 1,
-        position: 'relative',
     },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 12,
+    cardImage: { flex: 1, justifyContent: 'flex-end' },
+    cardOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderRadius: 15,
+        padding: 10,
+        justifyContent: 'space-between'
     },
-    gameIcon: {
-        marginBottom: 0,
-    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'flex-end' },
     playerBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 10,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 8,
         gap: 4,
     },
-    gameName: {
-        marginBottom: 4,
+    cardFooter: {
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        padding: 8,
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.15)'
     },
-    gameDesc: {
-        lineHeight: 16,
-        marginBottom: 12,
-    },
-    vibeContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 6,
-    },
-    vibeBadge: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    noResults: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 50,
-        paddingHorizontal: 40,
-    },
-    footer: {
-        height: 40,
-    }
 });
 
 export default GameSelectionScreen;

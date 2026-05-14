@@ -80,15 +80,19 @@ const TriviaHubScreen = ({ route, navigation }) => {
     const handleStartGame = () => {
         if (!selectedMode || starting) return;
         setStarting(true);
-        
-        // Safety timeout
-        setTimeout(() => setStarting(false), 10000);
 
         const mode = TRIVIA_MODES.find(m => m.id === selectedMode);
-        SocketService.emit('start-game', {
+        
+        // Update the room's game type on the server
+        SocketService.emit('set-game-type', {
             roomId: room.id,
-            gameType: mode.engine,
-            hostParticipates: true
+            gameType: mode.engine
+        });
+
+        // Navigate back to lobby so other players can join/see the choice
+        navigation.navigate('Lobby', { 
+            room: { ...room, gameType: mode.engine }, 
+            playerName 
         });
     };
 

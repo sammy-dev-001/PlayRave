@@ -35,7 +35,7 @@ const roomManager    = require("./managers/roomManager");
     const ScrabbleAIEngine = require('./ai/ScrabbleAIEngine');
 
 // Health check
-app.get("/health", (req, res) => {
+app.get(["/health", "/api/health"], (req, res) => {
     // console.log("[Health] Ping received at", new Date().toISOString());
     res.json({ status: "ok", mode: "playrave-server", timestamp: Date.now() });
 });
@@ -473,8 +473,9 @@ io.on("connection", (socket) => {
 
     // ── 6. LOBBY EVENTS ─────────────────────────────────────────────
 
-    socket.on("game-selected", async ({ roomId, gameId }) => {
-        const result = await roomManager.setGameType(roomId, gameId);
+    socket.on("game-selected", async ({ roomId, gameId, gameType }) => {
+        const idToSet = gameId || gameType;
+        const result = await roomManager.setGameType(roomId, idToSet);
         if (result.error) return socket.emit("error", { message: result.error });
         await emitRoomUpdate(roomId);
     });
@@ -507,17 +508,27 @@ io.on("connection", (socket) => {
     socket.on("kick-player", async ({ roomId, playerIdToKick }) => {
         const hostUserId = sessionManager.getUserIdBySocket(socket.id);
         if (!hostUserId) return;
-        // playerIdToKick could be socketId from frontend — resolve to userId
-        const targetPlayer = roomManager.getPlayerBySocketId(playerIdToKick);
+
+        // Find the player by the ID provided (could be socketId or userId)
+        const targetPlayer = roomManager.getPlayerBySocketId(playerIdToKick) || roomManager.getPlayerByUserId(playerIdToKick);
         const targetUserId = targetPlayer?.userId || playerIdToKick;
 
         const result = await roomManager.kickPlayer(roomId, hostUserId, targetUserId);
         if (result.error) return socket.emit("error", { message: result.error });
 
-        // Notify kicked player via their socket
+        // 1. Tell the SPECIFIC socket to leave (best effort)
         if (result.kickedPlayer?.socketId) {
-            io.to(result.kickedPlayer.socketId).emit("player-kicked", { roomId });
+            const kickedSocket = io.sockets.sockets.get(result.kickedPlayer.socketId);
+            if (kickedSocket) {
+                kickedSocket.leave(roomId);
+            }
+            io.to(result.kickedPlayer.socketId).emit("player-kicked", { roomId, userId: targetUserId });
         }
+
+        // 2. Broadcast to the ROOM that this specific userId was kicked (failsafe)
+        // This ensures the frontend on the kicked player's side catches it even if socketId changed.
+        io.to(roomId).emit("player-kicked", { roomId, userId: targetUserId });
+
         await emitRoomUpdate(roomId);
     });
 
