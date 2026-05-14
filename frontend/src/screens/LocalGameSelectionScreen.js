@@ -19,6 +19,17 @@ const GAME_CATEGORIES = {
 
 const LOCAL_GAMES = [
     {
+        id: 'trivia',
+        name: 'Quick Trivia',
+        description: 'Test your knowledge offline! Solo Sprint or Buzzer Battle.',
+        icon: '🧠',
+        color: COLORS.neonCyan,
+        category: 'trivia',
+        minPlayers: 1,
+        maxPlayers: 4,
+        vibes: ['brain']
+    },
+    {
         id: 'truth-or-dare',
         name: 'Truth or Dare',
         description: 'Classic party game - choose truth or dare!',
@@ -138,7 +149,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedVibe, setSelectedVibe] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories'];
+    const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories'];
 
     // Process games into categories
     const gamesByCategory = React.useMemo(() => {
@@ -201,6 +212,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
             } else {
                 navigation.navigate('TicTacToe', { players, isSinglePlayer });
             }
+        } else if (gameId === 'trivia') {
+            navigation.navigate('LocalTrivia', { players, isSinglePlayer });
         }
     };
 

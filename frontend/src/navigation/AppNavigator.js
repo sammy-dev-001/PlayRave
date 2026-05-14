@@ -84,6 +84,7 @@ const DrawBattleScreen = lazy(() => import('../screens/DrawBattleScreen'));
 const LieDetectorScreen = lazy(() => import('../screens/LieDetectorScreen'));
 const LANModeScreen = lazy(() => import('../screens/LANModeScreen'));
 const LocalCharadesScreen = lazy(() => import('../screens/LocalCharadesScreen'));
+const LocalTriviaScreen = lazy(() => import('../screens/LocalTriviaScreen'));
 
 // Tournament screens
 const TournamentSetupScreen = lazy(() => import('../screens/TournamentSetupScreen'));
@@ -161,6 +162,7 @@ const LazyDrawBattleScreen = withSuspense(DrawBattleScreen);
 const LazyLieDetectorScreen = withSuspense(LieDetectorScreen);
 const LazyLANModeScreen = withSuspense(LANModeScreen);
 const LazyLocalCharadesScreen = withSuspense(LocalCharadesScreen);
+const LazyLocalTriviaScreen = withSuspense(LocalTriviaScreen);
 const LazyWhispersHubScreen = withSuspense(WhispersHubScreen);
 const LazyTriviaHubScreen = withSuspense(TriviaHubScreen);
 
@@ -248,6 +250,7 @@ const AppNavigator = () => {
                             <Stack.Screen name="MemoryMatch" component={LazyMemoryMatchScreen} />
                             <Stack.Screen name="TicTacToe" component={LazyTicTacToeScreen} />
                             <Stack.Screen name="TicTacToeDifficulty" component={LazyTicTacToeDifficultyScreen} />
+                            <Stack.Screen name="LocalTrivia" component={LazyLocalTriviaScreen} />
                             <Stack.Screen name="LocalTicTacToe" component={LazyLocalTicTacToeScreen} />
                             <Stack.Screen name="DrawBattle" component={LazyDrawBattleScreen} />
                             <Stack.Screen name="Auth" component={withSuspense(AuthScreen)} />
