@@ -28,7 +28,10 @@ const initDB = async () => {
         await usersCollection.createIndex({ id: 1 }, { unique: true });
         
         const roomsCollection = db.collection('rooms');
-        await roomsCollection.createIndex({ id: 1 }, { unique: true });
+        await roomsCollection.createIndex({ "updatedAt": 1 }, { expireAfterSeconds: 86400 }); // 24h
+        
+        const gamesCollection = db.collection('active_games');
+        await gamesCollection.createIndex({ "updatedAt": 1 }, { expireAfterSeconds: 86400 }); // 24h
         await roomsCollection.createIndex({ lastActivity: 1 }, { expireAfterSeconds: 86400 }); // Auto-expire after 24h
 
         console.log('[DB] MongoDB connected successfully!');

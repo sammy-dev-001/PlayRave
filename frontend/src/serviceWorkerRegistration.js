@@ -25,6 +25,14 @@ export function register(config) {
         window.addEventListener('load', () => {
             const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
 
+            // Reload the page when the new service worker takes over
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+            });
+
             if (isLocalhost) {
                 // This is running on localhost. Let's check if a service worker still exists or not.
                 checkValidServiceWorker(swUrl, config);
@@ -48,6 +56,11 @@ function registerValidSW(swUrl, config) {
     navigator.serviceWorker
         .register(swUrl)
         .then((registration) => {
+            // Check for updates every 5 minutes
+            setInterval(() => {
+                registration.update();
+            }, 5 * 60 * 1000);
+
             registration.onupdatefound = () => {
                 const installingWorker = registration.installing;
                 if (installingWorker == null) {
@@ -56,25 +69,19 @@ function registerValidSW(swUrl, config) {
                 installingWorker.onstatechange = () => {
                     if (installingWorker.state === 'installed') {
                         if (navigator.serviceWorker.controller) {
-                            // At this point, the updated precached content has been fetched,
-                            // but the previous service worker will still serve the older
-                            // content until all client tabs are closed.
-                            console.log(
-                                'New content is available and will be used when all ' +
-                                'tabs for this page are closed. See https://cra.link/PWA.'
-                            );
-
+                            // At this point, the updated precached content has been fetched.
+                            // We signal the waiting service worker to skip waiting.
+                            console.log('New version detected! Upgrading...');
+                            if (registration.waiting) {
+                                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                            
                             // Execute callback
                             if (config && config.onUpdate) {
                                 config.onUpdate(registration);
                             }
                         } else {
-                            // At this point, everything has been precached.
-                            // It's the perfect time to display a
-                            // "Content is cached for offline use." message.
-                            console.log('Content is cached for offline use.');
-
-                            // Execute callback
+                            // Content is cached for offline use.
                             if (config && config.onSuccess) {
                                 config.onSuccess(registration);
                             }

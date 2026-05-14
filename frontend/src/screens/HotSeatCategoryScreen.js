@@ -15,6 +15,18 @@ import { COLORS } from '../constants/theme';
 
 const CATEGORIES = [
     {
+        id: 'Classic',
+        name: 'Classic Mode',
+        emoji: '🪑',
+        tagline: 'Custom questions',
+        description: 'No rules! Type your own questions and let the person in the hot seat answer.',
+        color: COLORS.hotPink,
+        borderColor: COLORS.hotPink,
+        bg: 'rgba(255, 57, 139, 0.07)',
+        glowColor: COLORS.hotPink,
+        engine: 'hot-seat'
+    },
+    {
         id: 'Icebreaker',
         name: 'Icebreaker',
         emoji: '🧊',
@@ -58,7 +70,8 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
     const anim0 = useRef(new Animated.Value(1)).current;
     const anim1 = useRef(new Animated.Value(1)).current;
     const anim2 = useRef(new Animated.Value(1)).current;
-    const cardAnims = [anim0, anim1, anim2];
+    const anim3 = useRef(new Animated.Value(1)).current;
+    const cardAnims = [anim0, anim1, anim2, anim3];
 
     // Entrance animation
     const entranceFade = useRef(new Animated.Value(0)).current;
@@ -80,15 +93,27 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
     };
 
     useEffect(() => {
-        const onGameStarted = ({ gameType, gameState, players }) => {
-            if (gameType !== 'hot-seat-mc') return;
-            navigation.navigate('HotSeatMC', {
-                room,
-                isHost,
-                playerName,
-                initialGameState: gameState,
-                players,
-            });
+        const onGameStarted = ({ gameType, gameState, players, roomId }) => {
+            // Security check: only navigate if this game start is for OUR room
+            if (roomId && roomId !== room.id) return;
+
+            if (gameType === 'hot-seat-mc') {
+                navigation.navigate('HotSeatMC', {
+                    room,
+                    isHost,
+                    playerName,
+                    initialGameState: gameState,
+                    players,
+                });
+            } else if (gameType === 'hot-seat') {
+                navigation.navigate('HotSeat', {
+                    room,
+                    isHost,
+                    playerName,
+                    initialGameState: gameState,
+                    players,
+                });
+            }
         };
 
         SocketService.on('game-started', onGameStarted);
@@ -98,11 +123,20 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
     const handleStartGame = () => {
         if (!selectedCategory || starting) return;
         setStarting(true);
+        
+        // Safety timeout: reset button if game fails to start
+        setTimeout(() => {
+            setStarting(false);
+        }, 10000);
+
+        const cat = CATEGORIES.find(c => c.id === selectedCategory);
+        const gameType = cat?.engine || 'hot-seat-mc';
+
         SocketService.emit('start-game', {
             roomId: room.id,
-            gameType: 'hot-seat-mc',
+            gameType: gameType,
             hostParticipates: true,
-            category: selectedCategory,
+            category: selectedCategory === 'Classic' ? null : selectedCategory,
         });
     };
 

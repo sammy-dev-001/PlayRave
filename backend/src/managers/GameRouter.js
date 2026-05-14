@@ -87,9 +87,13 @@ class GameRouter {
             this.executeInstruction(instruction, io, roomId);
 
             // Auto-persist state after every valid move
-            const updatedState = engine.activeGames.get(roomId);
-            if (updatedState) {
-                gamePersistence.saveGame(roomId, gameType, updatedState);
+            // We skip high-frequency "speed" games to avoid spamming the DB
+            const speedGames = ['neon-tap', 'button-mash', 'color-rush', 'type-race', 'math-blitz'];
+            if (!speedGames.includes(gameType)) {
+                const updatedState = engine.activeGames.get(roomId);
+                if (updatedState) {
+                    gamePersistence.saveGame(roomId, gameType, updatedState);
+                }
             }
             return;
         }

@@ -6,6 +6,7 @@
 // ============================================================================
 
 const { createWhotDeck, shuffleDeck } = require('../data/whotCards');
+const whotAI = require('../ai/WhotAIEngine');
 
 class WhotEngine {
     constructor() {
@@ -25,10 +26,13 @@ class WhotEngine {
                 return this.drawWhotCards(roomId, userId, payload.count);
             case 'whot-get-state':
             case 'get-state':
-                return { action: 'emit', targetId: userId, event: 'whot-state-update', data: { gameState: this.getWhotGameState(roomId, userId) } };
+            case 'sync':
+                return this.handleSync(roomId, userId);
             case 'whot-end-game':
             case 'end-game':
                 return this.endGame(roomId);
+            case 'bot-turn':
+                return this.handleBotTurn(roomId, payload.userId);
             default:
                 return { action: 'error', message: `Unknown Whot event: ${eventName}` };
         }
@@ -40,10 +44,20 @@ class WhotEngine {
         console.log(`[WhotEngine] Starting game in room ${roomId}. hostParticipates: ${hostParticipates}. Total players in room: ${room.players.length}`);
 
         const participatingPlayers = room.players.filter(p => hostParticipates || !p.isHost);
-        console.log(`[WhotEngine] Participating players count: ${participatingPlayers.length}`);
+        
+        // Add bots if requested or if alone
+        const botCount = options.botCount || (participatingPlayers.length === 1 ? 1 : 0);
+        for (let i = 0; i < botCount; i++) {
+            participatingPlayers.push({
+                userId: `bot_${Math.random().toString(36).substr(2, 5)}`,
+                name: `Bot ${i + 1}`,
+                isBot: true,
+                avatar: `bot_${i + 1}`
+            });
+        }
 
         if (participatingPlayers.length < 2) {
-            return { action: 'error', message: 'Whot requires at least 2 players' };
+            return { action: 'error', message: 'Whot requires at least 2 players (including bots)' };
         }
         if (participatingPlayers.length > 8) {
             return { action: 'error', message: 'Whot supports maximum 8 players' };
@@ -91,6 +105,16 @@ class WhotEngine {
             }
         }));
 
+        // If first player is a bot, trigger bot-turn
+        const firstPlayerId = game.playerOrder[0];
+        if (firstPlayerId.startsWith('bot_')) {
+            instructions.push({
+                action: 'schedule',
+                eventToTrigger: 'bot-turn',
+                delay: 2000,
+                data: { userId: firstPlayerId }
+            });
+        }
 
         return { action: 'multiple', instructions };
     }
@@ -112,7 +136,8 @@ class WhotEngine {
             })),
             deckCount: game.deck.length,
             status: game.status,
-            winner: game.winner
+            winner: game.winner,
+            isBot: userId.startsWith('bot_')
         };
     }
 
@@ -196,6 +221,17 @@ class WhotEngine {
             }
         }));
 
+        // If next player is a bot, trigger bot-turn
+        const nextPlayerId = game.playerOrder[game.currentPlayerIndex];
+        if (nextPlayerId.startsWith('bot_')) {
+            instructions.push({
+                action: 'schedule',
+                eventToTrigger: 'bot-turn',
+                delay: 1500, // Wait 1.5s for realism
+                data: { userId: nextPlayerId }
+            });
+        }
+
         return { action: 'multiple', instructions };
     }
 
@@ -274,6 +310,51 @@ class WhotEngine {
                 gameState: this.getWhotGameState(roomId, pid)
             }
         }));
+
+        // Bot turn check after draw
+        const nextPlayerId = game.playerOrder[game.currentPlayerIndex];
+        if (nextPlayerId.startsWith('bot_')) {
+            instructions.push({
+                action: 'schedule',
+                eventToTrigger: 'bot-turn',
+                delay: 1500,
+                data: { userId: nextPlayerId }
+            });
+        }
+
+        return { action: 'multiple', instructions };
+    }
+
+    handleBotTurn(roomId, botUserId) {
+        const game = this.activeGames.get(roomId);
+        if (!game || game.status !== 'PLAYING') return { action: 'none' };
+
+        const move = whotAI.pickMove(game, botUserId);
+        if (move) {
+            return this.playWhotCard(roomId, botUserId, move.cardId, move.calledShape);
+        } else {
+            return this.drawWhotCards(roomId, botUserId, 1);
+        }
+    }
+
+    handleSync(roomId, userId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', targetId: userId, message: 'Game not found' };
+
+        const instructions = [
+            { action: 'emit', targetId: userId, event: 'whot-state-update', data: { gameState: this.getWhotGameState(roomId, userId) } }
+        ];
+
+        // If it's a bot's turn, re-trigger it just in case it got stuck (e.g. server restart)
+        const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+        if (currentPlayerId && currentPlayerId.startsWith('bot_')) {
+            instructions.push({
+                action: 'schedule',
+                eventToTrigger: 'bot-turn',
+                delay: 2000,
+                data: { userId: currentPlayerId }
+            });
+        }
 
         return { action: 'multiple', instructions };
     }

@@ -7,22 +7,34 @@ export const register = async () => {
 
             console.log('[SW] Service Worker registered successfully:', registration.scope);
 
+            // Periodically check for updates
+            setInterval(() => {
+                registration.update();
+            }, 5 * 60 * 1000);
+
+            // Handle automatic page reload when new worker takes control
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                console.log('[SW] Controller changed, reloading page...');
+                window.location.reload();
+            });
+
             // When a new SW is found, force it to activate immediately
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
+                if (!newWorker) return;
+                
                 console.log('[SW] New service worker found, installing...');
 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         console.log('[SW] New content available - activating immediately...');
-                        // Force the waiting SW to activate NOW
                         newWorker.postMessage({ type: 'SKIP_WAITING' });
                     }
                 });
             });
-
-
-
 
             return registration;
         } catch (error) {

@@ -24,24 +24,13 @@ const AVAILABLE_GAMES = [
     {
         id: 'trivia',
         name: 'Quick Trivia',
-        description: 'Test your knowledge with rapid-fire questions',
+        description: 'Test your knowledge with rapid-fire questions & Myth or Fact.',
         icon: '🧠',
         color: COLORS.neonCyan,
         category: 'trivia',
-        minPlayers: 2,
+        minPlayers: 1,
         maxPlayers: 10,
         vibes: ['brain']
-    },
-    {
-        id: 'myth-or-fact',
-        name: 'Myth or Fact',
-        description: 'Separate truth from fiction',
-        icon: '🤔',
-        color: COLORS.hotPink,
-        category: 'trivia',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['brain', 'hype', 'chill']
     },
     {
         id: 'whos-most-likely',
@@ -50,9 +39,20 @@ const AVAILABLE_GAMES = [
         icon: '👥',
         color: COLORS.electricPurple,
         category: 'party',
-        minPlayers: 3,
+        minPlayers: 2,
         maxPlayers: 10,
         vibes: ['hype']
+    },
+    {
+        id: 'scrabble',
+        name: 'Classic Scrabble',
+        description: 'The world\'s favorite word game.',
+        icon: '🔤',
+        color: COLORS.neonCyan,
+        category: 'competitive',
+        minPlayers: 2,
+        maxPlayers: 4,
+        vibes: ['brain']
     },
     {
         id: 'neon-tap',
@@ -79,11 +79,11 @@ const AVAILABLE_GAMES = [
     {
         id: 'whot',
         name: 'Naija Whot',
-        description: 'Classic Nigerian card game',
+        description: 'Classic Nigerian card game (Supports AI Bots!)',
         icon: '🃏',
         color: COLORS.electricPurple,
         category: 'competitive',
-        minPlayers: 2,
+        minPlayers: 1,
         maxPlayers: 8,
         vibes: ['chill']
     },
@@ -110,26 +110,15 @@ const AVAILABLE_GAMES = [
         vibes: ['hype']
     },
     {
-        id: 'confession-roulette',
-        name: 'Confession Roulette',
-        description: 'Anonymous confessions - guess who wrote it!',
-        icon: '🎰',
+        id: 'whispers',
+        name: 'Whispers',
+        description: 'Anonymous secrets, confessions, and hot takes.',
+        icon: '🤫',
         color: COLORS.hotPink,
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
         vibes: ['chill', 'hype']
-    },
-    {
-        id: 'spill-the-tea',
-        name: 'Spill The Tea',
-        description: 'Anonymous secrets and hot takes',
-        icon: '🍵',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['chill']
     },
     {
         id: 'imposter',
@@ -138,7 +127,7 @@ const AVAILABLE_GAMES = [
         icon: '🕵️',
         color: COLORS.electricPurple,
         category: 'party',
-        minPlayers: 4,
+        minPlayers: 3,
         maxPlayers: 10,
         vibes: ['hype']
     },
@@ -155,19 +144,8 @@ const AVAILABLE_GAMES = [
     },
     {
         id: 'hot-seat',
-        name: 'Hot Seat',
-        description: 'Ask anything - custom questions!',
-        icon: '🪑',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['chill']
-    },
-    {
-        id: 'hot-seat-mc',
         name: 'The Hot Seat',
-        description: 'How well do they know you? Pick your answer, everyone guesses!',
+        description: 'Classic Questions, MC Mode, and Personal Challenges.',
         icon: '🔥',
         color: '#FF6B35',
         category: 'party',
@@ -242,123 +220,92 @@ const AVAILABLE_GAMES = [
         vibes: ['hype']
     },
     {
-        id: 'scrabble',
-        name: 'Word Scrabble',
-        description: 'Form words on the board - highest score wins!',
-        icon: '🔤',
-        color: COLORS.neonCyan,
-        category: 'competitive',
-        minPlayers: 2,
-        maxPlayers: 4,
-        vibes: ['brain']
-    },
-    {
         id: 'caption-this',
         name: 'Caption This',
-        description: 'Write funny captions, vote for the best!',
-        icon: '📸',
-        color: COLORS.electricPurple,
+        description: 'Write the funniest caption for the image!',
+        icon: '🖼️',
+        color: COLORS.limeGlow,
         category: 'party',
         minPlayers: 3,
         maxPlayers: 10,
         vibes: ['hype']
+    },
+    {
+        id: 'auction-bluff',
+        name: 'Auction Bluff',
+        description: 'Bid on items, but don\'t get bluffed!',
+        icon: '🔨',
+        color: COLORS.neonCyan,
+        category: 'competitive',
+        minPlayers: 3,
+        maxPlayers: 6,
+        vibes: ['brain']
+    },
+    {
+        id: 'speed-categories',
+        name: 'Speed Categories',
+        description: 'Type words in a category - don\'t repeat!',
+        icon: '🔠',
+        color: COLORS.electricPurple,
+        category: 'speed',
+        minPlayers: 2,
+        maxPlayers: 8,
+        vibes: ['hype']
     }
 ];
 
-
-
-
 const GameSelectionScreen = ({ route, navigation }) => {
-    const [room, setRoom] = useState(route.params.room);
-    const { playerName } = route.params;
-    const [selectedGame, setSelectedGame] = useState(null);
-    const [waitingForNavigation, setWaitingForNavigation] = useState(false);
+    const { room, playerName } = route.params;
+    const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedVibe, setSelectedVibe] = useState('all');
+    const [waitingForNavigation, setWaitingForNavigation] = useState(false);
 
-    // Process games into categories
-    const gamesByCategory = React.useMemo(() => {
-        const grouped = {};
-        Object.keys(GAME_CATEGORIES).forEach(key => {
-            grouped[key] = [];
-        });
+    const filteredGames = AVAILABLE_GAMES.filter(game => {
+        const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
+        const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             game.description.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
 
-        let available = AVAILABLE_GAMES;
-        
-        if (selectedVibe !== 'all') {
-            available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
-        }
-
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            available = available.filter(game => 
-                game.name.toLowerCase().includes(query) || 
-                game.description.toLowerCase().includes(query)
-            );
-        }
-
-        available.forEach(game => {
-            if (grouped[game.category]) {
-                grouped[game.category].push(game);
-            }
-        });
-        return grouped;
-    }, [searchQuery, selectedVibe]);
-
-    const handleGameSelect = async (game) => {
+    const handleGameSelect = (game) => {
         if (waitingForNavigation) return;
-
-        // Hot Seat MC has its own category selection screen before start
-        if (game.id === 'hot-seat-mc') {
-            navigation.navigate('HotSeatCategory', {
-                room,
-                isHost: true,
-                playerName,
-            });
+        
+        setWaitingForNavigation(true);
+        
+        // Hub Routing - redirect to special selection screens
+        if (game.id === 'hot-seat') {
+            navigation.navigate('HotSeatCategory', { room, playerName, isHost: true });
+            return;
+        }
+        if (game.id === 'whispers') {
+            navigation.navigate('WhispersHub', { room, playerName, isHost: true });
+            return;
+        }
+        if (game.id === 'trivia') {
+            navigation.navigate('TriviaHub', { room, playerName, isHost: true });
             return;
         }
 
-        setWaitingForNavigation(true);
-        setSelectedGame(game);
-
-        try {
-            console.log('Emitting game-selected:', game.id, 'for room:', room.id);
-            SocketService.emit('game-selected', {
-                roomId: room.id,
-                gameId: game.id,
-                gameName: game.name
-            });
-        } catch (error) {
-            console.error('Error selecting game:', error);
-            Alert.alert('Error', 'Failed to select game');
-            setWaitingForNavigation(false);
-        }
+        // Standard Game Selection
+        SocketService.emit('game-selected', { roomId: room.id, gameType: game.id });
+        navigation.navigate('Lobby', { room: { ...room, gameType: game.id }, playerName });
     };
 
-    React.useEffect(() => {
-        const onRoomUpdated = (updatedRoom) => {
-            console.log('Room updated in GameSelection:', updatedRoom);
-            setRoom(updatedRoom);
-
-            // If we're waiting to navigate after setting game type, navigate now
-            if (waitingForNavigation && updatedRoom.gameType) {
-                console.log('Navigating to lobby with updated room:', updatedRoom);
-                setWaitingForNavigation(false);
-                navigation.navigate('Lobby', {
-                    room: updatedRoom,
-                    isHost: true,
-                    playerName,
-                    selectedGame: updatedRoom.gameType
-                });
-            }
-        };
-
-        SocketService.on('room-updated', onRoomUpdated);
-
-        return () => {
-            SocketService.off('room-updated', onRoomUpdated);
-        };
-    }, [navigation, playerName, waitingForNavigation]);
+    const renderCategoryTab = (id, name, icon, color) => (
+        <TouchableOpacity
+            key={id}
+            style={[
+                styles.categoryTab,
+                selectedCategory === id && { backgroundColor: color + '33', borderColor: color }
+            ]}
+            onPress={() => setSelectedCategory(id)}
+        >
+            <Ionicons name={icon} size={20} color={selectedCategory === id ? color : '#777'} />
+            <NeonText size={14} color={selectedCategory === id ? color : '#777'} weight={selectedCategory === id ? 'bold' : 'normal'}>
+                {name}
+            </NeonText>
+        </TouchableOpacity>
+    );
 
     const renderGameCard = (game) => (
         <TouchableOpacity
@@ -367,244 +314,190 @@ const GameSelectionScreen = ({ route, navigation }) => {
             onPress={() => handleGameSelect(game)}
             disabled={waitingForNavigation}
         >
-            <View style={[styles.iconContainer, { backgroundColor: `${game.color}20` }]}>
-                <GameIcon gameId={game.id} fallbackIcon={game.icon} size={80} />
-            </View>
-            <View style={styles.gameInfo}>
-                <NeonText size={18} weight="bold" color={game.color}>{game.name}</NeonText>
-                <NeonText size={12} color="#AAA" style={styles.description}>{game.description}</NeonText>
-
-                <View style={styles.metaRow}>
-                    <View style={styles.badge}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="people" size={12} color="#FFF" /><NeonText size={10} color="#FFF">{game.minPlayers || 2}-{game.maxPlayers || 8}</NeonText></View>
-                    </View>
-                    {game.category === 'speed' && (
-                        <View style={[styles.badge, { backgroundColor: '#FF3FA440' }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={12} color="#FF3FA4" /><NeonText size={10} color="#FF3FA4">Fast</NeonText></View>
-                        </View>
-                    )}
+            <View style={styles.cardHeader}>
+                <NeonText size={32} style={styles.gameIcon}>{game.icon}</NeonText>
+                <View style={styles.playerBadge}>
+                    <Ionicons name="people" size={12} color="#888" />
+                    <NeonText size={10} color="#888">{game.minPlayers}-{game.maxPlayers}</NeonText>
                 </View>
             </View>
-            <View style={styles.arrowContainer}>
-                <Ionicons name="chevron-forward" size={20} color={game.color} />
+            
+            <NeonText size={18} weight="bold" color={game.color || COLORS.neonCyan} style={styles.gameName}>
+                {game.name}
+            </NeonText>
+            
+            <NeonText size={12} color="#aaa" style={styles.gameDesc} numberOfLines={2}>
+                {game.description}
+            </NeonText>
+
+            <View style={styles.vibeContainer}>
+                {game.vibes.map(vibe => (
+                    <View key={vibe} style={styles.vibeBadge}>
+                        <NeonText size={9} color="#777">{vibe.toUpperCase()}</NeonText>
+                    </View>
+                ))}
             </View>
         </TouchableOpacity>
     );
 
     return (
         <NeonContainer showBackButton scrollable>
-            <View style={styles.container}>
-                <NeonText size={32} weight="bold" glow style={styles.title}>
-                    SELECT GAME
-                </NeonText>
-                <NeonText size={14} color="#888" style={styles.subtitle}>
-                    Room: {room.roomId} • Players: {room.players?.length || 0}
-                </NeonText>
-
-                {/* Smart Recommendations */}
-                <SmartGameRecommendations
-                    playerCount={room.players?.length || 2}
-                    onSelectGame={(gameId) => {
-                        const game = AVAILABLE_GAMES.find(g => g.id === gameId);
-                        if (game) handleGameSelect(game);
-                    }}
-                />
-
-                <View style={styles.vibeContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vibeScroll}>
-                        {[
-                            { id: 'all', label: 'All Games', icon: 'apps' },
-                            { id: 'hype', label: 'Hype', icon: 'flame' },
-                            { id: 'chill', label: 'Chill', icon: 'cafe' },
-                            { id: 'brain', label: 'Brain', icon: 'hardware-chip' }
-                        ].map(vibe => (
-                            <TouchableOpacity
-                                key={vibe.id}
-                                style={[
-                                    styles.vibePill,
-                                    selectedVibe === vibe.id && styles.vibePillSelected
-                                ]}
-                                onPress={() => setSelectedVibe(vibe.id)}
-                            >
-                                <Ionicons 
-                                    name={vibe.icon} 
-                                    size={16} 
-                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan} 
-                                />
-                                <NeonText 
-                                    size={14} 
-                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan}
-                                    weight={selectedVibe === vibe.id ? 'bold' : 'normal'}
-                                >
-                                    {vibe.label}
-                                </NeonText>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search games..."
-                        placeholderTextColor="#888"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        autoCorrect={false}
-                    />
-                </View>
-
-                {Object.entries(GAME_CATEGORIES).map(([key, category]) => {
-                    const categoryGames = gamesByCategory[key];
-                    if (!categoryGames || categoryGames.length === 0) return null;
-
-                    return (
-                        <View key={key} style={styles.categorySection}>
-                            <View style={styles.categoryHeader}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name={category.icon} size={18} color={category.color} /><NeonText size={20} weight="bold" color={category.color} glow>{category.name}</NeonText></View>
-                                <View style={[styles.categoryLine, { backgroundColor: category.color }]} />
-                            </View>
-                            <View style={styles.gamesGrid}>
-                                {categoryGames.map(renderGameCard)}
-                            </View>
-                        </View>
-                    );
-                })}
+            <View style={styles.header}>
+                <NeonText size={32} weight="bold" glow>SELECT GAME</NeonText>
+                <NeonText size={14} color="#777">Choose your next challenge</NeonText>
             </View>
-        </NeonContainer >
+
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color="#555" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search games..."
+                    placeholderTextColor="#555"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+                {searchQuery !== '' && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={20} color="#555" />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <SmartGameRecommendations room={room} onSelect={handleGameSelect} />
+
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                style={styles.categoryScroll}
+                contentContainerStyle={styles.categoryContent}
+            >
+                {renderCategoryTab('all', 'All Games', 'grid', COLORS.neonCyan)}
+                {Object.entries(GAME_CATEGORIES).map(([id, cat]) => 
+                    renderCategoryTab(id, cat.name, cat.icon, cat.color)
+                )}
+            </ScrollView>
+
+            <View style={styles.gameGrid}>
+                {filteredGames.map(renderGameCard)}
+            </View>
+
+            {filteredGames.length === 0 && (
+                <View style={styles.noResults}>
+                    <Ionicons name="search-outline" size={64} color="#333" />
+                    <NeonText size={18} color="#555" style={{ marginTop: 16 }}>No games found matching your search</NeonText>
+                </View>
+            )}
+
+            <View style={styles.footer} />
+        </NeonContainer>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 40,
-        paddingTop: 10,
-    },
-    title: {
-        textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: 1,
-    },
-    subtitle: {
-        textAlign: 'center',
-        marginBottom: 30,
-        opacity: 0.7,
-        letterSpacing: 1,
-    },
-    vibeContainer: {
+    header: {
+        marginTop: 20,
         marginBottom: 20,
-    },
-    vibeScroll: {
-        gap: 10,
-        paddingHorizontal: 2,
-    },
-    vibePill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0,255,255,0.05)',
-        borderWidth: 1,
-        borderColor: COLORS.neonCyan,
-    },
-    vibePillSelected: {
-        backgroundColor: COLORS.neonCyan,
-        shadowColor: COLORS.neonCyan,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-        elevation: 5,
+        paddingHorizontal: 20,
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 12,
+        marginHorizontal: 20,
         paddingHorizontal: 15,
-        marginBottom: 25,
+        height: 50,
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     searchIcon: {
         marginRight: 10,
     },
     searchInput: {
         flex: 1,
-        color: '#FFF',
+        color: '#fff',
         fontSize: 16,
-        paddingVertical: 12,
     },
-    categorySection: {
-        marginBottom: 35,
+    categoryScroll: {
+        maxHeight: 50,
+        marginBottom: 20,
     },
-    categoryHeader: {
+    categoryContent: {
+        paddingHorizontal: 20,
+        gap: 12,
+    },
+    categoryTab: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 18,
-        gap: 15,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        gap: 8,
     },
-    categoryLine: {
-        flex: 1,
-        height: 1,
-        opacity: 0.2,
-    },
-    gamesGrid: {
-        gap: 15,
+    gameGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 15,
+        justifyContent: 'space-between',
     },
     gameCard: {
+        width: isDesktop ? '31%' : '47%',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        position: 'relative',
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    gameIcon: {
+        marginBottom: 0,
+    },
+    playerBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.08)',
-        gap: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    iconContainer: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    gameInfo: {
-        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 10,
         gap: 4,
     },
-    description: {
+    gameName: {
+        marginBottom: 4,
+    },
+    gameDesc: {
         lineHeight: 16,
-        opacity: 0.8,
+        marginBottom: 12,
     },
-    metaRow: {
+    vibeContainer: {
         flexDirection: 'row',
-        gap: 8,
-        marginTop: 6,
+        flexWrap: 'wrap',
+        gap: 6,
     },
-    badge: {
-        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 20,
-        borderWidth: 0.5,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+    vibeBadge: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
     },
-    arrowContainer: {
-        paddingRight: 5,
-        opacity: 0.6,
+    noResults: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 50,
+        paddingHorizontal: 40,
     },
+    footer: {
+        height: 40,
+    }
 });
 
 export default GameSelectionScreen;

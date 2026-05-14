@@ -12,7 +12,11 @@ import { register as registerServiceWorker } from './src/utils/serviceWorkerRegi
 export default function App() {
 
   useEffect(() => {
-    // Register service worker for offline support (web only)
+    // Register service worker for offline support and auto-updates (web only)
+    if (typeof window !== 'undefined' && !window.__EXPO_LOCAL_DEV__) {
+      registerServiceWorker();
+    }
+    
     // Initialize services
     HapticService.init();
     SoundService.init();

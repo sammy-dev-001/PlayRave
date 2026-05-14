@@ -24,6 +24,8 @@ const MyPacksScreen = lazy(() => import('../screens/MyPacksScreen'));
 const CommunityPacksScreen = lazy(() => import('../screens/CommunityPacksScreen'));
 const CustomPackEditorScreen = lazy(() => import('../screens/CustomPackEditorScreen'));
 const ChallengesScreen = lazy(() => import('../screens/ChallengesScreen'));
+const WhispersHubScreen = lazy(() => import('../screens/WhispersHubScreen'));
+const TriviaHubScreen = lazy(() => import('../screens/TriviaHubScreen'));
 
 // Lazy-loaded game screens - loaded on demand
 const CustomQuestionsScreen = lazy(() => import('../screens/CustomQuestionsScreen'));
@@ -159,6 +161,8 @@ const LazyDrawBattleScreen = withSuspense(DrawBattleScreen);
 const LazyLieDetectorScreen = withSuspense(LieDetectorScreen);
 const LazyLANModeScreen = withSuspense(LANModeScreen);
 const LazyLocalCharadesScreen = withSuspense(LocalCharadesScreen);
+const LazyWhispersHubScreen = withSuspense(WhispersHubScreen);
+const LazyTriviaHubScreen = withSuspense(TriviaHubScreen);
 
 const AppNavigator = () => {
     return (
@@ -255,6 +259,8 @@ const AppNavigator = () => {
                             <Stack.Screen name="LieDetector" component={LazyLieDetectorScreen} />
                             <Stack.Screen name="LANMode" component={LazyLANModeScreen} />
                             <Stack.Screen name="LocalCharades" component={LazyLocalCharadesScreen} />
+                            <Stack.Screen name="WhispersHub" component={LazyWhispersHubScreen} />
+                            <Stack.Screen name="TriviaHub" component={LazyTriviaHubScreen} />
                         </Stack.Navigator>
                     </NavigationContainer>
                 </GameProvider>

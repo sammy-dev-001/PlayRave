@@ -87,10 +87,10 @@ class TriviaEngine {
         }));
 
         // Trivia timers are physical actions. We can schedule 'show-results' to force advance.
-        // Assuming 10-second timer per question for trivia.
+        const isSolo = Object.keys(gameState.scores).length === 1;
         instructions.push({
             action: 'schedule',
-            delay: 15000,
+            delay: isSolo ? 10000 : 15000, // Faster timer for solo
             eventToTrigger: 'force-results',
             roomId
         });
@@ -158,6 +158,16 @@ class TriviaEngine {
         if (currentAnswers >= expectedAnswers) {
             // Auto-trigger show results
             instructions.push(this.getQuestionResults(roomId));
+
+            // If Solo Mode: Auto-advance to next question after 3 seconds
+            if (expectedAnswers === 1) {
+                instructions.push({
+                    action: 'schedule',
+                    delay: 3000,
+                    eventToTrigger: 'next-question',
+                    roomId
+                });
+            }
         }
 
         return { action: 'multiple', instructions };
@@ -189,11 +199,29 @@ class TriviaEngine {
 
         game.status = 'RESULTS';
 
-        return {
+        const broadcastInst = {
             action: 'broadcast',
             event: 'question-results',
             data: results
         };
+
+        // If Solo: Always auto-advance after 3 seconds, even if they didn't answer
+        if (Object.keys(game.scores).length === 1) {
+            return {
+                action: 'multiple',
+                instructions: [
+                    broadcastInst,
+                    {
+                        action: 'schedule',
+                        delay: 4000, // 4s for forced results to give more reading time
+                        eventToTrigger: 'next-question',
+                        roomId
+                    }
+                ]
+            };
+        }
+
+        return broadcastInst;
     }
 
     nextQuestion(roomId) {
@@ -224,7 +252,7 @@ class TriviaEngine {
             },
             {
                 action: 'schedule',
-                delay: 15000,
+                delay: Object.keys(game.scores).length === 1 ? 10000 : 15000,
                 eventToTrigger: 'force-results',
                 roomId
             }
