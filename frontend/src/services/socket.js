@@ -76,6 +76,7 @@ class SocketService {
 
     // Connection quality monitoring
     pingInterval = null;
+    healthCheckInterval = null;
     lastPingTime = null;
     latency = null;
     latencyListeners = [];
@@ -115,6 +116,7 @@ class SocketService {
 
             // Start ping monitoring
             this.startPingMonitoring();
+            this.startHealthCheckMonitoring();
 
             // Register any pending listeners
             if (this.pendingListeners.length > 0) {
@@ -134,6 +136,7 @@ class SocketService {
             console.log('SocketService disconnected:', reason);
             this.setConnectionState(ConnectionState.DISCONNECTED);
             this.stopPingMonitoring();
+            this.stopHealthCheckMonitoring();
 
             // Don't auto-reconnect if we intentionally disconnected
             if (this.intentionalDisconnect) {
@@ -258,6 +261,31 @@ class SocketService {
         if (this.pingInterval) {
             clearInterval(this.pingInterval);
             this.pingInterval = null;
+        }
+    }
+
+    /**
+     * Secondary HTTP Keep-Alive for Render/Heroku idleness prevention
+     */
+    startHealthCheckMonitoring() {
+        this.stopHealthCheckMonitoring();
+        
+        // Pinging every 4 minutes (Render spins down at 15 mins)
+        this.healthCheckInterval = setInterval(async () => {
+            try {
+                const healthUrl = `${SOCKET_URL}/health`;
+                // console.log('[SocketService] Sending HTTP keep-alive to:', healthUrl);
+                await fetch(healthUrl);
+            } catch (error) {
+                // Ignore health check errors
+            }
+        }, 4 * 60 * 1000);
+    }
+
+    stopHealthCheckMonitoring() {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
         }
     }
 

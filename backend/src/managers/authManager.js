@@ -1,43 +1,14 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const { MongoClient } = require('mongodb');
+const dbHelper = require('../db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'playrave-secret-key-change-in-production';
 
-// MongoDB connection string - password is URL encoded (& = %26, % = %25)
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://samueldaniyan564_db_user:sammy123%26%25@cluster0.0ykmcom.mongodb.net/playrave?retryWrites=true&w=majority&appName=Cluster0';
-
-let db = null;
-let usersCollection = null;
-
-// Initialize MongoDB connection
-const initDB = async () => {
-    if (db) return db;
-
-    try {
-        console.log('Connecting to MongoDB...');
-        const client = new MongoClient(MONGODB_URI);
-        await client.connect();
-        db = client.db('playrave');
-        usersCollection = db.collection('users');
-
-        // Create index on email for faster lookups
-        await usersCollection.createIndex({ email: 1 }, { unique: true });
-        await usersCollection.createIndex({ username: 1 });
-
-        console.log('MongoDB connected successfully!');
-        return db;
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        throw error;
-    }
-};
-
-// Initialize on module load
-initDB().catch(console.error);
-
 class AuthManager {
+    async _getCollection() {
+        return await dbHelper.getCollection('users');
+    }
     // Generate JWT token
     generateToken(user) {
         return jwt.sign(
@@ -58,7 +29,7 @@ class AuthManager {
 
     // Register new user
     async register(email, password, username) {
-        await initDB();
+        const usersCollection = await this._getCollection();
 
         email = email.toLowerCase().trim();
 
@@ -114,7 +85,7 @@ class AuthManager {
 
     // Login user
     async login(email, password) {
-        await initDB();
+        const usersCollection = await this._getCollection();
 
         email = email.toLowerCase().trim();
 
@@ -137,21 +108,21 @@ class AuthManager {
         const decoded = this.verifyToken(token);
         if (!decoded) return null;
 
-        await initDB();
+        const usersCollection = await this._getCollection();
         const user = await usersCollection.findOne({ id: decoded.id });
         return user ? this.sanitizeUser(user) : null;
     }
 
     // Get user by ID
     async getUserById(id) {
-        await initDB();
+        const usersCollection = await this._getCollection();
         const user = await usersCollection.findOne({ id });
         return user ? this.sanitizeUser(user) : null;
     }
 
     // Update user stats after game
     async updateStats(userId, gameType, stats) {
-        await initDB();
+        const usersCollection = await this._getCollection();
 
         const user = await usersCollection.findOne({ id: userId });
         if (!user) return null;
@@ -232,7 +203,7 @@ class AuthManager {
 
     // Get leaderboard
     async getLeaderboard(limit = 50) {
-        await initDB();
+        const usersCollection = await this._getCollection();
 
         const users = await usersCollection
             .find({})

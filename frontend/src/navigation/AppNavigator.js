@@ -5,6 +5,7 @@ import { GameProvider } from '../context/GameContext';
 import { AuthProvider } from '../context/AuthContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import LoadingScreen from '../components/LoadingScreen';
+import ConnectionStatusOverlay from '../components/ConnectionStatusOverlay';
 import { COLORS } from '../constants/theme';
 
 // Core screens - loaded immediately
@@ -168,6 +169,7 @@ const AppNavigator = () => {
             <AuthProvider>
                 <GameProvider>
                     <NavigationContainer>
+                        <ConnectionStatusOverlay />
                         <Stack.Navigator
                             screenOptions={{
                                 headerShown: false,

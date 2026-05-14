@@ -62,8 +62,8 @@ class GameRouter {
      * @param {string}   roomId    — The room this event belongs to
      * @param {Object}   io        — The Socket.IO server instance
      */
-    handleEvent(eventName, payload, userId, roomId, io) {
-        const room = roomManager.getRoom(roomId);
+    async handleEvent(eventName, payload, userId, roomId, io) {
+        const room = await roomManager.getRoom(roomId);
         if (!room) return;
 
         const gameType = room.gameType;
@@ -136,7 +136,9 @@ class GameRouter {
             case 'schedule-ai':
                 // Execute AI turn after a specified delay without locking up the engine
                 console.log(`[GameRouter] Scheduling AI turn for room ${roomId} in ${instruction.delay}ms`);
-                setTimeout(() => {
+                setTimeout(async () => {
+                    const room = await roomManager.getRoom(roomId);
+                    if (!room) return;
                     const engine = engineRegistry[room.gameType]; 
                     if (!engine || typeof engine.executeAITurn !== 'function') {
                         console.warn(`[GameRouter] Engine ${room.gameType} does not support executeAITurn`);
@@ -230,9 +232,9 @@ class GameRouter {
 
     // ── Utility Methods ──────────────────────────────────────────────────
 
-    getGameState(roomId, gameType = null) {
+    async getGameState(roomId, gameType = null) {
         if (!gameType) {
-            const room = roomManager.getRoom(roomId);
+            const room = await roomManager.getRoom(roomId);
             if (room) gameType = room.gameType;
         }
 
@@ -278,8 +280,8 @@ class GameRouter {
         // No-op for now. Specific engines can handle their own timers if needed.
     }
 
-    endGame(roomId) {
-        const room = roomManager.getRoom(roomId);
+    async endGame(roomId) {
+        const room = await roomManager.getRoom(roomId);
         const gameType = room?.gameType;
 
         if (gameType && engineRegistry[gameType] && engineRegistry[gameType].activeGames.has(roomId)) {

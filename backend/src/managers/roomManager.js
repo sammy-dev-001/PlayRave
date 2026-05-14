@@ -5,9 +5,37 @@
 // socket.id is stored per-player only so the Gateway can emit to them.
 // ============================================================================
 
+const dbHelper = require('../db');
+
 class RoomManager {
     constructor() {
         this.rooms = new Map();
+    }
+
+    async _getCollection() {
+        return await dbHelper.getCollection('rooms');
+    }
+
+    async _saveToDb(room) {
+        try {
+            const roomsCollection = await this._getCollection();
+            if (!roomsCollection) return;
+
+            // Strip circular or unnecessary socket objects before saving
+            const persistableRoom = {
+                ...room,
+                lastActivity: new Date(),
+                // We keep player data but socketIds are transient
+            };
+
+            await roomsCollection.updateOne(
+                { id: room.id },
+                { $set: persistableRoom },
+                { upsert: true }
+            );
+        } catch (e) {
+            console.error(`[RoomManager] DB Save Error for room ${room.id}:`, e);
+        }
     }
 
     generateRoomCode() {
@@ -39,6 +67,7 @@ class RoomManager {
         };
         this.rooms.set(roomId, room);
         console.log(`[RoomManager] Room ${roomId} created by ${playerName} (${userId})`);
+        this._saveToDb(room); // Async fire-and-forget
         return room;
     }
 
@@ -57,11 +86,24 @@ class RoomManager {
             }],
         };
         this.rooms.set(roomId, room);
+        this._saveToDb(room);
         return room;
     }
 
-    joinRoom(roomId, userId, socketId, playerName, avatar, avatarColor) {
-        const room = this.rooms.get(roomId);
+    async joinRoom(roomId, userId, socketId, playerName, avatar, avatarColor) {
+        let room = this.rooms.get(roomId);
+
+        if (!room) {
+            // Attempt to restore from DB
+            const roomsCollection = await this._getCollection();
+            const dbRoom = await roomsCollection.findOne({ id: roomId });
+            if (dbRoom) {
+                console.log(`[RoomManager] Restored room ${roomId} from MongoDB`);
+                room = dbRoom;
+                this.rooms.set(roomId, room);
+            }
+        }
+
         if (!room) return { error: 'Room not found' };
 
         const existing = room.players.find(p => p.userId === userId);
@@ -86,6 +128,7 @@ class RoomManager {
             score: 0, isHost: false, isReady: false, isAway: false,
         });
 
+        this._saveToDb(room);
         return { room, isRejoin: false, oldSocketId: null };
     }
 
@@ -98,6 +141,7 @@ class RoomManager {
 
             if (room.players.length === 0) {
                 this.rooms.delete(roomId);
+                this._removeFromDb(roomId);
                 return { roomId, roomDeleted: true, removedPlayer };
             }
 
@@ -105,9 +149,21 @@ class RoomManager {
                 this._migrateHost(room);
             }
 
+            this._saveToDb(room);
             return { roomId, roomDeleted: false, room, removedPlayer };
         }
         return null;
+    }
+
+    async _removeFromDb(roomId) {
+        try {
+            const roomsCollection = await this._getCollection();
+            if (roomsCollection) {
+                await roomsCollection.deleteOne({ id: roomId });
+            }
+        } catch (e) {
+            console.error(`[RoomManager] DB Delete Error for room ${roomId}:`, e);
+        }
     }
 
     removePlayerBySocketId(socketId) {
@@ -123,6 +179,7 @@ class RoomManager {
             }
 
             if (removedPlayer.isHost) this._migrateHost(room);
+            this._saveToDb(room);
             return { roomId, roomDeleted: false, room, removedPlayer };
         }
         return null;
@@ -130,8 +187,17 @@ class RoomManager {
 
     // ── Lookups ─────────────────────────────────────────────────────────
 
-    getRoom(roomId) {
-        return this.rooms.get(roomId) || null;
+    async getRoom(roomId) {
+        let room = this.rooms.get(roomId);
+        if (!room) {
+            const roomsCollection = await this._getCollection();
+            const dbRoom = await roomsCollection.findOne({ id: roomId });
+            if (dbRoom) {
+                room = dbRoom;
+                this.rooms.set(roomId, room);
+            }
+        }
+        return room || null;
     }
 
     getPlayerByUserId(userId) {
@@ -164,6 +230,7 @@ class RoomManager {
         player.isAway = false;
 
         if (player.isHost) room.hostUserId = userId;
+        this._saveToDb(room);
         return { room, player, oldSocketId };
     }
 
@@ -172,6 +239,7 @@ class RoomManager {
         if (!room) return null;
         const player = room.players.find(p => p.userId === userId);
         if (player) player.isAway = isAway;
+        this._saveToDb(room);
         return room;
     }
 
@@ -191,6 +259,7 @@ class RoomManager {
         newHost.isHost = true;
         room.hostUserId = newHost.userId;
         console.log(`[RoomManager] Host migrated to ${newHost.name} (${newHost.userId}) in room ${room.id}`);
+        this._saveToDb(room);
         return { room, newHost };
     }
 
@@ -200,6 +269,7 @@ class RoomManager {
         const room = this.rooms.get(roomId);
         if (!room) return { error: 'Room not found' };
         room.gameType = gameType;
+        this._saveToDb(room);
         return { room };
     }
 
@@ -207,6 +277,7 @@ class RoomManager {
         const room = this.rooms.get(roomId);
         if (!room) return { error: 'Room not found' };
         room.customQuestions = questions;
+        this._saveToDb(room);
         return { room };
     }
 
@@ -216,6 +287,7 @@ class RoomManager {
         const player = room.players.find(p => p.userId === userId);
         if (!player) return { error: 'Player not found' };
         player.isReady = isReady;
+        this._saveToDb(room);
         return { room };
     }
 
@@ -229,6 +301,7 @@ class RoomManager {
         if (index === -1) return { error: 'Player not found' };
 
         const kicked = room.players.splice(index, 1)[0];
+        this._saveToDb(room);
         return { room, kickedPlayer: kicked };
     }
 
@@ -236,6 +309,7 @@ class RoomManager {
         const room = this.rooms.get(roomId);
         if (!room) return null;
         room.gameState = state;
+        this._saveToDb(room);
         return room;
     }
 

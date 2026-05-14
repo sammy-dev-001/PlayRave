@@ -36,7 +36,19 @@ const roomManager    = require("./managers/roomManager");
 
 // Health check
 app.get("/health", (req, res) => {
+    // console.log("[Health] Ping received at", new Date().toISOString());
     res.json({ status: "ok", mode: "playrave-server", timestamp: Date.now() });
+});
+
+// Global Error Handlers (Prevention of Process Crashes)
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+    // Keep process alive if possible, but log it
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+    // Keep process alive
 });
 
 // ==================== AUTH REST API ====================
@@ -190,8 +202,8 @@ app.post("/api/challenges/:id/claim", (req, res) => {
  * Helper: emit room snapshot to all clients in a room.
  * Uses getRoomSnapshot() for backwards-compatible format.
  */
-function emitRoomUpdate(roomId) {
-    const snapshot = roomManager.getRoomSnapshot(roomId);
+async function emitRoomUpdate(roomId) {
+    const snapshot = await roomManager.getRoomSnapshot(roomId);
     if (snapshot) {
         io.to(roomId).emit("room-updated", snapshot);
     }
@@ -216,10 +228,10 @@ io.on("connection", (socket) => {
     });
 
     // ── 2. JOIN ROOM ────────────────────────────────────────────────
-    socket.on("join-room", ({ roomId, playerName, avatar, avatarColor, userId }) => {
+    socket.on("join-room", async ({ roomId, playerName, avatar, avatarColor, userId }) => {
         console.log("[Gateway] join-room:", roomId, playerName, userId);
 
-        const joinResult = roomManager.joinRoom(roomId, userId, socket.id, playerName, avatar, avatarColor);
+        const joinResult = await roomManager.joinRoom(roomId, userId, socket.id, playerName, avatar, avatarColor);
         if (joinResult.error) {
             socket.emit("error", { message: joinResult.error });
             return;
@@ -232,18 +244,18 @@ io.on("connection", (socket) => {
 
         // Re-bind in legacy game manager if reconnecting mid-game
         if (joinResult.isRejoin && joinResult.oldSocketId) {
-            const room = roomManager.getRoom(roomId);
+            const room = await roomManager.getRoom(roomId);
             if (room && (room.gameState === 'PLAYING' || room.gameState === 'GAMEOVER')) {
                 gameRouter.updatePlayerSocket(roomId, joinResult.oldSocketId, socket.id);
             }
         }
 
-        const snapshot = roomManager.getRoomSnapshot(roomId);
+        const snapshot = await roomManager.getRoomSnapshot(roomId);
         socket.emit("room-joined", snapshot);
         io.to(roomId).emit("room-updated", snapshot);
 
         // Send game state if game in progress
-        const room = roomManager.getRoom(roomId);
+        const room = await roomManager.getRoom(roomId);
         if (room && (room.gameState === 'PLAYING' || room.gameState === 'GAMEOVER')) {
             const gameState = gameRouter.getGameState(roomId);
             if (gameState) {
@@ -257,10 +269,10 @@ io.on("connection", (socket) => {
     });
 
     // ── 3. REQUEST-SYNC (Reconnect / Tab Wake) ──────────────────────
-    socket.on("request-room-sync", ({ roomId, userId }) => {
+    socket.on("request-room-sync", async ({ roomId, userId }) => {
         console.log("[Gateway] request-room-sync:", roomId, userId);
 
-        const room = roomManager.getRoom(roomId);
+        const room = await roomManager.getRoom(roomId);
         if (!room) {
             socket.emit("error", { message: "Room not found during sync" });
             return;
@@ -288,7 +300,7 @@ io.on("connection", (socket) => {
         }
 
         // Push room state
-        const snapshot = roomManager.getRoomSnapshot(roomId);
+        const snapshot = await roomManager.getRoomSnapshot(roomId);
         socket.emit("room-updated", snapshot);
         io.to(roomId).emit("room-updated", snapshot);
 
@@ -322,7 +334,7 @@ io.on("connection", (socket) => {
     });
 
     // ── 4. LEAVE ROOM ───────────────────────────────────────────────
-    socket.on("leave-room", ({ roomId }) => {
+    socket.on("leave-room", async ({ roomId }) => {
         console.log("[Gateway] leave-room:", roomId, socket.id);
 
         const userId = sessionManager.getUserIdBySocket(socket.id);
@@ -331,11 +343,11 @@ io.on("connection", (socket) => {
         if (userId) sessionManager.cancelDisconnect(userId);
 
         // Check game state BEFORE removing
-        const game = gameRouter.getGameState(roomId);
-        const room = roomManager.getRoom(roomId);
+        const game = await gameRouter.getGameState(roomId);
+        const room = await roomManager.getRoom(roomId);
         const isSinglePlayer = game?.isSinglePlayer || (room?.players?.length === 1);
 
-        const result = userId ? roomManager.removePlayer(userId) : roomManager.removePlayerBySocketId(socket.id);
+        const result = userId ? await roomManager.removePlayer(userId) : await roomManager.removePlayerBySocketId(socket.id);
 
         if (result && !result.roomDeleted) {
             io.to(result.roomId).emit("player-left", {
@@ -343,7 +355,7 @@ io.on("connection", (socket) => {
                 userId: result.removedPlayer?.userId,
                 remainingPlayers: result.room.players.length
             });
-            emitRoomUpdate(result.roomId);
+            await emitRoomUpdate(result.roomId);
 
             // End game if not enough players (skip for single-player)
             if (game && !isSinglePlayer) {
@@ -370,7 +382,7 @@ io.on("connection", (socket) => {
     });
 
     // ── 5. DISCONNECT (Browser tab sleep / close) ───────────────────
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
         console.log("[Gateway] Socket disconnected:", socket.id);
 
         const userId = sessionManager.getUserIdBySocket(socket.id);
@@ -382,14 +394,14 @@ io.on("connection", (socket) => {
         if (!roomId) return;
 
         // Mark player as away in room
-        roomManager.setPlayerAway(roomId, userId, true);
+        await roomManager.setPlayerAway(roomId, userId, true);
 
         // Immediate host migration if the disconnected player was host
-        const room = roomManager.getRoom(roomId);
+        const room = await roomManager.getRoom(roomId);
         if (room) {
             const player = room.players.find(p => p.userId === userId);
             if (player?.isHost) {
-                const migrationResult = roomManager.reassignHost(roomId);
+                const migrationResult = await roomManager.reassignHost(roomId);
                 if (migrationResult) {
                     console.log(`[Gateway] Host disconnected in ${roomId}, migrated to ${migrationResult.newHost.name}`);
                     io.to(roomId).emit("host-changed", {
@@ -399,7 +411,7 @@ io.on("connection", (socket) => {
                     });
                 }
             }
-            emitRoomUpdate(roomId);
+            await emitRoomUpdate(roomId);
         }
 
         // Notify room that player is away
@@ -415,7 +427,7 @@ io.on("connection", (socket) => {
         });
 
         // Start the 10-minute grace period via SessionManager
-        sessionManager.handleDisconnect(userId, roomId, (expiredUserId, expiredRoomId) => {
+        sessionManager.handleDisconnect(userId, roomId, async (expiredUserId, expiredRoomId) => {
             // ── HARD DROP callback — grace period expired ──
             console.log(`[Gateway] HARD DROP: ${expiredUserId} from room ${expiredRoomId}`);
 
@@ -425,11 +437,11 @@ io.on("connection", (socket) => {
                 return;
             }
 
-            const game = gameRouter.getGameState(expiredRoomId);
-            const roomBeforeRemoval = roomManager.getRoom(expiredRoomId);
+            const game = await gameRouter.getGameState(expiredRoomId);
+            const roomBeforeRemoval = await roomManager.getRoom(expiredRoomId);
             const isSingle = game?.isSinglePlayer || (roomBeforeRemoval?.players?.length === 1);
 
-            const result = roomManager.removePlayer(expiredUserId);
+            const result = await roomManager.removePlayer(expiredUserId);
 
             if (result && !result.roomDeleted) {
                 io.to(result.roomId).emit("player-left", {
@@ -437,7 +449,7 @@ io.on("connection", (socket) => {
                     userId: expiredUserId,
                     remainingPlayers: result.room.players.length
                 });
-                emitRoomUpdate(result.roomId);
+                await emitRoomUpdate(result.roomId);
 
                 if (game && !isSingle) {
                     const minPlayers = gameRouter.getMinPlayers(game.type) || 2;
@@ -461,61 +473,61 @@ io.on("connection", (socket) => {
 
     // ── 6. LOBBY EVENTS ─────────────────────────────────────────────
 
-    socket.on("game-selected", ({ roomId, gameId }) => {
-        const result = roomManager.setGameType(roomId, gameId);
+    socket.on("game-selected", async ({ roomId, gameId }) => {
+        const result = await roomManager.setGameType(roomId, gameId);
         if (result.error) return socket.emit("error", { message: result.error });
-        emitRoomUpdate(roomId);
+        await emitRoomUpdate(roomId);
     });
 
-    socket.on("set-game-type", ({ roomId, gameType }) => {
-        const result = roomManager.setGameType(roomId, gameType);
+    socket.on("set-game-type", async ({ roomId, gameType }) => {
+        const result = await roomManager.setGameType(roomId, gameType);
         if (result.error) return socket.emit("error", { message: result.error });
-        emitRoomUpdate(roomId);
+        await emitRoomUpdate(roomId);
     });
 
-    socket.on("set-custom-questions", ({ roomId, questions }) => {
-        const result = roomManager.setCustomQuestions(roomId, questions);
+    socket.on("set-custom-questions", async ({ roomId, questions }) => {
+        const result = await roomManager.setCustomQuestions(roomId, questions);
         if (result.error) return socket.emit("error", { message: result.error });
-        emitRoomUpdate(roomId);
+        await emitRoomUpdate(roomId);
     });
 
-    socket.on("get-room", ({ roomId }) => {
-        const snapshot = roomManager.getRoomSnapshot(roomId);
+    socket.on("get-room", async ({ roomId }) => {
+        const snapshot = await roomManager.getRoomSnapshot(roomId);
         if (snapshot) socket.emit("room-updated", snapshot);
     });
 
-    socket.on("player-ready", ({ roomId, isReady }) => {
+    socket.on("player-ready", async ({ roomId, isReady }) => {
         const userId = sessionManager.getUserIdBySocket(socket.id);
         if (!userId) return;
-        const result = roomManager.setPlayerReady(roomId, userId, isReady);
+        const result = await roomManager.setPlayerReady(roomId, userId, isReady);
         if (result.error) return socket.emit("error", { message: result.error });
-        emitRoomUpdate(roomId);
+        await emitRoomUpdate(roomId);
     });
 
-    socket.on("kick-player", ({ roomId, playerIdToKick }) => {
+    socket.on("kick-player", async ({ roomId, playerIdToKick }) => {
         const hostUserId = sessionManager.getUserIdBySocket(socket.id);
         if (!hostUserId) return;
         // playerIdToKick could be socketId from frontend — resolve to userId
         const targetPlayer = roomManager.getPlayerBySocketId(playerIdToKick);
         const targetUserId = targetPlayer?.userId || playerIdToKick;
 
-        const result = roomManager.kickPlayer(roomId, hostUserId, targetUserId);
+        const result = await roomManager.kickPlayer(roomId, hostUserId, targetUserId);
         if (result.error) return socket.emit("error", { message: result.error });
 
         // Notify kicked player via their socket
         if (result.kickedPlayer?.socketId) {
             io.to(result.kickedPlayer.socketId).emit("player-kicked", { roomId });
         }
-        emitRoomUpdate(roomId);
+        await emitRoomUpdate(roomId);
     });
 
     // ── 7. GAME-ACTION (Future unified event) ───────────────────────
     // Eventually all game events will come through this single channel.
-    socket.on("game-action", ({ roomId, eventName, payload }) => {
+    socket.on("game-action", async ({ roomId, eventName, payload }) => {
         const userId = sessionManager.getUserIdBySocket(socket.id);
         if (!userId) return;
 
-        const room = roomManager.getRoom(roomId);
+        const room = await roomManager.getRoom(roomId);
         if (!room?.gameType) return;
 
         gameRouter.handleEvent(eventName, payload, userId, roomId, io);
@@ -523,7 +535,7 @@ io.on("connection", (socket) => {
 
     // ── 8. LEGACY GAME EVENTS (Bridge Interceptor) ───────────────────────
     // Captures raw legacy frontend socket emissions and forwards them to GameRouter
-    socket.onAny((eventName, ...args) => {
+    socket.onAny(async (eventName, ...args) => {
         const coreEvents = [
             "create-room", "join-room", "request-room-sync", "leave-room", "disconnect", 
             "game-selected", "set-game-type", "set-custom-questions", "get-room", 
@@ -539,7 +551,7 @@ io.on("connection", (socket) => {
         const userId = sessionManager.getUserIdBySocket(socket.id);
         if (!userId) return;
 
-        const room = roomManager.getRoom(roomId);
+        const room = await roomManager.getRoom(roomId);
         if (!room?.gameType) return;
 
         // Forward seamlessly to the decoupled Engine
