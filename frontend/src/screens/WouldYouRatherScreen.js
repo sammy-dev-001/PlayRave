@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, TouchableOpacity, Dimensions , Platform} from 'react-native';
+import {
+    View, StyleSheet, Animated, TouchableOpacity, Dimensions,
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';

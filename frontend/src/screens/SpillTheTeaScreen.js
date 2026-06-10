@@ -5,8 +5,9 @@ import {
     TextInput,
     Animated,
     Dimensions,
-    ScrollView
-, Platform} from 'react-native';
+    ScrollView,
+    Platform
+} from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -424,3 +425,4 @@ const styles = StyleSheet.create({
 });
 
 export default SpillTheTeaScreen;
+

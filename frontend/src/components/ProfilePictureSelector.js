@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Alert, Platform } from 'react-native';
+import {
+    View, StyleSheet, Image, TouchableOpacity, Alert,
+    Platform
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import NeonText from './NeonText';

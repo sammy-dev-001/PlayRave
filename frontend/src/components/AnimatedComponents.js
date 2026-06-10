@@ -1,5 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, View, StyleSheet , Platform} from 'react-native';
+import {
+    Animated, View, StyleSheet,
+    Platform
+} from 'react-native';
 import { AnimationConfig } from '../utils/AnimationUtils';
 
 // Animated Container - Fades and slides in children

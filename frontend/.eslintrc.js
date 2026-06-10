@@ -4,7 +4,6 @@ module.exports = {
         browser: true,
         es2021: true,
         node: true,
-        'react-native/react-native': true,
     },
     extends: [
         'eslint:recommended',

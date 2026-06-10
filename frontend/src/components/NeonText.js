@@ -1,5 +1,8 @@
 import React from 'react';
-import { Text, StyleSheet, Platform } from 'react-native';
+import {
+    Text, StyleSheet,
+    Platform
+} from 'react-native';
 import { COLORS, FONTS } from '../constants/theme';
 import { scaleFontSize } from '../utils/responsive';
 

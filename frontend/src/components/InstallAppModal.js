@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, TouchableWithoutFeedback, Platform } from 'react-native';
+import {
+    View, StyleSheet, Modal, TouchableOpacity, TouchableWithoutFeedback,
+    Platform
+} from 'react-native';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import { COLORS } from '../constants/theme';

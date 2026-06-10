@@ -5,6 +5,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import ScorePopup from '../components/ScorePopup';
+import DraggableRack from '../components/DraggableRack';
 import {
     LETTER_TILES,
     createTileBag,
@@ -775,38 +776,15 @@ const ScrabbleScreen = ({ route, navigation }) => {
             <View style={styles.controlsArea}>
                 <View style={styles.rackContainer}>
                     <NeonText size={12} color="#666" style={{ marginBottom: 4 }}>Your Rack:</NeonText>
-                    <View style={[styles.rack, { height: rackTileSize + 8 }]}>
-                        {currentHand.map((tile, index) => {
-                            const isUsed = placedTiles.some(t => t.handIndex === index);
-                            const isSelected = selectedTileIndex === index;
-                            const isSelectedForExchange = selectedTilesForExchange.includes(index);
-
-                            if (isUsed) return (
-                                <View
-                                    key={index}
-                                    style={[styles.rackTile, styles.usedTile, { width: rackTileSize, height: rackTileSize }]}
-                                />
-                            );
-
-                            return (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={[
-                                        styles.rackTile,
-                                        { width: rackTileSize, height: rackTileSize },
-                                        isSelected && !exchangeMode && styles.selectedRackTile,
-                                        isSelectedForExchange && styles.exchangeSelectedTile
-                                    ]}
-                                    onPress={() => handleRackTilePress(index)}
-                                >
-                                    <NeonText size={rackTileSize * 0.45} color="#000" weight="bold">
-                                        {tile.letter === '_' ? '★' : tile.letter}
-                                    </NeonText>
-                                    <NeonText size={rackTileSize * 0.22} color="#000" style={styles.tileValue}>{tile.value}</NeonText>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                    <DraggableRack
+                        hand={currentHand}
+                        placedTiles={placedTiles}
+                        selectedTileIndex={selectedTileIndex}
+                        exchangeMode={exchangeMode}
+                        selectedTilesForExchange={selectedTilesForExchange}
+                        rackTileSize={rackTileSize}
+                        onTilePress={handleRackTilePress}
+                    />
                 </View>
 
                 <View style={styles.gameButtons}>

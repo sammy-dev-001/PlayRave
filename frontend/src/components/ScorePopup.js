@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View , Platform} from 'react-native';
+import {
+    Animated, StyleSheet, View,
+    Platform
+} from 'react-native';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 

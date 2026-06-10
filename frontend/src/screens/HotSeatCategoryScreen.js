@@ -5,7 +5,8 @@ import {
     TouchableOpacity,
     Animated,
     ScrollView,
-, Platform} from 'react-native';
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -116,8 +117,20 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
             }
         };
 
+        const onRoomUpdated = (updatedRoom) => {
+            if (updatedRoom.id === room.id && updatedRoom.gameType) {
+                if (!isHost) {
+                    navigation.navigate('Lobby', { room: updatedRoom, playerName });
+                }
+            }
+        };
+
         SocketService.on('game-started', onGameStarted);
-        return () => SocketService.off('game-started', onGameStarted);
+        SocketService.on('room-updated', onRoomUpdated);
+        return () => {
+            SocketService.off('game-started', onGameStarted);
+            SocketService.off('room-updated', onRoomUpdated);
+        };
     }, [navigation, room, isHost, playerName]);
 
     const handleStartGame = () => {

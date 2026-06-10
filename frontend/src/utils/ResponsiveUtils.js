@@ -1,4 +1,7 @@
-import { Dimensions, PixelRatio, Platform } from 'react-native';
+import {
+    Dimensions, PixelRatio,
+    Platform
+} from 'react-native';
 
 // Get device dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');

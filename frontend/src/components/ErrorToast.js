@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated , Platform} from 'react-native';
+import {
+    View, StyleSheet, TouchableOpacity, Animated,
+    Platform
+} from 'react-native';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 import ErrorService from '../services/ErrorService';

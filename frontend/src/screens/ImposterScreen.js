@@ -5,8 +5,9 @@ import {
     TouchableOpacity,
     ScrollView,
     Animated,
-    Alert
-, Platform} from 'react-native';
+    Alert,
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -592,3 +593,4 @@ const styles = StyleSheet.create({
 });
 
 export default ImposterScreen;
+

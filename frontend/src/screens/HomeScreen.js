@@ -258,6 +258,7 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 15,
         textAlign: 'center',
+        ...(Platform.OS === 'web' && { outlineStyle: 'none' })
     },
     bottomSpacer: {
         height: 30,

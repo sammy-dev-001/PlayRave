@@ -1,6 +1,6 @@
 // VoiceToggle.js - Mute/unmute button for voice chat
 import React, { useState, useEffect } from 'react';
-import { TouchableOpacity, StyleSheet, View, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, View} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';

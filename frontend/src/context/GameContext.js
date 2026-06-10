@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
-import { AppState, Platform } from 'react-native';
+import {
+    AppState,
+    Platform
+} from 'react-native';
 import SocketService, { ConnectionState } from '../services/socket';
 import { useAuth } from './AuthContext';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';

@@ -1,9 +1,11 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Animated, ScrollView, Dimensions, Platform } from 'react-native';
+import {
+    View, StyleSheet, Animated, ScrollView, Dimensions,
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }) => {
@@ -11,12 +13,14 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
 
     useEffect(() => {
         // Pulse animation for current match
-        Animated.loop(
+        const loop = Animated.loop(
             Animated.sequence([
                 Animated.timing(glowAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
                 Animated.timing(glowAnim, { toValue: 0, duration: 1000, useNativeDriver: false }),
             ])
-        ).start();
+        );
+        loop.start();
+        return () => loop.stop();
     }, [glowAnim]);
 
     const renderMatch = (match, matchIndex, roundIndex, isCurrentMatch) => {

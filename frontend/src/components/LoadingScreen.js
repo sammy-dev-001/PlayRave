@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, Text , Platform} from 'react-native';
+import {
+    View, StyleSheet, Animated, Easing, Text,
+    Platform
+} from 'react-native';
 import { COLORS } from '../constants/theme';
 
 /**

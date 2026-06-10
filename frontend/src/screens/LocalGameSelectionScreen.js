@@ -376,6 +376,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         paddingVertical: 12,
+        outlineStyle: 'none',
     },
     header: {
         alignItems: 'center',

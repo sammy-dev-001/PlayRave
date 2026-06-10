@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Animated , Platform} from 'react-native';
+import {
+    View, StyleSheet, Animated,
+    Platform
+} from 'react-native';
 import { COLORS } from '../constants/theme';
 
 const SkeletonLoader = ({ width = '100%', height = 40, borderRadius = 8, style }) => {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Animated } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -7,161 +7,295 @@ import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
+// ─── WhosMostLikelyQuestionScreen ─────────────────────────────────────────────
+//
+// DESIGN: This screen is a PURE RENDERER.
+// It NEVER drives any game state transitions. The server is 100% authoritative:
+//
+//   • Timer display: The server sends `votingDurationMs` in the round-start event.
+//     The client counts down for visual purposes ONLY. When it hits zero, nothing
+//     happens on the client side — the server's own timer fires the reveal.
+//
+//   • Vote submission: A player clicks a name → submits once → UI locks.
+//     The server validates uniqueness. No auto-submit on timer expiry.
+//
+//   • Advance: The client listens for 'whos-most-likely-results'. When received,
+//     it navigates to the results screen. No client ever calls 'show-results'.
+// ──────────────────────────────────────────────────────────────────────────────
+
 const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
-    const { room, prompt, promptIndex, players, hostParticipates, isHost, playerName } = route.params;
+    const {
+        room,
+        players,
+        hostParticipates,
+        isHost,
+        playerName,
+        // Provided by 'whos-most-likely-round-start' or game-started data:
+        prompt: initialPrompt,
+        promptIndex: initialPromptIndex,
+        totalPrompts: initialTotalPrompts,
+        category: initialCategory,
+        votingDurationMs = 20000,
+    } = route.params;
 
     useGameDisconnectHandler({
         navigation,
         room,
         playerName,
         exitScreen: 'Lobby',
-        exitParams: { room, isHost }
+        exitParams: { room, isHost },
     });
 
-    const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [timeLeft, setTimeLeft] = useState(10);
-    const [hasSubmitted, setHasSubmitted] = useState(false);
+    const [selectedPlayer, setSelectedPlayer]   = useState(null);
+    const [hasSubmitted, setHasSubmitted]        = useState(false);
+    const [votedCount, setVotedCount]            = useState(0);
+    const [totalNeeded, setTotalNeeded]          = useState(players?.length || 0);
+    const [timeLeft, setTimeLeft]                = useState(Math.ceil(votingDurationMs / 1000));
 
-    const canVote = !isHost || hostParticipates;
+    // ── Live round data — populated from server's round-start event ────────
+    // If prompt was passed via route params (reconnect scenario), use it.
+    // Otherwise wait for 'whos-most-likely-round-start' from the server.
+    const [livePrompt,       setLivePrompt]       = useState(initialPrompt ? (typeof initialPrompt === 'object' ? initialPrompt.prompt : initialPrompt) : null);
+    const [liveCategory,     setLiveCategory]     = useState(initialCategory || (typeof initialPrompt === 'object' ? initialPrompt?.category : null));
+    const [livePromptIndex,  setLivePromptIndex]  = useState(initialPromptIndex ?? null);
+    const [liveTotalPrompts, setLiveTotalPrompts] = useState(initialTotalPrompts || null);
+    const [liveVotingMs,     setLiveVotingMs]     = useState(votingDurationMs);
+    const [isWaiting,        setIsWaiting]        = useState(!initialPrompt); // true = waiting for server
+    const timerRef = useRef(null);
 
-    // Get list of players to vote for (all participating players)
-    const votablePlayers = players.filter(player => {
-        if (!hostParticipates && player.isHost) return false;
-        return true;
-    });
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    if (!hasSubmitted && canVote) {
-                        // Auto-submit selected vote (or null if nothing selected)
-                        handleSubmitVote(selectedPlayer);
-                    }
-
-                    setTimeout(() => {
-                        console.log('Timer ended, auto-showing results');
-                        SocketService.emit('show-whos-most-likely-results', { roomId: room.id });
-                    }, 2000);
-
-                    return 0;
-                }
-                return prev - 1;
-            });
+    // Reset and start the visual timer each round
+    const startTimer = (durationMs) => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setTimeLeft(Math.ceil(durationMs / 1000));
+        timerRef.current = setInterval(() => {
+            setTimeLeft(prev => Math.max(0, prev - 1));
         }, 1000);
+    };
 
-        const onResults = (results) => {
-            console.log('Whos Most Likely results received:', results);
-            navigation.navigate('WhosMostLikelyResults', { room, results, players, hostParticipates, isHost });
+    // Kick off timer immediately if we already have prompt data from route.params
+    useEffect(() => {
+        if (!isWaiting) {
+            startTimer(votingDurationMs);
+        }
+        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Waiting-for-others pulse animation (starts after submitting)
+    useEffect(() => {
+        if (hasSubmitted) {
+            pulseLoop.current = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 0.6, duration: 800, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1.0, duration: 800, useNativeDriver: true }),
+                ])
+            );
+            pulseLoop.current.start();
+        }
+        return () => pulseLoop.current?.stop();
+    }, [hasSubmitted, pulseAnim]);
+
+    // ── Socket listeners — the server drives every transition ──────────────
+    useEffect(() => {
+        // PRIMARY EVENT: server fires this to begin each round.
+        // Works for round 1 (first data arrival) and all subsequent rounds.
+        const onRoundStart = (data) => {
+            // Reset per-round client state
+            setSelectedPlayer(null);
+            setHasSubmitted(false);
+            setVotedCount(0);
+            setTotalNeeded(data.players?.length || players?.length || 0);
+            setLivePrompt(data.prompt);
+            setLiveCategory(data.category);
+            setLivePromptIndex(data.promptIndex);
+            setLiveTotalPrompts(data.totalPrompts);
+            setLiveVotingMs(data.votingDurationMs || 20000);
+            setIsWaiting(false);
+            startTimer(data.votingDurationMs || 20000);
         };
 
-        const onNextPrompt = (nextGameState) => {
-            console.log('Next prompt ready:', nextGameState);
-            navigation.replace('WhosMostLikelyQuestion', {
+        // Server sends live vote progress so the "X/N voted" badge stays accurate
+        const onVoteProgress = ({ votedCount: vc, totalNeeded: tn }) => {
+            setVotedCount(vc);
+            setTotalNeeded(tn);
+        };
+
+        // Server sends results → navigate to results screen
+        const onResults = (results) => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            navigation.navigate('WhosMostLikelyResults', {
                 room,
-                prompt: nextGameState,
-                promptIndex: nextGameState.promptIndex,
+                results,
                 players,
                 hostParticipates,
-                isHost
+                isHost,
+                playerName,
             });
         };
 
+        // Game is over — server emits this after all rounds finish
         const onGameFinished = ({ finalScores }) => {
-            console.log('Game finished:', finalScores);
+            if (timerRef.current) clearInterval(timerRef.current);
             navigation.navigate('Scoreboard', { room, finalScores });
         };
 
+        // Host ended game early
         const onGameEnded = () => {
-            console.log('Game ended by host');
+            if (timerRef.current) clearInterval(timerRef.current);
             navigation.navigate('Lobby', { room, isHost });
         };
 
-        SocketService.on('whos-most-likely-results', onResults);
-        SocketService.on('whos-most-likely-next-prompt', onNextPrompt);
-        SocketService.on('game-finished', onGameFinished);
-        SocketService.on('whos-most-likely-ended', onGameEnded);
+        SocketService.on('whos-most-likely-round-start',   onRoundStart);
+        SocketService.on('whos-most-likely-vote-progress', onVoteProgress);
+        SocketService.on('whos-most-likely-results',       onResults);
+        SocketService.on('game-finished',                  onGameFinished);
+        SocketService.on('whos-most-likely-ended',         onGameEnded);
 
         return () => {
-            clearInterval(timer);
-            SocketService.off('whos-most-likely-results', onResults);
-            SocketService.off('whos-most-likely-next-prompt', onNextPrompt);
-            SocketService.off('game-finished', onGameFinished);
-            SocketService.off('whos-most-likely-ended', onGameEnded);
+            SocketService.off('whos-most-likely-round-start',   onRoundStart);
+            SocketService.off('whos-most-likely-vote-progress', onVoteProgress);
+            SocketService.off('whos-most-likely-results',       onResults);
+            SocketService.off('game-finished',                  onGameFinished);
+            SocketService.off('whos-most-likely-ended',         onGameEnded);
         };
+    }, [navigation, room, players, hostParticipates, isHost, playerName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    }, [navigation, room, hasSubmitted, canVote, selectedPlayer]);
+    // Visual pulse when waiting after voting
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const pulseLoop = useRef(null);
 
-    const handleSelectPlayer = (playerUid) => {
+    // Waiting-for-others pulse animation (starts after submitting)
+    useEffect(() => {
+        if (hasSubmitted) {
+            pulseLoop.current = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 0.6, duration: 800, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1.0, duration: 800, useNativeDriver: true }),
+                ])
+            );
+            pulseLoop.current.start();
+        }
+        return () => pulseLoop.current?.stop();
+    }, [hasSubmitted, pulseAnim]);
+
+    // ── Vote submission ────────────────────────────────────────────────────
+    const handleSelectPlayer = (uid) => {
         if (hasSubmitted || !canVote) return;
-        setSelectedPlayer(playerUid);
+        setSelectedPlayer(uid);
     };
-    const handleSubmitVote = (votedForPlayerUid) => {
-        if (hasSubmitted || !canVote) return;
 
-        const finalVote = votedForPlayerUid !== undefined ? votedForPlayerUid : selectedPlayer;
-        setSelectedPlayer(finalVote);
+    const handleSubmitVote = () => {
+        if (hasSubmitted || !canVote || !selectedPlayer) return;
+
         setHasSubmitted(true);
-
-        console.log('Submitting vote for player UID:', finalVote);
-        SocketService.emit('submit-whos-most-likely-vote', { roomId: room.id, votedForPlayerId: finalVote });
+        SocketService.emit('submit-whos-most-likely-vote', {
+            roomId:          room.id,
+            votedForPlayerId: selectedPlayer,
+        });
     };
+
+    const canVote = !isHost || hostParticipates;
+
+    const votablePlayers = (players || []).filter(p => {
+        if (!hostParticipates && p.isHost) return false;
+        return true;
+    });
+
+    // Timer colour feedback: green → yellow → red
+    const timerColor = timeLeft > 10
+        ? COLORS.limeGlow
+        : timeLeft > 5
+            ? '#FFB800'
+            : COLORS.hotPink;
+
+    // ── Loading state: waiting for server's first round-start event ────────
+    if (isWaiting) {
+        return (
+            <NeonContainer>
+                <View style={styles.loadingContainer}>
+                    <NeonText size={22} color={COLORS.electricPurple} glow>
+                        Getting ready...
+                    </NeonText>
+                    <NeonText size={14} color="#666" style={{ marginTop: 10 }}>
+                        Waiting for server
+                    </NeonText>
+                </View>
+            </NeonContainer>
+        );
+    }
 
     return (
         <NeonContainer showBackButton scrollable>
+            {/* ── Header ──────────────────────────────────────────────── */}
             <View style={styles.header}>
-                <NeonText size={14} color={COLORS.hotPink}>
-                    PROMPT {promptIndex + 1} / {prompt.totalPrompts}
+                <NeonText size={13} color={COLORS.hotPink}>
+                    PROMPT {(livePromptIndex ?? 0) + 1} / {liveTotalPrompts || '?'}
                 </NeonText>
-                <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
+
+                <NeonText size={36} weight="bold" color={timerColor}>
                     {timeLeft}s
                 </NeonText>
             </View>
 
-            <View style={styles.promptContainer}>
-                <NeonText size={24} weight="bold" style={styles.prompt}>
-                    {prompt.prompt}
+            {/* ── Vote progress badge ──────────────────────────────────── */}
+            <View style={styles.progressBadge}>
+                <NeonText size={13} color={COLORS.neonCyan}>
+                    {votedCount} / {totalNeeded} voted
                 </NeonText>
-                {prompt.category && (
-                    <NeonText size={14} color={COLORS.neonCyan} style={styles.category}>
-                        {prompt.category}
-                    </NeonText>
-                )}
             </View>
 
+            {/* ── Prompt card ──────────────────────────────────────────── */}
+            <View style={styles.promptContainer}>
+                <NeonText size={24} weight="bold" style={styles.prompt}>
+                    {livePrompt || '...'}
+                </NeonText>
+                {liveCategory ? (
+                    <NeonText size={13} color={COLORS.neonCyan} style={styles.category}>
+                        {liveCategory}
+                    </NeonText>
+                ) : null}
+            </View>
+
+            {/* ── Voting area ──────────────────────────────────────────── */}
             {canVote ? (
                 <>
-                    <ScrollView style={styles.playersContainer} contentContainerStyle={styles.playersContent}>
-                        {votablePlayers.map((player) => (
-                            <NeonButton
-                                key={player.uid || player.id}
-                                title={player.name}
-                                variant={selectedPlayer === (player.uid || player.id) ? 'primary' : 'secondary'}
-                                onPress={() => handleSelectPlayer(player.uid || player.id)}
-                                style={styles.playerButton}
-                                disabled={hasSubmitted}
-                            />
-                        ))}
+                    <ScrollView
+                        style={styles.playersContainer}
+                        contentContainerStyle={styles.playersContent}
+                    >
+                        {votablePlayers.map((player) => {
+                            const uid = player.uid || player.userId || player.id;
+                            return (
+                                <NeonButton
+                                    key={uid}
+                                    title={player.name}
+                                    variant={selectedPlayer === uid ? 'primary' : 'secondary'}
+                                    onPress={() => handleSelectPlayer(uid)}
+                                    style={styles.playerButton}
+                                    disabled={hasSubmitted}
+                                />
+                            );
+                        })}
                     </ScrollView>
 
-                    {selectedPlayer !== null && !hasSubmitted && (
+                    {selectedPlayer && !hasSubmitted && (
                         <NeonButton
                             title="SUBMIT VOTE"
-                            onPress={() => handleSubmitVote()}
+                            onPress={handleSubmitVote}
                             style={styles.submitButton}
                         />
                     )}
 
                     {hasSubmitted && (
-                        <NeonText style={styles.submittedText}>
-                            Vote submitted! Waiting for others...
-                        </NeonText>
+                        <Animated.View style={[styles.waitingContainer, { opacity: pulseAnim }]}>
+                            <NeonText style={styles.submittedText}>
+                                ✅ Vote submitted! Waiting for others...
+                            </NeonText>
+                        </Animated.View>
                     )}
                 </>
             ) : (
                 <NeonText style={styles.spectatorText}>
-                    (Spectating - voting disabled)
+                    (Spectating — voting disabled)
                 </NeonText>
             )}
         </NeonContainer>
@@ -173,7 +307,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 10,
+    },
+    progressBadge: {
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0, 240, 255, 0.08)',
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 240, 255, 0.25)',
+        marginBottom: 20,
     },
     promptContainer: {
         marginBottom: 30,
@@ -186,7 +330,7 @@ const styles = StyleSheet.create({
     },
     prompt: {
         textAlign: 'center',
-        marginBottom: 15,
+        marginBottom: 12,
         lineHeight: 32,
     },
     category: {
@@ -194,7 +338,7 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     playersContainer: {
-        maxHeight: 300,
+        maxHeight: 320,
     },
     playersContent: {
         gap: 12,
@@ -206,11 +350,15 @@ const styles = StyleSheet.create({
     submitButton: {
         marginTop: 20,
     },
+    waitingContainer: {
+        alignItems: 'center',
+        marginTop: 30,
+    },
     submittedText: {
         textAlign: 'center',
-        marginTop: 30,
         fontStyle: 'italic',
         color: COLORS.limeGlow,
+        fontSize: 16,
     },
     spectatorText: {
         textAlign: 'center',
@@ -218,7 +366,13 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         color: '#888',
         fontSize: 14,
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 80,
+    },
 });
 
 export default WhosMostLikelyQuestionScreen;

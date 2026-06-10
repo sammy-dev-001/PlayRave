@@ -4,8 +4,9 @@ import {
     StyleSheet,
     TouchableOpacity,
     Animated,
-    Dimensions
-, Platform} from 'react-native';
+    Dimensions,
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -469,3 +470,4 @@ const styles = StyleSheet.create({
 });
 
 export default UnpopularOpinionsScreen;
+

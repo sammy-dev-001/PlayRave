@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Animated , Platform} from 'react-native';
+import {
+    View, StyleSheet, Animated,
+    Platform
+} from 'react-native';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';

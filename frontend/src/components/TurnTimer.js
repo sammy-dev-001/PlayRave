@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
-import { View, StyleSheet, Animated , Platform} from 'react-native';
+import {
+    View, StyleSheet, Animated,
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';

@@ -4,8 +4,9 @@ import {
     StyleSheet,
     TouchableOpacity,
     FlatList,
-    Animated
-, Platform} from 'react-native';
+    Animated,
+    Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -337,3 +338,4 @@ const styles = StyleSheet.create({
 });
 
 export default MVPVotingScreen;
+

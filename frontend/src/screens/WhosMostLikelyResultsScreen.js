@@ -1,64 +1,120 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, FlatList, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
-import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
 
-const WhosMostLikelyResultsScreen = ({ route }) => {
-    const { room, results, players, hostParticipates, isHost } = route.params;
-    const [countdown, setCountdown] = useState(5);
+// ─── WhosMostLikelyResultsScreen ──────────────────────────────────────────────
+//
+// DESIGN: PURE RENDERER. This screen NEVER emits socket events.
+//
+// The server's `resultsTimer` (6 s) fires automatically after broadcasting
+// results to advance to the next round or end the game. The client simply
+// listens for the next event ('whos-most-likely-round-start' or 'game-finished')
+// and navigates accordingly. No countdowns, no host-driven "next" buttons that
+// could race with each other.
+//
+// The countdown bar shown here is ONLY cosmetic — it reflects `nextRoundInMs`
+// sent by the server so the UI aligns with what the server will actually do.
+// ──────────────────────────────────────────────────────────────────────────────
 
-    // Check if current player won for rave lights
+const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
+    const {
+        room,
+        results,
+        players,
+        hostParticipates,
+        isHost,
+        playerName,
+    } = route.params;
+
+    const nextRoundInMs = results?.nextRoundInMs ?? 6000;
+    const progressAnim  = useRef(new Animated.Value(1)).current;
+
+    // Check if current player was the round winner
     const currentUserId = SocketService.userId;
-    const currentPlayerResult = results.voteResults.find(r => r.playerId === currentUserId);
-    const showRaveLights = currentPlayerResult?.isWinner || false;
+    const myResult      = results?.voteResults?.find(r => r.playerId === currentUserId);
+    const showRaveLights = myResult?.isWinner || false;
 
+    // ── Visual countdown bar (cosmetic only) ──────────────────────────────
     useEffect(() => {
-        if (hostParticipates) {
-            const timer = setInterval(() => {
-                setCountdown(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        if (isHost) {
-                            handleNext();
-                        }
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+        Animated.timing(progressAnim, {
+            toValue:         0,
+            duration:        nextRoundInMs,
+            useNativeDriver: false,
+        }).start();
+    }, [progressAnim, nextRoundInMs]);
 
-            return () => clearInterval(timer);
-        }
-    }, [hostParticipates, isHost]);
+    // ── Socket listeners — server drives all transitions ──────────────────
+    useEffect(() => {
+        // Next round: server sends new prompt data — navigate back to question screen
+        const onRoundStart = (data) => {
+            navigation.replace('WhosMostLikelyQuestion', {
+                room,
+                players,
+                hostParticipates,
+                isHost,
+                playerName,
+                prompt:          data.prompt,
+                promptIndex:     data.promptIndex,
+                totalPrompts:    data.totalPrompts,
+                category:        data.category,
+                votingDurationMs: data.votingDurationMs,
+            });
+        };
 
-    const handleNext = () => {
-        console.log('Host requesting next prompt');
-        SocketService.emit('next-whos-most-likely-prompt', { roomId: room.id });
-    };
+        // All rounds complete — go to scoreboard
+        const onGameFinished = ({ finalScores }) => {
+            navigation.navigate('Scoreboard', { room, finalScores });
+        };
 
-    const renderVoteResult = ({ item }) => {
-        const player = players.find(p => p.uid === item.playerId || p.userId === item.playerId);
-        const playerName = player?.name || 'Unknown';
+        // Host killed the game
+        const onGameEnded = () => {
+            navigation.navigate('Lobby', { room, isHost });
+        };
+
+        SocketService.on('whos-most-likely-round-start', onRoundStart);
+        SocketService.on('game-finished',                onGameFinished);
+        SocketService.on('whos-most-likely-ended',       onGameEnded);
+
+        return () => {
+            SocketService.off('whos-most-likely-round-start', onRoundStart);
+            SocketService.off('game-finished',                onGameFinished);
+            SocketService.off('whos-most-likely-ended',       onGameEnded);
+        };
+    }, [navigation, room, players, hostParticipates, isHost, playerName]);
+
+    // ── Render ────────────────────────────────────────────────────────────
+    const renderVoteResult = ({ item, index }) => {
+        const podiumColors = [COLORS.limeGlow, COLORS.neonCyan, '#FF9500'];
+        const rankColor    = index < 3 ? podiumColors[index] : '#888';
 
         return (
             <View style={[styles.voteRow, item.isWinner && styles.winnerRow]}>
-                <View style={styles.playerInfo}>
-                    {item.isWinner && <NeonText size={20}></NeonText>}
-                    <NeonText size={18} weight={item.isWinner ? 'bold' : 'normal'}>
-                        {playerName}
+                <View style={styles.rankBadge}>
+                    <NeonText size={14} color={rankColor} weight="bold">
+                        #{index + 1}
                     </NeonText>
                 </View>
-                <View style={styles.voteInfo}>
-                    <NeonText size={18} color={COLORS.hotPink}>
-                        {item.votes} {item.votes === 1 ? 'vote' : 'votes'}
+
+                <View style={styles.playerInfo}>
+                    {item.isWinner && (
+                        <Ionicons name="trophy" size={18} color={COLORS.limeGlow} style={styles.trophyIcon} />
+                    )}
+                    <NeonText size={17} weight={item.isWinner ? 'bold' : 'normal'}>
+                        {item.playerName || item.playerId}
                     </NeonText>
-                    <NeonText size={14} color="#888" style={styles.totalVotes}>
-                        ({item.totalVotes} total)
+                </View>
+
+                <View style={styles.voteInfo}>
+                    <NeonText size={18} color={COLORS.hotPink} weight="bold">
+                        {item.votes}
+                    </NeonText>
+                    <NeonText size={12} color="#666">
+                        {item.votes === 1 ? 'vote' : 'votes'}
                     </NeonText>
                 </View>
             </View>
@@ -68,52 +124,53 @@ const WhosMostLikelyResultsScreen = ({ route }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <RaveLights trigger={showRaveLights} intensity="high" />
+
+            {/* ── Header ──────────────────────────────────────────────── */}
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow style={styles.title}>
                     RESULTS
                 </NeonText>
-            </View>
-
-            <View style={styles.promptContainer}>
-                <NeonText size={18} color={COLORS.neonCyan} style={styles.promptLabel}>
-                    {results.prompt}
+                <NeonText size={13} color="#666">
+                    {results?.isLastPrompt ? 'Final round!' : `Next prompt coming up...`}
                 </NeonText>
             </View>
 
-            <NeonText size={18} style={styles.sectionTitle}>VOTE DISTRIBUTION</NeonText>
+            {/* ── Cosmetic countdown bar ───────────────────────────────── */}
+            <View style={styles.progressTrack}>
+                <Animated.View
+                    style={[
+                        styles.progressFill,
+                        { flex: progressAnim }
+                    ]}
+                />
+            </View>
+
+            {/* ── Prompt label ─────────────────────────────────────────── */}
+            <View style={styles.promptContainer}>
+                <NeonText size={18} color={COLORS.neonCyan} style={styles.promptLabel}>
+                    {results?.prompt}
+                </NeonText>
+            </View>
+
+            {/* ── Vote distribution list ───────────────────────────────── */}
+            <NeonText size={14} style={styles.sectionTitle}>
+                VOTE DISTRIBUTION
+            </NeonText>
 
             <FlatList
-                data={results.voteResults}
+                data={results?.voteResults || []}
                 keyExtractor={item => item.playerId}
                 renderItem={renderVoteResult}
                 contentContainerStyle={styles.list}
+                scrollEnabled={false}
             />
 
-            {isHost && !hostParticipates && (
-                <NeonButton
-                    title={results.isLastPrompt ? "PROCEED TO SCOREBOARD" : "NEXT PROMPT"}
-                    onPress={handleNext}
-                    style={styles.nextButton}
-                />
-            )}
-
-            {isHost && hostParticipates && (
-                <NeonText style={styles.autoAdvance}>
-                    {results.isLastPrompt
-                        ? `Proceeding to scoreboard in ${countdown}s...`
-                        : `Next prompt in ${countdown}s...`}
-                </NeonText>
-            )}
-
-            {!isHost && (
-                <NeonText style={styles.waiting}>
-                    {hostParticipates
-                        ? (results.isLastPrompt
-                            ? `Proceeding to scoreboard in ${countdown}s...`
-                            : `Next prompt in ${countdown}s...`)
-                        : 'Waiting for host...'}
-                </NeonText>
-            )}
+            {/* ── Waiting label ─────────────────────────────────────────── */}
+            <NeonText style={styles.waitingText}>
+                {results?.isLastPrompt
+                    ? '🏁 Tallying final scores...'
+                    : '⏳ Advancing to next prompt...'}
+            </NeonText>
         </NeonContainer>
     );
 };
@@ -121,14 +178,28 @@ const WhosMostLikelyResultsScreen = ({ route }) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     title: {
         letterSpacing: 2,
+        marginBottom: 4,
+    },
+    progressTrack: {
+        height: 4,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: 2,
+        marginBottom: 24,
+        flexDirection: 'row',
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: '100%',
+        backgroundColor: COLORS.electricPurple,
+        borderRadius: 2,
     },
     promptContainer: {
-        marginBottom: 25,
-        padding: 15,
+        marginBottom: 24,
+        padding: 16,
         backgroundColor: 'rgba(177, 78, 255, 0.1)',
         borderRadius: 12,
         borderWidth: 1,
@@ -139,54 +210,53 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     sectionTitle: {
-        marginBottom: 15,
+        marginBottom: 14,
         textAlign: 'center',
+        letterSpacing: 1,
+        color: '#888',
     },
     list: {
-        paddingBottom: 20,
+        paddingBottom: 16,
     },
     voteRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
-        borderRadius: 8,
+        padding: 14,
+        borderRadius: 10,
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: 'rgba(255, 63, 164, 0.3)',
+        borderColor: 'rgba(255, 63, 164, 0.2)',
+        gap: 10,
     },
     winnerRow: {
         borderColor: COLORS.limeGlow,
-        backgroundColor: 'rgba(198, 255, 74, 0.1)',
+        backgroundColor: 'rgba(198, 255, 74, 0.08)',
         borderWidth: 2,
     },
+    rankBadge: {
+        width: 36,
+        alignItems: 'center',
+    },
     playerInfo: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
+        gap: 8,
+    },
+    trophyIcon: {
+        marginRight: 2,
     },
     voteInfo: {
         alignItems: 'flex-end',
     },
-    totalVotes: {
-        marginTop: 4,
-    },
-    nextButton: {
-        marginTop: 20,
-    },
-    autoAdvance: {
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 16,
-        color: COLORS.limeGlow,
-    },
-    waiting: {
+    waitingText: {
         textAlign: 'center',
         marginTop: 20,
         fontStyle: 'italic',
-        color: '#888',
-    }
+        color: '#666',
+        fontSize: 14,
+    },
 });
 
 export default WhosMostLikelyResultsScreen;

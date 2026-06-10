@@ -1,5 +1,8 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, StyleSheet, View, Animated , Platform} from 'react-native';
+import {
+    TouchableOpacity, StyleSheet, View, Animated,
+    Platform
+} from 'react-native';
 import { COLORS, SHADOWS } from '../constants/theme';
 import NeonText from './NeonText';
 import HapticService from '../services/HapticService';

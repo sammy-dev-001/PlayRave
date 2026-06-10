@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View , Platform} from 'react-native';
+import {
+    Animated, Easing, StyleSheet, View,
+    Platform
+} from 'react-native';
 import { COLORS } from '../constants/theme';
 
 // Fade In animation

@@ -107,7 +107,17 @@ const LobbyScreen = ({ route, navigation }) => {
                 } else if (gameType === 'myth-or-fact') {
                     navigation.navigate('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
                 } else if (gameType === 'whos-most-likely') {
-                    navigation.navigate('WhosMostLikelyQuestion', { ...navParams, prompt: gameState, promptIndex: 0 });
+                    // New server-authoritative flow:
+                    // 'game-started' gives us the player list and hostParticipates.
+                    // The actual first prompt arrives moments later via 'whos-most-likely-round-start'.
+                    // Navigate to the question screen — it will wait for the round-start event.
+                    navigation.navigate('WhosMostLikelyQuestion', {
+                        ...navParams,
+                        // No prompt here — the screen subscribes to 'whos-most-likely-round-start'
+                        prompt:       null,
+                        promptIndex:  null,
+                        totalPrompts: gameState?.totalPrompts || null,
+                    });
                 } else if (gameType === 'neon-tap') {
                     navigation.navigate('NeonTapGame', navParams);
                 } else if (gameType === 'word-rush') {

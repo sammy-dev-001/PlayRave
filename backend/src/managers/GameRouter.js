@@ -75,6 +75,15 @@ class GameRouter {
             return this.startGame(gameType, room, payload, io);
         }
 
+        // INTERCEPTOR: Internal WML round-begin (fired by the engine's own schedule)
+        // This keeps the server-authoritative timer loop inside the engine itself.
+        if (eventName === '_wml-begin-round' && gameType === 'whos-most-likely') {
+            const wmlEngine = engineRegistry['whos-most-likely'];
+            const instruction = wmlEngine._beginRound(roomId);
+            if (instruction) this.executeInstruction(instruction, io, roomId);
+            return;
+        }
+
         if (engineRegistry[gameType]) {
 
             console.log(`[GameRouter] Routing ${eventName} → ${gameType} Engine`);
@@ -226,6 +235,10 @@ class GameRouter {
                 } else {
                     instruction = engine.startGame(room, options);
                 }
+            } else if (gameType === 'whos-most-likely') {
+                // WML is server-authoritative — it needs the io reference to
+                // fire its own timers without going through GameRouter callbacks.
+                instruction = engine.startGame(room, { ...options, io });
             } else {
                 instruction = engine.startGame(room, options);
             }

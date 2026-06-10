@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
     },
-    searchInput: { flex: 1, color: '#fff', fontSize: 14 },
+    searchInput: { flex: 1, color: '#fff', fontSize: 14, outlineStyle: 'none' },
     categoryScroll: { maxHeight: 45, marginBottom: 20 },
     categoryTab: {
         flexDirection: 'row',

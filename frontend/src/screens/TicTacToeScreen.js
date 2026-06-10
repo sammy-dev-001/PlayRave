@@ -33,6 +33,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
     );
     const [matches, setMatches] = useState(initialGameState?.matches || []);
     const [roundNumber, setRoundNumber] = useState(initialGameState?.roundNumber || 1);
+    const [currentMatchIndex, setCurrentMatchIndex] = useState(initialGameState?.currentMatchIndex || 0);
     const [board, setBoard] = useState(Array(9).fill(null));
     const [currentTurn, setCurrentTurn] = useState(null);
     const [player1, setPlayer1] = useState(null);
@@ -50,7 +51,14 @@ const TicTacToeScreen = ({ route, navigation }) => {
 
     // Animation for AI thinking
     const thinkingAnim = useRef(new Animated.Value(0)).current;
+    const thinkingLoop = useRef(null);
     const cellAnims = useRef(Array(9).fill(null).map(() => new Animated.Value(0))).current;
+
+    useEffect(() => {
+        return () => {
+            if (thinkingLoop.current) thinkingLoop.current.stop();
+        };
+    }, []);
 
     useEffect(() => {
         const onGameStarted = (data) => {
@@ -72,6 +80,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
 
         const onMoveMade = (data) => {
             setAiThinking(false);
+            if (thinkingLoop.current) thinkingLoop.current.stop();
             setBoard(data.board);
             if (!data.gameOver) {
                 setCurrentTurn(data.currentTurn);
@@ -88,16 +97,18 @@ const TicTacToeScreen = ({ route, navigation }) => {
 
         const onAIThinking = () => {
             setAiThinking(true);
-            Animated.loop(
+            thinkingLoop.current = Animated.loop(
                 Animated.sequence([
                     Animated.timing(thinkingAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
                     Animated.timing(thinkingAnim, { toValue: 0, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
                 ])
-            ).start();
+            );
+            thinkingLoop.current.start();
         };
 
         const onMatchEnded = (data) => {
             setAiThinking(false);
+            if (thinkingLoop.current) thinkingLoop.current.stop();
             setMatchResult(data);
             setPhase('matchResult');
         };
@@ -107,6 +118,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
             setMatchResult(null);
             setIsAIMatch(false);
             setBoard(Array(9).fill(null));
+            if (data?.nextMatchIndex !== undefined) setCurrentMatchIndex(data.nextMatchIndex);
             if (data?.nextMatch) {
                 // Potential update to matches or nextMatch info
             }
@@ -134,6 +146,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
             // Map engine's 'lobby' phase to the frontend 'bracket' view
             if (state.phase) setPhase(state.phase === 'lobby' ? 'bracket' : state.phase);
             if (state.roundNumber) setRoundNumber(state.roundNumber);
+            if (state.currentMatchIndex !== undefined) setCurrentMatchIndex(state.currentMatchIndex);
             if (state.players) setAllPlayers(state.players);
             if (state.matches) setMatches(state.matches);
             if (state.currentMatch) {
@@ -235,7 +248,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                             <NeonText size={18} weight="bold" style={styles.sectionTitle}>Tournament Bracket</NeonText>
                             <TournamentBracket
                                 rounds={[{ matches: matches }]}
-                                currentMatch={{ round: roundNumber, match: 0 }}
+                                currentMatch={{ round: roundNumber, match: currentMatchIndex }}
                                 allPlayers={allPlayers}
                             />
                             {isHost && (

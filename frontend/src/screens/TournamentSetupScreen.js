@@ -4,8 +4,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    TextInput,
-} from 'react-native';
+    TextInput} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';

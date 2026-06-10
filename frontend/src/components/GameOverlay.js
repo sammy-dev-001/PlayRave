@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Text , Platform} from 'react-native';
+import {
+    View, StyleSheet, Animated, Text,
+    Platform
+} from 'react-native';
 import { ReactionOverlay } from './ReactionSystem';
 import { StreakBadge, StreakMilestonePopup, useWinStreak } from './WinStreakSystem';
 import { Soundboard, SoundNotification, useSoundboard } from './Soundboard';

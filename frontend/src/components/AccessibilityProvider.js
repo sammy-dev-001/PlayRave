@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AccessibilityInfo, Appearance, Dimensions, Platform } from 'react-native';
+import {
+    AccessibilityInfo, Appearance, Dimensions,
+    Platform
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ACCESSIBILITY_KEY = '@playrave_accessibility';

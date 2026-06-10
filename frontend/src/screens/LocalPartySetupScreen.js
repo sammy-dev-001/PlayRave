@@ -11,7 +11,7 @@ import {
     SafeAreaView,
     StatusBar,
     ScrollView,
-    Animated,
+    Animated
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import NeonBackground from '../components/NeonBackground';

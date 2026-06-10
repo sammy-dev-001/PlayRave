@@ -5,9 +5,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     TouchableWithoutFeedback,
-    Linking,
-    Platform
-} from 'react-native';
+    Linking} from 'react-native';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import SocialService from '../services/SocialService';

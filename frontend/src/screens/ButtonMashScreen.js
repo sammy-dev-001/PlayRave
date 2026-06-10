@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Vibration, Platform } from 'react-native';
+import {
+    View, StyleSheet, TouchableOpacity, Animated, Vibration,
+    Platform
+} from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
