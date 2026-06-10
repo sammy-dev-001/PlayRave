@@ -6,7 +6,7 @@ import {
     Alert,
     TouchableOpacity,
     Animated,
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -25,8 +25,8 @@ const PlayerChip = ({ player, guessed }) => {
         if (player.isDisconnected) {
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
                 ])
             ).start();
         } else {
@@ -155,8 +155,8 @@ const HotSeatMCScreen = ({ route, navigation }) => {
             bonusScale.setValue(0.5);
             bonusOpacity.setValue(0);
             Animated.parallel([
-                Animated.spring(bonusScale, { toValue: 1, friction: 4, useNativeDriver: true }),
-                Animated.timing(bonusOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+                Animated.spring(bonusScale, { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(bonusOpacity, { toValue: 1, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
             ]).start();
         };
 
@@ -201,8 +201,8 @@ const HotSeatMCScreen = ({ route, navigation }) => {
         fadeAnim.setValue(0);
         scaleAnim.setValue(0.9);
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
-            Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: Platform.OS !== 'web' }),
         ]).start();
     }, [gameState?.gamePhase, gameState?.round]);
 

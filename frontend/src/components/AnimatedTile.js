@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import { Animated, StyleSheet , Platform} from 'react-native';
 import NeonText from './NeonText';
 
 const AnimatedTile = ({
@@ -23,28 +23,28 @@ const AnimatedTile = ({
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 300,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }).start();
         } else if (animationType === 'slideIn') {
             Animated.parallel([
                 Animated.timing(fadeAnim, {
                     toValue: 1,
                     duration: 400,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.spring(slideAnim, {
                     toValue: 0,
                     friction: 8,
                     tension: 40,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ]).start();
         } else if (animationType === 'shake') {
             Animated.sequence([
-                Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+                Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
             ]).start();
         } else {
             fadeAnim.setValue(1);
@@ -57,13 +57,13 @@ const AnimatedTile = ({
             Animated.spring(scaleAnim, {
                 toValue: 1.1,
                 friction: 5,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }).start();
         } else {
             Animated.spring(scaleAnim, {
                 toValue: 1,
                 friction: 5,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }).start();
         }
     }, [isSelected]);

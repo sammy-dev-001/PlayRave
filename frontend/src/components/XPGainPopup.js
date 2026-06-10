@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Modal } from 'react-native';
+import { View, StyleSheet, Animated, Modal , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
@@ -20,14 +20,14 @@ const XPGainPopup = ({ visible, xp, levelUp, newLevel, onClose }) => {
             // Play entrance animation
             Animated.sequence([
                 Animated.parallel([
-                    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 80, friction: 8 }),
-                    Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true })
+                    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: Platform.OS !== 'web', tension: 80, friction: 8 }),
+                    Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: Platform.OS !== 'web' })
                 ]),
                 Animated.timing(xpAnim, { toValue: xp, duration: 800, useNativeDriver: false }),
                 Animated.delay(1500),
                 Animated.parallel([
-                    Animated.timing(scaleAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-                    Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: true })
+                    Animated.timing(scaleAnim, { toValue: 0, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: Platform.OS !== 'web' })
                 ])
             ]).start(() => {
                 if (onClose) onClose();

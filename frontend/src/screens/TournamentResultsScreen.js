@@ -4,7 +4,7 @@ import {
     StyleSheet,
     ScrollView,
     Animated,
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -24,7 +24,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
         Animated.sequence([
             Animated.delay(300),
             Animated.parallel([
-                Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+                Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }),
                 Animated.timing(glowAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
             ]),
         ]).start();
@@ -32,8 +32,8 @@ const TournamentResultsScreen = ({ route, navigation }) => {
         // Float animation for trophy
         Animated.loop(
             Animated.sequence([
-                Animated.timing(trophyAnim, { toValue: -10, duration: 1000, useNativeDriver: true }),
-                Animated.timing(trophyAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+                Animated.timing(trophyAnim, { toValue: -10, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(trophyAnim, { toValue: 0, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
             ])
         ).start();
     }, []);

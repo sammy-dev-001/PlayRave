@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
+import { View, StyleSheet, Animated, Easing, Text , Platform} from 'react-native';
 import { COLORS } from '../constants/theme';
 
 /**
@@ -24,13 +24,13 @@ const LoadingScreen = ({
                     toValue: 1.2,
                     duration: 800,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 1,
                     duration: 800,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();
@@ -41,7 +41,7 @@ const LoadingScreen = ({
                 toValue: 1,
                 duration: 2000,
                 easing: Easing.linear,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         ).start();
 
@@ -52,13 +52,13 @@ const LoadingScreen = ({
                     toValue: 1,
                     duration: 1000,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(glowAnim, {
                     toValue: 0.5,
                     duration: 1000,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();
@@ -144,7 +144,7 @@ export const InlineLoader = ({ size = 'small', color = COLORS.neonCyan }) => {
                 toValue: 1,
                 duration: 1000,
                 easing: Easing.linear,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         ).start();
     }, []);

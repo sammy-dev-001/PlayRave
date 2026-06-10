@@ -28,7 +28,9 @@ const TicTacToeScreen = ({ route, navigation }) => {
         exitParams: { room, isHost }
     });
 
-    const [phase, setPhase] = useState(initialGameState?.phase || 'bracket'); 
+    const [phase, setPhase] = useState(
+        (initialGameState?.phase === 'lobby' ? 'bracket' : initialGameState?.phase) || 'bracket'
+    );
     const [matches, setMatches] = useState(initialGameState?.matches || []);
     const [roundNumber, setRoundNumber] = useState(initialGameState?.roundNumber || 1);
     const [board, setBoard] = useState(Array(9).fill(null));
@@ -78,7 +80,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                 Animated.spring(cellAnims[data.position], {
                     toValue: 1,
                     friction: 3,
-                    useNativeDriver: true
+                    useNativeDriver: Platform.OS !== 'web'
                 }).start();
             }
             if (data.gameOver && Platform.OS !== 'web') Vibration.vibrate(100);
@@ -88,8 +90,8 @@ const TicTacToeScreen = ({ route, navigation }) => {
             setAiThinking(true);
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(thinkingAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-                    Animated.timing(thinkingAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+                    Animated.timing(thinkingAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(thinkingAnim, { toValue: 0, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
                 ])
             ).start();
         };
@@ -129,9 +131,11 @@ const TicTacToeScreen = ({ route, navigation }) => {
         };
 
         const handleStateUpdate = (state) => {
-            if (state.phase) setPhase(state.phase);
+            // Map engine's 'lobby' phase to the frontend 'bracket' view
+            if (state.phase) setPhase(state.phase === 'lobby' ? 'bracket' : state.phase);
             if (state.roundNumber) setRoundNumber(state.roundNumber);
             if (state.players) setAllPlayers(state.players);
+            if (state.matches) setMatches(state.matches);
             if (state.currentMatch) {
                 setPlayer1(state.currentMatch.player1);
                 setPlayer2(state.currentMatch.player2);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated , Platform} from 'react-native';
 import { COLORS } from '../constants/theme';
 
 const SkeletonLoader = ({ width = '100%', height = 40, borderRadius = 8, style }) => {
@@ -11,12 +11,12 @@ const SkeletonLoader = ({ width = '100%', height = 40, borderRadius = 8, style }
                 Animated.timing(shimmerAnim, {
                     toValue: 1,
                     duration: 1000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(shimmerAnim, {
                     toValue: 0,
                     duration: 1000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();

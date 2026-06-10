@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, View, StyleSheet } from 'react-native';
+import { Animated, View, StyleSheet , Platform} from 'react-native';
 import { AnimationConfig } from '../utils/AnimationUtils';
 
 // Animated Container - Fades and slides in children
@@ -19,13 +19,13 @@ export const AnimatedContainer = ({
                 toValue: 1,
                 duration: 400,
                 delay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(translateY, {
                 toValue: 0,
                 duration: 400,
                 delay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 easing: AnimationConfig.easing.spring,
             }),
         ]).start();
@@ -59,12 +59,12 @@ export const AnimatedCard = ({
                 toValue: 1,
                 duration: 300,
                 delay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.spring(scale, {
                 toValue: 1,
                 delay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 friction: 6,
             }),
         ]).start();
@@ -73,7 +73,7 @@ export const AnimatedCard = ({
     const handlePressIn = () => {
         Animated.spring(pressScale, {
             toValue: 0.97,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 8,
         }).start();
     };
@@ -81,7 +81,7 @@ export const AnimatedCard = ({
     const handlePressOut = () => {
         Animated.spring(pressScale, {
             toValue: 1,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 5,
         }).start();
         onPress?.();
@@ -125,13 +125,13 @@ export const AnimatedListItem = ({
                 toValue: 1,
                 duration: 300,
                 delay: index * staggerDelay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(translateX, {
                 toValue: 0,
                 duration: 300,
                 delay: index * staggerDelay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 easing: AnimationConfig.easing.spring,
             }),
         ]).start();
@@ -162,12 +162,12 @@ export const PulsingElement = ({ children, active = true, style }) => {
                 Animated.timing(scale, {
                     toValue: 1.08,
                     duration: 600,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(scale, {
                     toValue: 1,
                     duration: 600,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         );
@@ -193,12 +193,12 @@ export const FloatingElement = ({ children, intensity = 10, style }) => {
                 Animated.timing(translateY, {
                     toValue: -intensity,
                     duration: 2000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(translateY, {
                     toValue: 0,
                     duration: 2000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         );
@@ -221,11 +221,11 @@ export const ShakeElement = React.forwardRef(({ children, style }, ref) => {
     React.useImperativeHandle(ref, () => ({
         shake: () => {
             Animated.sequence([
-                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: 0, duration: 50, useNativeDriver: true }),
+                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: 0, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
             ]).start();
         }
     }));
@@ -247,12 +247,12 @@ export const GlowElement = ({ children, color = '#00F8FF', style }) => {
                 Animated.timing(glowOpacity, {
                     toValue: 1,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(glowOpacity, {
                     toValue: 0.5,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         );
@@ -337,12 +337,12 @@ export const AnimatedCountdown = ({
                 Animated.timing(scale, {
                     toValue: 1.3,
                     duration: 150,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(scale, {
                     toValue: 1,
                     duration: 150,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ]).start();
         }

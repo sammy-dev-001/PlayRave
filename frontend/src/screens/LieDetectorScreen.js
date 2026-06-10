@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, Animated } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, Animated , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -36,8 +36,8 @@ const LieDetectorScreen = ({ route, navigation }) => {
         if (isMyTurn && phase === 'answering') {
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1.1, duration: 800, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true })
+                    Animated.timing(pulseAnim, { toValue: 1.1, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: Platform.OS !== 'web' })
                 ])
             ).start();
         }

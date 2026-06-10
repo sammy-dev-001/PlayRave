@@ -7,7 +7,7 @@ import {
     ScrollView,
     Animated,
     Dimensions
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -106,12 +106,12 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 500,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }),
             Animated.spring(scaleAnim, {
                 toValue: 1,
                 friction: 5,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             })
         ]).start();
     }, [phase]);

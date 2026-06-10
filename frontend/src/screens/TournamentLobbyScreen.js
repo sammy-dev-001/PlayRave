@@ -4,7 +4,7 @@ import {
     StyleSheet,
     ScrollView,
     Animated,
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -42,8 +42,8 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
         // Pulse animation for current game
         Animated.loop(
             Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.1, duration: 500, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 1.1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
             ])
         ).start();
     }, []);

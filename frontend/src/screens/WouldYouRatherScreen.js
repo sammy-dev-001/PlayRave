@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, TouchableOpacity, Dimensions , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -45,12 +45,12 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                 Animated.timing(playerBounce, {
                     toValue: -8,
                     duration: 600,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(playerBounce, {
                     toValue: 0,
                     duration: 600,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();
@@ -63,12 +63,12 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                 Animated.timing(vsPulse, {
                     toValue: 1.3,
                     duration: 800,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(vsPulse, {
                     toValue: 1,
                     duration: 800,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();
@@ -85,26 +85,26 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                 toValue: 0,
                 tension: 50,
                 friction: 8,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.spring(cardBSlide, {
                 toValue: 0,
                 tension: 50,
                 friction: 8,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 delay: 150,
             }),
             Animated.spring(vsScale, {
                 toValue: 1,
                 tension: 80,
                 friction: 6,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 delay: 300,
             }),
             Animated.timing(fadeIn, {
                 toValue: 1,
                 duration: 400,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
         ]).start();
     };
@@ -122,7 +122,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
             Animated.timing(fadeIn, {
                 toValue: 1,
                 duration: 300,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(resultBarA, {
                 toValue: percentA,
@@ -144,7 +144,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
         Animated.timing(fadeIn, {
             toValue: 0,
             duration: 250,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start(() => {
             const newVotes = { ...votes };
             newVotes[option].push(currentPlayer.name);

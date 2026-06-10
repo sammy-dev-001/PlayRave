@@ -320,6 +320,21 @@ class GameRouter {
         }
     }
 
+    async removePlayer(roomId, userId, io) {
+        const room = await roomManager.getRoom(roomId);
+        const gameType = room?.gameType;
+
+        if (gameType && engineRegistry[gameType]) {
+            const engine = engineRegistry[gameType];
+            if (typeof engine.removePlayer === 'function') {
+                const instruction = engine.removePlayer(roomId, userId);
+                if (instruction && io) {
+                    this.executeInstruction(instruction, io, roomId);
+                }
+            }
+        }
+    }
+
     async saveAllGames() {
         console.log('[GameRouter] Saving all active games to DB...');
         for (const gameType in engineRegistry) {

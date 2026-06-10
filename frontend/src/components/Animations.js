@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View , Platform} from 'react-native';
 import { COLORS } from '../constants/theme';
 
 // Fade In animation
@@ -13,13 +13,13 @@ export const FadeIn = ({ children, delay = 0, duration = 500, style }) => {
                 toValue: 1,
                 duration,
                 delay,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }),
             Animated.timing(translateY, {
                 toValue: 0,
                 duration,
                 delay,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             })
         ]).start();
     }, []);
@@ -39,7 +39,7 @@ export const ScaleIn = ({ children, delay = 0, duration = 400, style }) => {
         Animated.spring(scale, {
             toValue: 1,
             delay,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             tension: 100,
             friction: 8
         }).start();
@@ -59,8 +59,8 @@ export const Pulse = ({ children, minScale = 0.95, maxScale = 1.05, duration = 1
     useEffect(() => {
         const animation = Animated.loop(
             Animated.sequence([
-                Animated.timing(scale, { toValue: maxScale, duration: duration / 2, useNativeDriver: true }),
-                Animated.timing(scale, { toValue: minScale, duration: duration / 2, useNativeDriver: true })
+                Animated.timing(scale, { toValue: maxScale, duration: duration / 2, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(scale, { toValue: minScale, duration: duration / 2, useNativeDriver: Platform.OS !== 'web' })
             ])
         );
         animation.start();
@@ -81,11 +81,11 @@ export const Shake = ({ children, trigger, style }) => {
     useEffect(() => {
         if (trigger) {
             Animated.sequence([
-                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: true }),
-                Animated.timing(translateX, { toValue: 0, duration: 50, useNativeDriver: true })
+                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: -10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(translateX, { toValue: 0, duration: 50, useNativeDriver: Platform.OS !== 'web' })
             ]).start();
         }
     }, [trigger]);
@@ -106,7 +106,7 @@ export const BounceIn = ({ children, delay = 0, style }) => {
             Animated.delay(delay),
             Animated.spring(scale, {
                 toValue: 1,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 tension: 180,
                 friction: 12
             })
@@ -127,8 +127,8 @@ export const SlideIn = ({ children, from = 'left', delay = 0, duration = 400, st
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(translateX, { toValue: 0, duration, delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
-            Animated.timing(opacity, { toValue: 1, duration, delay, useNativeDriver: true })
+            Animated.timing(translateX, { toValue: 0, duration, delay, useNativeDriver: Platform.OS !== 'web', easing: Easing.out(Easing.cubic) }),
+            Animated.timing(opacity, { toValue: 1, duration, delay, useNativeDriver: Platform.OS !== 'web' })
         ]).start();
     }, []);
 
@@ -146,8 +146,8 @@ export const GlowPulse = ({ children, color = COLORS.neonCyan, style }) => {
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(opacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
-                Animated.timing(opacity, { toValue: 0.5, duration: 1000, useNativeDriver: true })
+                Animated.timing(opacity, { toValue: 1, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(opacity, { toValue: 0.5, duration: 1000, useNativeDriver: Platform.OS !== 'web' })
             ])
         ).start();
     }, []);
@@ -184,10 +184,10 @@ export const ConfettiBurst = ({ active, style }) => {
                 const distance = 100 + Math.random() * 100;
 
                 Animated.parallel([
-                    Animated.timing(p.x, { toValue: Math.cos(angle) * distance, duration: 1000, useNativeDriver: true }),
-                    Animated.timing(p.y, { toValue: Math.sin(angle) * distance - 50, duration: 1000, useNativeDriver: true }),
-                    Animated.timing(p.rotate, { toValue: Math.random() * 360, duration: 1000, useNativeDriver: true }),
-                    Animated.timing(p.opacity, { toValue: 0, duration: 1000, delay: 500, useNativeDriver: true })
+                    Animated.timing(p.x, { toValue: Math.cos(angle) * distance, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(p.y, { toValue: Math.sin(angle) * distance - 50, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(p.rotate, { toValue: Math.random() * 360, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(p.opacity, { toValue: 0, duration: 1000, delay: 500, useNativeDriver: Platform.OS !== 'web' })
                 ]).start();
             });
         }

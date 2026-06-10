@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Animated, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Animated, SafeAreaView , Platform} from 'react-native';
 import NeonText from './NeonText';
 import SocketService, { ConnectionState } from '../services/socket';
 import { COLORS } from '../constants/theme';
@@ -34,7 +34,7 @@ const ConnectionStatusOverlay = () => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 
@@ -42,7 +42,7 @@ const ConnectionStatusOverlay = () => {
         Animated.timing(fadeAnim, {
             toValue: 0,
             duration: 500,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start(() => setVisible(false));
     };
 

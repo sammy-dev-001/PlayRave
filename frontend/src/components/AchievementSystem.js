@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Animated, ScrollView, TouchableOpacity , Platform} from 'react-native';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
@@ -37,12 +37,12 @@ const AchievementPopup = ({ achievement, visible, onComplete }) => {
         if (visible && achievement) {
             Animated.sequence([
                 Animated.parallel([
-                    Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+                    Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }),
                     Animated.timing(glowAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
                 ]),
                 Animated.delay(3000),
                 Animated.parallel([
-                    Animated.timing(scaleAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+                    Animated.timing(scaleAnim, { toValue: 0, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
                     Animated.timing(glowAnim, { toValue: 0, duration: 300, useNativeDriver: false }),
                 ]),
             ]).start(() => {

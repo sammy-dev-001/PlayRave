@@ -6,7 +6,7 @@ import {
     Animated,
     Dimensions,
     ScrollView
-} from 'react-native';
+, Platform} from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -77,12 +77,12 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 500,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }),
             Animated.spring(scaleAnim, {
                 toValue: 1,
                 friction: 5,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             })
         ]).start();
     }, [currentSecretIndex, phase]);
@@ -138,7 +138,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
         Animated.spring(scaleAnim, {
             toValue: 1,
             friction: 4,
-            useNativeDriver: true
+            useNativeDriver: Platform.OS !== 'web'
         }).start();
     };
 

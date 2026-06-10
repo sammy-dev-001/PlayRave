@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Dimensions } from 'react-native';
+import { View, Animated, StyleSheet, Dimensions , Platform} from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -15,7 +15,7 @@ const ConfettiPiece = ({ delay, color }) => {
                 toValue: SCREEN_HEIGHT + 100,
                 duration: 3000 + Math.random() * 2000,
                 delay,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             // Swing side to side
             Animated.loop(
@@ -23,12 +23,12 @@ const ConfettiPiece = ({ delay, color }) => {
                     Animated.timing(swing, {
                         toValue: 30,
                         duration: 500 + Math.random() * 500,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                     Animated.timing(swing, {
                         toValue: -30,
                         duration: 500 + Math.random() * 500,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                 ])
             ),
@@ -37,7 +37,7 @@ const ConfettiPiece = ({ delay, color }) => {
                 Animated.timing(rotate, {
                     toValue: 360,
                     duration: 1000 + Math.random() * 1000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ),
         ]);

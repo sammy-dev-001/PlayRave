@@ -67,9 +67,9 @@ const MathBlitzScreen = ({ route, navigation }) => {
             } else {
                 // Wrong - shake
                 Animated.sequence([
-                    Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true })
+                    Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: Platform.OS !== 'web' })
                 ]).start();
                 if (Platform.OS !== 'web') Vibration.vibrate(20);
             }
@@ -156,8 +156,8 @@ const MathBlitzScreen = ({ route, navigation }) => {
 
                     // Pulse animation for problem
                     Animated.sequence([
-                        Animated.timing(scaleAnim, { toValue: 1.1, duration: 150, useNativeDriver: true }),
-                        Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: true })
+                        Animated.timing(scaleAnim, { toValue: 1.1, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
+                        Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' })
                     ]).start();
 
                     return 0;

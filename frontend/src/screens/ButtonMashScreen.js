@@ -34,8 +34,8 @@ const ButtonMashScreen = ({ route, navigation }) => {
         if (phase === 'countdown') {
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1.1, duration: 500, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true })
+                    Animated.timing(pulseAnim, { toValue: 1.1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' })
                 ])
             ).start();
         }
@@ -135,8 +135,8 @@ const ButtonMashScreen = ({ route, navigation }) => {
         if (Platform.OS !== 'web') Vibration.vibrate(5);
 
         Animated.sequence([
-            Animated.timing(buttonScale, { toValue: 0.9, duration: 30, useNativeDriver: true }),
-            Animated.spring(buttonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true })
+            Animated.timing(buttonScale, { toValue: 0.9, duration: 30, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.spring(buttonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: Platform.OS !== 'web' })
         ]).start();
 
         setTapCount(prev => prev + 1);

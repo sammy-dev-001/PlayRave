@@ -5,7 +5,7 @@ import {
     TouchableOpacity,
     Animated,
     ScrollView,
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -78,16 +78,16 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
     const entranceY = useRef(new Animated.Value(30)).current;
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(entranceFade, { toValue: 1, duration: 450, useNativeDriver: true }),
-            Animated.spring(entranceY, { toValue: 0, friction: 7, useNativeDriver: true }),
+            Animated.timing(entranceFade, { toValue: 1, duration: 450, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.spring(entranceY, { toValue: 0, friction: 7, useNativeDriver: Platform.OS !== 'web' }),
         ]).start();
     }, []);
 
     const handleCardPress = (cat, index) => {
         if (!isHost) return;
         Animated.sequence([
-            Animated.timing(cardAnims[index], { toValue: 0.93, duration: 70, useNativeDriver: true }),
-            Animated.spring(cardAnims[index], { toValue: 1, friction: 4, useNativeDriver: true }),
+            Animated.timing(cardAnims[index], { toValue: 0.93, duration: 70, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.spring(cardAnims[index], { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }),
         ]).start();
         setSelectedCategory(cat.id);
     };

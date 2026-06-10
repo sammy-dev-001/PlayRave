@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { View, StyleSheet, Animated, Easing , Platform} from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -31,7 +31,7 @@ const SpinTheBottleScreen = ({ route, navigation }) => {
             toValue: totalRotation,
             duration: 3000,
             easing: Easing.out(Easing.cubic),
-            useNativeDriver: true
+            useNativeDriver: Platform.OS !== 'web'
         }).start(() => {
             setIsSpinning(false);
             setSelectedPlayer(selectedPlayerData);

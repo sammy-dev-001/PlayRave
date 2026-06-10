@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Dimensions , Platform} from 'react-native';
 import NeonText from './NeonText';
 import { COLORS, SHADOWS } from '../constants/theme';
 
@@ -28,13 +28,13 @@ const GameCard = ({
                 toValue: 1,
                 duration: 300,
                 delay: index * 50,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(translateY, {
                 toValue: 0,
                 duration: 300,
                 delay: index * 50,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
         ]).start();
     }, []);
@@ -44,7 +44,7 @@ const GameCard = ({
         Animated.spring(scale, {
             toValue: 0.96,
             friction: 8,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 
@@ -52,7 +52,7 @@ const GameCard = ({
         Animated.spring(scale, {
             toValue: 1,
             friction: 5,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 

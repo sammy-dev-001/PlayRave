@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View , Platform} from 'react-native';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 
@@ -22,19 +22,19 @@ const ScorePopup = ({
                     toValue: 1,
                     friction: 8,
                     tension: 40,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.spring(scaleAnim, {
                     toValue: 1,
                     friction: 6,
                     tension: 40,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.spring(slideAnim, {
                     toValue: 0,
                     friction: 8,
                     tension: 40,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ]).start(() => {
                 // Hold for 2 seconds, then exit
@@ -43,12 +43,12 @@ const ScorePopup = ({
                         Animated.timing(fadeAnim, {
                             toValue: 0,
                             duration: 300,
-                            useNativeDriver: true,
+                            useNativeDriver: Platform.OS !== 'web',
                         }),
                         Animated.timing(slideAnim, {
                             toValue: -50,
                             duration: 300,
-                            useNativeDriver: true,
+                            useNativeDriver: Platform.OS !== 'web',
                         })
                     ]).start(() => {
                         if (onComplete) onComplete();

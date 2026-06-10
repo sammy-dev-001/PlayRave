@@ -5,7 +5,7 @@ import {
     TouchableOpacity,
     FlatList,
     Animated
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -46,7 +46,7 @@ const MVPVotingScreen = ({ route, navigation }) => {
             Animated.spring(crownScale, {
                 toValue: 1,
                 friction: 4,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }).start();
         };
 

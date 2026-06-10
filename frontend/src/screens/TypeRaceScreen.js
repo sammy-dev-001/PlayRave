@@ -141,9 +141,9 @@ const TypeRaceScreen = ({ route, navigation }) => {
         if (text.length > 0 && text[text.length - 1] !== targetSentence[text.length - 1]) {
             if (Platform.OS !== 'web') Vibration.vibrate(20);
             Animated.sequence([
-                Animated.timing(shakeAnim, { toValue: 5, duration: 50, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: -5, duration: 50, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true })
+                Animated.timing(shakeAnim, { toValue: 5, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(shakeAnim, { toValue: -5, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: Platform.OS !== 'web' })
             ]).start();
         }
 

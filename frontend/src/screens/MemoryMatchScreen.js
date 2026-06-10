@@ -107,7 +107,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
         Animated.timing(flipAnims[card.id], {
             toValue: 1,
             duration: 200,
-            useNativeDriver: true
+            useNativeDriver: Platform.OS !== 'web'
         }).start();
 
         const newCards = [...cards];
@@ -159,8 +159,8 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                     SoundService.playWrong();
 
                     Animated.parallel([
-                        Animated.timing(flipAnims[cards[first].id], { toValue: 0, duration: 200, useNativeDriver: true }),
-                        Animated.timing(flipAnims[cards[second].id], { toValue: 0, duration: 200, useNativeDriver: true })
+                        Animated.timing(flipAnims[cards[first].id], { toValue: 0, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
+                        Animated.timing(flipAnims[cards[second].id], { toValue: 0, duration: 200, useNativeDriver: Platform.OS !== 'web' })
                     ]).start();
 
                     const updatedCards = [...cards];

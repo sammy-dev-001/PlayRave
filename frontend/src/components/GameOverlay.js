@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Text } from 'react-native';
+import { View, StyleSheet, Animated, Text , Platform} from 'react-native';
 import { ReactionOverlay } from './ReactionSystem';
 import { StreakBadge, StreakMilestonePopup, useWinStreak } from './WinStreakSystem';
 import { Soundboard, SoundNotification, useSoundboard } from './Soundboard';
@@ -15,15 +15,15 @@ const PlayerLeftNotification = ({ playerName, visible, onComplete }) => {
     useEffect(() => {
         if (visible) {
             Animated.parallel([
-                Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true }),
-                Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true })
+                Animated.spring(slideAnim, { toValue: 0, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: Platform.OS !== 'web' })
             ]).start();
 
             // Auto-hide after 3 seconds
             setTimeout(() => {
                 Animated.parallel([
-                    Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: true }),
-                    Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: true })
+                    Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: Platform.OS !== 'web' })
                 ]).start(() => onComplete?.());
             }, 3000);
         }

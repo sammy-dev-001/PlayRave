@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated , Platform} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import NeonText from '../NeonText';
 import { COLORS } from '../../constants/theme';
@@ -12,7 +12,7 @@ const GradientButton = ({ title, subtitle, onPress, disabled }) => {
     const handlePressIn = () => {
         Animated.spring(scaleAnim, {
             toValue: 0.97,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 8,
         }).start();
     };
@@ -20,7 +20,7 @@ const GradientButton = ({ title, subtitle, onPress, disabled }) => {
     const handlePressOut = () => {
         Animated.spring(scaleAnim, {
             toValue: 1,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 5,
             tension: 100,
         }).start();
@@ -65,7 +65,7 @@ const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
     const handlePressIn = () => {
         Animated.spring(scaleAnim, {
             toValue: 0.97,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 8,
         }).start();
     };
@@ -73,7 +73,7 @@ const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
     const handlePressOut = () => {
         Animated.spring(scaleAnim, {
             toValue: 1,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 5,
             tension: 100,
         }).start();

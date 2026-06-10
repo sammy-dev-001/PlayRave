@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -68,7 +68,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 500,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 

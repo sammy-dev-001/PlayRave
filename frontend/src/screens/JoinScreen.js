@@ -35,12 +35,12 @@ const JoinScreen = ({ navigation, route }) => {
                 Animated.timing(pulseAnim, {
                     toValue: 1.05,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 1,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ]).start(() => pulse());
         };

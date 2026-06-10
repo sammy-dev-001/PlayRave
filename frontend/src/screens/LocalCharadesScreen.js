@@ -352,7 +352,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         wordAnim.setValue(0);
         Animated.spring(wordAnim, {
             toValue: 1,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             tension: 140,
             friction: 7,
         }).start();
@@ -381,7 +381,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         streakAnim.setValue(1.6);
         Animated.spring(streakAnim, {
             toValue: 1,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             tension: 200,
             friction: 6,
         }).start();
@@ -399,12 +399,12 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                     Animated.timing(pulseAnim, { 
                         toValue: intensity, 
                         duration: streak >= STREAK_BONUS_THRESHOLD ? 400 : 280, 
-                        useNativeDriver: true 
+                        useNativeDriver: Platform.OS !== 'web' 
                     }),
                     Animated.timing(pulseAnim, { 
                         toValue: 1, 
                         duration: streak >= STREAK_BONUS_THRESHOLD ? 400 : 280, 
-                        useNativeDriver: true 
+                        useNativeDriver: Platform.OS !== 'web' 
                     }),
                 ])
             ).start();

@@ -511,6 +511,9 @@ class ScrabbleEngine {
         game.phase = 'finished';
         const finalScores = this.getScrabbleFinalScores(game);
 
+        // Clean up active game state
+        this.activeGames.delete(roomId);
+
         return {
             action: 'game-ended',
             event: 'scrabble-game-ended',
@@ -734,10 +737,8 @@ class ScrabbleEngine {
         };
     }
 
-    endGame(roomId) {
-        this.activeGames.delete(roomId);
-        return { action: 'game-ended', event: 'scrabble-ended', data: { message: 'Game ended by host' } };
-    }
+    // Note: endGame is defined above (merged - no duplicate)
+
 }
 
 

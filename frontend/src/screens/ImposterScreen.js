@@ -6,7 +6,7 @@ import {
     ScrollView,
     Animated,
     Alert
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -72,7 +72,7 @@ const ImposterScreen = ({ route, navigation }) => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 500,
-            useNativeDriver: true
+            useNativeDriver: Platform.OS !== 'web'
         }).start();
     }, [phase, myWord]);
 

@@ -222,35 +222,48 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     gameCard: {
-        width: isDesktop ? '31%' : '47%',
-        height: 180,
-        marginBottom: 16,
+        width: isDesktop ? '23%' : '47%',
+        aspectRatio: 1,
+        marginBottom: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    cardImage: { flex: 1, justifyContent: 'flex-end' },
+    cardImage: { 
+        flex: 1, 
+        justifyContent: 'flex-end' 
+    },
     cardOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.2)',
-        borderRadius: 15,
-        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        padding: 6,
         justifyContent: 'space-between'
     },
-    cardHeader: { flexDirection: 'row', justifyContent: 'flex-end' },
+    cardHeader: { 
+        flexDirection: 'row', 
+        justifyContent: 'flex-end' 
+    },
     playerBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        paddingHorizontal: 6,
-        paddingVertical: 3,
-        borderRadius: 8,
-        gap: 4,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+        borderRadius: 4,
+        gap: 3,
     },
     cardFooter: {
-        backgroundColor: 'rgba(0,0,0,0.75)',
-        padding: 8,
-        borderRadius: 10,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        padding: 5,
+        borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: 'rgba(255,255,255,0.15)'
+        borderColor: 'rgba(255,255,255,0.1)'
     },
+    gameName: { 
+        marginBottom: 0,
+        fontSize: 12 
+    }
 });
 
 export default GameSelectionScreen;

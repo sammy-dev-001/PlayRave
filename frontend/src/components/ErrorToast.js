@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated , Platform} from 'react-native';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 import ErrorService from '../services/ErrorService';
@@ -34,7 +34,7 @@ const ErrorToast = () => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
 
         // Auto hide after 4 seconds
@@ -47,7 +47,7 @@ const ErrorToast = () => {
         Animated.timing(fadeAnim, {
             toValue: 0,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start(() => {
             setVisible(false);
             setMessage('');

@@ -110,6 +110,8 @@ class TicTacToeEngine {
             type:         game.type,
             phase:        game.phase,
             roundNumber:  game.roundNumber,
+            matches:      game.matches.map(m => this._safeMatch(m)),
+            currentMatchIndex: game.currentMatchIndex,
             currentMatch: game.matches[game.currentMatchIndex]
                 ? this._safeMatch(game.matches[game.currentMatchIndex]) : null,
             players:      game.players.map(p => ({

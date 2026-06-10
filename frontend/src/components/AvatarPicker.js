@@ -9,7 +9,7 @@ import {
     Image,
     Alert,
     Platform
-} from 'react-native';
+, Platform} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import NeonText from './NeonText';

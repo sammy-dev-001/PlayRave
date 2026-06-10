@@ -350,6 +350,9 @@ io.on("connection", (socket) => {
         const result = userId ? await roomManager.removePlayer(userId) : await roomManager.removePlayerBySocketId(socket.id);
 
         if (result && !result.roomDeleted) {
+            // Notify the game engine about the removal
+            await gameRouter.removePlayer(result.roomId, userId || result.removedPlayer?.userId, io);
+
             io.to(result.roomId).emit("player-left", {
                 playerName: result.removedPlayer?.name || "A player",
                 userId: result.removedPlayer?.userId,
@@ -437,19 +440,21 @@ io.on("connection", (socket) => {
                 return;
             }
 
-            const game = await gameRouter.getGameState(expiredRoomId);
-            const roomBeforeRemoval = await roomManager.getRoom(expiredRoomId);
-            const isSingle = game?.isSinglePlayer || (roomBeforeRemoval?.players?.length === 1);
-
             const result = await roomManager.removePlayer(expiredUserId);
 
-            if (result && !result.roomDeleted) {
+            if (result?.roomId) {
+                const game = await gameRouter.getGameState(result.roomId);
+                await gameRouter.removePlayer(result.roomId, expiredUserId, io);
+                
                 io.to(result.roomId).emit("player-left", {
-                    playerName: result.removedPlayer?.name || "A player",
                     userId: expiredUserId,
+                    playerName: result.removedPlayer.name,
+                    isHost: result.removedPlayer.isHost,
                     remainingPlayers: result.room.players.length
                 });
                 await emitRoomUpdate(result.roomId);
+
+                const isSingle = game?.isSinglePlayer || (result.room?.players?.length === 1);
 
                 if (game && !isSingle) {
                     const minPlayers = gameRouter.getMinPlayers(game.type) || 2;

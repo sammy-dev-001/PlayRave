@@ -25,8 +25,8 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
             // Pulse animation when connected and unmuted
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1.2, duration: 1000, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true })
+                    Animated.timing(pulseAnim, { toValue: 1.2, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: Platform.OS !== 'web' })
                 ])
             ).start();
         } else {

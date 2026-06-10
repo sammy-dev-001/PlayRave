@@ -4,7 +4,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     Animated
-} from 'react-native';
+, Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -89,12 +89,12 @@ const MemoryChainScreen = ({ route, navigation }) => {
                 Animated.timing(scaleAnim, {
                     toValue: 1.3,
                     duration: 200,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(scaleAnim, {
                     toValue: 1,
                     duration: 200,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ]).start();
         }

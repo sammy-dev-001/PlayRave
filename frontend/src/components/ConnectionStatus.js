@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated , Platform} from 'react-native';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
 import { COLORS } from '../constants/theme';
@@ -17,12 +17,12 @@ const ConnectionStatus = ({ showLabel = true, size = 'small' }) => {
                     Animated.timing(pulseAnim, {
                         toValue: 0.4,
                         duration: 800,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                     Animated.timing(pulseAnim, {
                         toValue: 1,
                         duration: 800,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                 ])
             ).start();

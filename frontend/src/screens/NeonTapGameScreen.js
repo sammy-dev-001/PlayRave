@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Dimensions , Platform} from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
@@ -107,8 +107,8 @@ const NeonTapGameScreen = ({ route, navigation }) => {
     const startPulseAnimation = () => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.2, duration: 500, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true })
+                Animated.timing(pulseAnim, { toValue: 1.2, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' })
             ])
         ).start();
     };

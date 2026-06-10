@@ -156,14 +156,19 @@ class TriviaEngine {
         const currentAnswers = Object.keys(game.playerAnswers).filter(id => game.playerAnswers[id][questionIndex] !== undefined).length;
         
         if (currentAnswers >= expectedAnswers) {
-            // Auto-trigger show results
-            instructions.push(this.getQuestionResults(roomId));
+            // Auto-trigger show results with a small 'dramatic pause'
+            instructions.push({
+                action: 'schedule',
+                delay: 1500, // 1.5s delay so users can see their own 'Correct/Wrong' feedback
+                eventToTrigger: 'force-results',
+                roomId
+            });
 
-            // If Solo Mode: Auto-advance to next question after 3 seconds
+            // If Solo Mode: Auto-advance to next question after 4.5 seconds (delay + 3s)
             if (expectedAnswers === 1) {
                 instructions.push({
                     action: 'schedule',
-                    delay: 3000,
+                    delay: 4500,
                     eventToTrigger: 'next-question',
                     roomId
                 });
@@ -286,6 +291,29 @@ class TriviaEngine {
                 gameState: state
             }
         };
+    }
+
+    removePlayer(roomId, userId) {
+        const game = this.activeGames.get(roomId);
+        if (!game) return null;
+
+        // Stop tracking their score if they leave
+        delete game.scores[userId];
+
+        // Check if we should now auto-advance because they were the last one we were waiting for
+        const questionIndex = game.currentQuestionIndex;
+        const expectedAnswers = Object.keys(game.scores).length;
+        const currentAnswers = Object.keys(game.playerAnswers).filter(id => game.playerAnswers[id] && game.playerAnswers[id][questionIndex] !== undefined).length;
+
+        if (expectedAnswers > 0 && currentAnswers >= expectedAnswers && game.status === 'PLAYING') {
+            return {
+                action: 'schedule',
+                delay: 1000,
+                eventToTrigger: 'force-results',
+                roomId
+            };
+        }
+        return null;
     }
 
     endGame(roomId) {

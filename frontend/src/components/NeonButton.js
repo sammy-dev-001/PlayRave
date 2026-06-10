@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, StyleSheet, View, Animated } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Animated , Platform} from 'react-native';
 import { COLORS, SHADOWS } from '../constants/theme';
 import NeonText from './NeonText';
 import HapticService from '../services/HapticService';
@@ -50,13 +50,13 @@ const NeonButton = ({
         Animated.parallel([
             Animated.spring(scaleAnim, {
                 toValue: 0.96,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 friction: 8,
             }),
             Animated.timing(glowAnim, {
                 toValue: 1.5,
                 duration: 100,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
         ]).start();
     };
@@ -65,14 +65,14 @@ const NeonButton = ({
         Animated.parallel([
             Animated.spring(scaleAnim, {
                 toValue: 1,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 friction: 5,
                 tension: 100,
             }),
             Animated.timing(glowAnim, {
                 toValue: 1,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
         ]).start();
     };

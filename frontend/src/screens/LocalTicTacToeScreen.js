@@ -130,8 +130,8 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
         if (aiThinking) {
             const loop = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(thinkingAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-                    Animated.timing(thinkingAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+                    Animated.timing(thinkingAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(thinkingAnim, { toValue: 0, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
                 ])
             );
             loop.start();
@@ -144,13 +144,13 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
         Animated.spring(cellAnims[index], {
             toValue: 1,
             friction: 3,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     }, [cellAnims]);
 
     const animateResult = useCallback(() => {
         resultAnim.setValue(0);
-        Animated.spring(resultAnim, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+        Animated.spring(resultAnim, { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }).start();
     }, [resultAnim]);
 
     const processMove = useCallback((newBoard, index) => {

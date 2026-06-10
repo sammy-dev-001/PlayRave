@@ -126,8 +126,8 @@ const ColorRushScreen = ({ route, navigation }) => {
                     clearInterval(timer);
                     setPhase('playing');
                     Animated.sequence([
-                        Animated.timing(scaleAnim, { toValue: 1.2, duration: 150, useNativeDriver: true }),
-                        Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: true })
+                        Animated.timing(scaleAnim, { toValue: 1.2, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
+                        Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' })
                     ]).start();
                     return 0;
                 }

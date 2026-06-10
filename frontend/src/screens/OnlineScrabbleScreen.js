@@ -222,8 +222,10 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         // Hard state sync/overwrite after reconnection
         const handleStateSync = (data) => {
             console.log('Received game state sync:', data);
-            if (data.gameType === 'scrabble' && data.gameState) {
-                updateGameState(data.gameState);
+            // Engine sends { type: 'scrabble', ... } — check both gameType and type fields
+            if ((data.gameType === 'scrabble' || data.type === 'scrabble') && (data.gameState || data.board !== undefined)) {
+                const stateToApply = data.gameState || data;
+                updateGameState(stateToApply);
                 // Thoroughly reset UI state to prevent ghost tiles/modals
                 setSelectedTileIndex(null);
                 setPlacementHistory([]);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
@@ -87,12 +87,12 @@ const TurnTimer = memo(({
                     Animated.timing(pulseAnim, {
                         toValue: 1.2,
                         duration: 300,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                     Animated.timing(pulseAnim, {
                         toValue: 1,
                         duration: 300,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                 ])
             ).start();

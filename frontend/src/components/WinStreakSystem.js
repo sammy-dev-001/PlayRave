@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
@@ -35,11 +35,11 @@ const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
         if (visible) {
             Animated.sequence([
                 Animated.parallel([
-                    Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
-                    Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+                    Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
                 ]),
                 Animated.delay(2000),
-                Animated.timing(opacityAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+                Animated.timing(opacityAnim, { toValue: 0, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
             ]).start(() => {
                 scaleAnim.setValue(0);
                 onComplete?.();
@@ -77,9 +77,9 @@ const StreakBreakerPopup = ({ breakerName, oldStreak, visible, onComplete }) => 
     useEffect(() => {
         if (visible) {
             Animated.sequence([
-                Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true }),
+                Animated.spring(slideAnim, { toValue: 0, useNativeDriver: Platform.OS !== 'web' }),
                 Animated.delay(2000),
-                Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: true }),
+                Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
             ]).start(() => onComplete?.());
         }
     }, [visible]);

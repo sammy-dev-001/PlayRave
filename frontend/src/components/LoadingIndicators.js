@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { View, StyleSheet, Animated, Easing , Platform} from 'react-native';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
 
@@ -20,7 +20,7 @@ export const NeonLoader = ({
                 toValue: 1,
                 duration: 1500,
                 easing: Easing.linear,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         );
         rotate.start();
@@ -31,12 +31,12 @@ export const NeonLoader = ({
                 Animated.timing(pulseScale, {
                     toValue: 1.1,
                     duration: 750,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseScale, {
                     toValue: 1,
                     duration: 750,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         );
@@ -105,12 +105,12 @@ export const DotsLoader = ({ size = 10, color = COLORS.neonCyan, count = 3 }) =>
                     Animated.timing(anim, {
                         toValue: 1,
                         duration: 300,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                     Animated.timing(anim, {
                         toValue: 0,
                         duration: 300,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                     }),
                 ])
             );
@@ -170,7 +170,7 @@ export const SkeletonLoader = ({
                 toValue: 1,
                 duration: 1200,
                 easing: Easing.linear,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         );
         animation.start();
@@ -213,7 +213,7 @@ export const LoadingOverlay = ({
         Animated.timing(opacity, {
             toValue: visible ? 1 : 0,
             duration: 200,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     }, [visible]);
 
@@ -254,7 +254,7 @@ export const StatusIndicator = ({
             Animated.spring(scale, {
                 toValue: 1,
                 friction: 4,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }).start();
         }
     }, []);

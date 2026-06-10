@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Animated, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Alert, Animated, TouchableOpacity , Platform} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -29,8 +29,8 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
         if (gameState === 'choose') {
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
                 ])
             ).start();
         } else {
