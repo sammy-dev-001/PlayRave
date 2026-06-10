@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Animated, ScrollView, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, ScrollView, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import { COLORS } from '../constants/theme';
@@ -20,9 +20,9 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
     }, [glowAnim]);
 
     const renderMatch = (match, matchIndex, roundIndex, isCurrentMatch) => {
-        const player1Name = match.player1?.name || match.player1 || 'TBD';
-        const player2Name = match.player2?.name || match.player2 || 'TBD';
-        const isAIMatch = match.isAIMatch || player1Name.includes('AI') || player2Name.includes('AI');
+        const player1Name = typeof match.player1 === 'object' ? (match.player1?.name || 'TBD') : (match.player1 || 'TBD');
+        const player2Name = typeof match.player2 === 'object' ? (match.player2?.name || 'TBD') : (match.player2 || 'TBD');
+        const isAIMatch = match.isAIMatch || String(player1Name).includes('AI') || String(player2Name).includes('AI');
         const winnerId = match.winner?.userId || match.winner;
         const player1Won = winnerId === (match.player1?.userId || match.player1);
         const player2Won = winnerId === (match.player2?.userId || match.player2);
@@ -31,9 +31,9 @@ const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }
         const glowStyle = isCurrentMatch ? {
             shadowColor: COLORS.neonCyan,
             shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] }),
-            shadowRadius: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [5, 15] }),
-            borderColor: COLORS.neonCyan,
+            shadowOpacity: Platform.OS === 'web' ? 0.5 : glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] }),
+            shadowRadius: Platform.OS === 'web' ? 10 : glowAnim.interpolate({ inputRange: [0, 1], outputRange: [5, 15] }),
+            borderColor: glowAnim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(0, 240, 255, 0.3)', COLORS.neonCyan] }),
         } : {};
 
         return (
