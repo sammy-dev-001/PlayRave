@@ -43,6 +43,10 @@ const TicTacToeScreen = ({ route, navigation }) => {
     const [allPlayers, setAllPlayers] = useState(initialGameState?.players || []);
     const [isAIMatch, setIsAIMatch] = useState(false);
     const [aiThinking, setAiThinking] = useState(false);
+    // FIX 9: Track the 3 winning cell indices for highlight
+    const [winningLine, setWinningLine] = useState(null);
+    // FIX 5: Track next-round data for roundComplete display
+    const [nextRoundNumber, setNextRoundNumber] = useState(null);
 
     const myId = SocketService.userId;
     const isMyTurn = currentTurn === myId;
@@ -110,24 +114,25 @@ const TicTacToeScreen = ({ route, navigation }) => {
             setAiThinking(false);
             if (thinkingLoop.current) thinkingLoop.current.stop();
             setMatchResult(data);
+            // FIX 9: Store winning line indices if server provides them
+            setWinningLine(data?.winningLine || null);
             setPhase('matchResult');
         };
 
         const onNextMatchReady = (data) => {
             setPhase('bracket');
             setMatchResult(null);
+            setWinningLine(null); // FIX 9: reset winning line for next match
             setIsAIMatch(false);
             setBoard(Array(9).fill(null));
             if (data?.nextMatchIndex !== undefined) setCurrentMatchIndex(data.nextMatchIndex);
-            if (data?.nextMatch) {
-                // Potential update to matches or nextMatch info
-            }
         };
 
         const onRoundComplete = (data) => {
-            setRoundNumber(data.nextRound);
+            setNextRoundNumber(data.nextRound);
             setMatches(data.nextMatches);
-            setPhase('roundComplete');
+            setWinningLine(null);
+            setPhase('roundComplete'); // FIX 5: set correct phase string
         };
 
         const onTournamentFinished = (data) => {
@@ -207,11 +212,17 @@ const TicTacToeScreen = ({ route, navigation }) => {
             inputRange: [0, 1],
             outputRange: [0.5, 1]
         });
+        // FIX 9: Highlight winning line cells
+        const isWinCell = winningLine?.includes(index);
 
         return (
             <TouchableOpacity
                 key={index}
-                style={[styles.cell, value && styles.filledCell]}
+                style={[
+                    styles.cell,
+                    value && styles.filledCell,
+                    isWinCell && styles.winCell,
+                ]}
                 onPress={() => handleCellPress(index)}
                 disabled={!isMyTurn || board[index] !== null || !amInMatch}
             >
@@ -303,6 +314,31 @@ const TicTacToeScreen = ({ route, navigation }) => {
                         </View>
                     )}
 
+                    {/* FIX 5: roundComplete phase — was previously a blank screen */}
+                    {phase === 'roundComplete' && (
+                        <View style={styles.centerContent}>
+                            <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>
+                                🏆 ROUND {nextRoundNumber ? nextRoundNumber - 1 : roundNumber} COMPLETE!
+                            </NeonText>
+                            <NeonText size={16} color={COLORS.neonCyan} style={styles.marginTop}>
+                                Round {nextRoundNumber || roundNumber + 1} starting...
+                            </NeonText>
+                            <NeonText size={14} color="#888" style={styles.marginTop}>
+                                {isHost ? 'Advancing bracket...' : 'Waiting for host...'}
+                            </NeonText>
+                            {isHost && (
+                                <NeonButton
+                                    title="CONTINUE TO NEXT ROUND"
+                                    onPress={() => {
+                                        setRoundNumber(nextRoundNumber || roundNumber + 1);
+                                        setPhase('bracket');
+                                    }}
+                                    style={styles.actionButton}
+                                />
+                            )}
+                        </View>
+                    )}
+
                     {phase === 'finished' && (
                         <View style={styles.centerContent}>
                             <Ionicons name="trophy" size={80} color="#FFD700" />
@@ -333,6 +369,8 @@ const styles = StyleSheet.create({
     boardRow: { flexDirection: 'row' },
     cell: { width: 90, height: 90, margin: 5, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
     filledCell: { borderColor: 'rgba(255,255,255,0.1)' },
+    // FIX 9: Winning line glow
+    winCell: { borderColor: COLORS.limeGlow, backgroundColor: 'rgba(198, 255, 74, 0.18)', shadowColor: COLORS.limeGlow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12 },
     marginTop: { marginTop: 10 }
 });
 

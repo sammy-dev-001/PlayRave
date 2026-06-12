@@ -15,6 +15,7 @@ import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import { COLORS } from '../constants/theme';
 import SocketService from '../services/socket';
+import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
 const GAME_PHASES = {
     WAITING: 'waiting',
@@ -27,6 +28,17 @@ const GAME_PHASES = {
 
 const ImposterScreen = ({ route, navigation }) => {
     const { room, playerName, isHost, gameState, players: initialPlayers } = route.params;
+
+    // FIX 4: Disconnect handler — if server drops, navigate back to lobby
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost }
+    });
+
+    const myUserId = SocketService.userId;
 
     // Game state
     const [phase, setPhase] = useState(gameState?.phase || GAME_PHASES.WAITING);
@@ -131,7 +143,6 @@ const ImposterScreen = ({ route, navigation }) => {
 
     const submitVote = () => {
         if (!selectedPlayer) return;
-
         SocketService.emit('imposter-vote', {
             roomId: room.id,
             playerName,
@@ -144,7 +155,9 @@ const ImposterScreen = ({ route, navigation }) => {
     };
 
     const endGame = () => {
-        navigation.goBack();
+        // FIX 12: Emit to server so all players get navigated away
+        SocketService.emit('imposter-end-game', { roomId: room.id });
+        navigation.navigate('Lobby', { room, isHost, playerName });
     };
 
     // Render functions for each phase
@@ -298,25 +311,29 @@ const ImposterScreen = ({ route, navigation }) => {
             </NeonText>
 
             <ScrollView style={styles.playersList} contentContainerStyle={styles.playersContent}>
-                {players.filter(p => p.name !== playerName).map((player) => (
-                    <TouchableOpacity
-                        key={player.userId || player.name}
-                        style={[
-                            styles.playerOption,
-                            (selectedPlayer === player.userId || selectedPlayer === player.name) && styles.selectedPlayer
-                        ]}
-                        onPress={() => setSelectedPlayer(player.userId || player.name)}
-                    >
-                        <NeonText size={18}>{player.avatar || '👤'}</NeonText>
-                        <NeonText
-                            size={18}
-                            color={(selectedPlayer === player.userId || selectedPlayer === player.name) ? COLORS.neonCyan : COLORS.white}
-                            style={{ flex: 1 }}
+                {/* FIX 11: Filter by userId instead of name (name filter is fragile with duplicates) */}
+                {players.filter(p => (p.userId || p.uid || p.id) !== myUserId).map((player) => {
+                    const pid = player.userId || player.uid || player.id || player.name;
+                    return (
+                        <TouchableOpacity
+                            key={pid}
+                            style={[
+                                styles.playerOption,
+                                selectedPlayer === pid && styles.selectedPlayer
+                            ]}
+                            onPress={() => setSelectedPlayer(pid)}
                         >
-                            {player.name}
-                        </NeonText>
-                    </TouchableOpacity>
-                ))}
+                            <NeonText size={18}>{player.avatar || '👤'}</NeonText>
+                            <NeonText
+                                size={18}
+                                color={selectedPlayer === pid ? COLORS.neonCyan : COLORS.white}
+                                style={{ flex: 1 }}
+                            >
+                                {player.name}
+                            </NeonText>
+                        </TouchableOpacity>
+                    );
+                })}
             </ScrollView>
 
             <NeonButton

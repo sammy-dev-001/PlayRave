@@ -14,6 +14,8 @@ import { COLORS } from '../constants/theme';
 
 const ScoreboardScreen = ({ route, navigation }) => {
     const { room, finalScores } = route.params;
+    // Optional extra player list (used by Whot to include bots)
+    const extraPlayers = route.params.players || [];
 
     useGameDisconnectHandler({
         navigation,
@@ -31,6 +33,8 @@ const ScoreboardScreen = ({ route, navigation }) => {
     const isHost = room.players.find(p => (p.uid || p.userId) === currentUserId)?.isHost || false;
 
     // Get current player's score and position
+    const currentPlayer = room.players.find(p => (p.uid || p.userId) === currentUserId)
+        || extraPlayers.find(p => (p.uid || p.userId) === currentUserId);
     const playerScore = finalScores.find(s => s.playerId === currentUserId);
     const playerRank = finalScores.findIndex(s => s.playerId === currentUserId) + 1;
 
@@ -110,8 +114,9 @@ const ScoreboardScreen = ({ route, navigation }) => {
 
     const getPlayerName = (playerId) => {
         if (playerId === 'ai-player') return 'Rave AI';
-        
-        // Try to find by uid first (persistent), then legacy id (socketId)
+        // Check extra players list first (includes bots from Whot)
+        const extraPlayer = extraPlayers.find(p => p.uid === playerId || p.userId === playerId || p.id === playerId);
+        if (extraPlayer) return extraPlayer.name;
         const player = room.players.find(p => p.uid === playerId || p.id === playerId);
         return player?.name || 'Unknown';
     };
@@ -153,6 +158,7 @@ const ScoreboardScreen = ({ route, navigation }) => {
 
     const renderScore = ({ item, index }) => {
         const isWinner = index === 0;
+        const hasPenalty = item.score > 0 && item.penaltyCards !== undefined;
 
         return (
             <View style={[styles.scoreRow, isWinner && styles.winnerRow]}>
@@ -163,12 +169,22 @@ const ScoreboardScreen = ({ route, navigation }) => {
                 </View>
                 <View style={styles.playerInfo}>
                     <NeonText size={20} weight="bold">
-                        {getPlayerName(item.playerId)} {isWinner && ''}
+                        {getPlayerName(item.playerId)} {isWinner ? '🏆' : ''}
                     </NeonText>
+                    {hasPenalty && (
+                        <NeonText size={12} color="#888">
+                            {item.penaltyCards} card{item.penaltyCards !== 1 ? 's' : ''} remaining
+                        </NeonText>
+                    )}
                 </View>
-                <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
-                    {item.score}
-                </NeonText>
+                <View style={{ alignItems: 'flex-end' }}>
+                    <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
+                        {isWinner ? '0 pts' : `${item.score} pts`}
+                    </NeonText>
+                    {hasPenalty && (
+                        <NeonText size={11} color={COLORS.hotPink}>penalty</NeonText>
+                    )}
+                </View>
             </View>
         );
     };

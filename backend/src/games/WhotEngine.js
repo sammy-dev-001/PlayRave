@@ -100,13 +100,20 @@ class WhotEngine {
             data: {
                 gameType: 'whot',
                 gameState: this.getWhotGameState(roomId, p.userId),
-                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                players: participatingPlayers.map(pl => ({ 
+                    uid: pl.userId, 
+                    userId: pl.userId, 
+                    id: pl.socketId || pl.userId, 
+                    name: pl.name, 
+                    avatar: pl.avatar,
+                    isBot: pl.isBot || false
+                })),
                 hostParticipates
             }
         }));
 
         // If first player is a bot, trigger bot-turn
-        const firstPlayerId = game.playerOrder[0];
+        const firstPlayerId = gameState.playerOrder[0];
         if (firstPlayerId.startsWith('bot_')) {
             instructions.push({
                 action: 'schedule',
@@ -197,10 +204,16 @@ class WhotEngine {
         if (playerHand.length === 0) {
             game.status = 'FINISHED';
             game.winner = userId;
+            const finalScores = this.calculateFinalScores(game, userId);
             return {
                 action: 'broadcast',
                 event: 'whot-game-ended',
-                data: { winner: userId, gameState: this.getWhotGameState(roomId, null) }
+                data: {
+                    winner: userId,
+                    finished: true,
+                    finalScores,
+                    gameState: this.getWhotGameState(roomId, null)
+                }
             };
         }
 
@@ -357,6 +370,30 @@ class WhotEngine {
         }
 
         return { action: 'multiple', instructions };
+    }
+
+    /**
+     * Calculate final penalty scores for all players.
+     * Winner gets 0 penalty points. Losers are ranked by fewest penalty points (ascending).
+     * Star cards (★) count double their face value as per classic Naija Whot rules.
+     */
+    calculateFinalScores(game, winnerId) {
+        const scores = game.playerOrder.map(pid => {
+            if (pid === winnerId) {
+                return { playerId: pid, score: 0, penaltyCards: [] };
+            }
+            const hand = game.playerHands[pid] || [];
+            const penalty = hand.reduce((sum, card) => {
+                // Star cards count double
+                const multiplier = card.shape === 'star' ? 2 : 1;
+                return sum + (card.number * multiplier);
+            }, 0);
+            return { playerId: pid, score: penalty, penaltyCards: hand.length };
+        });
+
+        // Sort: winner (0) first, then ascending penalty (lower penalty = better rank)
+        scores.sort((a, b) => a.score - b.score);
+        return scores;
     }
 
     moveToNextPlayer(game) {

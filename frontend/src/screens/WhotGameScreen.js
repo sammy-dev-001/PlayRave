@@ -1,98 +1,144 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import WhotCard from '../components/WhotCard';
+import WhotToast from '../components/WhotToast';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { COLORS } from '../constants/theme';
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+const SPECIAL_TOAST_CONFIG = {
+    'pick2':          { message: 'Pick 2!',            icon: '⚡', color: COLORS.hotPink },
+    'pick3':          { message: 'Pick 3!',            icon: '🔥', color: COLORS.hotPink },
+    'general-market': { message: 'General Market!',    icon: '🛒', color: COLORS.neonCyan },
+    'skip':           { message: 'Hold On! Skipped',   icon: '✋', color: COLORS.limeGlow },
+    'suspension':     { message: 'Suspension!',        icon: '⏸️', color: COLORS.electricPurple },
+};
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+const getShapeSymbol = (shape) => {
+    const symbols = { circle: '○', triangle: '△', cross: '✕', square: '□', star: '★' };
+    return symbols[shape] || shape;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const WhotGameScreen = ({ route, navigation }) => {
-    const { room, hostParticipates, isHost, gameState: initialGameState } = route.params;
+    const { room, isHost, gameState: initialGameState } = route.params;
+    const gamePlayers = route.params.players || room.players;
 
     useGameDisconnectHandler({
         navigation,
         exitScreen: 'Lobby',
-        exitParams: { room, isHost }
+        exitParams: { room, isHost },
     });
 
-    const [gameState, setGameState] = useState(initialGameState || null);
-    const [showShapeSelector, setShowShapeSelector] = useState(false);
-    const [selectedCardId, setSelectedCardId] = useState(null);
-    const [winner, setWinner] = useState(null);
-
     const myId = SocketService.userId;
-    const isMyTurn = gameState?.currentPlayerId === myId;
 
-    const handleEndGame = () => {
-        Alert.alert(
-            "End Game",
-            "Are you sure you want to end the game for everyone?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { 
-                    text: "End Game", 
-                    style: "destructive",
-                    onPress: () => SocketService.emit('whot-end-game', { roomId: room.id })
-                }
-            ]
-        );
+    // ── Core State ────────────────────────────────────────────────────────────
+    const [gameState, setGameState]       = useState(initialGameState || null);
+    const [showShapeSelector, setShowShapeSelector] = useState(false);
+    const [selectedCardId, setSelectedCardId]       = useState(null);
+    const [winner, setWinner]             = useState(null);
+
+    // ── Feature 1: Last Card alert tracking ──────────────────────────────────
+    // Tracks which player IDs have already triggered the "Last Card!" badge
+    // so we only flash it once per card drop.
+    const lastCardRef = useRef(new Set());
+
+    // ── Feature 2: Toast notification state ──────────────────────────────────
+    const [toast, setToast] = useState({ visible: false, message: '', icon: '', color: COLORS.neonCyan });
+    const showToast = (config) => {
+        setToast({ ...config, visible: true });
     };
+    const dismissToast = () => setToast(prev => ({ ...prev, visible: false }));
 
-    // Use ref to avoid stale closures in socket listeners
-    const winnerRef = React.useRef(winner);
+    // ── Feature 1: "Last Card!" pulse animation ───────────────────────────────
+    const lastCardPulse = useRef(new Animated.Value(1)).current;
     useEffect(() => {
-        winnerRef.current = winner;
-    }, [winner]);
+        const pulse = Animated.loop(
+            Animated.sequence([
+                Animated.timing(lastCardPulse, { toValue: 1.12, duration: 500, useNativeDriver: true }),
+                Animated.timing(lastCardPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+            ])
+        );
+        pulse.start();
+        return () => pulse.stop();
+    }, []);
 
+    // ── Computed ──────────────────────────────────────────────────────────────
+    const isMyTurn    = gameState?.currentPlayerId === myId;
+    const isSpectator = !gameState?.playerHand;
+
+    // ── Stale closure refs ─────────────────────────────────────────────────────
+    const winnerRef = useRef(winner);
+    useEffect(() => { winnerRef.current = winner; }, [winner]);
+    const gameStateRef = useRef(gameState);
+    useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+
+    // ── Socket Listeners ──────────────────────────────────────────────────────
     useEffect(() => {
-        console.log('WhotGameScreen mounted, setting up listeners');
-
         const onGameStarted = (data) => {
-            console.log('game-started event received:', data);
             const initialState = data.gameState || data;
             setGameState(initialState);
             setWinner(initialState.winner || null);
         };
 
-        const onStateUpdate = ({ gameState: newState, action, winner: gameWinner }) => {
-            console.log('State update received:', action);
+        const onStateUpdate = ({ gameState: newState, actionTaken, winner: gameWinner }) => {
             setGameState(newState);
 
+            // ── Feature 1: Check for Last Card across all players ──────────
+            if (newState?.otherPlayers) {
+                newState.otherPlayers.forEach(p => {
+                    if (p.cardCount === 1 && !lastCardRef.current.has(p.id)) {
+                        lastCardRef.current.add(p.id);
+                        const name = getPlayerName(p.id);
+                        showToast({ message: `${name}: LAST CARD!`, icon: '🃏', color: COLORS.limeGlow });
+                    } else if (p.cardCount !== 1) {
+                        // Reset tracker when card count changes away from 1
+                        lastCardRef.current.delete(p.id);
+                    }
+                });
+            }
+
+            // Check if local player also has last card
+            if (newState?.playerHand?.length === 1 && !lastCardRef.current.has(myId)) {
+                lastCardRef.current.add(myId);
+                showToast({ message: 'YOU HAVE LAST CARD!', icon: '🃏', color: COLORS.limeGlow });
+            } else if (newState?.playerHand?.length !== 1) {
+                lastCardRef.current.delete(myId);
+            }
+
+            // ── Feature 2: Special Card Toast ──────────────────────────────
+            const toastConfig = SPECIAL_TOAST_CONFIG[actionTaken];
+            if (toastConfig && !gameWinner) {
+                // Small delay so state-update renders first
+                setTimeout(() => showToast(toastConfig), 100);
+            }
+
+            // ── Feature 3: Game Over → navigate to Scoreboard ─────────────
             const detectedWinner = gameWinner || newState?.winner;
             if (detectedWinner && !winnerRef.current) {
                 setWinner(detectedWinner);
-                const winnerPlayer = room.players.find(p => p.uid === detectedWinner || p.userId === detectedWinner);
-                Alert.alert(
-                    'Game Over!',
-                    `${winnerPlayer?.name || 'Someone'} wins!`,
-                    [{ text: 'OK', onPress: () => {
-                        try {
-                            navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.userId === myId)?.name });
-                        } catch (e) {
-                            navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-                        }
-                    } }]
-                );
-            }
-
-            if (action && !detectedWinner) {
-                const messages = {
-                    'pick2': 'Pick 2! Attack stacked',
-                    'pick3': 'Pick 3! Attack stacked',
-                    'general-market': 'General Market! Everyone draws 1 card',
-                    'skip': 'Hold On! Next player skipped'
-                };
-                if (messages[action]) {
-                    Alert.alert('Special Card!', messages[action]);
-                }
             }
         };
 
-        const onGameEnded = () => {
-            navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.userId === myId)?.name });
+        const onGameEnded = (data) => {
+            // Feature 3: If finalScores provided, navigate to Scoreboard
+            if (data?.finalScores && Array.isArray(data.finalScores) && data.finalScores.length > 0) {
+                navigation.navigate('Scoreboard', {
+                    room: { ...room, gameType: 'whot' },
+                    finalScores: data.finalScores,
+                    players: gamePlayers,
+                });
+            } else {
+                // Host ended game manually — go back to lobby
+                const myName = gamePlayers.find(p => p.userId === myId || p.uid === myId)?.name;
+                navigation.navigate('Lobby', { room, isHost, playerName: myName });
+            }
         };
 
         const onGameStateSync = (data) => {
@@ -101,26 +147,39 @@ const WhotGameScreen = ({ route, navigation }) => {
             }
         };
 
-        SocketService.on('game-started', onGameStarted);
+        SocketService.on('game-started',      onGameStarted);
         SocketService.on('whot-state-update', onStateUpdate);
-        SocketService.on('whot-card-played', onStateUpdate); // Legacy support
-        SocketService.on('whot-card-drawn', onStateUpdate); // Legacy support
-        SocketService.on('whot-game-ended', onGameEnded);
-        SocketService.on('game-state-sync', onGameStateSync);
+        SocketService.on('whot-card-played',  onStateUpdate);   // Legacy
+        SocketService.on('whot-card-drawn',   onStateUpdate);   // Legacy
+        SocketService.on('whot-game-ended',   onGameEnded);
+        SocketService.on('game-state-sync',   onGameStateSync);
 
-        // Fetch state on mount
         SocketService.emit('whot-get-state', { roomId: room.id });
 
         return () => {
-            SocketService.off('game-started', onGameStarted);
+            SocketService.off('game-started',      onGameStarted);
             SocketService.off('whot-state-update', onStateUpdate);
-            SocketService.off('whot-card-played', onStateUpdate);
-            SocketService.off('whot-card-drawn', onStateUpdate);
-            SocketService.off('whot-game-ended', onGameEnded);
-            SocketService.off('game-state-sync', onGameStateSync);
+            SocketService.off('whot-card-played',  onStateUpdate);
+            SocketService.off('whot-card-drawn',   onStateUpdate);
+            SocketService.off('whot-game-ended',   onGameEnded);
+            SocketService.off('game-state-sync',   onGameStateSync);
         };
-
     }, [navigation, room.id]);
+
+    // Navigate to Scoreboard once winner is set and data arrives
+    // (handled inside onGameEnded — winner state just locks the UI)
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleEndGame = () => {
+        Alert.alert(
+            'End Game',
+            'Are you sure you want to end the game for everyone?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'End Game', style: 'destructive', onPress: () => SocketService.emit('whot-end-game', { roomId: room.id }) },
+            ]
+        );
+    };
 
     const handleCardPress = (card) => {
         if (!isMyTurn || winner) return;
@@ -133,11 +192,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
 
     const playCard = (cardId, calledShape = null) => {
-        SocketService.emit('whot-play-card', {
-            roomId: room.id,
-            cardId,
-            calledShape
-        });
+        SocketService.emit('whot-play-card', { roomId: room.id, cardId, calledShape });
     };
 
     const handleShapeSelect = (shape) => {
@@ -152,12 +207,11 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
 
     const getPlayerName = (playerId) => {
-        const player = room.players.find(p => p.uid === playerId || p.userId === playerId);
-        return player?.name || 'Unknown'
+        const player = gamePlayers.find(p => p.uid === playerId || p.userId === playerId || p.id === playerId);
+        return player?.name || 'Unknown';
     };
 
-    const isSpectator = !gameState?.playerHand;
-
+    // ── Loading State ─────────────────────────────────────────────────────────
     if (!gameState) {
         return (
             <NeonContainer showBackButton>
@@ -168,31 +222,43 @@ const WhotGameScreen = ({ route, navigation }) => {
         );
     }
 
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <NeonContainer 
-            showBackButton 
+        <NeonContainer
+            showBackButton
             scrollable
             onBackPress={() => {
                 if (isHost) {
                     handleEndGame();
                 } else {
-                    navigation.navigate('Lobby', { room, isHost, playerName: room.players.find(p => p.userId === myId)?.name });
+                    navigation.navigate('Lobby', { room, isHost, playerName: gamePlayers.find(p => p.userId === myId || p.uid === myId)?.name });
                 }
             }}
         >
+            {/* ── Feature 2: Toast (rendered at root so it floats above everything) */}
+            <WhotToast
+                message={toast.message}
+                icon={toast.icon}
+                color={toast.color}
+                visible={toast.visible}
+                onDone={dismissToast}
+            />
+
             <View style={styles.container}>
+                {/* Host controls */}
                 {isHost && (
                     <View style={styles.hostControls}>
-                        <NeonButton 
-                            title="END GAME" 
-                            onPress={handleEndGame} 
-                            variant="secondary" 
+                        <NeonButton
+                            title="END GAME"
+                            onPress={handleEndGame}
+                            variant="secondary"
                             size="small"
                             color={COLORS.hotPink}
                         />
                     </View>
                 )}
 
+                {/* Spectator badge */}
                 {isSpectator && (
                     <View style={styles.spectatorBadge}>
                         <Ionicons name="eye" size={18} color={COLORS.hotPink} />
@@ -200,9 +266,10 @@ const WhotGameScreen = ({ route, navigation }) => {
                     </View>
                 )}
 
+                {/* Top Card */}
                 <View style={styles.topCardContainer}>
                     <NeonText size={14} color="#888" style={styles.label}>TOP CARD</NeonText>
-                    <WhotCard card={gameState.topCard} disabled={true} isTopCard={true} />
+                    <WhotCard card={gameState.topCard} disabled isTopCard />
                     {gameState.calledShape && (
                         <View style={styles.calledBadge}>
                             <NeonText size={14} color={COLORS.limeGlow} weight="bold">
@@ -212,40 +279,67 @@ const WhotGameScreen = ({ route, navigation }) => {
                     )}
                 </View>
 
+                {/* Other Players — with Feature 1: Last Card badge */}
                 <View style={styles.otherPlayersContainer}>
                     {gameState.otherPlayers
                         .filter(p => p.id !== myId)
-                        .map(player => (
-                            <View key={player.id} style={[
-                                styles.otherPlayer,
-                                player.isCurrentPlayer && styles.currentPlayer
-                            ]}>
-                                <NeonText size={13} weight="bold">{getPlayerName(player.id)}</NeonText>
-                                <View style={styles.cardCountBadge}>
-                                    <Ionicons name="copy" size={12} color={COLORS.hotPink} />
-                                    <NeonText size={12} color={COLORS.hotPink}>{player.cardCount}</NeonText>
+                        .map(player => {
+                            const isLastCard = player.cardCount === 1;
+                            return (
+                                <View
+                                    key={player.id}
+                                    style={[styles.otherPlayer, player.isCurrentPlayer && styles.currentPlayer]}
+                                >
+                                    {/* Feature 1: Pulsing "LAST CARD!" badge */}
+                                    {isLastCard && (
+                                        <Animated.View
+                                            style={[styles.lastCardBadge, { transform: [{ scale: lastCardPulse }] }]}
+                                        >
+                                            <NeonText size={9} color="#000" weight="bold">LAST CARD!</NeonText>
+                                        </Animated.View>
+                                    )}
+                                    <NeonText size={13} weight="bold">{getPlayerName(player.id)}</NeonText>
+                                    <View style={[styles.cardCountBadge, isLastCard && styles.lastCardCountBadge]}>
+                                        <Ionicons name="copy" size={12} color={isLastCard ? COLORS.limeGlow : COLORS.hotPink} />
+                                        <NeonText size={12} color={isLastCard ? COLORS.limeGlow : COLORS.hotPink}>
+                                            {player.cardCount}
+                                        </NeonText>
+                                    </View>
                                 </View>
-                            </View>
-                        ))}
+                            );
+                        })}
                 </View>
 
+                {/* My Hand */}
                 {!isSpectator && (
                     <View style={styles.myHandSection}>
                         <View style={styles.handHeader}>
-                            <NeonText size={16} weight="bold">YOUR HAND ({gameState.playerHand?.length || 0})</NeonText>
+                            {/* Feature 1: My own "Last Card!" label */}
+                            {gameState.playerHand?.length === 1 ? (
+                                <Animated.View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, transform: [{ scale: lastCardPulse }] }}>
+                                    <NeonText size={16} weight="bold" color={COLORS.limeGlow} glow>
+                                        🃏 LAST CARD!
+                                    </NeonText>
+                                </Animated.View>
+                            ) : (
+                                <NeonText size={16} weight="bold">
+                                    YOUR HAND ({gameState.playerHand?.length || 0})
+                                </NeonText>
+                            )}
                             {isMyTurn && (
                                 <View style={styles.turnBadge}>
                                     <NeonText size={12} color="#000" weight="bold">YOUR TURN</NeonText>
                                 </View>
                             )}
                         </View>
+
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>
                             {gameState.playerHand?.map((card, index) => (
                                 <View key={card.id} style={[styles.cardWrapper, { zIndex: 100 - index }]}>
                                     <WhotCard
                                         card={card}
                                         onPress={() => handleCardPress(card)}
-                                        disabled={!isMyTurn || winner}
+                                        disabled={!isMyTurn || !!winner}
                                     />
                                 </View>
                             ))}
@@ -256,14 +350,15 @@ const WhotGameScreen = ({ route, navigation }) => {
                                 ? `PICK ${gameState.attackStack} CARDS!`
                                 : `DRAW CARD (${gameState.deckCount} left)`}
                             onPress={handleDrawCard}
-                            disabled={!isMyTurn || winner}
-                            variant={gameState.attackStack > 0 ? "primary" : "secondary"}
+                            disabled={!isMyTurn || !!winner}
+                            variant={gameState.attackStack > 0 ? 'primary' : 'secondary'}
                             style={styles.drawButton}
                         />
                     </View>
                 )}
             </View>
 
+            {/* Shape Selector Modal */}
             <Modal
                 visible={showShapeSelector}
                 transparent
@@ -293,17 +388,6 @@ const WhotGameScreen = ({ route, navigation }) => {
             </Modal>
         </NeonContainer>
     );
-};
-
-const getShapeSymbol = (shape) => {
-    const symbols = {
-        circle: '○',
-        triangle: '△',
-        cross: '✕',
-        square: '□',
-        star: '★'
-    };
-    return symbols[shape] || shape;
 };
 
 const styles = StyleSheet.create({
@@ -376,6 +460,14 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         backgroundColor: 'rgba(198, 255, 74, 0.1)',
     },
+    // Feature 1: Last card badge on opponent card
+    lastCardBadge: {
+        backgroundColor: COLORS.limeGlow,
+        borderRadius: 6,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        marginBottom: 2,
+    },
     cardCountBadge: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -384,6 +476,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 10,
+    },
+    lastCardCountBadge: {
+        backgroundColor: 'rgba(198, 255, 74, 0.15)',
+        borderWidth: 1,
+        borderColor: COLORS.limeGlow,
     },
     myHandSection: {
         width: '100%',
@@ -445,7 +542,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: 'rgba(0, 240, 255, 0.3)',
-    }
+    },
 });
 
 export default WhotGameScreen;

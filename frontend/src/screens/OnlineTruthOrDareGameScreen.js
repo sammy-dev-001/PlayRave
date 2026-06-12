@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -20,9 +20,26 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         exitParams: { room, playerName }
     });
 
-    const [gameState, setGameState] = useState(null);
+    // Component-level nav handler (used by back press AND socket event)
+    const handleLeaveGame = (targetRoom) => {
+        navigation.reset({
+            index: 0,
+            routes: [{
+                name: 'Lobby',
+                params: {
+                    room: targetRoom || room,
+                    playerName,
+                    fromGame: true
+                }
+            }]
+        });
+    };
 
+    const [gameState, setGameState] = useState(null);
     const [playerNames, setPlayerNames] = useState({});
+    // FIX 10: Completion toast shown briefly when a turn ends
+    const [completionToast, setCompletionToast] = useState(null);
+    const completionTimerRef = useRef(null);
 
     // Build player name lookup
     useEffect(() => {
@@ -51,25 +68,26 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             setGameState(newState);
         };
 
-        const onTurnComplete = ({ gameState: newState }) => {
-            console.log('Turn complete, new state:', newState);
-            setGameState(newState);
+        const onTurnComplete = ({ gameState: newState, completedBy, promptType }) => {
+            // FIX 10: Show social feedback toast before advancing state
+            if (completedBy) {
+                const name = playerNames[completedBy] || 'Someone';
+                const type = promptType === 'dare' ? 'Dare' : 'Truth';
+                const emoji = promptType === 'dare' ? '🎯' : '💬';
+                setCompletionToast(`${emoji} ${name} completed their ${type}!`);
+                if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+                completionTimerRef.current = setTimeout(() => {
+                    setCompletionToast(null);
+                    setGameState(newState);
+                }, 1800);
+            } else {
+                setGameState(newState);
+            }
         };
 
         const onGameEnded = (data) => {
             console.log('Game ended received:', data);
-            // Use reset to avoid navigation loops and ensure clean state
-            navigation.reset({
-                index: 0,
-                routes: [{ 
-                    name: 'Lobby', 
-                    params: { 
-                        room: data?.room || room, 
-                        playerName,
-                        fromGame: true 
-                    } 
-                }]
-            });
+            handleLeaveGame(data?.room);
         };
 
         // Keep player names in sync when room updates (socket IDs change on reconnect)
@@ -91,10 +109,9 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             }
         };
 
-        // Game ended because a player left
         const onInsufficientPlayers = ({ message }) => {
             console.log('Game ended - not enough players:', message);
-            navigation.navigate('GameSelection', { room, playerName: playerNames[SocketService.socket?.id] || 'Player' });
+            handleLeaveGame();
         };
 
         SocketService.on('truth-or-dare-chosen', onTruthOrDareChosen);
@@ -164,10 +181,19 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                 if (isHost) {
                     handleEndGame();
                 } else {
-                    onGameEnded(); // Just navigate away
+                    handleLeaveGame();
                 }
             }}
         >
+            {/* FIX 10: Completion toast overlay — shows social feedback when a turn ends */}
+            {completionToast && (
+                <View style={styles.completionToast} pointerEvents="none">
+                    <NeonText size={18} weight="bold" color={COLORS.limeGlow} style={{ textAlign: 'center' }}>
+                        {completionToast}
+                    </NeonText>
+                </View>
+            )}
+
             <View style={styles.header}>
                 <NeonText size={32} weight="bold" glow>
                     TRUTH OR DARE
@@ -409,7 +435,26 @@ const styles = StyleSheet.create({
     },
     endButton: {
         marginTop: 20,
-    }
+    },
+    completionToast: {
+        position: 'absolute',
+        bottom: 80,
+        left: 20,
+        right: 20,
+        backgroundColor: 'rgba(10, 10, 26, 0.92)',
+        borderWidth: 1.5,
+        borderColor: COLORS.limeGlow,
+        borderRadius: 24,
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+        zIndex: 9999,
+        shadowColor: COLORS.limeGlow,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 12,
+        elevation: 20,
+    },
 });
 
 export default OnlineTruthOrDareGameScreen;

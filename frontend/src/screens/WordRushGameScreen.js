@@ -79,11 +79,13 @@ const WordRushGameScreen = ({ route, navigation }) => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
                         clearGameTimer();
-                        // Auto-show results - increased delay to allow network sync
+                        // FIX 7: Only the server should advance rounds.
+                        // The host emits show-results as a fallback ONLY if the server
+                        // hasn't already fired (prevents double-advancing).
                         if (isHost) {
                             setTimeout(() => {
                                 SocketService.emit('show-word-rush-results', { roomId: room.id });
-                            }, 2000);
+                            }, 3000); // longer delay gives server time to fire first
                         }
                         return 0;
                     }
@@ -278,7 +280,7 @@ const WordRushGameScreen = ({ route, navigation }) => {
 
                 {gameState === 'submitted' && (
                     <View style={styles.feedbackContainer}>
-                        <NeonText size={24} weight="bold" color={validationFeedback.includes('') ? COLORS.limeGlow : COLORS.hotPink}>
+                        <NeonText size={24} weight="bold" color={validationFeedback.toLowerCase().includes('valid') ? COLORS.limeGlow : COLORS.hotPink}>
                             {validationFeedback}
                         </NeonText>
                         <NeonText size={18} style={styles.wordDisplay}>
