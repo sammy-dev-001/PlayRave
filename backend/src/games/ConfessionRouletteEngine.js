@@ -66,6 +66,8 @@ class ConfessionRouletteEngine {
             case 'confession-vote':
             case 'submit-vote':
                 return this.submitConfessionVote(roomId, userId, payload.votedFor || payload.votedPlayerId);
+            case 'confession-force-results':
+                return this.getConfessionResults(roomId);
             case 'confession-next':
             case 'next-confession':
                 return this.nextConfession(roomId);
@@ -222,7 +224,7 @@ class ConfessionRouletteEngine {
                 },
                 {
                     action: 'schedule',
-                    eventToTrigger: 'confession-next',
+                    eventToTrigger: 'confession-force-results',
                     delay: game.votingTime * 1000,
                     data: {}
                 }
@@ -261,6 +263,9 @@ class ConfessionRouletteEngine {
 
     getConfessionResults(roomId) {
         const game = this.activeGames.get(roomId);
+        if (!game) return { action: 'error', message: 'Game not found' };
+        if (game.phase === 'results') return { action: 'none' }; // Prevent double calculation if called by timer and vote completion
+
         const currentConfession = game.confessions[game.currentConfessionIndex];
         const authorId = currentConfession.authorId;
         const author = game.players.find(p => p.userId === authorId);

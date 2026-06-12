@@ -88,7 +88,8 @@ const GameSelectionScreen = ({ route, navigation }) => {
         setWaitingForNavigation(true);
         
         if (game.id === 'hot-seat') {
-            navigation.navigate('HotSeatCategory', { room, playerName, isHost: true });
+            SocketService.emit('game-selected', { roomId: room.id, gameType: 'hot-seat-mc' });
+            navigation.navigate('Lobby', { room: { ...room, gameType: 'hot-seat-mc' }, playerName });
         } else if (game.id === 'whispers') {
             navigation.navigate('WhispersHub', { room, playerName, isHost: true });
         } else if (game.id === 'trivia') {

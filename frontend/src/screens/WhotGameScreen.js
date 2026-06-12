@@ -341,7 +341,7 @@ const WhotGameScreen = ({ route, navigation }) => {
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>
                             {gameState.playerHand?.map((card, index) => (
-                                <View key={card.id} style={[styles.cardWrapper, { zIndex: 100 - index }]}>
+                                <View key={card.id} style={[styles.cardWrapper, { zIndex: index + 1 }]}>
                                     <WhotCard
                                         card={card}
                                         onPress={() => handleCardPress(card)}

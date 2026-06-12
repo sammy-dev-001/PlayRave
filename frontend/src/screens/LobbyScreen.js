@@ -93,7 +93,7 @@ const LobbyScreen = ({ route, navigation }) => {
                 } = payload;
                 
                 const gameType = rawGameType || payload.type || gameState?.type;
-                const navParams = { room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
+                const navParams = { ...payload, room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
                 
                 console.log(`[LobbyScreen] >>> NAVIGATING TO: ${gameType} <<< (Source: ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')})`);
                 console.log(`[LobbyScreen] NavParams keys:`, Object.keys(navParams));
@@ -198,7 +198,7 @@ const LobbyScreen = ({ route, navigation }) => {
             navigation.navigate('OnlineNHIECategory', { room, isHost, playerName });
             return;
         }
-        if (selectedGame === 'hot-seat-mc') {
+        if (selectedGame === 'hot-seat-mc' || selectedGame === 'hot-seat') {
             navigation.navigate('HotSeatCategory', { room, isHost, playerName });
             return;
         }
@@ -294,7 +294,7 @@ const LobbyScreen = ({ route, navigation }) => {
                         players={room.players}
                         currentPlayerId={getCurrentPlayerId()}
                         isHost={isHost}
-                        maxPlayers={8}
+                        maxPlayers={20}
                         onKick={handleKickPlayer}
                     />
 

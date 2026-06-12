@@ -44,8 +44,15 @@ class ColorRushEngine {
             { name: 'ORANGE', hex: '#ff9933' }
         ];
         const targetColor = colors[Math.floor(Math.random() * colors.length)];
-        // displayColor is the color of the text (might not match the word)
-        const displayColor = Math.random() > 0.5 ? colors[Math.floor(Math.random() * colors.length)] : targetColor;
+        
+        // 75% chance of mismatch (incongruent), 25% chance of match (congruent)
+        let displayColor;
+        if (Math.random() < 0.75) {
+            const mismatchColors = colors.filter(c => c.name !== targetColor.name);
+            displayColor = mismatchColors[Math.floor(Math.random() * mismatchColors.length)];
+        } else {
+            displayColor = targetColor;
+        }
         
         return { 
             targetColorName: targetColor.name, 

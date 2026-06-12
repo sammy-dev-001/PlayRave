@@ -51,16 +51,19 @@ const HotSeatScreen = ({ route, navigation }) => {
             }
         };
 
-        const onGameFinished = ({ message }) => {
-            Alert.alert('Game Complete!', message, [
-                { text: 'Back to Lobby', onPress: () => {
-                    try {
-                        navigation.navigate('Lobby', { room, playerName });
-                    } catch (e) {
-                        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-                    }
-                } }
-            ]);
+        const onGameFinished = (data) => {
+            console.log('Hot seat game finished/ended, returning to lobby');
+            navigation.reset({
+                index: 0,
+                routes: [{ 
+                    name: 'Lobby', 
+                    params: { 
+                        room: data?.room || room, 
+                        playerName,
+                        fromGame: true 
+                    } 
+                }]
+            });
         };
 
         SocketService.on('game-started', onGameStarted);
@@ -68,6 +71,8 @@ const HotSeatScreen = ({ route, navigation }) => {
         SocketService.on('hot-seat-answering-started', onAnsweringStarted);
         SocketService.on('hot-seat-new-player', onNewPlayer);
         SocketService.on('hot-seat-game-finished', onGameFinished);
+        SocketService.on('game-ended', onGameFinished);
+        SocketService.on('hot-seat-ended', onGameFinished);
         SocketService.on('game-state-sync', onGameStateSync);
 
         // Fetch initial state
@@ -79,6 +84,8 @@ const HotSeatScreen = ({ route, navigation }) => {
             SocketService.off('hot-seat-answering-started', onAnsweringStarted);
             SocketService.off('hot-seat-new-player', onNewPlayer);
             SocketService.off('hot-seat-game-finished', onGameFinished);
+            SocketService.off('game-ended', onGameFinished);
+            SocketService.off('hot-seat-ended', onGameFinished);
             SocketService.off('game-state-sync', onGameStateSync);
         };
     }, [navigation, room, playerName]);
@@ -203,8 +210,8 @@ const HotSeatScreen = ({ route, navigation }) => {
 
                             {questions && questions[currentQuestionIndex] && (
                                 <View style={styles.questionCard}>
-                                    <NeonText size={12} color={COLORS.electricPurple}>
-                                        FROM: {questions[currentQuestionIndex].fromPlayerName}
+                                    <NeonText size={12} color={COLORS.electricPurple} style={{ letterSpacing: 2 }}>
+                                        ANONYMOUS QUESTION
                                     </NeonText>
                                     <NeonText size={22} weight="bold" style={styles.questionText}>
                                         "{questions[currentQuestionIndex].question}"

@@ -295,6 +295,15 @@ class TicTacToeEngine {
         if (!game) return { action: 'error', message: 'Game not found' };
 
         game.currentMatchIndex++;
+
+        // Auto-skip pre-completed matches (BYEs)
+        while (
+            game.currentMatchIndex < game.matches.length &&
+            game.matches[game.currentMatchIndex].completed
+        ) {
+            game.currentMatchIndex++;
+        }
+
         const allComplete = game.matches.every(m => m.completed);
 
         if (allComplete) {
@@ -365,16 +374,15 @@ class TicTacToeEngine {
                     isAIMatch:   players[i].isAI || players[i + 1].isAI || false,
                 });
             } else {
-                // Odd player — AI opponent
-                const ai = { userId: `ai-bot-${Date.now()}`, name: '🤖 AI Bot', isAI: true, wins: 0 };
+                // Odd player — BYE (Automatically advances)
                 matches.push({
                     player1:     players[i],
-                    player2:     ai,
+                    player2:     { userId: `bye-${Date.now()}`, name: '(BYE)', isAI: false },
                     board:       Array(9).fill(null),
-                    currentTurn: players[i].userId,
-                    winner:      null,
-                    completed:   false,
-                    isAIMatch:   true,
+                    currentTurn: null,
+                    winner:      players[i], // Auto-win
+                    completed:   true,       // Auto-complete
+                    isAIMatch:   false,
                 });
             }
         }

@@ -24,9 +24,9 @@ class UnpopularOpinionsEngine {
         const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
             .map(p => ({ userId: p.userId, name: p.name, avatar: p.avatar || null, score: 0 }));
 
-        // Shuffle opinions and cap at 10 rounds
+        // Shuffle opinions and cap at 20 rounds
         const opinions  = [...UNPOPULAR_OPINIONS].sort(() => 0.5 - Math.random());
-        const maxRounds = Math.min(opinions.length, 10);
+        const maxRounds = Math.min(opinions.length, 20);
 
         const gameState = {
             type:           'unpopular-opinions',
@@ -44,15 +44,31 @@ class UnpopularOpinionsEngine {
         this.activeGames.set(roomId, gameState);
 
         return {
-            action: 'broadcast',
-            event: 'game-started',
-            data: {
-                gameType: 'unpopular-opinions',
-                type: 'unpopular-opinions',
-                gameState: this._publicState(gameState),
-                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
-                hostParticipates
-            }
+            action: 'multiple',
+            instructions: [
+                {
+                    action: 'broadcast',
+                    event: 'game-started',
+                    data: {
+                        gameType: 'unpopular-opinions',
+                        type: 'unpopular-opinions',
+                        gameState: this._publicState(gameState),
+                        players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                        hostParticipates
+                    }
+                },
+                {
+                    action: 'broadcast',
+                    event: 'opinion-phase-changed',
+                    data: { phase: 'opinion', seconds: 20 }
+                },
+                {
+                    action: 'schedule',
+                    eventToTrigger: 'end-voting',
+                    delay: 20000,
+                    data: {}
+                }
+            ]
         };
 
     }
@@ -103,7 +119,7 @@ class UnpopularOpinionsEngine {
             maxRounds:      game.maxRounds,
             voteCount:      Object.keys(game.votes).length,
             totalPlayers:   game.players.length,
-            scores:         game.players.reduce((acc, p) => { acc[p.userId] = p.score; return acc; }, {}),
+            scores:         game.players.reduce((acc, p) => { acc[p.name] = p.score; return acc; }, {}),
         };
     }
 
@@ -131,6 +147,7 @@ class UnpopularOpinionsEngine {
     _endVoting(roomId) {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'error', message: 'Game not found' };
+        if (game.phase === 'results') return { action: 'none' }; // Prevent double calculation if called by timer and vote completion
 
         const votes = game.votes;
         let agreeCount    = 0;
@@ -171,7 +188,7 @@ class UnpopularOpinionsEngine {
                 isUnpopular:  !!minorityVote,
                 minorityVote,
                 votes,
-                scores:       game.players.reduce((acc, p) => { acc[p.userId] = p.score; return acc; }, {}),
+                scores:       game.players.reduce((acc, p) => { acc[p.name] = p.score; return acc; }, {}),
                 round:        game.round,
                 maxRounds:    game.maxRounds,
             },
@@ -195,7 +212,7 @@ class UnpopularOpinionsEngine {
             return {
                 action: 'broadcast',
                 event:  'opinion-final-scores',
-                data:   game.players.reduce((acc, p) => { acc[p.userId] = p.score; return acc; }, {}),
+                data:   game.players.reduce((acc, p) => { acc[p.name] = p.score; return acc; }, {}),
             };
         }
 
@@ -209,12 +226,18 @@ class UnpopularOpinionsEngine {
                 {
                     action: 'broadcast',
                     event:  'opinion-phase-changed',
-                    data:   { phase: 'opinion' },
+                    data:   { phase: 'opinion', seconds: 20 },
                 },
                 {
                     action: 'broadcast',
                     event:  'opinion-new-round',
                     data:   { opinion: game.currentOpinion },
+                },
+                {
+                    action: 'schedule',
+                    eventToTrigger: 'end-voting',
+                    delay: 20000,
+                    data: {}
                 }
             ]
         };

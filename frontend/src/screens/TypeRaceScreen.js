@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, TextInput, Animated, Platform, Vibration, Keyboard, ScrollView } from 'react-native';
+import { View, StyleSheet, TextInput, Animated, Platform, Vibration, Keyboard, ScrollView, TouchableOpacity } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';

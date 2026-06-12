@@ -537,6 +537,11 @@ io.on("connection", (socket) => {
         await emitRoomUpdate(roomId);
     });
 
+    // ── 6.5 REACTIONS ───────────────────────────────────────────────────
+    socket.on("send-reaction", ({ roomId, emoji, playerName }) => {
+        io.to(roomId).emit("reaction-received", { emoji, senderId: socket.id, playerName });
+    });
+
     // ── 7. GAME-ACTION (Future unified event) ───────────────────────
     // Eventually all game events will come through this single channel.
     socket.on("game-action", async ({ roomId, eventName, payload }) => {

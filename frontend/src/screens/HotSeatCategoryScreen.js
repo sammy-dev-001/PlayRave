@@ -146,10 +146,12 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
             gameType: gameType
         });
 
-        // Navigate back to lobby so other players can join/see the choice
-        navigation.navigate('Lobby', { 
-            room: { ...room, gameType: gameType }, 
-            playerName 
+        // Start the game immediately on the server
+        SocketService.emit('start-game', {
+            roomId: room.id,
+            gameType: gameType,
+            category: selectedCategory,
+            hostParticipates: room.settings?.hostParticipates !== false
         });
     };
 

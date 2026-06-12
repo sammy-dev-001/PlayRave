@@ -135,9 +135,11 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         }
         if (newPhase === GAME_PHASES.VOTING) {
             setSelectedPlayer(null);
+            setHasVoted(false);
         }
         if (newPhase === GAME_PHASES.REVEAL) {
             setSelectedPlayer(null);
+            setHasVoted(false);
         }
         if (newPhase === GAME_PHASES.RESULTS) {
             setIsAuthor(false); // Reset each round - will be set by confession-you-are-author if applicable
@@ -245,14 +247,17 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         setHasSubmitted(true);
     };
 
+    const [hasVoted, setHasVoted] = useState(false);
+
     const submitVote = () => {
-        if (!selectedPlayer) return;
+        if (!selectedPlayer || hasVoted) return;
 
         SocketService.emit('confession-vote', {
             roomId: room.id,
             playerName,
             votedFor: selectedPlayer
         });
+        setHasVoted(true);
     };
 
     const nextConfession = () => {
@@ -434,12 +439,19 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                 )}
             </ScrollView>
 
-            <NeonButton
-                title="LOCK IN VOTE"
-                onPress={submitVote}
-                disabled={!selectedPlayer}
-                style={styles.voteButton}
-            />
+            {hasVoted ? (
+                <View style={styles.submittedBadge}>
+                    <NeonText size={18} color={COLORS.limeGlow} glow>VOTE LOCKED IN!</NeonText>
+                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>Waiting for others...</NeonText>
+                </View>
+            ) : (
+                <NeonButton
+                    title="LOCK IN VOTE"
+                    onPress={submitVote}
+                    disabled={!selectedPlayer}
+                    style={styles.voteButton}
+                />
+            )}
         </View>
     );
 

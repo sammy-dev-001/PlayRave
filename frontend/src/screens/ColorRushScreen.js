@@ -219,7 +219,8 @@ const ColorRushScreen = ({ route, navigation }) => {
                                     size={64}
                                     weight="bold"
                                     glow
-                                    style={[styles.targetWord, { color: displayColorHex }]}
+                                    color={displayColorHex}
+                                    style={styles.targetWord}
                                 >
                                     {targetColorName}
                                 </NeonText>

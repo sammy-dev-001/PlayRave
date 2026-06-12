@@ -115,7 +115,9 @@ const MathBlitzScreen = ({ route, navigation }) => {
             if (data.gameState) {
                 setTotalRounds(data.gameState.totalRounds || 10);
                 setCurrentRound(data.gameState.currentRound || 1);
-                setPhase(data.gameState.phase || 'waiting');
+                if (data.gameState.phase) {
+                    setPhase(data.gameState.phase);
+                }
             }
         };
 
@@ -125,7 +127,8 @@ const MathBlitzScreen = ({ route, navigation }) => {
         SocketService.on('math-blitz-round-results', onRoundResults);
         SocketService.on('math-blitz-next-round-ready', onNextRoundReady);
         SocketService.on('math-blitz-game-finished', onGameFinished);
-        SocketService.on('math-blitz-game-ended', onGameEnded);
+        SocketService.on('game-ended', onGameEnded);
+        SocketService.on('math-blitz-ended', onGameEnded);
         SocketService.on('game-state-sync', onGameStateSync);
 
         // Fetch state on mount
@@ -138,12 +141,12 @@ const MathBlitzScreen = ({ route, navigation }) => {
             SocketService.off('math-blitz-round-results', onRoundResults);
             SocketService.off('math-blitz-next-round-ready', onNextRoundReady);
             SocketService.off('math-blitz-game-finished', onGameFinished);
-            SocketService.off('math-blitz-game-ended', onGameEnded);
+            SocketService.off('game-ended', onGameEnded);
+            SocketService.off('math-blitz-ended', onGameEnded);
             SocketService.off('game-state-sync', onGameStateSync);
         };
-    }, [navigation, playerName, isHost]);
+    }, [navigation, room, playerName, isHost]);
 
-    // Countdown timer
     useEffect(() => {
         if (phase !== 'countdown') return;
 
@@ -434,7 +437,11 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 15,
+        width: '100%',
+        maxWidth: 300,
+        alignSelf: 'center',
     },
     answerInput: {
         flex: 1,

@@ -27,7 +27,7 @@ const GAME_PHASES = {
 };
 
 const ImposterScreen = ({ route, navigation }) => {
-    const { room, playerName, isHost, gameState, players: initialPlayers } = route.params;
+    const { room, playerName, isHost, gameState, players: initialPlayers, myWord: initialMyWord, isImposter: initialIsImposter } = route.params;
 
     // FIX 4: Disconnect handler — if server drops, navigate back to lobby
     useGameDisconnectHandler({
@@ -42,8 +42,8 @@ const ImposterScreen = ({ route, navigation }) => {
 
     // Game state
     const [phase, setPhase] = useState(gameState?.phase || GAME_PHASES.WAITING);
-    const [myWord, setMyWord] = useState(gameState?.myWord || null);
-    const [isImposter, setIsImposter] = useState(gameState?.isImposter || false);
+    const [myWord, setMyWord] = useState(initialMyWord || gameState?.myWord || null);
+    const [isImposter, setIsImposter] = useState(initialIsImposter !== undefined ? initialIsImposter : (gameState?.isImposter || false));
     const [players, setPlayers] = useState(initialPlayers || room?.players || []);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [votes, setVotes] = useState({});

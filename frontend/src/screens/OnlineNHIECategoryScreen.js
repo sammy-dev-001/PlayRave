@@ -35,6 +35,22 @@ const OnlineNHIECategoryScreen = ({ route, navigation }) => {
             icon: 'warning'
         }
     ];
+    React.useEffect(() => {
+        const onGameStarted = (data) => {
+            if (data.gameType === 'never-have-i-ever') {
+                navigation.replace('OnlineNeverHaveIEver', {
+                    room,
+                    isHost,
+                    playerName,
+                    category: selectedCategory,
+                    ...data
+                });
+            }
+        };
+
+        SocketService.on('game-started', onGameStarted);
+        return () => SocketService.off('game-started', onGameStarted);
+    }, [navigation, room, isHost, playerName, selectedCategory]);
 
     const handleStartGame = () => {
         setIsStarting(true);

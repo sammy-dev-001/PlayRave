@@ -10,7 +10,7 @@ import ProfileService from '../services/ProfileService';
 import { COLORS } from '../constants/theme';
 
 const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
-    const { room, isHost, initialGameState, players, playerName } = route.params;
+    const { room, isHost, gameState: initialGameState, players, playerName } = route.params;
 
     useGameDisconnectHandler({
         navigation,

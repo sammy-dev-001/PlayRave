@@ -97,8 +97,8 @@ class HotSeatEngine {
         const submittedCount = Object.keys(game.submittedQuestions).length;
 
         const questions = Object.entries(game.submittedQuestions).map(([pid, q]) => ({
-            fromPlayerId: pid,
-            fromPlayerName: game.playerOrder.find(p => p.userId === pid)?.name || 'Anonymous',
+            fromPlayerId: null,
+            fromPlayerName: 'Anonymous',
             question: q
         }));
 
@@ -204,10 +204,11 @@ class HotSeatEngine {
 
         if (!nextPlayer) {
             game.phase = 'finished';
+            this.activeGames.delete(roomId);
             return {
-                action: 'broadcast',
+                action: 'game-ended',
                 event: 'hot-seat-game-finished',
-                data: { message: 'All players have been on the hot seat!' }
+                data: { message: 'All players have been on the hot seat!', finished: true, gameOver: true }
             };
         }
 
