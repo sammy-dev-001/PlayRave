@@ -21,7 +21,7 @@ const SPECIAL_TOAST_CONFIG = {
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 const getShapeSymbol = (shape) => {
-    const symbols = { circle: '○', triangle: '△', cross: '✚', square: '□', star: '★' };
+    const symbols = { circle: '○', triangle: '△', cross: '+', square: '□', star: '★' };
     return symbols[shape] || shape;
 };
 

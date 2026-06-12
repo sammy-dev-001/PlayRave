@@ -28,7 +28,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
         }, 1000);
 
         const onReadyForNext = () => {
-            navigation.goBack();
+            navigation.replace('WordRushGame', { room, hostParticipates, isHost, playerName: route.params.playerName });
         };
 
         const onWinner = ({ winner }) => {

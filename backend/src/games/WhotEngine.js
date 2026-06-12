@@ -153,23 +153,29 @@ class WhotEngine {
 
         if (game.attackStack > 0) {
             const attackCardNumber = topCard.number;
-            if (attackCardNumber === 14) return false;
-            if (card.number === attackCardNumber) return true;
-            return false;
+            if (card.shape === 'whot') return { valid: true }; // Whot cancels attacks
+            if (attackCardNumber === 14) return { valid: false, reason: 'Invalid attack state' };
+            if (card.number === attackCardNumber) return { valid: true };
+            return { valid: false, reason: `Must respond with a Pick ${attackCardNumber === 2 ? 2 : 3} or draw cards` };
         }
 
-        if (card.shape === 'whot') return true;
+        if (card.shape === 'whot') return { valid: true };
+        if (topCard.shape === 'whot' && !game.calledShape) return { valid: true };
 
         if (game.calledShape) {
-            return card.shape === game.calledShape;
+            if (card.shape === game.calledShape) return { valid: true };
+            return { valid: false, reason: `Must play a ${game.calledShape.toUpperCase()} card` };
         }
 
-        return card.shape === topCard.shape || card.number === topCard.number;
+        if (card.shape === topCard.shape || card.number === topCard.number) return { valid: true };
+        return { valid: false, reason: 'Card must match the top shape or number' };
     }
 
     playWhotCard(roomId, userId, cardId, calledShape = null) {
         const game = this.activeGames.get(roomId);
         if (!game || game.type !== 'whot') return { action: 'error', targetId: userId, message: 'Game not found' };
+
+        if (game.status === 'FINISHED') return { action: 'none' };
 
         const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
         if (currentPlayerId !== userId) {
@@ -179,19 +185,23 @@ class WhotEngine {
         const playerHand = game.playerHands[userId];
         const cardIndex = playerHand.findIndex(c => c.id === cardId);
         if (cardIndex === -1) {
-            return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Card not in hand' } };
+            // Desync detected. Force a state sync instead of throwing a confusing error.
+            return {
+                action: 'emit',
+                targetId: userId,
+                event: 'whot-state-update',
+                data: { gameState: this.getWhotGameState(roomId, userId) }
+            };
         }
 
         const card = playerHand[cardIndex];
 
-        if (!this.canPlayCard(game, card)) {
-            return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Invalid move' } };
+        const validation = this.canPlayCard(game, card);
+        if (!validation.valid) {
+            return { action: 'emit', targetId: userId, event: 'error', data: { message: validation.reason || 'Invalid move' } };
         }
 
-        playerHand.splice(cardIndex, 1);
-        game.discardPile.push(card);
-        game.topCard = card;
-
+        // Whot card must have a shape called
         if (card.shape === 'whot') {
             if (!calledShape) {
                 return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Must call a shape for Whot card' } };
@@ -200,6 +210,14 @@ class WhotEngine {
         } else {
             game.calledShape = null;
         }
+
+        // It is a valid play, remove from hand and add to pile
+        playerHand.splice(cardIndex, 1);
+        game.discardPile.push(card);
+        game.topCard = card;
+
+        // Apply special card effects (e.g. General Market) BEFORE checking for win
+        const actionTaken = this.handleWhotSpecialCard(game, card);
 
         if (playerHand.length === 0) {
             game.status = 'FINISHED';
@@ -217,7 +235,6 @@ class WhotEngine {
             };
         }
 
-        const actionTaken = this.handleWhotSpecialCard(game, card);
         if (actionTaken !== 'skip') {
             this.moveToNextPlayer(game);
         }
@@ -252,6 +269,10 @@ class WhotEngine {
         if (!card.isSpecial) return null;
 
         switch (card.action) {
+            case 'whot':
+                if (game.attackStack > 0) game.attackStack = 0;
+                return 'whot';
+
             case 'pick2':
                 game.attackStack = (game.attackStack || 0) + 2;
                 return 'pick2';

@@ -17,7 +17,7 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
     useEffect(() => {
         const onReadyForNext = () => {
             console.log('Ready for next round - navigating back to game');
-            navigation.navigate('NeonTapGame', { room, hostParticipates, isHost });
+            navigation.replace('NeonTapGame', { room, hostParticipates, isHost, playerName: route.params.playerName });
         };
 
         const onGameFinished = ({ finalScores }) => {

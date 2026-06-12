@@ -18,6 +18,29 @@ const MythOrFactResultsScreen = ({ route }) => {
     const showRaveLights = currentPlayerResult?.isCorrect || false;
 
     useEffect(() => {
+        const onNextStatementReady = (data) => {
+            console.log('Next statement ready in results:', data);
+            const nextS = data.statement || data.gameState?.statement;
+            if (nextS) {
+                navigation.replace('MythOrFactQuestion', {
+                    room,
+                    statement: nextS,
+                    statementIndex: nextS.statementIndex || (data.gameState?.statementIndex || 0),
+                    hostParticipates,
+                    isHost,
+                    playerName: route.params?.playerName
+                });
+            }
+        };
+
+        const onGameFinished = ({ finalScores }) => {
+            console.log('Game finished:', finalScores);
+            navigation.navigate('Scoreboard', { room, finalScores });
+        };
+
+        SocketService.on('next-myth-or-fact-statement-ready', onNextStatementReady);
+        SocketService.on('game-finished', onGameFinished);
+
         if (hostParticipates) {
             const timer = setInterval(() => {
                 setCountdown(prev => {
@@ -32,9 +55,18 @@ const MythOrFactResultsScreen = ({ route }) => {
                 });
             }, 1000);
 
-            return () => clearInterval(timer);
+            return () => {
+                clearInterval(timer);
+                SocketService.off('next-myth-or-fact-statement-ready', onNextStatementReady);
+                SocketService.off('game-finished', onGameFinished);
+            };
         }
-    }, [hostParticipates, isHost]);
+
+        return () => {
+            SocketService.off('next-myth-or-fact-statement-ready', onNextStatementReady);
+            SocketService.off('game-finished', onGameFinished);
+        };
+    }, [hostParticipates, isHost, navigation, room]);
 
     const handleNext = () => {
         console.log('Host requesting next statement');
