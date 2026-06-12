@@ -28,6 +28,8 @@ const WordRushGameScreen = ({ route, navigation }) => {
     const [currentRound, setCurrentRound] = useState(0);
     const [isEliminated, setIsEliminated] = useState(false);
     const [validationFeedback, setValidationFeedback] = useState('');
+    const [isDuelMode, setIsDuelMode] = useState(false);
+    const [totalRounds, setTotalRounds] = useState(5);
 
     const inputRef = useRef(null);
     const canPlay = (!isHost || hostParticipates) && !isEliminated;
@@ -50,8 +52,8 @@ const WordRushGameScreen = ({ route, navigation }) => {
             }, 1000);
         }
 
-        const onRoundStarted = ({ letter, roundStartTime, currentRound: round, activePlayers }) => {
-            console.log('Round started - raw data:', { letter, roundStartTime, round, activePlayers });
+        const onRoundStarted = ({ letter, roundStartTime, currentRound: round, activePlayers, isDuelMode: serverIsDuelMode, totalRounds: serverTotalRounds }) => {
+            console.log('Round started - raw data:', { letter, roundStartTime, round, activePlayers, isDuelMode: serverIsDuelMode });
 
             // Validate letter is present
             if (!letter) {
@@ -64,6 +66,8 @@ const WordRushGameScreen = ({ route, navigation }) => {
 
             setCurrentLetter(letter);
             setCurrentRound(round);
+            if (serverIsDuelMode !== undefined) setIsDuelMode(serverIsDuelMode);
+            if (serverTotalRounds !== undefined) setTotalRounds(serverTotalRounds);
             setWord('');
             setValidationFeedback('');
             setGameState('playing');
@@ -118,12 +122,12 @@ const WordRushGameScreen = ({ route, navigation }) => {
 
             // Check if current player was eliminated
             const myId = SocketService.userId;
-            if (results.eliminated.includes(myId)) {
+            if (!results.isDuelMode && results.eliminated && results.eliminated.includes(myId)) {
                 console.log('Current player was eliminated!');
                 setIsEliminated(true);
             }
 
-            navigation.navigate('WordRushResults', { room, results, hostParticipates, isHost });
+            navigation.replace('WordRushResults', { room, results, hostParticipates, isHost });
         };
 
         const onReadyForNext = () => {
@@ -221,7 +225,7 @@ const WordRushGameScreen = ({ route, navigation }) => {
 
             <View style={styles.header}>
                 <NeonText size={14} color={COLORS.hotPink}>
-                    ROUND {currentRound + 1}
+                    {isDuelMode ? `ROUND ${currentRound + 1} / ${totalRounds}` : `ROUND ${currentRound + 1}`}
                 </NeonText>
                 {gameState === 'playing' && (
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>

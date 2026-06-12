@@ -21,7 +21,7 @@ const SPECIAL_TOAST_CONFIG = {
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 const getShapeSymbol = (shape) => {
-    const symbols = { circle: '○', triangle: '△', cross: '✕', square: '□', star: '★' };
+    const symbols = { circle: '○', triangle: '△', cross: '✚', square: '□', star: '★' };
     return symbols[shape] || shape;
 };
 
@@ -147,12 +147,17 @@ const WhotGameScreen = ({ route, navigation }) => {
             }
         };
 
+        const onError = (data) => {
+            showToast({ message: data.message || 'Invalid move', icon: '⚠️', color: COLORS.hotPink });
+        };
+
         SocketService.on('game-started',      onGameStarted);
         SocketService.on('whot-state-update', onStateUpdate);
         SocketService.on('whot-card-played',  onStateUpdate);   // Legacy
         SocketService.on('whot-card-drawn',   onStateUpdate);   // Legacy
         SocketService.on('whot-game-ended',   onGameEnded);
         SocketService.on('game-state-sync',   onGameStateSync);
+        SocketService.on('error',             onError);
 
         SocketService.emit('whot-get-state', { roomId: room.id });
 
@@ -163,6 +168,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             SocketService.off('whot-card-drawn',   onStateUpdate);
             SocketService.off('whot-game-ended',   onGameEnded);
             SocketService.off('game-state-sync',   onGameStateSync);
+            SocketService.off('error',             onError);
         };
     }, [navigation, room.id]);
 

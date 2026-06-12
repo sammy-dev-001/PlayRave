@@ -185,6 +185,25 @@ class RoomManager {
         return null;
     }
 
+    async kickPlayer(roomId, hostUserId, targetUserId) {
+        const room = await this.getRoom(roomId);
+        if (!room) return { error: 'Room not found' };
+
+        if (room.hostUserId !== hostUserId) {
+            return { error: 'Only the host can kick players' };
+        }
+
+        const result = this.removePlayer(targetUserId);
+        if (!result) return { error: 'Player not found in room' };
+
+        return {
+            success: true,
+            kickedPlayer: result.removedPlayer,
+            room: result.room,
+            roomDeleted: result.roomDeleted
+        };
+    }
+
     // ── Lookups ─────────────────────────────────────────────────────────
 
     async getRoom(roomId) {

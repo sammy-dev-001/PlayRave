@@ -80,19 +80,6 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Waiting-for-others pulse animation (starts after submitting)
-    useEffect(() => {
-        if (hasSubmitted) {
-            pulseLoop.current = Animated.loop(
-                Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 0.6, duration: 800, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1.0, duration: 800, useNativeDriver: true }),
-                ])
-            );
-            pulseLoop.current.start();
-        }
-        return () => pulseLoop.current?.stop();
-    }, [hasSubmitted, pulseAnim]);
 
     // ── Socket listeners — the server drives every transition ──────────────
     useEffect(() => {
@@ -121,8 +108,9 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
 
         // Server sends results → navigate to results screen
         const onResults = (results) => {
+            console.log('Results received:', results);
             if (timerRef.current) clearInterval(timerRef.current);
-            navigation.navigate('WhosMostLikelyResults', {
+            navigation.replace('WhosMostLikelyResults', {
                 room,
                 results,
                 players,

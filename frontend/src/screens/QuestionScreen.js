@@ -47,7 +47,7 @@ const QuestionScreen = ({ route, navigation }) => {
 
         const onQuestionResults = (results) => {
             console.log('Question results received:', results);
-            navigation.navigate('Results', { room, results, hostParticipates, isHost });
+            navigation.replace('Results', { room, results, hostParticipates, isHost });
         };
 
         const onNextQuestionReady = (data) => {

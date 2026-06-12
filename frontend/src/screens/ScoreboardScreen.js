@@ -179,7 +179,7 @@ const ScoreboardScreen = ({ route, navigation }) => {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                     <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
-                        {isWinner ? '0 pts' : `${item.score} pts`}
+                        {`${item.score} pts`}
                     </NeonText>
                     {hasPenalty && (
                         <NeonText size={11} color={COLORS.hotPink}>penalty</NeonText>

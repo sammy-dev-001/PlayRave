@@ -12,7 +12,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
 
     useEffect(() => {
         const currentUserId = SocketService.userId;
-        if (results.eliminated.includes(currentUserId)) {
+        if (!results.isDuelMode && results.eliminated && results.eliminated.includes(currentUserId)) {
             SoundService.playElimination();
         }
 
@@ -61,7 +61,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
     const renderSubmission = ({ item }) => {
         const targetId = item.userId || item.playerId;
         const playerName = getPlayerName(targetId);
-        const isEliminated = results.eliminated.includes(targetId);
+        const isEliminated = !results.isDuelMode && results.eliminated && results.eliminated.includes(targetId);
 
         return (
             <View style={[styles.submissionRow, isEliminated && styles.eliminatedRow]}>
@@ -98,7 +98,21 @@ const WordRushResultsScreen = ({ route, navigation }) => {
                 </NeonText>
             </View>
 
-            {results.eliminated.length > 0 && (
+            {results.isDuelMode ? (
+                <View style={styles.duelScoreContainer}>
+                    <NeonText size={18} style={styles.sectionTitle}>ROUND WINNER</NeonText>
+                    <NeonText size={24} color={COLORS.limeGlow} glow style={styles.winnerName}>
+                        {results.roundWinner ? getPlayerName(results.roundWinner) : 'NOBODY'}
+                    </NeonText>
+                    <View style={styles.scoreRow}>
+                        {Object.entries(results.duelScores || {}).map(([pid, score]) => (
+                            <NeonText key={pid} size={16} color={COLORS.neonCyan} style={{marginHorizontal: 10}}>
+                                {getPlayerName(pid)}: {score} pts
+                            </NeonText>
+                        ))}
+                    </View>
+                </View>
+            ) : results.eliminated && results.eliminated.length > 0 && (
                 <View style={styles.eliminationAnnouncement}>
                     <NeonText size={20} color={COLORS.hotPink} style={styles.eliminationText}>
                         ❌ ELIMINATED ❌
@@ -119,9 +133,11 @@ const WordRushResultsScreen = ({ route, navigation }) => {
             />
 
             <NeonText style={styles.autoAdvance}>
-                {results.remainingPlayers > 1
-                    ? `Next round in ${countdown}s... (${results.remainingPlayers} players left)`
-                    : `Determining winner in ${countdown}s...`}
+                {results.isDuelMode
+                    ? (results.currentRound < 4 ? `Next round in ${countdown}s... (Round ${results.currentRound + 2} of 5)` : `Determining winner in ${countdown}s...`)
+                    : (results.remainingPlayers > 1
+                        ? `Next round in ${countdown}s... (${results.remainingPlayers} players left)`
+                        : `Determining winner in ${countdown}s...`)}
             </NeonText>
         </NeonContainer>
     );
@@ -131,6 +147,9 @@ const styles = StyleSheet.create({
     header: { alignItems: 'center', marginBottom: 20 },
     title: { letterSpacing: 2 },
     letterDisplay: { alignItems: 'center', marginBottom: 20 },
+    duelScoreContainer: { alignItems: 'center', marginBottom: 25, padding: 15, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 12, borderWidth: 2, borderColor: COLORS.neonCyan },
+    scoreRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 10 },
+    winnerName: { textAlign: 'center' },
     eliminationAnnouncement: { marginBottom: 25, padding: 15, backgroundColor: 'rgba(255, 63, 164, 0.1)', borderRadius: 12, borderWidth: 2, borderColor: COLORS.hotPink },
     eliminationText: { textAlign: 'center', marginBottom: 10 },
     eliminatedNames: { textAlign: 'center', color: COLORS.white },

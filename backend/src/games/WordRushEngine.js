@@ -41,11 +41,15 @@ class WordRushEngine {
         const hostParticipates = options.hostParticipates !== false;
         const roomId = room.id;
         const activePlayers = [];
+        const duelScores = {};
         
         room.players.forEach(player => {
             if (!hostParticipates && player.isHost) return;
             activePlayers.push(player.userId);
+            duelScores[player.userId] = 0;
         });
+
+        const isDuelMode = activePlayers.length === 2;
 
         const game = {
             type: 'word-rush',
@@ -57,7 +61,10 @@ class WordRushEngine {
             activePlayers,
             eliminatedPlayers: [],
             status: 'WAITING',
-            hostParticipates
+            hostParticipates,
+            isDuelMode,
+            duelScores,
+            totalRounds: isDuelMode ? 5 : 999
         };
 
         this.activeGames.set(roomId, game);
@@ -84,7 +91,10 @@ class WordRushEngine {
         return {
             currentRound: game.currentRound,
             status: game.status,
-            activePlayers: game.activePlayers
+            activePlayers: game.activePlayers,
+            isDuelMode: game.isDuelMode,
+            duelScores: game.duelScores,
+            totalRounds: game.totalRounds
         };
     }
 
@@ -107,7 +117,9 @@ class WordRushEngine {
                 letter: randomLetter,
                 roundStartTime: game.roundStartTime,
                 currentRound: game.currentRound,
-                activePlayers: game.activePlayers
+                activePlayers: game.activePlayers,
+                isDuelMode: game.isDuelMode,
+                totalRounds: game.totalRounds
             }
         };
     }
@@ -167,21 +179,30 @@ class WordRushEngine {
         const validSubmissions = submissions.filter(s => s.isValid);
         const invalidSubmissions = submissions.filter(s => !s.isValid);
         let eliminated = [];
+        let roundWinner = null;
         
-        if (submissions.length === 0) {
-            eliminated = [];
-        } else if (validSubmissions.length === 0) {
-            const submittedButInvalid = submissions.filter(s => s.submitTime !== null);
-            if (submittedButInvalid.length > 0) {
-                eliminated = [submittedButInvalid[submittedButInvalid.length - 1].userId];
-            } else if (game.activePlayers.length > 0) {
-                const randomIndex = Math.floor(Math.random() * game.activePlayers.length);
-                eliminated = [game.activePlayers[randomIndex]];
+        if (game.isDuelMode) {
+            if (validSubmissions.length > 0) {
+                // validSubmissions[0] is the fastest since submissions is sorted by submitTime
+                roundWinner = validSubmissions[0].userId;
+                game.duelScores[roundWinner]++;
             }
-        } else if (validSubmissions.length === game.activePlayers.length) {
-            eliminated = [validSubmissions[validSubmissions.length - 1].userId];
         } else {
-            eliminated = invalidSubmissions.map(s => s.userId);
+            if (submissions.length === 0) {
+                eliminated = [];
+            } else if (validSubmissions.length === 0) {
+                const submittedButInvalid = submissions.filter(s => s.submitTime !== null);
+                if (submittedButInvalid.length > 0) {
+                    eliminated = [submittedButInvalid[submittedButInvalid.length - 1].userId];
+                } else if (game.activePlayers.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * game.activePlayers.length);
+                    eliminated = [game.activePlayers[randomIndex]];
+                }
+            } else if (validSubmissions.length === game.activePlayers.length) {
+                eliminated = [validSubmissions[validSubmissions.length - 1].userId];
+            } else {
+                eliminated = invalidSubmissions.map(s => s.userId);
+            }
         }
 
         return {
@@ -192,7 +213,10 @@ class WordRushEngine {
                 letter: game.currentLetter,
                 submissions,
                 eliminated,
-                remainingPlayers: game.activePlayers.length - eliminated.length
+                remainingPlayers: game.activePlayers.length - eliminated.length,
+                isDuelMode: game.isDuelMode,
+                duelScores: game.duelScores,
+                roundWinner
             }
         };
     }
@@ -201,19 +225,40 @@ class WordRushEngine {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
 
-        // Use eliminated list from results calculation
-        const eliminated = eliminatedFromClient || [];
-        eliminated.forEach(pid => {
-            const index = game.activePlayers.indexOf(pid);
-            if (index > -1) {
-                game.activePlayers.splice(index, 1);
-                game.eliminatedPlayers.push(pid);
-            }
-        });
+        if (!game.isDuelMode) {
+            // Use eliminated list from results calculation
+            const eliminated = eliminatedFromClient || [];
+            eliminated.forEach(pid => {
+                const index = game.activePlayers.indexOf(pid);
+                if (index > -1) {
+                    game.activePlayers.splice(index, 1);
+                    game.eliminatedPlayers.push(pid);
+                }
+            });
+        }
 
         game.currentRound++;
 
-        if (game.activePlayers.length <= 1) {
+        if (game.isDuelMode) {
+            if (game.currentRound >= game.totalRounds) {
+                game.status = 'FINISHED';
+                const p1 = game.activePlayers[0];
+                const p2 = game.activePlayers[1];
+                let winnerId = null;
+                
+                if (game.duelScores[p1] > game.duelScores[p2]) {
+                    winnerId = p1;
+                } else if (game.duelScores[p2] > game.duelScores[p1]) {
+                    winnerId = p2;
+                }
+                
+                return { 
+                    action: 'game-ended', 
+                    event: 'word-rush-winner', 
+                    data: { finished: true, winner: winnerId } 
+                };
+            }
+        } else if (game.activePlayers.length <= 1) {
             game.status = 'FINISHED';
             const winnerId = game.activePlayers[0] || null;
             return { 

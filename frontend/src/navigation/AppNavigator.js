@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GameProvider } from '../context/GameContext';
 import { AuthProvider } from '../context/AuthContext';
 import ErrorBoundary from '../components/ErrorBoundary';
+import GameErrorBoundary from '../components/GameErrorBoundary';
 import LoadingScreen from '../components/LoadingScreen';
 import ConnectionStatusOverlay from '../components/ConnectionStatusOverlay';
 import { COLORS } from '../constants/theme';
@@ -102,67 +103,78 @@ const withSuspense = (Component) => {
     );
 };
 
+// Wrapper for game screens that adds an Error Boundary
+const withSuspenseAndBoundary = (Component) => {
+    return (props) => (
+        <GameErrorBoundary navigation={props.navigation}>
+            <Suspense fallback={<LoadingScreen message="Loading game..." />}>
+                <Component {...props} />
+            </Suspense>
+        </GameErrorBoundary>
+    );
+};
+
 // Create wrapped versions of lazy components
-const LazyCustomQuestionsScreen = withSuspense(CustomQuestionsScreen);
-const LazyQuestionScreen = withSuspense(QuestionScreen);
-const LazyResultsScreen = withSuspense(ResultsScreen);
-const LazyMythOrFactQuestionScreen = withSuspense(MythOrFactQuestionScreen);
-const LazyMythOrFactResultsScreen = withSuspense(MythOrFactResultsScreen);
-const LazyWhosMostLikelyQuestionScreen = withSuspense(WhosMostLikelyQuestionScreen);
-const LazyWhosMostLikelyResultsScreen = withSuspense(WhosMostLikelyResultsScreen);
-const LazyNeonTapGameScreen = withSuspense(NeonTapGameScreen);
-const LazyNeonTapResultsScreen = withSuspense(NeonTapResultsScreen);
-const LazyWordRushGameScreen = withSuspense(WordRushGameScreen);
-const LazyWordRushResultsScreen = withSuspense(WordRushResultsScreen);
-const LazyWordRushWinnerScreen = withSuspense(WordRushWinnerScreen);
-const LazyTruthOrDareCategorySelectionScreen = withSuspense(TruthOrDareCategorySelectionScreen);
-const LazyTruthOrDareGameScreen = withSuspense(TruthOrDareGameScreen);
-const LazyOnlineTruthOrDareCategoryScreen = withSuspense(OnlineTruthOrDareCategoryScreen);
-const LazyOnlineTruthOrDareGameScreen = withSuspense(OnlineTruthOrDareGameScreen);
-const LazyWouldYouRatherScreen = withSuspense(WouldYouRatherScreen);
-const LazySpinTheBottleScreen = withSuspense(SpinTheBottleScreen);
-const LazyWhotGameScreen = withSuspense(WhotGameScreen);
-const LazyScoreboardScreen = withSuspense(ScoreboardScreen);
-const LazyNeverHaveIEverCategoryScreen = withSuspense(NeverHaveIEverCategoryScreen);
-const LazyNeverHaveIEverScreen = withSuspense(NeverHaveIEverScreen);
-const LazyOnlineNHIECategoryScreen = withSuspense(OnlineNHIECategoryScreen);
-const LazyOnlineNeverHaveIEverScreen = withSuspense(OnlineNeverHaveIEverScreen);
-const LazyScrabbleScreen = withSuspense(ScrabbleScreen);
-const LazyOnlineScrabbleScreen = withSuspense(OnlineScrabbleScreen);
-const LazyScrabbleDifficultyScreen = withSuspense(ScrabbleDifficultyScreen);
-const LazyTicTacToeDifficultyScreen = withSuspense(TicTacToeDifficultyScreen);
-const LazyLocalTicTacToeScreen = withSuspense(LocalTicTacToeScreen);
-const LazyMVPVotingScreen = withSuspense(MVPVotingScreen);
-const LazyTeamSetupScreen = withSuspense(TeamSetupScreen);
-const LazyPlaylistSetupScreen = withSuspense(PlaylistSetupScreen);
-const LazyCaptionThisScreen = withSuspense(CaptionThisScreen);
-const LazySpeedCategoriesScreen = withSuspense(SpeedCategoriesScreen);
-const LazyAuctionBluffScreen = withSuspense(AuctionBluffScreen);
-const LazyMemoryChainScreen = withSuspense(MemoryChainScreen);
-const LazySpectatorScreen = withSuspense(SpectatorScreen);
-const LazyJoinSpectatorScreen = withSuspense(JoinSpectatorScreen);
-const LazyConfessionRouletteScreen = withSuspense(ConfessionRouletteScreen);
-const LazyImposterScreen = withSuspense(ImposterScreen);
-const LazyUnpopularOpinionsScreen = withSuspense(UnpopularOpinionsScreen);
-const LazySettingsScreen = withSuspense(SettingsScreen);
+const LazyCustomQuestionsScreen = withSuspenseAndBoundary(CustomQuestionsScreen);
+const LazyQuestionScreen = withSuspenseAndBoundary(QuestionScreen);
+const LazyResultsScreen = withSuspenseAndBoundary(ResultsScreen);
+const LazyMythOrFactQuestionScreen = withSuspenseAndBoundary(MythOrFactQuestionScreen);
+const LazyMythOrFactResultsScreen = withSuspenseAndBoundary(MythOrFactResultsScreen);
+const LazyWhosMostLikelyQuestionScreen = withSuspenseAndBoundary(WhosMostLikelyQuestionScreen);
+const LazyWhosMostLikelyResultsScreen = withSuspenseAndBoundary(WhosMostLikelyResultsScreen);
+const LazyNeonTapGameScreen = withSuspenseAndBoundary(NeonTapGameScreen);
+const LazyNeonTapResultsScreen = withSuspenseAndBoundary(NeonTapResultsScreen);
+const LazyWordRushGameScreen = withSuspenseAndBoundary(WordRushGameScreen);
+const LazyWordRushResultsScreen = withSuspenseAndBoundary(WordRushResultsScreen);
+const LazyWordRushWinnerScreen = withSuspenseAndBoundary(WordRushWinnerScreen);
+const LazyTruthOrDareCategorySelectionScreen = withSuspenseAndBoundary(TruthOrDareCategorySelectionScreen);
+const LazyTruthOrDareGameScreen = withSuspenseAndBoundary(TruthOrDareGameScreen);
+const LazyOnlineTruthOrDareCategoryScreen = withSuspenseAndBoundary(OnlineTruthOrDareCategoryScreen);
+const LazyOnlineTruthOrDareGameScreen = withSuspenseAndBoundary(OnlineTruthOrDareGameScreen);
+const LazyWouldYouRatherScreen = withSuspenseAndBoundary(WouldYouRatherScreen);
+const LazySpinTheBottleScreen = withSuspenseAndBoundary(SpinTheBottleScreen);
+const LazyWhotGameScreen = withSuspenseAndBoundary(WhotGameScreen);
+const LazyScoreboardScreen = withSuspenseAndBoundary(ScoreboardScreen);
+const LazyNeverHaveIEverCategoryScreen = withSuspenseAndBoundary(NeverHaveIEverCategoryScreen);
+const LazyNeverHaveIEverScreen = withSuspenseAndBoundary(NeverHaveIEverScreen);
+const LazyOnlineNHIECategoryScreen = withSuspenseAndBoundary(OnlineNHIECategoryScreen);
+const LazyOnlineNeverHaveIEverScreen = withSuspenseAndBoundary(OnlineNeverHaveIEverScreen);
+const LazyScrabbleScreen = withSuspenseAndBoundary(ScrabbleScreen);
+const LazyOnlineScrabbleScreen = withSuspenseAndBoundary(OnlineScrabbleScreen);
+const LazyScrabbleDifficultyScreen = withSuspenseAndBoundary(ScrabbleDifficultyScreen);
+const LazyTicTacToeDifficultyScreen = withSuspenseAndBoundary(TicTacToeDifficultyScreen);
+const LazyLocalTicTacToeScreen = withSuspenseAndBoundary(LocalTicTacToeScreen);
+const LazyMVPVotingScreen = withSuspenseAndBoundary(MVPVotingScreen);
+const LazyTeamSetupScreen = withSuspenseAndBoundary(TeamSetupScreen);
+const LazyPlaylistSetupScreen = withSuspenseAndBoundary(PlaylistSetupScreen);
+const LazyCaptionThisScreen = withSuspenseAndBoundary(CaptionThisScreen);
+const LazySpeedCategoriesScreen = withSuspenseAndBoundary(SpeedCategoriesScreen);
+const LazyAuctionBluffScreen = withSuspenseAndBoundary(AuctionBluffScreen);
+const LazyMemoryChainScreen = withSuspenseAndBoundary(MemoryChainScreen);
+const LazySpectatorScreen = withSuspenseAndBoundary(SpectatorScreen);
+const LazyJoinSpectatorScreen = withSuspenseAndBoundary(JoinSpectatorScreen);
+const LazyConfessionRouletteScreen = withSuspenseAndBoundary(ConfessionRouletteScreen);
+const LazyImposterScreen = withSuspenseAndBoundary(ImposterScreen);
+const LazyUnpopularOpinionsScreen = withSuspenseAndBoundary(UnpopularOpinionsScreen);
+const LazySettingsScreen = withSuspense(SettingsScreen); // Settings doesn't need GameErrorBoundary
 const LazyTournamentSetupScreen = withSuspense(TournamentSetupScreen);
 const LazyTournamentLobbyScreen = withSuspense(TournamentLobbyScreen);
 const LazyTournamentResultsScreen = withSuspense(TournamentResultsScreen);
-const LazySpillTheTeaScreen = withSuspense(SpillTheTeaScreen);
-const LazyHotSeatScreen = withSuspense(HotSeatScreen);
-const LazyHotSeatCategoryScreen = withSuspense(HotSeatCategoryScreen);
-const LazyHotSeatMCScreen = withSuspense(HotSeatMCScreen);
-const LazyButtonMashScreen = withSuspense(ButtonMashScreen);
-const LazyTypeRaceScreen = withSuspense(TypeRaceScreen);
-const LazyMathBlitzScreen = withSuspense(MathBlitzScreen);
-const LazyColorRushScreen = withSuspense(ColorRushScreen);
-const LazyMemoryMatchScreen = withSuspense(MemoryMatchScreen);
-const LazyTicTacToeScreen = withSuspense(TicTacToeScreen);
-const LazyDrawBattleScreen = withSuspense(DrawBattleScreen);
-const LazyLieDetectorScreen = withSuspense(LieDetectorScreen);
+const LazySpillTheTeaScreen = withSuspenseAndBoundary(SpillTheTeaScreen);
+const LazyHotSeatScreen = withSuspenseAndBoundary(HotSeatScreen);
+const LazyHotSeatCategoryScreen = withSuspenseAndBoundary(HotSeatCategoryScreen);
+const LazyHotSeatMCScreen = withSuspenseAndBoundary(HotSeatMCScreen);
+const LazyButtonMashScreen = withSuspenseAndBoundary(ButtonMashScreen);
+const LazyTypeRaceScreen = withSuspenseAndBoundary(TypeRaceScreen);
+const LazyMathBlitzScreen = withSuspenseAndBoundary(MathBlitzScreen);
+const LazyColorRushScreen = withSuspenseAndBoundary(ColorRushScreen);
+const LazyMemoryMatchScreen = withSuspenseAndBoundary(MemoryMatchScreen);
+const LazyTicTacToeScreen = withSuspenseAndBoundary(TicTacToeScreen);
+const LazyDrawBattleScreen = withSuspenseAndBoundary(DrawBattleScreen);
+const LazyLieDetectorScreen = withSuspenseAndBoundary(LieDetectorScreen);
 const LazyLANModeScreen = withSuspense(LANModeScreen);
-const LazyLocalCharadesScreen = withSuspense(LocalCharadesScreen);
-const LazyLocalTriviaScreen = withSuspense(LocalTriviaScreen);
+const LazyLocalCharadesScreen = withSuspenseAndBoundary(LocalCharadesScreen);
+const LazyLocalTriviaScreen = withSuspenseAndBoundary(LocalTriviaScreen);
 const LazyWhispersHubScreen = withSuspense(WhispersHubScreen);
 const LazyTriviaHubScreen = withSuspense(TriviaHubScreen);
 

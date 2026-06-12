@@ -49,6 +49,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [tileBag, setTileBag] = useState(() => createTileBag());
     const scrollViewRef = useRef(null);
+    const boardGridRef = useRef(null); // FIX: Track board grid for absolute measurement
 
     // Game State
     const [board, setBoard] = useState({}); // { "x,y": { letter: 'A', value: 1, isLocked: true } }
@@ -119,7 +120,30 @@ const ScrabbleScreen = ({ route, navigation }) => {
         }
     };
 
-    const handleBoardSquarePress = (x, y) => {
+    // FIX: Scrabble Drag and Drop
+    const handleTileDrop = (handIndex, moveX, moveY) => {
+        if (!boardGridRef.current) return;
+        
+        boardGridRef.current.measure((x, y, width, height, pageX, pageY) => {
+            // Check if dropped inside the board grid
+            const dropX = moveX - pageX;
+            const dropY = moveY - pageY;
+
+            if (dropX >= 0 && dropX <= width && dropY >= 0 && dropY <= height) {
+                const gridX = Math.floor(dropX / tileSize);
+                const gridY = Math.floor(dropY / tileSize);
+
+                // Set selection state purely for UI consistency
+                setSelectedTileIndex(handIndex);
+                
+                // Immediately press the board square using the dragIndex parameter
+                handleBoardSquarePress(gridX, gridY, handIndex);
+            }
+        });
+    };
+
+    const handleBoardSquarePress = (x, y, dragIndex = null) => {
+        const indexToUse = dragIndex !== null ? dragIndex : selectedTileIndex;
         const key = `${x},${y}`;
 
         // 1. If square occupied by locked tile (previous turns), do nothing
@@ -136,20 +160,20 @@ const ScrabbleScreen = ({ route, navigation }) => {
         }
 
         // 3. If placing a new tile
-        if (selectedTileIndex !== null) {
+        if (indexToUse !== null) {
             // Check if this specific tile from hand is already placed elsewhere?
             // Actually, we track availability by checking if hand index is in placedTiles
-            const isAlreadyPlaced = placedTiles.some(t => t.handIndex === selectedTileIndex);
+            const isAlreadyPlaced = placedTiles.some(t => t.handIndex === indexToUse);
             if (isAlreadyPlaced) {
                 // Should not happen if UI disables used tiles, but safety check
                 return;
             }
 
-            const tile = currentHand[selectedTileIndex];
+            const tile = currentHand[indexToUse];
 
             // Check if this is a blank tile - show letter selection modal
             if (tile.letter === '_') {
-                setPendingBlankPlacement({ x, y, handIndex: selectedTileIndex });
+                setPendingBlankPlacement({ x, y, handIndex: indexToUse });
                 setBlankTileModalVisible(true);
                 setSelectedTileIndex(null);
                 return;
@@ -159,7 +183,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                 x, y,
                 letter: tile.letter,
                 value: tile.value,
-                handIndex: selectedTileIndex,
+                handIndex: indexToUse,
                 isBlank: false
             };
 
@@ -766,7 +790,11 @@ const ScrabbleScreen = ({ route, navigation }) => {
                 bounces={false}
             >
                 <ScrollView nestedScrollEnabled bounces={false}>
-                    <View style={styles.gridContainer}>
+                    <View 
+                        style={styles.gridContainer}
+                        ref={boardGridRef}
+                        collapsable={false}
+                    >
                         {renderGrid()}
                     </View>
                 </ScrollView>
@@ -784,6 +812,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                         selectedTilesForExchange={selectedTilesForExchange}
                         rackTileSize={rackTileSize}
                         onTilePress={handleRackTilePress}
+                        onTileDrop={handleTileDrop} // Pass down the drop handler
                     />
                 </View>
 
@@ -1008,10 +1037,12 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
+        userSelect: 'none',
     },
     bonusContent: {
         justifyContent: 'center',
         alignItems: 'center',
+        userSelect: 'none',
     },
     tileContent: {
         width: '90%',
@@ -1020,6 +1051,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 2,
+        userSelect: 'none',
     },
 
     controlsArea: {

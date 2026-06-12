@@ -97,7 +97,8 @@ const NeonTapGameScreen = ({ route, navigation }) => {
         const onResults = (results) => {
             if (countdownRef.current) clearInterval(countdownRef.current);
             stopPulseAnimation();
-            navigation.navigate('NeonTapResults', { room, results, hostParticipates, isHost });
+            console.log('NeonTap results:', results);
+            navigation.replace('NeonTapResults', { room, results, hostParticipates, isHost });
         };
 
         const onReadyForNext = () => {

@@ -80,6 +80,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     // Bug 2: Remaining tiles counter from server game state
     const [tilesInBag, setTilesInBag] = useState(null);
     const scrollViewRef = useRef(null);
+    const boardGridRef = useRef(null); // FIX: Track board grid for absolute measurement
 
     // Blank tile selection modal state
     const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
@@ -299,12 +300,35 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         }
     };
 
-    const handleBoardSquarePress = (x, y) => {
+    // FIX: Scrabble Drag and Drop
+    const handleTileDrop = (handIndex, moveX, moveY) => {
+        if (!boardGridRef.current || !isMyTurn) return;
+        
+        boardGridRef.current.measure((x, y, width, height, pageX, pageY) => {
+            // Check if dropped inside the board grid
+            const dropX = moveX - pageX;
+            const dropY = moveY - pageY;
+
+            if (dropX >= 0 && dropX <= width && dropY >= 0 && dropY <= height) {
+                const gridX = Math.floor(dropX / tileSize);
+                const gridY = Math.floor(dropY / tileSize);
+
+                // Set selection state purely for UI consistency
+                setSelectedTileIndex(handIndex);
+                
+                // Immediately press the board square using the dragIndex parameter
+                handleBoardSquarePress(gridX, gridY, handIndex);
+            }
+        });
+    };
+
+    const handleBoardSquarePress = (x, y, dragIndex = null) => {
         if (!isMyTurn) {
             showAlert('Not Your Turn', 'Please wait for your turn');
             return;
         }
 
+        const indexToUse = dragIndex !== null ? dragIndex : selectedTileIndex;
         const key = `${x},${y}`;
 
         // Can't place on locked tiles
@@ -318,15 +342,15 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         }
 
         // Place new tile
-        if (selectedTileIndex !== null) {
-            const isAlreadyPlaced = placedTiles.some(t => t.handIndex === selectedTileIndex);
+        if (indexToUse !== null) {
+            const isAlreadyPlaced = placedTiles.some(t => t.handIndex === indexToUse);
             if (isAlreadyPlaced) return;
 
-            const tile = myHand[selectedTileIndex];
+            const tile = myHand[indexToUse];
 
             // Check if this is a blank tile - show letter selection modal
             if (tile.letter === '_') {
-                setPendingBlankPlacement({ x, y, handIndex: selectedTileIndex });
+                setPendingBlankPlacement({ x, y, handIndex: indexToUse });
                 setBlankTileModalVisible(true);
                 setSelectedTileIndex(null);
                 return;
@@ -336,7 +360,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 x, y,
                 letter: tile.letter,
                 value: tile.value,
-                handIndex: selectedTileIndex,
+                handIndex: indexToUse,
                 isBlank: false
             };
 
@@ -536,6 +560,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 selectedTilesForExchange={selectedTilesForExchange}
                 rackTileSize={rackTileSize}
                 onTilePress={handleRackTilePress}
+                onTileDrop={handleTileDrop} // Pass down the drop handler
             />
         );
     };
@@ -695,7 +720,11 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         bounces={false}
                     >
                         <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
-                            <View style={styles.gridContainer}>
+                            <View 
+                                style={styles.gridContainer}
+                                ref={boardGridRef}
+                                collapsable={false}
+                            >
                                 {renderGrid()}
                             </View>
                         </ScrollView>
@@ -906,6 +935,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
+        userSelect: 'none',
     },
     bonusContent: {
         justifyContent: 'center',
@@ -918,6 +948,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 2,
+        userSelect: 'none',
     },
     controlsArea: {
         padding: 10,

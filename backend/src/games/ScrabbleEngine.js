@@ -509,7 +509,7 @@ class ScrabbleEngine {
         if (!game) return { action: 'error', message: 'Game not found' };
 
         game.phase = 'finished';
-        const finalScores = this.getScrabbleFinalScores(game);
+        const finalScores = this.getScrabbleFinalScores(game, true); // true for manual end
 
         // Clean up active game state
         this.activeGames.delete(roomId);
@@ -698,9 +698,9 @@ class ScrabbleEngine {
         return totalScore;
     }
 
-    getScrabbleFinalScores(game) {
+    getScrabbleFinalScores(game, isManualEnd = false) {
         const finalScores = game.players.map(p => {
-            const unplayedTileScore = p.hand.reduce((sum, tile) => sum + (tile.value || 0), 0);
+            const unplayedTileScore = isManualEnd ? 0 : p.hand.reduce((sum, tile) => sum + (tile.value || 0), 0);
             return {
                 playerId: p.userId, // Maintain backwards compatibility name 'playerId' if frontend relies on it, but populate with userId
                 playerName: p.name,
@@ -708,18 +708,20 @@ class ScrabbleEngine {
             };
         });
 
-        const playerWithEmptyHand = game.players.find(p => p.hand.length === 0);
-        if (playerWithEmptyHand) {
-            const totalUnplayedTilesScore = game.players.reduce((sum, p) => {
-                if (p.userId !== playerWithEmptyHand.userId) {
-                    return sum + p.hand.reduce((tileSum, tile) => tileSum + (tile.value || 0), 0);
-                }
-                return sum;
-            }, 0);
+        if (!isManualEnd) {
+            const playerWithEmptyHand = game.players.find(p => p.hand.length === 0);
+            if (playerWithEmptyHand) {
+                const totalUnplayedTilesScore = game.players.reduce((sum, p) => {
+                    if (p.userId !== playerWithEmptyHand.userId) {
+                        return sum + p.hand.reduce((tileSum, tile) => tileSum + (tile.value || 0), 0);
+                    }
+                    return sum;
+                }, 0);
 
-            const playerWithEmptyHandScoreEntry = finalScores.find(fs => fs.playerId === playerWithEmptyHand.userId);
-            if (playerWithEmptyHandScoreEntry) {
-                playerWithEmptyHandScoreEntry.score += totalUnplayedTilesScore;
+                const playerWithEmptyHandScoreEntry = finalScores.find(fs => fs.playerId === playerWithEmptyHand.userId);
+                if (playerWithEmptyHandScoreEntry) {
+                    playerWithEmptyHandScoreEntry.score += totalUnplayedTilesScore;
+                }
             }
         }
 

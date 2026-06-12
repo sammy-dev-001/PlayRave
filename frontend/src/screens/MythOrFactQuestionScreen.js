@@ -45,8 +45,8 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
         };
 
         const onResults = (results) => {
-            console.log('MythOrFact results received:', results);
-            navigation.navigate('MythOrFactResults', { room, results, hostParticipates, isHost });
+            console.log('Myth or Fact results received:', results);
+            navigation.replace('MythOrFactResults', { room, results, hostParticipates, isHost });
         };
 
         const onNextStatement = (data) => {
