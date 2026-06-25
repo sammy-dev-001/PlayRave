@@ -86,10 +86,18 @@ class WhotEngine {
             topCard: discardPile[0],
             calledShape: null,
             attackStack: 0,
+            generalMarketTurns: 0,
             status: 'PLAYING',
             hostParticipates,
             winner: null
         };
+
+        // Apply initial card effects if it's a special card
+        const initialAction = this.handleWhotSpecialCard(gameState, discardPile[0]);
+        if (initialAction !== 'skip') {
+            // Turn stays at player 0 because they must face the effect (e.g. draw cards)
+            // But if it's a skip or suspension, handleWhotSpecialCard already moves the turn!
+        }
 
         this.activeGames.set(roomId, gameState);
 
@@ -134,8 +142,9 @@ class WhotEngine {
             topCard: game.topCard,
             calledShape: game.calledShape,
             attackStack: game.attackStack || 0,
+            generalMarketTurns: game.generalMarketTurns || 0,
             currentPlayerId: game.playerOrder[game.currentPlayerIndex],
-            playerHand: game.playerHands[userId] || [],
+            playerHand: (userId && game.playerHands[userId]) ? game.playerHands[userId] : [],
             otherPlayers: game.playerOrder.map(pid => ({
                 id: pid,
                 cardCount: game.playerHands[pid].length,
@@ -144,12 +153,16 @@ class WhotEngine {
             deckCount: game.deck.length,
             status: game.status,
             winner: game.winner,
-            isBot: userId.startsWith('bot_')
+            isBot: userId ? String(userId).startsWith('bot_') : false
         };
     }
 
     canPlayCard(game, card) {
         const topCard = game.topCard;
+
+        if (game.generalMarketTurns > 0) {
+            return { valid: false, reason: 'General Market! You must go to market (draw a card)' };
+        }
 
         if (game.attackStack > 0) {
             const attackCardNumber = topCard.number;
@@ -223,8 +236,23 @@ class WhotEngine {
             game.status = 'FINISHED';
             game.winner = userId;
             const finalScores = this.calculateFinalScores(game, userId);
-            return {
-                action: 'broadcast',
+            
+            // Emit final state update to show the card dropping
+            const instructions = game.playerOrder.map(pid => ({
+                action: 'emit',
+                targetId: pid,
+                event: 'whot-state-update',
+                data: {
+                    actionTaken,
+                    topCard: game.topCard,
+                    calledShape: game.calledShape,
+                    gameState: this.getWhotGameState(roomId, pid)
+                }
+            }));
+            
+            // Append the actual game-ended action
+            instructions.push({
+                action: 'game-ended',
                 event: 'whot-game-ended',
                 data: {
                     winner: userId,
@@ -232,7 +260,9 @@ class WhotEngine {
                     finalScores,
                     gameState: this.getWhotGameState(roomId, null)
                 }
-            };
+            });
+
+            return { action: 'multiple', instructions };
         }
 
         if (actionTaken !== 'skip') {
@@ -282,20 +312,7 @@ class WhotEngine {
                 return 'pick3';
 
             case 'general-market':
-                const currentGMPlayer = game.playerOrder[game.currentPlayerIndex];
-                game.playerOrder.forEach(pid => {
-                    if (pid !== currentGMPlayer) {
-                        const playerHand = game.playerHands[pid];
-                        if (game.deck.length === 0) {
-                            const topCard = game.discardPile.pop();
-                            game.deck = shuffleDeck(game.discardPile);
-                            game.discardPile = [topCard];
-                        }
-                        if (game.deck.length > 0) {
-                            playerHand.push(game.deck.pop());
-                        }
-                    }
-                });
+                game.generalMarketTurns = game.playerOrder.length - 1;
                 return 'general-market';
 
             case 'hold-on':
@@ -316,7 +333,13 @@ class WhotEngine {
         if (!game || game.type !== 'whot') return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Game not found' } };
 
         const playerHand = game.playerHands[userId];
-        const cardsToDraw = game.attackStack > 0 ? game.attackStack : count;
+        
+        let cardsToDraw = count;
+        if (game.generalMarketTurns > 0) {
+            cardsToDraw = 1;
+        } else if (game.attackStack > 0) {
+            cardsToDraw = game.attackStack;
+        }
 
         for (let i = 0; i < cardsToDraw; i++) {
             if (game.deck.length === 0) {
@@ -330,7 +353,9 @@ class WhotEngine {
             }
         }
 
-        if (game.attackStack > 0) {
+        if (game.generalMarketTurns > 0) {
+            game.generalMarketTurns -= 1;
+        } else if (game.attackStack > 0) {
             game.attackStack = 0;
         }
 
@@ -341,6 +366,7 @@ class WhotEngine {
             targetId: pid,
             event: 'whot-state-update',
             data: {
+                actionTaken: 'went-to-market',
                 gameState: this.getWhotGameState(roomId, pid)
             }
         }));
@@ -401,7 +427,7 @@ class WhotEngine {
     calculateFinalScores(game, winnerId) {
         const scores = game.playerOrder.map(pid => {
             if (pid === winnerId) {
-                return { playerId: pid, score: 0, penaltyCards: [] };
+                return { playerId: pid, score: 0, penaltyCards: 0 };
             }
             const hand = game.playerHands[pid] || [];
             const penalty = hand.reduce((sum, card) => {
@@ -422,6 +448,7 @@ class WhotEngine {
     }
 
     endGame(roomId) {
+        this.activeGames.delete(roomId);
         return {
             action: 'game-ended',
             event: 'whot-game-ended',

@@ -41,6 +41,8 @@ class TicTacToeEngine {
             roundNumber:       1,
             phase:             'lobby', // lobby | playing | matchResult | roundComplete | finished
             difficulty:        options.difficulty || 'medium',
+            isHeadToHead:      allPlayers.length === 2,
+            headToHeadMatchesPlayed: 0
         };
 
         this.activeGames.set(roomId, gameState);
@@ -110,6 +112,8 @@ class TicTacToeEngine {
             type:         game.type,
             phase:        game.phase,
             roundNumber:  game.roundNumber,
+            isHeadToHead: game.isHeadToHead,
+            headToHeadMatchesPlayed: game.headToHeadMatchesPlayed,
             matches:      game.matches.map(m => this._safeMatch(m)),
             currentMatchIndex: game.currentMatchIndex,
             currentMatch: game.matches[game.currentMatchIndex]
@@ -307,6 +311,50 @@ class TicTacToeEngine {
         const allComplete = game.matches.every(m => m.completed);
 
         if (allComplete) {
+            if (game.isHeadToHead) {
+                game.headToHeadMatchesPlayed++;
+                const p1 = game.activePlayers[0];
+                const p2 = game.activePlayers[1];
+                
+                // If we've played at least 3 matches and it's not a tie
+                if (game.headToHeadMatchesPlayed >= 3 && p1.wins !== p2.wins) {
+                    const champion = p1.wins > p2.wins ? p1 : p2;
+                    game.phase = 'finished';
+                    return {
+                        action: 'game-ended',
+                        event:  'ttt-tournament-finished',
+                        data: {
+                            finished:  true,
+                            champion:  { userId: champion.userId, name: champion.name },
+                            allPlayers: game.players.sort((a, b) => b.wins - a.wins),
+                        },
+                    };
+                }
+                
+                // Keep playing!
+                game.roundNumber++;
+                // Swap active players so they alternate who goes first ('X')
+                game.activePlayers = [game.activePlayers[1], game.activePlayers[0]];
+                game.matches = this._createMatches(game.activePlayers);
+                game.currentMatchIndex = 0;
+                game.phase = 'roundComplete';
+                
+                return {
+                    action: 'broadcast',
+                    event:  'ttt-round-complete',
+                    data: {
+                        finished:         false,
+                        roundComplete:    true,
+                        nextRound:        game.roundNumber,
+                        remainingPlayers: 2,
+                        nextMatches:      game.matches.map(m => ({
+                            player1: m.player1.name,
+                            player2: m.player2.name,
+                        })),
+                    },
+                };
+            }
+
             const winners = game.matches.filter(m => m.winner).map(m => m.winner);
 
             if (winners.length === 1) {

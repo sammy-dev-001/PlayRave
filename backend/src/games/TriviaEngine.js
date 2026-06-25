@@ -20,10 +20,10 @@ class TriviaEngine {
             case 'trivia-show-results':
             case 'show-results':
             case 'force-results':
-                return this.getQuestionResults(roomId);
+                return this.getQuestionResults(roomId, payload?.expectedQuestionIndex);
             case 'trivia-next-question':
             case 'next-question':
-                return this.nextQuestion(roomId);
+                return this.nextQuestion(roomId, payload?.expectedQuestionIndex);
             case 'trivia-get-state':
             case 'get-state':
                 return this.getState(roomId, userId);
@@ -92,7 +92,8 @@ class TriviaEngine {
             action: 'schedule',
             delay: isSolo ? 10000 : 15000, // Faster timer for solo
             eventToTrigger: 'force-results',
-            roomId
+            roomId,
+            data: { expectedQuestionIndex: gameState.currentQuestionIndex }
         });
 
         return { action: 'multiple', instructions };
@@ -161,7 +162,8 @@ class TriviaEngine {
                 action: 'schedule',
                 delay: 1500, // 1.5s delay so users can see their own 'Correct/Wrong' feedback
                 eventToTrigger: 'force-results',
-                roomId
+                roomId,
+                data: { expectedQuestionIndex: questionIndex }
             });
 
             // If Solo Mode: Auto-advance to next question after 4.5 seconds (delay + 3s)
@@ -170,7 +172,8 @@ class TriviaEngine {
                     action: 'schedule',
                     delay: 4500,
                     eventToTrigger: 'next-question',
-                    roomId
+                    roomId,
+                    data: { expectedQuestionIndex: questionIndex }
                 });
             }
         }
@@ -178,9 +181,17 @@ class TriviaEngine {
         return { action: 'multiple', instructions };
     }
 
-    getQuestionResults(roomId) {
+    getQuestionResults(roomId, expectedQuestionIndex) {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
+
+        if (expectedQuestionIndex !== undefined && game.currentQuestionIndex !== expectedQuestionIndex) {
+            return { action: 'none' }; // Stale timer from previous round
+        }
+
+        if (game.status === 'RESULTS' || game.status === 'FINISHED') {
+            return { action: 'none' }; // Prevent double-triggering
+        }
 
         const currentQuestion = game.questions[game.currentQuestionIndex];
         const results = {
@@ -220,7 +231,8 @@ class TriviaEngine {
                         action: 'schedule',
                         delay: 4000, // 4s for forced results to give more reading time
                         eventToTrigger: 'next-question',
-                        roomId
+                        roomId,
+                        data: { expectedQuestionIndex: game.currentQuestionIndex }
                     }
                 ]
             };
@@ -229,9 +241,17 @@ class TriviaEngine {
         return broadcastInst;
     }
 
-    nextQuestion(roomId) {
+    nextQuestion(roomId, expectedQuestionIndex) {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'broadcast', event: 'error', data: { message: 'Game not found' } };
+
+        if (expectedQuestionIndex !== undefined && game.currentQuestionIndex !== expectedQuestionIndex) {
+            return { action: 'none' }; // Stale timer from previous round
+        }
+
+        if (game.status === 'PLAYING') {
+            return { action: 'none' }; // Already advanced
+        }
 
         game.currentQuestionIndex++;
         game.questionStartTime = Date.now();
@@ -259,7 +279,8 @@ class TriviaEngine {
                 action: 'schedule',
                 delay: Object.keys(game.scores).length === 1 ? 10000 : 15000,
                 eventToTrigger: 'force-results',
-                roomId
+                roomId,
+                data: { expectedQuestionIndex: game.currentQuestionIndex }
             }
         ];
 
@@ -310,7 +331,8 @@ class TriviaEngine {
                 action: 'schedule',
                 delay: 1000,
                 eventToTrigger: 'force-results',
-                roomId
+                roomId,
+                data: { expectedQuestionIndex: game.currentQuestionIndex }
             };
         }
         return null;

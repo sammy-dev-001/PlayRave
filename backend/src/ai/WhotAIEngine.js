@@ -23,6 +23,11 @@ class WhotAIEngine {
 
         if (!hand || hand.length === 0) return null;
 
+        // 0. COMPULSORY DRAW: General Market active
+        if (gameState.generalMarketTurns > 0) {
+            return null; // Must draw
+        }
+
         // 1. DEFENSE: If being attacked (Pick 2 / Pick 3)
         if (attackStack > 0) {
             // Must play a card of the same number to defend/counter-attack

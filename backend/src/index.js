@@ -54,10 +54,10 @@ process.on('unhandledRejection', (reason, promise) => {
 // ==================== AUTH REST API ====================
 app.post("/api/auth/register", async (req, res) => {
     try {
-        const { email, password, username } = req.body;
+        const { email, password, username, guestData } = req.body;
         if (!email || !password || !username) return res.status(400).json({ error: "All fields required" });
         if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters" });
-        const result = await authManager.register(email, password, username);
+        const result = await authManager.register(email, password, username, guestData);
         if (result.error) return res.status(400).json({ error: result.error });
         res.json(result);
     } catch (e) { console.error("Register error:", e); res.status(500).json({ error: "Server error" }); }

@@ -28,7 +28,7 @@ class AuthManager {
     }
 
     // Register new user
-    async register(email, password, username) {
+    async register(email, password, username, guestData = null) {
         const usersCollection = await this._getCollection();
 
         email = email.toLowerCase().trim();
@@ -55,13 +55,13 @@ class AuthManager {
             username,
             password: hashedPassword,
             avatar: this.getRandomAvatar(),
-            level: 1,
-            xp: 0,
-            totalXp: 0,
-            gamesPlayed: 0,
-            gamesWon: 0,
+            level: guestData ? (guestData.level || 1) : 1,
+            xp: guestData ? (guestData.xp || 0) : 0,
+            totalXp: guestData ? (guestData.totalXp || 0) : 0,
+            gamesPlayed: guestData ? (guestData.gamesPlayed || 0) : 0,
+            gamesWon: guestData ? (guestData.gamesWon || 0) : 0,
             achievements: [],
-            stats: {
+            stats: guestData && guestData.stats ? guestData.stats : {
                 buttonMash: { played: 0, won: 0, bestTaps: 0 },
                 typeRace: { played: 0, won: 0, bestAccuracy: 0 },
                 mathBlitz: { played: 0, won: 0, bestStreak: 0 },

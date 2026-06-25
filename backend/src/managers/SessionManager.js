@@ -12,7 +12,7 @@
 //   5. purgeClient()     — hard-removes after grace period expires
 // ============================================================================
 
-const GRACE_PERIOD_MS = 600_000; // 10-minute grace period for mobile tab sleep
+const GRACE_PERIOD_MS = 300_000; // 5-minute grace period for mobile tab sleep
 
 class SessionManager {
     constructor() {

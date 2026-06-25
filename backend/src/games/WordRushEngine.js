@@ -5,6 +5,8 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
+const { SCRABBLE_WORDS } = require('../data/scrabbleWords');
+
 class WordRushEngine {
     constructor() {
         this.activeGames = new Map();
@@ -282,7 +284,9 @@ class WordRushEngine {
         if (cleanWord.length < 3) return false;
         if (!cleanWord.startsWith(letter.toUpperCase())) return false;
         if (!/^[A-Z]+$/.test(cleanWord)) return false;
-        return true;
+        
+        // Validate against the dictionary
+        return SCRABBLE_WORDS.has(cleanWord.toLowerCase());
     }
 
     endGame(roomId) {

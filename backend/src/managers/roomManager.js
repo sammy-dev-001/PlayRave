@@ -351,6 +351,7 @@ class RoomManager {
             players: room.players.map(p => ({
                 id: p.socketId,
                 uid: p.userId,
+                userId: p.userId,
                 name: p.name,
                 avatar: p.avatar,
                 avatarColor: p.avatarColor,
