@@ -11,11 +11,15 @@ import {
 } from 'react-native';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SHADOWS } from '../constants/themes';
+
 
 // Simple QR Code generator using a custom pattern
 // For production, consider using react-native-qrcode-svg or similar
 const QRCodeDisplay = ({ value, size = 200 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     // Calculate the join URL
     const joinUrl = value;
 
@@ -28,7 +32,7 @@ const QRCodeDisplay = ({ value, size = 200 }) => {
                     SCAN OR SHARE LINK
                 </NeonText>
                 <View style={styles.codeBox}>
-                    <NeonText size={14} color="#888" style={styles.urlText}>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.urlText}>
                         {joinUrl}
                     </NeonText>
                 </View>
@@ -110,7 +114,7 @@ const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
                             </View>
 
                             <View style={styles.roomCodeSection}>
-                                <NeonText size={14} color="#888">ROOM CODE</NeonText>
+                                <NeonText size={14} color={COLORS.textMuted}>ROOM CODE</NeonText>
                                 <NeonText size={48} weight="bold" glow color={COLORS.limeGlow}>
                                     {roomId}
                                 </NeonText>
@@ -118,12 +122,12 @@ const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
 
                             <View style={styles.divider}>
                                 <View style={styles.dividerLine} />
-                                <NeonText size={12} color="#666" style={styles.dividerText}>OR</NeonText>
+                                <NeonText size={12} color={COLORS.textDarkMuted} style={styles.dividerText}>OR</NeonText>
                                 <View style={styles.dividerLine} />
                             </View>
 
                             <View style={styles.linkSection}>
-                                <NeonText size={12} color="#888" style={styles.linkLabel}>
+                                <NeonText size={12} color={COLORS.textMuted} style={styles.linkLabel}>
                                     SHARE LINK
                                 </NeonText>
                                 <View style={styles.linkBox}>
@@ -147,7 +151,7 @@ const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
                                 />
                             </View>
 
-                            <NeonText size={12} color="#666" style={styles.hint}>
+                            <NeonText size={12} color={COLORS.textDarkMuted} style={styles.hint}>
                                 Friends can enter the room code on the join screen
                             </NeonText>
                         </View>
@@ -158,7 +162,7 @@ const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
     },
     dividerText: {
         marginHorizontal: 15,
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     qrContainer: {
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.white,
         borderRadius: 12,
         padding: 15,
         alignItems: 'center',

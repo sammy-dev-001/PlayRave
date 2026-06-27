@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Image, Share, Alert, StatusBar, Platform, SafeAreaView } from 'react-native';
+import {
+    View, StyleSheet, ScrollView, Modal, TouchableOpacity,
+    Image, Share, Alert, StatusBar, Platform, SafeAreaView
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import NeonBackground from '../components/NeonBackground';
+import ThemeBackground from '../components/ThemeBackground';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import HeaderIcons from '../components/lobby/HeaderIcons';
@@ -11,11 +14,13 @@ import PlayerList from '../components/lobby/PlayerList';
 import SettingsToggle from '../components/lobby/SettingsToggle';
 import ActionFooter from '../components/lobby/ActionFooter';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-
+import { navigateToGame } from '../utils/gameNavigation';
 
 const LobbyScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [room, setRoom] = useState(route.params.room);
     const { playerName } = route.params;
 
@@ -24,42 +29,50 @@ const LobbyScreen = ({ route, navigation }) => {
         navigation,
         room,
         playerName,
-        exitScreen: 'Home' // If lobby is gone, go home
+        exitScreen: 'Home',
     });
 
     const fromGame = route.params.fromGame || false;
-    const [selectedGame, setSelectedGame] = useState(route.params.selectedGame || route.params.room.gameType);
+    const [selectedGame, setSelectedGame] = useState(
+        route.params.selectedGame || route.params.room.gameType
+    );
     const [hostParticipates, setHostParticipates] = useState(true);
-    const [socketConnected, setSocketConnected] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [myReadyStatus, setMyReadyStatus] = useState(false);
 
-    // Dynamically determine if current player is host
-    const getCurrentPlayerId = () => SocketService.userId;
-    const currentPlayerIsHost = () => {
-        const myUid = getCurrentPlayerId();
+    // Dynamically determine if the current player is host.
+    // useMemo: only re-runs find() when room.players changes, not on every render.
+    // isHost is a dep of useFocusEffect — this keeps it stable and prevents
+    // unnecessary effect re-runs when unrelated state changes.
+    const isHost = React.useMemo(() => {
+        const myUid = SocketService.userId;
         if (!myUid || !room) return false;
         if (room.hostUserId === myUid) return true;
-        const currentPlayer = room.players.find(p => p.uid === myUid);
-        return currentPlayer?.isHost || false;
-    };
-    const isHost = currentPlayerIsHost();
+        return room.players?.find(p => p.uid === myUid)?.isHost || false;
+    }, [room]);
+
+    // roomRef tracks the latest room snapshot synchronously in the render body.
+    // Event handlers inside useFocusEffect read from this ref so they always have
+    // the current room without needing `room` (an object) in the dep array.
+    // Putting an object in a dep array causes the effect to re-run on every
+    // room-updated event, which re-emits get-room, creating a feedback loop.
+    const roomRef = React.useRef(room);
+    roomRef.current = room;
 
     useFocusEffect(
         useCallback(() => {
-            const checkConnection = () => {
-                const connected = SocketService.socket?.connected || false;
-                setSocketConnected(connected);
-            };
-
-            checkConnection();
+            // Request a fresh room snapshot on focus in case we missed updates
+            // while the screen was backgrounded.
+            if (SocketService.socket?.connected) {
+                SocketService.emit('get-room', { roomId: room.id });
+            }
 
             const onRoomUpdated = (updatedRoom) => {
                 setRoom(updatedRoom);
                 if (updatedRoom.gameType) {
                     setSelectedGame(updatedRoom.gameType);
                 }
-                const myUid = getCurrentPlayerId();
+                const myUid = SocketService.userId;
                 const me = updatedRoom.players.find(p => p.uid === myUid);
                 if (me) {
                     setMyReadyStatus(me.isReady || false);
@@ -67,10 +80,8 @@ const LobbyScreen = ({ route, navigation }) => {
             };
 
             const onPlayerKicked = ({ userId }) => {
-                const myUid = getCurrentPlayerId();
-                // Only act if I am the one who was kicked
+                const myUid = SocketService.userId;
                 if (userId && userId !== myUid) return;
-
                 Alert.alert(
                     'Kicked from Lobby',
                     'You have been removed from this lobby by the host.',
@@ -78,88 +89,34 @@ const LobbyScreen = ({ route, navigation }) => {
                 );
             };
 
+            // ── Shared routing via gameNavigation utility ─────────────────
             const onGameStarted = (payload) => {
-                console.log('[LobbyScreen] Game started payload received:', JSON.stringify(payload, null, 2));
-                
-                // Robust gameType detection with fallbacks
-                const { 
-                    gameType: rawGameType, 
-                    question, 
-                    statement, 
-                    prompt, 
-                    players, 
-                    hostParticipates: hostPlays, 
-                    gameState 
-                } = payload;
-                
-                const gameType = rawGameType || payload.type || gameState?.type;
-                const navParams = { ...payload, room, playerName, hostParticipates: hostPlays, isHost, gameState, players };
-                
-                console.log(`[LobbyScreen] >>> NAVIGATING TO: ${gameType} <<< (Source: ${rawGameType ? 'gameType' : (payload.type ? 'type' : 'gameState.type')})`);
-                console.log(`[LobbyScreen] NavParams keys:`, Object.keys(navParams));
+                console.log('[LobbyScreen] game-started received:', payload.gameType || payload.type);
+                const gameType = payload.gameType || payload.type || payload.gameState?.type;
+                // Read from ref — not closed-over `room` — so we always have the
+                // latest room snapshot even if the dep array doesn't include room.
+                const latestRoom = roomRef.current;
+                const enrichedRoom = { ...latestRoom, gameType: gameType || latestRoom.gameType };
 
-                if (!gameType) {
-                    console.error('[LobbyScreen] Failed to determine gameType from payload:', payload);
-                    return;
-                }
-                if (gameType === 'trivia') {
-                    navigation.navigate('Question', { ...navParams, question, questionIndex: 0 });
-                } else if (gameType === 'myth-or-fact') {
-                    navigation.navigate('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
-                } else if (gameType === 'whos-most-likely') {
-                    // New server-authoritative flow:
-                    // 'game-started' gives us the player list and hostParticipates.
-                    // The actual first prompt arrives moments later via 'whos-most-likely-round-start'.
-                    // Navigate to the question screen — it will wait for the round-start event.
-                    navigation.navigate('WhosMostLikelyQuestion', {
-                        ...navParams,
-                        // No prompt here — the screen subscribes to 'whos-most-likely-round-start'
-                        prompt:       null,
-                        promptIndex:  null,
-                        totalPrompts: gameState?.totalPrompts || null,
-                    });
-                } else if (gameType === 'neon-tap') {
-                    navigation.navigate('NeonTapGame', navParams);
-                } else if (gameType === 'word-rush') {
-                    navigation.navigate('WordRushGame', navParams);
-                } else if (gameType === 'whot') {
-                    navigation.navigate('WhotGame', navParams);
-                } else if (gameType === 'truth-or-dare') {
-                    navigation.navigate('OnlineTruthOrDareGame', { ...navParams, category: gameState?.category || 'normal' });
-                } else if (gameType === 'never-have-i-ever') {
-                    navigation.navigate('OnlineNeverHaveIEver', navParams);
-                } else if (gameType === 'confession-roulette') {
-                    navigation.navigate('ConfessionRoulette', navParams);
-                } else if (gameType === 'spill-the-tea') {
-                    navigation.navigate('SpillTheTea', navParams);
-                } else if (gameType === 'imposter') {
-                    navigation.navigate('Imposter', navParams);
-                } else if (gameType === 'unpopular-opinions') {
-                    navigation.navigate('UnpopularOpinions', navParams);
-                } else if (gameType === 'hot-seat') {
-                    navigation.navigate('HotSeat', navParams);
-                } else if (gameType === 'hot-seat-mc') {
-                    navigation.navigate('HotSeatMC', navParams);
-                } else if (gameType === 'button-mash') {
-                    navigation.navigate('ButtonMash', navParams);
-                } else if (gameType === 'type-race') {
-                    navigation.navigate('TypeRace', navParams);
-                } else if (gameType === 'math-blitz') {
-                    navigation.navigate('MathBlitz', navParams);
-                } else if (gameType === 'color-rush') {
-                    navigation.navigate('ColorRush', navParams);
-                } else if (gameType === 'tic-tac-toe') {
-                    navigation.navigate('TicTacToe', navParams);
-                } else if (gameType === 'draw-battle') {
-                    navigation.navigate('DrawBattle', navParams);
-                } else if (gameType === 'scrabble') {
-                    navigation.navigate('OnlineScrabble', navParams);
-                } else if (gameType === 'trivia') {
-                    navigation.navigate('Question', navParams);
-                }
+                navigateToGame(
+                    navigation,
+                    enrichedRoom,
+                    payload.gameState || null,
+                    playerName,
+                    isHost,
+                    {
+                        gameType,
+                        hostParticipates: payload.hostParticipates,
+                        question:  payload.question,
+                        statement: payload.statement,
+                        players:   payload.players,
+                        category:  payload.category,
+                    }
+                );
             };
+            // ─────────────────────────────────────────────────────────────
 
-            const onHostChanged = ({ newHostName, reason }) => {
+            const onHostChanged = ({ newHostName }) => {
                 Alert.alert(
                     '👑 Host Migrated',
                     `${newHostName} is now the lobby host!`,
@@ -172,21 +129,21 @@ const LobbyScreen = ({ route, navigation }) => {
             SocketService.on('player-kicked', onPlayerKicked);
             SocketService.on('host-changed', onHostChanged);
 
-            const pollInterval = setInterval(() => {
-                checkConnection();
-                if (SocketService.socket?.connected) {
-                    SocketService.emit('get-room', { roomId: room.id });
-                }
-            }, 2000);
-
             return () => {
-                clearInterval(pollInterval);
                 SocketService.off('room-updated', onRoomUpdated);
                 SocketService.off('game-started', onGameStarted);
                 SocketService.off('player-kicked', onPlayerKicked);
                 SocketService.off('host-changed', onHostChanged);
             };
-        }, [navigation, room, playerName, isHost])
+        // Deps: only stable scalars. `room` (object) intentionally excluded —
+        // it changes on every room-updated event, which would cause the effect
+        // to re-run and re-emit get-room, creating a self-feeding loop.
+        // onGameStarted reads the latest room from roomRef instead.
+        //
+        // IMPORTANT: isHost MUST stay in this dep array. It controls the host UI
+        // visible to the player entering the game. If removed, onGameStarted captures
+        // a stale isHost value and a migrated host sees the wrong UI on game start.
+        }, [navigation, room.id, playerName, isHost])
     );
 
     const handleStartGame = () => {
@@ -206,7 +163,7 @@ const LobbyScreen = ({ route, navigation }) => {
             roomId: room.id,
             gameType: selectedGame,
             hostParticipates,
-            category: selectedGame === 'trivia' ? 'All' : undefined
+            category: selectedGame === 'trivia' ? 'All' : undefined,
         });
     };
 
@@ -245,7 +202,7 @@ const LobbyScreen = ({ route, navigation }) => {
         try {
             await Share.share({
                 message: `Join my PlayRave game! 🎮\n\nRoom Code: ${room.id}\n\nOr use this link:\n${getJoinLink()}`,
-                title: 'Join PlayRave Game'
+                title: 'Join PlayRave Game',
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -260,7 +217,7 @@ const LobbyScreen = ({ route, navigation }) => {
     return (
         <View style={styles.screen}>
             <StatusBar barStyle="light-content" backgroundColor="#05050A" />
-            <NeonBackground />
+            <ThemeBackground />
 
             <SafeAreaView style={styles.safeArea}>
                 {/* FIXED: Header */}
@@ -292,7 +249,7 @@ const LobbyScreen = ({ route, navigation }) => {
 
                     <PlayerList
                         players={room.players}
-                        currentPlayerId={getCurrentPlayerId()}
+                        currentPlayerId={SocketService.userId}
                         isHost={isHost}
                         maxPlayers={20}
                         onKick={handleKickPlayer}
@@ -307,7 +264,6 @@ const LobbyScreen = ({ route, navigation }) => {
                         />
                     )}
 
-                    {/* Bottom spacing for scroll content */}
                     <View style={{ height: 20 }} />
                 </ScrollView>
 
@@ -349,7 +305,7 @@ const LobbyScreen = ({ route, navigation }) => {
                             style={styles.qrImage}
                             resizeMode="contain"
                         />
-                        <NeonText size={14} color="#888" style={styles.qrSubtitle}>
+                        <NeonText size={14} color={COLORS.textMuted} style={styles.qrSubtitle}>
                             Room: {room.id}
                         </NeonText>
                         <NeonButton
@@ -370,11 +326,13 @@ const LobbyScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     screen: {
         flex: 1,
-        height: '100%',
-        minHeight: '100vh',
+        ...Platform.select({
+            web: { height: '100%', minHeight: '100vh' },
+            default: { flex: 1 },
+        }),
         backgroundColor: '#05050A',
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
@@ -403,20 +361,10 @@ const styles = StyleSheet.create({
         borderColor: COLORS.neonCyan,
         width: 300,
     },
-    qrTitle: {
-        marginBottom: 20,
-    },
-    qrImage: {
-        width: 200,
-        height: 200,
-        marginBottom: 15,
-    },
-    qrSubtitle: {
-        marginBottom: 20,
-    },
-    qrShareBtn: {
-        marginBottom: 15,
-    },
+    qrTitle: { marginBottom: 20 },
+    qrImage: { width: 200, height: 200, marginBottom: 15 },
+    qrSubtitle: { marginBottom: 20 },
+    qrShareBtn: { marginBottom: 15 },
 });
 
 export default LobbyScreen;

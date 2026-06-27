@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, PanResponder, Animated } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const DraggableRack = ({
     hand,
@@ -13,6 +13,8 @@ const DraggableRack = ({
     onTilePress,
     onTileDrop,
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     // Local visual order — values are indices into the `hand` array
     const [order, setOrder] = useState([]);
 
@@ -144,6 +146,7 @@ const DraggableRack = ({
                                 transform: [
                                     { translateX: pans[visualIndex].x },
                                     { translateY: pans[visualIndex].y },
+                                    ...(isDragging ? [{ scale: 0.75 }] : []),
                                 ],
                                 zIndex: isDragging ? 100 : 1,
                             },
@@ -163,7 +166,7 @@ const DraggableRack = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     rack: {
         flexDirection: 'row',
         gap: 5,

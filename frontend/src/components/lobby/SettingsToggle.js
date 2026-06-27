@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, Switch } from 'react-native';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const SettingsToggle = ({ value, onValueChange, label, subtitle }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
             <View style={styles.textBlock}>
@@ -20,14 +22,14 @@ const SettingsToggle = ({ value, onValueChange, label, subtitle }) => {
                 value={value}
                 onValueChange={onValueChange}
                 trackColor={{ false: '#3e3e3e', true: COLORS.neonCyan }}
-                thumbColor={value ? '#FFFFFF' : '#f4f3f4'}
+                thumbColor={value ? COLORS.white : '#f4f3f4'}
                 ios_backgroundColor="#3e3e3e"
             />
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         justifyContent: 'space-between',

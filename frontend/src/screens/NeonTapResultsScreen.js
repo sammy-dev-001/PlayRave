@@ -4,9 +4,11 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const NeonTapResultsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, results, hostParticipates, isHost } = route.params;
     const [countdown, setCountdown] = useState(3);
 
@@ -117,15 +119,17 @@ const NeonTapResultsScreen = ({ route, navigation }) => {
             />
 
             <NeonText style={styles.autoAdvance}>
-                {results.isLastRound
-                    ? `Final results in ${countdown}s...`
-                    : `Next round in ${countdown}s...`}
+                {!isHost 
+                    ? `Waiting for host to continue...` 
+                    : results.isLastRound
+                        ? `Final results in ${countdown}s...`
+                        : `Next round in ${countdown}s...`}
             </NeonText>
         </NeonContainer>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: { alignItems: 'center', marginBottom: 20 },
     title: { letterSpacing: 2 },
     winnerAnnouncement: { marginBottom: 25, padding: 15, backgroundColor: 'rgba(198, 255, 74, 0.1)', borderRadius: 12, borderWidth: 2, borderColor: COLORS.limeGlow },

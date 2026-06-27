@@ -1,11 +1,15 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from './NeonText';
+import { useTheme } from '../context/ThemeContext';
+
 
 const WhotCard = ({ card, onPress, disabled, small, isTopCard }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     // Determine card background and content color
     const isWhot = card.shape === 'whot';
-    const cardBgColor = '#FFFFFF';
+    const cardBgColor = COLORS.white;
     const contentColor = card.color || '#000';
 
     const cardSize = small ? styles.cardSmall : styles.card;
@@ -112,7 +116,7 @@ const WhotCard = ({ card, onPress, disabled, small, isTopCard }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     card: {
         width: 90,
         height: 130,
@@ -168,7 +172,7 @@ const styles = StyleSheet.create({
     whotLogoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.white,
         padding: 5,
         borderRadius: 4,
     },

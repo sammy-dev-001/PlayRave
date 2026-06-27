@@ -8,7 +8,7 @@ import {
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import RecommendationService from '../services/RecommendationService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Mood buttons for quick suggestions
 const MOODS = [
@@ -24,6 +24,8 @@ const GameRecommendations = ({
     onSelectGame,
     compact = false
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [recommendations, setRecommendations] = useState([]);
     const [selectedMood, setSelectedMood] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ const GameRecommendations = ({
             {!compact && (
                 <NeonText
                     size={10}
-                    color={selectedMood === item.id ? COLORS.limeGlow : '#888'}
+                    color={selectedMood === item.id ? COLORS.limeGlow : COLORS.textMuted}
                 >
                     {item.label}
                 </NeonText>
@@ -118,7 +120,7 @@ const GameRecommendations = ({
                 </NeonText>
                 {!compact && (
                     <View style={styles.recMeta}>
-                        <NeonText size={10} color="#666">
+                        <NeonText size={10} color={COLORS.textDarkMuted}>
                             {item.duration}min • {item.energy} energy
                         </NeonText>
                     </View>
@@ -129,11 +131,11 @@ const GameRecommendations = ({
                 <NeonText size={16} weight="bold" color={
                     item.score >= 80 ? COLORS.limeGlow :
                         item.score >= 60 ? COLORS.neonCyan :
-                            '#888'
+                            COLORS.textMuted
                 }>
                     {item.score}%
                 </NeonText>
-                <NeonText size={8} color="#666">match</NeonText>
+                <NeonText size={8} color={COLORS.textDarkMuted}>match</NeonText>
             </View>
         </TouchableOpacity>
     );
@@ -167,7 +169,7 @@ const GameRecommendations = ({
                 <NeonText size={16} weight="bold" glow>
                     ✨ RECOMMENDED FOR YOU
                 </NeonText>
-                <NeonText size={12} color="#888">
+                <NeonText size={12} color={COLORS.textMuted}>
                     {playerCount} players
                 </NeonText>
             </View>
@@ -185,7 +187,7 @@ const GameRecommendations = ({
             {/* Recommendations */}
             {loading ? (
                 <View style={styles.loading}>
-                    <NeonText size={14} color="#888">Loading...</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>Loading...</NeonText>
                 </View>
             ) : (
                 <FlatList
@@ -199,7 +201,7 @@ const GameRecommendations = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         marginVertical: 10,
     },
@@ -246,7 +248,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     topRecCard: {
         borderColor: COLORS.limeGlow,
@@ -278,7 +280,7 @@ const styles = StyleSheet.create({
         gap: 10,
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     }
 });
 

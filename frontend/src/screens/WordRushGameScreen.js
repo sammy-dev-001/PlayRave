@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TextInput, Keyboard, Alert } from 'react-native';
+import { View, StyleSheet, TextInput, Keyboard, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -146,11 +146,18 @@ const WordRushGameScreen = ({ route, navigation }) => {
             navigation.navigate('WordRushWinner', { room, winner });
         };
 
+        const onGameEnded = (data) => {
+            console.log('Word Rush ended by host');
+            clearGameTimer();
+            navigation.navigate('Lobby', { room, isHost, playerName });
+        };
+
         SocketService.on('word-rush-round-started', onRoundStarted);
         SocketService.on('word-submitted', onWordSubmitted);
         SocketService.on('word-rush-results', onResults);
         SocketService.on('word-rush-ready-for-next', onReadyForNext);
         SocketService.on('word-rush-winner', onWinner);
+        SocketService.on('word-rush-ended', onGameEnded);
 
         return () => {
             clearGameTimer();
@@ -159,6 +166,7 @@ const WordRushGameScreen = ({ route, navigation }) => {
             SocketService.off('word-rush-results', onResults);
             SocketService.off('word-rush-ready-for-next', onReadyForNext);
             SocketService.off('word-rush-winner', onWinner);
+            SocketService.off('word-rush-ended', onGameEnded);
         };
     }, [navigation, room, isHost, hostParticipates, canPlay]);
 
@@ -175,6 +183,13 @@ const WordRushGameScreen = ({ route, navigation }) => {
     };
 
     const handleEndGame = () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm("Are you sure you want to end the game for everyone?")) {
+                SocketService.emit('word-rush-end-game', { roomId: room.id });
+            }
+            return;
+        }
+
         Alert.alert(
             "End Game",
             "Are you sure you want to end the game for everyone?",

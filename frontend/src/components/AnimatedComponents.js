@@ -4,6 +4,8 @@ import {
     Platform
 } from 'react-native';
 import { AnimationConfig } from '../utils/AnimationUtils';
+import { useTheme } from '../context/ThemeContext';
+
 
 // Animated Container - Fades and slides in children
 export const AnimatedContainer = ({
@@ -13,6 +15,8 @@ export const AnimatedContainer = ({
     style,
     ...props
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(direction === 'up' ? 30 : -30)).current;
 
@@ -52,6 +56,8 @@ export const AnimatedCard = ({
     style,
     ...props
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const scale = useRef(new Animated.Value(0.9)).current;
     const pressScale = useRef(new Animated.Value(1)).current;
@@ -119,6 +125,8 @@ export const AnimatedListItem = ({
     style,
     ...props
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateX = useRef(new Animated.Value(-20)).current;
 
@@ -152,6 +160,8 @@ export const AnimatedListItem = ({
 
 // Pulsing Element - For highlighting
 export const PulsingElement = ({ children, active = true, style }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -188,6 +198,8 @@ export const PulsingElement = ({ children, active = true, style }) => {
 
 // Floating Element - Subtle hover effect
 export const FloatingElement = ({ children, intensity = 10, style }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const translateY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -242,6 +254,8 @@ export const ShakeElement = React.forwardRef(({ children, style }, ref) => {
 
 // Glow Element - Neon glow effect
 export const GlowElement = ({ children, color = '#00F8FF', style }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const glowOpacity = useRef(new Animated.Value(0.5)).current;
 
     useEffect(() => {
@@ -285,10 +299,12 @@ export const GlowElement = ({ children, color = '#00F8FF', style }) => {
 export const AnimatedProgressBar = ({
     progress,
     color = '#C6FF4A',
-    backgroundColor = 'rgba(255,255,255,0.1)',
+    backgroundColor = 'rgba(255,255,255,0.08)', // COLORS.surfaceLight — hardcoded to avoid module-load crash
     height = 8,
     style
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const width = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -329,6 +345,8 @@ export const AnimatedCountdown = ({
     warningThreshold = 5,
     warningColor = '#FF3FA4'
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(1)).current;
     const prevValue = useRef(value);
 
@@ -371,7 +389,7 @@ export const AnimatedCountdown = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     progressContainer: {
         borderRadius: 100,
         overflow: 'hidden',

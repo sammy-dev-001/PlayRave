@@ -12,7 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +24,8 @@ const formatTime = (seconds) => {
 };
 
 const ChallengesScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { isGuest, refreshUser } = useAuth();
     const [tab, setTab] = useState('daily');
     const [daily, setDaily] = useState([]);
@@ -79,7 +81,7 @@ const ChallengesScreen = ({ navigation }) => {
                     <View style={styles.progressBar}>
                         <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
                     </View>
-                    <NeonText size={12} color="#888">{item.progress}/{item.target}</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>{item.progress}/{item.target}</NeonText>
                 </View>
 
                 {item.completed && !item.claimed && (
@@ -98,7 +100,7 @@ const ChallengesScreen = ({ navigation }) => {
                 <View style={styles.guestContainer}>
                     <NeonText size={48}>🎯</NeonText>
                     <NeonText size={20} weight="bold" style={styles.guestTitle}>Account Required</NeonText>
-                    <NeonText size={14} color="#888" style={styles.guestText}>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.guestText}>
                         Create an account to track challenges and earn XP
                     </NeonText>
                     <NeonButton title="CREATE ACCOUNT" onPress={() => navigation.navigate('Auth')} style={styles.authBtn} />
@@ -121,19 +123,19 @@ const ChallengesScreen = ({ navigation }) => {
                         style={[styles.tab, tab === 'daily' && styles.tabActive]}
                         onPress={() => setTab('daily')}
                     >
-                        <NeonText size={14} color={tab === 'daily' ? '#fff' : '#888'}>Daily</NeonText>
+                        <NeonText size={14} color={tab === 'daily' ? COLORS.white : COLORS.textMuted}>Daily</NeonText>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.tab, tab === 'weekly' && styles.tabActive]}
                         onPress={() => setTab('weekly')}
                     >
-                        <NeonText size={14} color={tab === 'weekly' ? '#fff' : '#888'}>Weekly</NeonText>
+                        <NeonText size={14} color={tab === 'weekly' ? COLORS.white : COLORS.textMuted}>Weekly</NeonText>
                     </TouchableOpacity>
                 </View>
 
                 {/* Reset Timer */}
                 <View style={styles.timerRow}>
-                    <NeonText size={12} color="#666">
+                    <NeonText size={12} color={COLORS.textDarkMuted}>
                         Resets in: {formatTime(resetTime)}
                     </NeonText>
                 </View>
@@ -149,7 +151,7 @@ const ChallengesScreen = ({ navigation }) => {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <NeonText size={32}>🎮</NeonText>
-                            <NeonText size={14} color="#888">No challenges available</NeonText>
+                            <NeonText size={14} color={COLORS.textMuted}>No challenges available</NeonText>
                         </View>
                     }
                 />
@@ -158,7 +160,7 @@ const ChallengesScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20 },
     title: { textAlign: 'center', marginBottom: 20 },
     tabs: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10, gap: 10 },
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     completedCard: { borderWidth: 2, borderColor: COLORS.limeGlow },
     challengeHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
     progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    progressBar: { flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+    progressBar: { flex: 1, height: 8, borderRadius: 4, backgroundColor: COLORS.surfaceLight, overflow: 'hidden' },
     progressFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.neonCyan },
     claimBtn: { marginTop: 12 },
     claimedText: { marginTop: 10, textAlign: 'center' },

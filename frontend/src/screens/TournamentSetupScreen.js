@@ -11,7 +11,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameIcon from '../components/GameIcon';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Available games for tournament
 const TOURNAMENT_GAMES = [
@@ -28,6 +28,8 @@ const TOURNAMENT_GAMES = [
 ];
 
 const TournamentSetupScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
     const [selectedGames, setSelectedGames] = useState([]);
     const [tournamentName, setTournamentName] = useState('Party Tournament');
@@ -92,14 +94,14 @@ const TournamentSetupScreen = ({ route, navigation }) => {
                     <NeonText size={24} weight="bold" glow color={COLORS.electricPurple}>
                         CREATE TOURNAMENT
                     </NeonText>
-                    <NeonText size={14} color="#888">
+                    <NeonText size={14} color={COLORS.textMuted}>
                         Select 2-5 games to play in order
                     </NeonText>
                 </View>
 
                 {/* Tournament Name */}
                 <View style={styles.nameSection}>
-                    <NeonText size={14} color="#888">Tournament Name</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>Tournament Name</NeonText>
                     <TextInput
                         style={styles.nameInput}
                         value={tournamentName}
@@ -135,13 +137,13 @@ const TournamentSetupScreen = ({ route, navigation }) => {
                                                 onPress={() => moveGame(index, -1)}
                                                 disabled={index === 0}
                                             >
-                                                <NeonText size={14} color={index === 0 ? '#555' : '#fff'}>▲</NeonText>
+                                                <NeonText size={14} color={index === 0 ? '#555' : COLORS.white}>▲</NeonText>
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 onPress={() => moveGame(index, 1)}
                                                 disabled={index === selectedGames.length - 1}
                                             >
-                                                <NeonText size={14} color={index === selectedGames.length - 1 ? '#555' : '#fff'}>▼</NeonText>
+                                                <NeonText size={14} color={index === selectedGames.length - 1 ? '#555' : COLORS.white}>▼</NeonText>
                                             </TouchableOpacity>
                                             <TouchableOpacity onPress={() => toggleGame(gameId)}>
                                                 <NeonText size={14} color={COLORS.hotPink}>✕</NeonText>
@@ -156,7 +158,7 @@ const TournamentSetupScreen = ({ route, navigation }) => {
 
                 {/* Game Selection */}
                 <View style={styles.gamesSection}>
-                    <NeonText size={14} weight="bold" color="#888">
+                    <NeonText size={14} weight="bold" color={COLORS.textMuted}>
                         Available Games
                     </NeonText>
                     <View style={styles.gamesGrid}>
@@ -184,7 +186,7 @@ const TournamentSetupScreen = ({ route, navigation }) => {
                                     <NeonText size={12} weight="bold" numberOfLines={1}>
                                         {game.name}
                                     </NeonText>
-                                    <NeonText size={9} color="#888">{game.points}</NeonText>
+                                    <NeonText size={9} color={COLORS.textMuted}>{game.points}</NeonText>
                                 </TouchableOpacity>
                             );
                         })}
@@ -205,7 +207,7 @@ const TournamentSetupScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         padding: 20,
         paddingTop: 60,
@@ -218,12 +220,12 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     nameInput: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 10,
         borderWidth: 1,
         borderColor: COLORS.neonCyan,
         padding: 12,
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 16,
         marginTop: 8,
     },
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 15,
         borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 8,

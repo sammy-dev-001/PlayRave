@@ -4,7 +4,7 @@ import {
     Platform
 } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ScorePopup = ({
     score,
@@ -13,6 +13,8 @@ const ScorePopup = ({
     onComplete,
     position = 'center' // 'center', 'top', 'bottom'
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.5)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
@@ -118,7 +120,7 @@ const ScorePopup = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         position: 'absolute',
         left: 0,

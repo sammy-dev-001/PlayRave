@@ -17,9 +17,11 @@ import TournamentBracket from '../components/TournamentBracket';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const TicTacToeScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({
@@ -200,6 +202,13 @@ const TicTacToeScreen = ({ route, navigation }) => {
     const handleStartMatch = () => SocketService.emit('ttt-start-match', { roomId: room.id });
     const handleNextMatch = () => SocketService.emit('ttt-next-match', { roomId: room.id });
     const handleEndGame = () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm("Are you sure you want to end the game?")) {
+                SocketService.emit('ttt-end-game', { roomId: room.id });
+            }
+            return;
+        }
+
         Alert.alert("End Game", "Are you sure?", [
             { text: "Cancel", style: "cancel" },
             { text: "End Game", style: "destructive", onPress: () => SocketService.emit('ttt-end-game', { roomId: room.id }) }
@@ -251,7 +260,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={styles.header}>
                         <NeonText size={20} weight="bold" glow color={COLORS.electricPurple}>TIC-TAC-TOE TOURNAMENT</NeonText>
-                        <NeonText size={14} color="#888">Round {roundNumber}</NeonText>
+                        <NeonText size={14} color={COLORS.textMuted}>Round {roundNumber}</NeonText>
                     </View>
 
                     {phase === 'bracket' && (
@@ -274,7 +283,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                                 <View style={[styles.playerTag, currentTurn === player1?.userId && styles.activeTag]}>
                                     <NeonText size={14} weight="bold" color={COLORS.neonCyan}>{player1?.name} (X)</NeonText>
                                 </View>
-                                <NeonText size={16} color="#666">VS</NeonText>
+                                <NeonText size={16} color={COLORS.textDarkMuted}>VS</NeonText>
                                 <View style={[styles.playerTag, currentTurn === player2?.userId && styles.activeTag]}>
                                     <NeonText size={14} weight="bold" color={COLORS.hotPink}>{player2?.name} (O)</NeonText>
                                 </View>
@@ -286,7 +295,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                                 </Animated.View>
                             )}
 
-                            <NeonText size={16} color={isMyTurn ? COLORS.limeGlow : '#888'} style={styles.turnText}>
+                            <NeonText size={16} color={isMyTurn ? COLORS.limeGlow : COLORS.textMuted} style={styles.turnText}>
                                 {amInMatch ? (isMyTurn ? "Your turn!" : "Opponent's turn...") : "Spectating Match"}
                             </NeonText>
 
@@ -305,7 +314,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                             {matchResult?.winner ? (
                                 <>
                                     <NeonText size={28} weight="bold" glow color={COLORS.limeGlow}>{matchResult.winner.name} WINS!</NeonText>
-                                    <NeonText size={16} color="#888" style={styles.marginTop}>Advancing to next round</NeonText>
+                                    <NeonText size={16} color={COLORS.textMuted} style={styles.marginTop}>Advancing to next round</NeonText>
                                 </>
                             ) : (
                                 <NeonText size={28} weight="bold" glow color={COLORS.hotPink}>IT'S A DRAW!</NeonText>
@@ -323,7 +332,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
                             <NeonText size={16} color={COLORS.neonCyan} style={styles.marginTop}>
                                 Round {nextRoundNumber || roundNumber + 1} starting...
                             </NeonText>
-                            <NeonText size={14} color="#888" style={styles.marginTop}>
+                            <NeonText size={14} color={COLORS.textMuted} style={styles.marginTop}>
                                 {isHost ? 'Advancing bracket...' : 'Waiting for host...'}
                             </NeonText>
                             {isHost && (
@@ -353,7 +362,7 @@ const TicTacToeScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     scrollContent: { flexGrow: 1, paddingBottom: 40, paddingHorizontal: 15 },
     header: { alignItems: 'center', marginVertical: 20 },
     phaseContainer: { alignItems: 'center', width: '100%' },
@@ -361,14 +370,14 @@ const styles = StyleSheet.create({
     sectionTitle: { marginBottom: 20 },
     actionButton: { marginTop: 30, minWidth: 200 },
     playersRow: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 20 },
-    playerTag: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    playerTag: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: COLORS.surfaceLight },
     activeTag: { borderColor: COLORS.limeGlow, backgroundColor: 'rgba(198,255,74,0.1)' },
     turnText: { marginBottom: 20 },
     thinking: { marginBottom: 15 },
     board: { padding: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     boardRow: { flexDirection: 'row' },
     cell: { width: 90, height: 90, margin: 5, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
-    filledCell: { borderColor: 'rgba(255,255,255,0.1)' },
+    filledCell: { borderColor: COLORS.surfaceLight },
     // FIX 9: Winning line glow
     winCell: { borderColor: COLORS.limeGlow, backgroundColor: 'rgba(198, 255, 74, 0.18)', shadowColor: COLORS.limeGlow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12 },
     marginTop: { marginTop: 10 }

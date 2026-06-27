@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Spotify Configuration
 const SPOTIFY_CLIENT_ID = 'YOUR_SPOTIFY_CLIENT_ID'; // User needs to set this
@@ -23,6 +23,8 @@ const PARTY_PLAYLISTS = [
 
 // Spotify Player Component
 const SpotifyPlayer = ({ visible = true }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [isConnected, setIsConnected] = useState(false);
     const [currentTrack, setCurrentTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -73,7 +75,7 @@ const SpotifyPlayer = ({ visible = true }) => {
             {showPlaylists && (
                 <View style={styles.playlistsContainer}>
                     <View style={styles.playlistHeader}>
-                        <NeonText size={12} color="#888">Quick Start Playlists</NeonText>
+                        <NeonText size={12} color={COLORS.textMuted}>Quick Start Playlists</NeonText>
                         <TouchableOpacity onPress={() => setShowPlaylists(false)}>
                             <Ionicons name="close" size={18} color={COLORS.hotPink} />
                         </TouchableOpacity>
@@ -86,12 +88,12 @@ const SpotifyPlayer = ({ visible = true }) => {
                         >
                             <View style={styles.playlistInfo}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name={playlist.icon} size={14} color={COLORS.limeGlow} /><NeonText size={14} weight="bold">{playlist.name}</NeonText></View>
-                                <NeonText size={10} color="#888">{playlist.description}</NeonText>
+                                <NeonText size={10} color={COLORS.textMuted}>{playlist.description}</NeonText>
                             </View>
                             <Ionicons name="play" size={18} color={COLORS.limeGlow} />
                         </TouchableOpacity>
                     ))}
-                    <NeonText size={10} color="#666" style={styles.spotifyNote}>
+                    <NeonText size={10} color={COLORS.textDarkMuted} style={styles.spotifyNote}>
                         Opens in Spotify app
                     </NeonText>
                 </View>
@@ -121,6 +123,8 @@ const SpotifyPlayer = ({ visible = true }) => {
 
 // Mini player for game screens
 const MiniMusicPlayer = ({ visible = true }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     if (!visible) return null;
 
     return (
@@ -129,12 +133,12 @@ const MiniMusicPlayer = ({ visible = true }) => {
             onPress={() => Linking.openURL('https://open.spotify.com')}
         >
             <Ionicons name="musical-note" size={18} color={COLORS.limeGlow} />
-            <NeonText size={10} color="#888">Music</NeonText>
+            <NeonText size={10} color={COLORS.textMuted}>Music</NeonText>
         </TouchableOpacity>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         backgroundColor: 'rgba(0,0,0,0.4)',
         borderRadius: 15,
@@ -190,7 +194,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 60,
         right: 70,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: COLORS.overlayDarker,
         borderRadius: 20,
         padding: 8,
         alignItems: 'center',

@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import LANService from '../services/LANService';
 import SocketService from '../services/socket';
 
 const LANModeScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [mode, setMode] = useState('menu'); // menu, host, join
     const [serverIP, setServerIP] = useState('');
     const [localIP, setLocalIP] = useState(null);
@@ -99,12 +101,12 @@ const LANModeScreen = ({ navigation }) => {
             <NeonText size={24} weight="bold" glow style={styles.title}>📡 Network Mode</NeonText>
 
             <View style={styles.statusCard}>
-                <NeonText size={14} color="#888">CURRENT MODE</NeonText>
+                <NeonText size={14} color={COLORS.textMuted}>CURRENT MODE</NeonText>
                 <NeonText size={20} weight="bold" color={currentMode === 'LAN' ? COLORS.limeGlow : COLORS.neonCyan}>
                     {currentMode === 'LAN' ? '🏠 Local Network (LAN)' : '🌐 Online'}
                 </NeonText>
                 {currentMode === 'LAN' && (
-                    <NeonText size={12} color="#888">Server: {LANService.lanServerUrl}</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>Server: {LANService.lanServerUrl}</NeonText>
                 )}
             </View>
 
@@ -165,7 +167,7 @@ const LANModeScreen = ({ navigation }) => {
 
             {localIP && (
                 <View style={styles.ipCard}>
-                    <NeonText size={12} color="#888">This device's IP (if hosting):</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>This device's IP (if hosting):</NeonText>
                     <NeonText size={20} weight="bold" color={COLORS.limeGlow}>{localIP}</NeonText>
                 </View>
             )}
@@ -178,9 +180,9 @@ const LANModeScreen = ({ navigation }) => {
         <View style={styles.container}>
             <NeonText size={24} weight="bold" glow style={styles.title}>🏠 Join Local Game</NeonText>
 
-            <NeonText size={14} color="#888" style={styles.label}>Enter Host's IP Address:</NeonText>
+            <NeonText size={14} color={COLORS.textMuted} style={styles.label}>Enter Host's IP Address:</NeonText>
             <View style={styles.inputRow}>
-                <NeonText size={16} color="#666">http://</NeonText>
+                <NeonText size={16} color={COLORS.textDarkMuted}>http://</NeonText>
                 <TextInput
                     style={styles.input}
                     placeholder="192.168.1.100"
@@ -189,7 +191,7 @@ const LANModeScreen = ({ navigation }) => {
                     onChangeText={setServerIP}
                     keyboardType="numeric"
                 />
-                <NeonText size={16} color="#666">:4000</NeonText>
+                <NeonText size={16} color={COLORS.textDarkMuted}>:4000</NeonText>
             </View>
 
             <NeonButton
@@ -226,7 +228,7 @@ const LANModeScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 30, paddingHorizontal: 20 },
     menuContainer: { flex: 1, paddingTop: 30, paddingHorizontal: 20, alignItems: 'center' },
     title: { marginBottom: 25, textAlign: 'center' },
@@ -253,8 +255,8 @@ const styles = StyleSheet.create({
     label: { marginBottom: 10, alignSelf: 'flex-start' },
     inputRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
     input: {
-        flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10,
-        padding: 15, color: '#fff', fontSize: 18, textAlign: 'center', marginHorizontal: 10
+        flex: 1, backgroundColor: COLORS.surfaceLight, borderRadius: 10,
+        padding: 15, color: COLORS.white, fontSize: 18, textAlign: 'center', marginHorizontal: 10
     },
     testBtn: { marginTop: 20, width: '100%' },
     successCard: {

@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { getRandomPrompt } from '../data/neverHaveIEverPrompts';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
 
 const NeverHaveIEverScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [], category = 'normal' } = route.params || {};
 
     // Early validation
@@ -105,7 +108,7 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
                         {category.toUpperCase()}
                     </NeonText>
                 </View>
-                <NeonText size={14} color="#888" style={styles.roundText}>
+                <NeonText size={14} color={COLORS.textMuted} style={styles.roundText}>
                     Round {roundNumber}
                 </NeonText>
             </View>
@@ -169,7 +172,7 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 20,
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     categoryBadge: {
         marginTop: 10,

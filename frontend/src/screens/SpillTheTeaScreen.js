@@ -13,7 +13,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import MuteButton from '../components/MuteButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
@@ -25,6 +25,8 @@ const GAME_PHASES = {
 };
 
 const SpillTheTeaScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState, players: initialPlayers } = route.params;
 
     useGameDisconnectHandler({
@@ -180,14 +182,14 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
                 <TextInput
                     style={styles.textInput}
                     placeholder="Type your secret here..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={COLORS.textMuted}
                     value={secret}
                     onChangeText={setSecret}
                     multiline
                     maxLength={250}
                     editable={!hasSubmitted}
                 />
-                <NeonText size={12} color="#666" style={styles.charCount}>
+                <NeonText size={12} color={COLORS.textDarkMuted} style={styles.charCount}>
                     {secret.length}/250
                 </NeonText>
             </View>
@@ -197,7 +199,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
                     <NeonText size={20} color={COLORS.limeGlow}>
                         Secret Locked In! 🔒
                     </NeonText>
-                    <NeonText size={16} color="#888" style={{ marginTop: 15 }}>
+                    <NeonText size={16} color={COLORS.textMuted} style={{ marginTop: 15 }}>
                         Waiting for others... ({submissionsCount}/{totalNeeded})
                     </NeonText>
                 </View>
@@ -308,7 +310,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingTop: 10,

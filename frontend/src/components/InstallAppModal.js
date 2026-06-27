@@ -5,13 +5,15 @@ import {
 } from 'react-native';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HapticService from '../services/HapticService';
 
 const INSTALL_PROMPT_KEY = '@playrave_install_prompt_dismissed';
 
 const InstallAppModal = () => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [visible, setVisible] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
     const [isStandalone, setIsStandalone] = useState(false);
@@ -165,7 +167,7 @@ const InstallAppModal = () => {
                                                 Scroll down and tap
                                             </NeonText>
                                             <View style={styles.addToHomeBtn}>
-                                                <NeonText size={12} color="#fff">
+                                                <NeonText size={12} color={COLORS.white}>
                                                     ➕ Add to Home Screen
                                                 </NeonText>
                                             </View>
@@ -206,18 +208,18 @@ const InstallAppModal = () => {
                                                 glow
                                             />
                                         ) : (
-                                            <NeonText size={14} color="#888" style={{ textAlign: 'center', marginBottom: 10 }}>
+                                            <NeonText size={14} color={COLORS.textMuted} style={{ textAlign: 'center', marginBottom: 10 }}>
                                                 Check your browser menu to install the app.
                                             </NeonText>
                                         )}
 
                                         <TouchableOpacity onPress={handleDismiss} style={styles.laterButton}>
-                                            <NeonText size={14} color="#888">
+                                            <NeonText size={14} color={COLORS.textMuted}>
                                                 No thanks
                                             </NeonText>
                                         </TouchableOpacity>
                                         <TouchableOpacity onPress={handleRemindLater} style={styles.laterButton}>
-                                            <NeonText size={14} color="#888">
+                                            <NeonText size={14} color={COLORS.textMuted}>
                                                 Remind me later
                                             </NeonText>
                                         </TouchableOpacity>
@@ -232,7 +234,7 @@ const InstallAppModal = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.9)',

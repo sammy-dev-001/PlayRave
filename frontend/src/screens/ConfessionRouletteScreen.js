@@ -15,7 +15,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import MuteButton from '../components/MuteButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { CONFESSION_CONFIG, CONFESSION_STARTERS } from '../data/confessionPrompts';
 
@@ -31,6 +31,8 @@ const GAME_PHASES = {
 };
 
 const ConfessionRouletteScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
 
     // Game state
@@ -284,7 +286,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             <NeonText size={32} weight="bold" glow style={{ marginBottom: 20 }}>
                 ⏳ WAITING FOR HOST
             </NeonText>
-            <NeonText size={16} color="#888" style={styles.subtitle}>
+            <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
                 Game will start soon...
             </NeonText>
             {isHost && (
@@ -309,7 +311,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                 WRITE YOUR CONFESSION
             </NeonText>
 
-            <NeonText size={14} color="#888" style={styles.hint}>
+            <NeonText size={14} color={COLORS.textMuted} style={styles.hint}>
                 Hint: {starterPrompt}
             </NeonText>
 
@@ -317,14 +319,14 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                 <TextInput
                     style={styles.textInput}
                     placeholder="Type your anonymous confession..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={COLORS.textMuted}
                     value={confession}
                     onChangeText={setConfession}
                     multiline
                     maxLength={200}
                     editable={!hasSubmitted}
                 />
-                <NeonText size={12} color="#666" style={styles.charCount}>
+                <NeonText size={12} color={COLORS.textDarkMuted} style={styles.charCount}>
                     {confession.length}/200
                 </NeonText>
             </View>
@@ -334,7 +336,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                     <NeonText size={18} color={COLORS.limeGlow}>
                         Confession Submitted!
                     </NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                         Waiting for others... ({submissionCount}/{players.length})
                     </NeonText>
                 </View>
@@ -434,7 +436,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                     ))
                 ) : (
                     <View style={{ padding: 20, alignItems: 'center' }}>
-                        <NeonText size={14} color="#666">No players available to vote for</NeonText>
+                        <NeonText size={14} color={COLORS.textDarkMuted}>No players available to vote for</NeonText>
                     </View>
                 )}
             </ScrollView>
@@ -442,7 +444,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             {hasVoted ? (
                 <View style={styles.submittedBadge}>
                     <NeonText size={18} color={COLORS.limeGlow} glow>VOTE LOCKED IN!</NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>Waiting for others...</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>Waiting for others...</NeonText>
                 </View>
             ) : (
                 <NeonButton
@@ -468,7 +470,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.authorReveal}>
-                <NeonText size={16} color="#888">Written by...</NeonText>
+                <NeonText size={16} color={COLORS.textMuted}>Written by...</NeonText>
                 <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow style={{ marginTop: 10 }}>
                     {roundResults?.author === 'Unknown' ? '🕵️ UNKNOWN' : (roundResults?.author || '🕵️ UNKNOWN')}
                 </NeonText>
@@ -560,7 +562,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             <GameOverlay roomId={room.id} playerName={playerName}>
                 <View style={styles.header}>
                     <NeonText size={18} color={COLORS.hotPink} weight="bold">CONFESSION ROULETTE</NeonText>
-                    <NeonText size={12} color="#666">Room: {room.id}</NeonText>
+                    <NeonText size={12} color={COLORS.textDarkMuted}>Room: {room.id}</NeonText>
                 </View>
                 {renderPhase()}
             </GameOverlay>
@@ -568,13 +570,13 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingTop: 10,
         paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)'
+        borderBottomColor: COLORS.surfaceLight
     },
     centeredContent: {
         flex: 1,

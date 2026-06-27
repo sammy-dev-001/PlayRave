@@ -3,8 +3,10 @@ import {
     Text, StyleSheet,
     Platform
 } from 'react-native';
-import { COLORS, FONTS } from '../constants/theme';
+import { FONTS } from '../constants/themes';
 import { scaleFontSize } from '../utils/responsive';
+
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * NeonText Component
@@ -14,11 +16,17 @@ const NeonText = ({
     children, 
     style, 
     glow = false, 
-    color = COLORS.white, 
+    color, 
     size = 16, 
     weight = 'regular',
     variant = 'regular' // default, display, arcade
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    
+    // Default color to theme white if not provided
+    const finalColor = color || COLORS.white;
+
     // Apply responsive font scaling
     const scaledSize = scaleFontSize(size);
 
@@ -34,7 +42,7 @@ const NeonText = ({
     const textStyles = [
         styles.text,
         {
-            color: color,
+            color: finalColor,
             fontSize: scaledSize,
             fontFamily: fontFamily,
             fontWeight: weight === 'bold' ? '700' : '400',
@@ -48,7 +56,7 @@ const NeonText = ({
     return <Text style={textStyles}>{children}</Text>;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     text: {
         // Fallback handled in component logic
     },

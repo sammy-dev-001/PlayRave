@@ -10,9 +10,11 @@ import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import ProfileService from '../services/ProfileService';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ScoreboardScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, finalScores } = route.params;
     // Optional extra player list (used by Whot to include bots)
     const extraPlayers = route.params.players || [];
@@ -69,42 +71,72 @@ const ScoreboardScreen = ({ route, navigation }) => {
             console.log('Rematch game started:', data);
             setIsRematchLoading(false);
 
-            // Navigate based on game type
-            if (data.gameType === 'trivia') {
-                navigation.replace('Question', {
-                    room,
-                    question: data.question,
-                    questionIndex: 0,
-                    hostParticipates: data.hostParticipates,
-                    isHost
-                });
-            } else if (data.gameType === 'myth-or-fact') {
-                navigation.replace('MythOrFactQuestion', {
-                    room,
-                    statement: data.statement,
-                    hostParticipates: data.hostParticipates,
-                    isHost
-                });
-            } else if (data.gameType === 'whos-most-likely') {
+            // Robust gameType detection with fallbacks
+            const { 
+                gameType: rawGameType, 
+                question, 
+                statement, 
+                prompt, 
+                players, 
+                hostParticipates: hostPlays, 
+                gameState 
+            } = data;
+            
+            const gameType = rawGameType || data.type || gameState?.type;
+            const navParams = { ...data, room, hostParticipates: hostPlays, isHost, gameState, players };
+            
+            if (!gameType) {
+                console.error('[ScoreboardScreen] Failed to determine gameType from payload:', data);
+                return;
+            }
+
+            if (gameType === 'trivia') {
+                navigation.replace('Question', { ...navParams, question, questionIndex: 0 });
+            } else if (gameType === 'myth-or-fact') {
+                navigation.replace('MythOrFactQuestion', { ...navParams, statement, statementIndex: 0 });
+            } else if (gameType === 'whos-most-likely') {
                 navigation.replace('WhosMostLikelyQuestion', {
-                    room,
-                    prompt: data.prompt,
-                    players: data.players,
-                    hostParticipates: data.hostParticipates,
-                    isHost
+                    ...navParams,
+                    prompt: null,
+                    promptIndex: null,
+                    totalPrompts: gameState?.totalPrompts || null,
                 });
-            } else if (data.gameType === 'neon-tap') {
-                navigation.replace('NeonTapGame', {
-                    room,
-                    hostParticipates: data.hostParticipates,
-                    isHost
-                });
-            } else if (data.gameType === 'word-rush') {
-                navigation.replace('WordRushGame', {
-                    room,
-                    hostParticipates: data.hostParticipates,
-                    isHost
-                });
+            } else if (gameType === 'neon-tap') {
+                navigation.replace('NeonTapGame', navParams);
+            } else if (gameType === 'word-rush') {
+                navigation.replace('WordRushGame', navParams);
+            } else if (gameType === 'whot') {
+                navigation.replace('WhotGame', navParams);
+            } else if (gameType === 'truth-or-dare') {
+                navigation.replace('OnlineTruthOrDareGame', { ...navParams, category: gameState?.category || 'normal' });
+            } else if (gameType === 'never-have-i-ever') {
+                navigation.replace('OnlineNeverHaveIEver', navParams);
+            } else if (gameType === 'confession-roulette') {
+                navigation.replace('ConfessionRoulette', navParams);
+            } else if (gameType === 'spill-the-tea') {
+                navigation.replace('SpillTheTea', navParams);
+            } else if (gameType === 'imposter') {
+                navigation.replace('Imposter', navParams);
+            } else if (gameType === 'unpopular-opinions') {
+                navigation.replace('UnpopularOpinions', navParams);
+            } else if (gameType === 'hot-seat') {
+                navigation.replace('HotSeat', navParams);
+            } else if (gameType === 'hot-seat-mc') {
+                navigation.replace('HotSeatMC', navParams);
+            } else if (gameType === 'button-mash') {
+                navigation.replace('ButtonMash', navParams);
+            } else if (gameType === 'type-race') {
+                navigation.replace('TypeRace', navParams);
+            } else if (gameType === 'math-blitz') {
+                navigation.replace('MathBlitz', navParams);
+            } else if (gameType === 'color-rush') {
+                navigation.replace('ColorRush', navParams);
+            } else if (gameType === 'tic-tac-toe') {
+                navigation.replace('TicTacToe', navParams);
+            } else if (gameType === 'draw-battle') {
+                navigation.replace('DrawBattle', navParams);
+            } else if (gameType === 'scrabble') {
+                navigation.replace('OnlineScrabble', navParams);
             }
         };
 
@@ -172,7 +204,7 @@ const ScoreboardScreen = ({ route, navigation }) => {
                         {getPlayerName(item.playerId)} {isWinner ? '🏆' : ''}
                     </NeonText>
                     {hasPenalty && (
-                        <NeonText size={12} color="#888">
+                        <NeonText size={12} color={COLORS.textMuted}>
                             {item.penaltyCards} card{item.penaltyCards !== 1 ? 's' : ''} remaining
                         </NeonText>
                     )}
@@ -232,7 +264,7 @@ const ScoreboardScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 40,

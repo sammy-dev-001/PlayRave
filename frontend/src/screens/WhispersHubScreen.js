@@ -7,10 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import LiveChat from '../components/LiveChat';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
-const MODES = [
+const getModes = (COLORS) => [
     {
         id: 'confessions',
         name: 'Confessions',
@@ -38,9 +39,15 @@ const MODES = [
 ];
 
 const WhispersHubScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedMode, setSelectedMode] = useState(null);
     const [starting, setStarting] = useState(false);
+
+    // Chat State
+    const [chatMessages, setChatMessages] = useState([]);
+    const [isChatMinimized, setIsChatMinimized] = useState(true);
 
     const anim0 = useRef(new Animated.Value(1)).current;
     const anim1 = useRef(new Animated.Value(1)).current;
@@ -76,15 +83,23 @@ const WhispersHubScreen = ({ route, navigation }) => {
             }
         };
 
+        const onChatReceived = (msg) => {
+            setChatMessages(prev => [...prev, msg]);
+        };
+
         SocketService.on('game-started', onGameStarted);
-        return () => SocketService.off('game-started', onGameStarted);
+        SocketService.on('chat-message-received', onChatReceived);
+        return () => {
+            SocketService.off('game-started', onGameStarted);
+            SocketService.off('chat-message-received', onChatReceived);
+        };
     }, [navigation, room, isHost, playerName]);
 
     const handleStartGame = () => {
         if (!selectedMode || starting) return;
         setStarting(true);
 
-        const mode = MODES.find(m => m.id === selectedMode);
+        const mode = getModes(COLORS).find(m => m.id === selectedMode);
         
         // Set the sub-game type
         SocketService.emit('set-game-type', {
@@ -97,6 +112,14 @@ const WhispersHubScreen = ({ route, navigation }) => {
             room: { ...room, gameType: mode.engine }, 
             playerName 
         });
+    };
+
+    const handleSendChatMessage = (text) => {
+        SocketService.emit('chat-message', { roomId: room.id, text });
+    };
+
+    const handleSendReaction = (emoji) => {
+        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
     };
 
     return (
@@ -114,7 +137,7 @@ const WhispersHubScreen = ({ route, navigation }) => {
                 </Animated.View>
 
                 <Animated.View style={{ opacity: entranceFade }}>
-                    {MODES.map((mode, i) => {
+                    {getModes(COLORS).map((mode, i) => {
                         const isSelected = selectedMode === mode.id;
                         return (
                             <Animated.View key={mode.id} style={{ transform: [{ scale: cardAnims[i] }], marginBottom: 16 }}>
@@ -123,7 +146,7 @@ const WhispersHubScreen = ({ route, navigation }) => {
                                         styles.card,
                                         {
                                             backgroundColor: isSelected ? mode.bg : 'rgba(255,255,255,0.03)',
-                                            borderColor: isSelected ? mode.borderColor : 'rgba(255,255,255,0.1)',
+                                            borderColor: isSelected ? mode.borderColor : COLORS.surfaceLight,
                                             borderWidth: isSelected ? 3 : 2,
                                             shadowColor: isSelected ? mode.glowColor : 'transparent',
                                         },
@@ -139,7 +162,7 @@ const WhispersHubScreen = ({ route, navigation }) => {
                                     )}
                                     <NeonText size={50} style={styles.emoji}>{mode.emoji}</NeonText>
                                     <View style={styles.cardText}>
-                                        <NeonText size={24} weight="bold" color={isSelected ? mode.color : '#fff'} glow={isSelected}>{mode.name}</NeonText>
+                                        <NeonText size={24} weight="bold" color={isSelected ? mode.color : COLORS.white} glow={isSelected}>{mode.name}</NeonText>
                                         <View style={[styles.taglinePill, { borderColor: mode.color }]}>
                                             <NeonText size={12} color={mode.color} style={{ fontStyle: 'italic' }}>{mode.tagline}</NeonText>
                                         </View>
@@ -168,11 +191,23 @@ const WhispersHubScreen = ({ route, navigation }) => {
                     </View>
                 )}
             </ScrollView>
+
+            {/* Live Chat Overlay */}
+            <View style={styles.chatOverlay}>
+                <LiveChat
+                    messages={chatMessages}
+                    onSendMessage={handleSendChatMessage}
+                    onSendReaction={handleSendReaction}
+                    currentUser={{ id: SocketService.userId || SocketService.socket?.id, name: playerName }}
+                    isMinimized={isChatMinimized}
+                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
+                />
+            </View>
         </NeonContainer>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: 18, paddingBottom: 50 },
     header: { alignItems: 'center', marginTop: 24, marginBottom: 28 },
     iconRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
@@ -186,6 +221,13 @@ const styles = StyleSheet.create({
     cardDesc: { textAlign: 'center', lineHeight: 19, paddingHorizontal: 8 },
     startSection: { marginTop: 20, alignItems: 'center' },
     waitingContainer: { alignItems: 'center', paddingVertical: 36 },
+    chatOverlay: {
+        position: 'absolute',
+        bottom: 20,
+        left: 10,
+        right: 10,
+        zIndex: 100,
+    },
 });
 
 export default WhispersHubScreen;

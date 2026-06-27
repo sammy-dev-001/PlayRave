@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const NeverHaveIEverCategoryScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [] } = route.params || {};
     const [selectedCategory, setSelectedCategory] = useState('normal');
 
@@ -92,7 +94,7 @@ const NeverHaveIEverCategoryScreen = ({ route, navigation }) => {
                             >
                                 {category.name}
                             </NeonText>
-                            <NeonText size={13} color="#888" style={styles.categoryDescription}>
+                            <NeonText size={13} color={COLORS.textMuted} style={styles.categoryDescription}>
                                 {category.description}
                             </NeonText>
                             {selectedCategory === category.id && (
@@ -116,7 +118,7 @@ const NeverHaveIEverCategoryScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     scrollView: {
         flex: 1,
         marginTop: 40,
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     selectedCard: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderWidth: 3,
     },
     categoryIcon: {

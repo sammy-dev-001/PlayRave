@@ -6,10 +6,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Win streak badge that shows next to player names
 const StreakBadge = ({ streak, size = 'small' }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     if (!streak || streak < 2) return null;
 
     const fireCount = streak >= 10 ? 3 : streak >= 5 ? 2 : 1;
@@ -31,6 +33,8 @@ const StreakBadge = ({ streak, size = 'small' }) => {
 
 // Streak milestone popup animation
 const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -66,7 +70,7 @@ const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
             <NeonText size={28} weight="bold" glow color={COLORS.hotPink}>
                 {getMessage()}
             </NeonText>
-            <NeonText size={20} color="#fff">
+            <NeonText size={20} color={COLORS.white}>
                 {playerName} has {streak} wins in a row!
             </NeonText>
         </Animated.View>
@@ -75,6 +79,8 @@ const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
 
 // Streak breaker notification
 const StreakBreakerPopup = ({ breakerName, oldStreak, visible, onComplete }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const slideAnim = useRef(new Animated.Value(-100)).current;
 
     useEffect(() => {
@@ -91,8 +97,8 @@ const StreakBreakerPopup = ({ breakerName, oldStreak, visible, onComplete }) => 
 
     return (
         <Animated.View style={[styles.breakerPopup, { transform: [{ translateY: slideAnim }] }]}>
-            <NeonText size={14} color="#fff">
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={16} color="#fff" /><NeonText size={14} color="#fff">{breakerName} broke a {oldStreak} win streak!</NeonText></View>
+            <NeonText size={14} color={COLORS.white}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={16} color={COLORS.textMuted} /><NeonText size={14} color={COLORS.textMuted}>{breakerName} broke a {oldStreak} win streak!</NeonText></View>
             </NeonText>
         </Animated.View>
     );
@@ -131,7 +137,7 @@ const useWinStreak = (roomId) => {
     };
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     badge: {
         backgroundColor: 'rgba(255, 107, 157, 0.2)',
         paddingHorizontal: 8,

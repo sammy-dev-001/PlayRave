@@ -3,7 +3,7 @@ import {
     View, StyleSheet, Animated, Easing, Text,
     Platform
 } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * A reusable loading screen component with neon-themed animations.
@@ -15,6 +15,8 @@ const LoadingScreen = ({
     size = 'large', // 'small', 'medium', 'large'
     fullScreen = true
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const spinAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0.5)).current;
@@ -136,9 +138,15 @@ const LoadingScreen = ({
 };
 
 /**
- * Inline loading indicator for use within components
+ * Inline loading indicator for use within components.
+ * NOTE: color default cannot be set in the signature using COLORS (module-load time),
+ * so we resolve the fallback inside the component body.
  */
-export const InlineLoader = ({ size = 'small', color = COLORS.neonCyan }) => {
+export const InlineLoader = ({ size = 'small', color }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    // Resolve color inside the component so COLORS is available from the hook
+    const resolvedColor = color ?? COLORS.neonCyan;
     const spinAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -167,7 +175,7 @@ export const InlineLoader = ({ size = 'small', color = COLORS.neonCyan }) => {
                 {
                     width: loaderSize,
                     height: loaderSize,
-                    borderColor: color,
+                    borderColor: resolvedColor,
                     transform: [{ rotate: spin }]
                 }
             ]}
@@ -175,7 +183,7 @@ export const InlineLoader = ({ size = 'small', color = COLORS.neonCyan }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     fullScreenContainer: {
         flex: 1,
         backgroundColor: COLORS.deepNightBlack,

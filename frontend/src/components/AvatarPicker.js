@@ -14,10 +14,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SHADOWS } from '../constants/themes';
+
 import { AVATARS, AVATAR_COLORS } from '../data/avatars';
 
 const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar || AVATARS[0]);
     const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
     const [customPhoto, setCustomPhoto] = useState(null);
@@ -167,7 +171,7 @@ const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
                                     ) : (
                                         <>
                                             <NeonText size={64}>{selectedAvatar?.emoji}</NeonText>
-                                            <NeonText size={14} color="#fff" style={styles.previewName}>
+                                            <NeonText size={14} color={COLORS.white} style={styles.previewName}>
                                                 {selectedAvatar?.name}
                                             </NeonText>
                                         </>
@@ -197,7 +201,7 @@ const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
                                 )}
 
                                 {/* Avatar Grid */}
-                                <NeonText size={12} color="#888" style={styles.sectionLabel}>
+                                <NeonText size={12} color={COLORS.textMuted} style={styles.sectionLabel}>
                                     SELECT AVATAR
                                 </NeonText>
                                 <ScrollView
@@ -210,7 +214,7 @@ const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
                                 </ScrollView>
 
                                 {/* Color Grid */}
-                                <NeonText size={12} color="#888" style={styles.sectionLabel}>
+                                <NeonText size={12} color={COLORS.textMuted} style={styles.sectionLabel}>
                                     SELECT COLOR
                                 </NeonText>
                                 <View style={styles.colorGrid}>
@@ -265,7 +269,7 @@ export const AvatarDisplay = ({ avatar, color, size = 40, onPress, isCustomPhoto
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -326,14 +330,14 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: 30,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 2,
         borderColor: 'transparent',
     },
     avatarOptionSelected: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: COLORS.borderDefault,
         borderWidth: 3,
     },
     colorGrid: {
@@ -352,7 +356,7 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     colorOptionSelected: {
-        borderColor: '#fff',
+        borderColor: COLORS.white,
         borderWidth: 3,
     },
     confirmButton: {

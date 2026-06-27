@@ -10,7 +10,7 @@ import {
     Animated
 } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Quick reaction emojis
 const QUICK_REACTIONS = ['😂', '🔥', '👏', '😮', '💀', '❤️', '🎉', '😭'];
@@ -23,18 +23,56 @@ const LiveChat = ({
     isMinimized = false,
     onToggleMinimize
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [inputText, setInputText] = useState('');
     const flatListRef = useRef(null);
     const [showReactions, setShowReactions] = useState(false);
 
-    // Auto-scroll to bottom when new messages arrive
+    // Transient Toast State
+    const [toastMessage, setToastMessage] = useState(null);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const toastTimeoutRef = useRef(null);
+
+    // Auto-scroll to bottom when new messages arrive and trigger toast
     useEffect(() => {
-        if (messages.length > 0 && flatListRef.current) {
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            
+            if (isMinimized) {
+                // If minimized, show toast for non-own, non-system messages
+                if (lastMessage.userId !== currentUser?.id && lastMessage.type !== 'system') {
+                    setToastMessage(lastMessage);
+                    
+                    // Animate in
+                    Animated.timing(fadeAnim, {
+                        toValue: 1,
+                        duration: 300,
+                        useNativeDriver: true
+                    }).start();
+
+                    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+
+                    // Animate out after 3 seconds
+                    toastTimeoutRef.current = setTimeout(() => {
+                        Animated.timing(fadeAnim, {
+                            toValue: 0,
+                            duration: 300,
+                            useNativeDriver: true
+                        }).start(() => setToastMessage(null));
+                    }, 3000);
+                }
+            } else if (flatListRef.current) {
+                setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+            }
         }
-    }, [messages]);
+        
+        return () => {
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+        };
+    }, [messages, isMinimized]);
 
     const handleSend = () => {
         if (!inputText.trim()) return;
@@ -55,7 +93,7 @@ const LiveChat = ({
         if (isSystem) {
             return (
                 <View style={styles.systemMessage}>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         {item.text}
                     </NeonText>
                 </View>
@@ -93,12 +131,20 @@ const LiveChat = ({
 
     if (isMinimized) {
         return (
-            <TouchableOpacity
-                style={styles.minimizedChat}
-                onPress={onToggleMinimize}
-            >
-                <NeonText size={14}>💬 {messages.length}</NeonText>
-            </TouchableOpacity>
+            <View style={styles.minimizedContainer}>
+                {toastMessage && (
+                    <Animated.View style={[styles.toastBubble, { opacity: fadeAnim }]}>
+                        <NeonText size={10} color={COLORS.neonCyan}>{toastMessage.userName}</NeonText>
+                        <NeonText size={14}>{toastMessage.type === 'reaction' ? toastMessage.emoji : toastMessage.text}</NeonText>
+                    </Animated.View>
+                )}
+                <TouchableOpacity
+                    style={styles.minimizedChat}
+                    onPress={onToggleMinimize}
+                >
+                    <NeonText size={14}>💬 {messages.length}</NeonText>
+                </TouchableOpacity>
+            </View>
         );
     }
 
@@ -153,7 +199,7 @@ const LiveChat = ({
                     value={inputText}
                     onChangeText={setInputText}
                     placeholder="Say something..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={COLORS.textMuted}
                     maxLength={100}
                     onSubmitEditing={handleSend}
                 />
@@ -171,7 +217,7 @@ const LiveChat = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         maxHeight: 300,
         backgroundColor: 'rgba(0,0,0,0.8)',
@@ -179,6 +225,19 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.electricPurple,
         overflow: 'hidden',
+    },
+    minimizedContainer: {
+        alignItems: 'flex-start',
+    },
+    toastBubble: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: COLORS.neonCyan,
+        marginBottom: 8,
+        maxWidth: 200,
     },
     minimizedChat: {
         backgroundColor: 'rgba(0,0,0,0.8)',
@@ -194,7 +253,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     },
     messagesList: {
         flex: 1,
@@ -204,7 +263,7 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     messageBubble: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 12,
         padding: 8,
         marginBottom: 5,
@@ -233,7 +292,7 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)',
+        borderTopColor: COLORS.surfaceLight,
     },
     reactionBtn: {
         padding: 5,
@@ -243,19 +302,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 8,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)',
+        borderTopColor: COLORS.surfaceLight,
     },
     emojiBtn: {
         padding: 5,
     },
     input: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 20,
         paddingHorizontal: 15,
         paddingVertical: 8,
         marginHorizontal: 8,
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 14,
     },
     sendBtn: {

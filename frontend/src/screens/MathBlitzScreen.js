@@ -14,9 +14,11 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const MathBlitzScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({
@@ -154,15 +156,16 @@ const MathBlitzScreen = ({ route, navigation }) => {
             setCountdown(prev => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    setPhase('playing');
-                    setTimeout(() => inputRef.current?.focus(), 100);
+                    setTimeout(() => {
+                        setPhase('playing');
+                        setTimeout(() => inputRef.current?.focus(), 100);
 
-                    // Pulse animation for problem
-                    Animated.sequence([
-                        Animated.timing(scaleAnim, { toValue: 1.1, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
-                        Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' })
-                    ]).start();
-
+                        // Pulse animation for problem
+                        Animated.sequence([
+                            Animated.timing(scaleAnim, { toValue: 1.1, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
+                            Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' })
+                        ]).start();
+                    }, 1000);
                     return 0;
                 }
                 return prev - 1;
@@ -202,7 +205,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                         MATH BLITZ
                     </NeonText>
                     <View style={styles.roundInfo}>
-                        <NeonText size={14} color="#888">
+                        <NeonText size={14} color={COLORS.textMuted}>
                             Round {currentRound}/{totalRounds}
                         </NeonText>
                         <NeonText size={16} weight="bold" color={COLORS.limeGlow}>
@@ -217,7 +220,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                         <NeonText size={32} weight="bold" glow>
                             Round {currentRound}
                         </NeonText>
-                        <NeonText size={16} color="#888" style={styles.subtitle}>
+                        <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
                             First to answer correctly wins!
                         </NeonText>
                         {isHost && (
@@ -228,7 +231,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                             />
                         )}
                         {!isHost && (
-                            <NeonText size={14} color="#666" style={styles.subtitle}>
+                            <NeonText size={14} color={COLORS.textDarkMuted} style={styles.subtitle}>
                                 Waiting for host...
                             </NeonText>
                         )}
@@ -328,7 +331,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
                                     player.id === SocketService.socket?.id && styles.myRow
                                 ]}
                             >
-                                <NeonText size={18} weight="bold" color={index === 0 ? COLORS.limeGlow : '#fff'}>
+                                <NeonText size={18} weight="bold" color={index === 0 ? COLORS.limeGlow : COLORS.white}>
                                     #{index + 1}
                                 </NeonText>
                                 <NeonText size={16} style={styles.standingName}>
@@ -396,7 +399,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: 50,
@@ -445,11 +448,11 @@ const styles = StyleSheet.create({
     },
     answerInput: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 12,
         padding: 20,
         fontSize: 32,
-        color: '#fff',
+        color: COLORS.white,
         textAlign: 'center',
         borderWidth: 3,
         borderColor: COLORS.neonCyan,

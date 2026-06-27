@@ -7,9 +7,11 @@ import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import ProfileService from '../services/ProfileService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const WordRushWinnerScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, winner } = route.params;
     const currentUserId = SocketService.userId;
     const isWinner = winner && winner === currentUserId;
@@ -103,13 +105,13 @@ const WordRushWinnerScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     title: { letterSpacing: 4, marginBottom: 40 },
     winnerContainer: { alignItems: 'center', marginBottom: 40, padding: 30, backgroundColor: 'rgba(198, 255, 74, 0.1)', borderRadius: 20, borderWidth: 3, borderColor: COLORS.limeGlow },
     winnerLabel: { marginBottom: 20 },
     winnerName: { textAlign: 'center' },
-    message: { textAlign: 'center', marginBottom: 40, color: '#888' },
+    message: { textAlign: 'center', marginBottom: 40, color: COLORS.textMuted },
     button: { minWidth: 200 }
 });
 

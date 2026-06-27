@@ -15,12 +15,14 @@ import {
     CENTER_SQUARE,
     BONUS_SQUARES
 } from '../data/scrabbleData';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import PlayerStatsService from '../services/PlayerStatsService';
 
 const HAND_SIZE = 7;
 
 const ScrabbleScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [], difficulty = 'medium' } = route.params || {};
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
@@ -686,8 +688,8 @@ const ScrabbleScreen = ({ route, navigation }) => {
 
         // Enhanced bonus square colors
         let bgColor = 'rgba(20,30,40,0.9)';
-        let bonusTextColor = '#fff';
-        let borderColor = 'rgba(255,255,255,0.1)';
+        let bonusTextColor = COLORS.white;
+        let borderColor = COLORS.surfaceLight;
 
         if (bonus === 'TW') {
             bgColor = '#d10000'; // Vibrant red
@@ -772,7 +774,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                 <View style={styles.scoreRow}>
                     {gamePlayers.map(p => (
                         <View key={p.id} style={[styles.miniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
-                            <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
+                            <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : COLORS.textMuted}>{p.name}</NeonText>
                             <NeonText size={14} weight="bold">{playerScores[p.id]}</NeonText>
                         </View>
                     ))}
@@ -803,7 +805,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
             {/* Controls & Rack */}
             <View style={styles.controlsArea}>
                 <View style={styles.rackContainer}>
-                    <NeonText size={12} color="#666" style={{ marginBottom: 4 }}>Your Rack:</NeonText>
+                    <NeonText size={12} color={COLORS.textDarkMuted} style={{ marginBottom: 4 }}>Your Rack:</NeonText>
                     <DraggableRack
                         hand={currentHand}
                         placedTiles={placedTiles}
@@ -901,7 +903,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                         <NeonText size={20} weight="bold" glow style={{ marginBottom: 5 }}>
                             Choose a Letter
                         </NeonText>
-                        <NeonText size={12} color="#888" style={{ marginBottom: 15 }}>
+                        <NeonText size={12} color={COLORS.textMuted} style={{ marginBottom: 15 }}>
                             Select what letter your blank tile will represent
                         </NeonText>
                         <View style={styles.letterGrid}>
@@ -987,7 +989,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
 };
 
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         paddingTop: 40,
         paddingHorizontal: 15,
@@ -1034,7 +1036,7 @@ const styles = StyleSheet.create({
     },
     square: {
         borderWidth: 0.5,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
         userSelect: 'none',
@@ -1112,7 +1114,7 @@ const styles = StyleSheet.create({
     smallBtn: {
         paddingVertical: 5,
         paddingHorizontal: 15,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 15,
     },
     disabledBtn: {
@@ -1131,7 +1133,7 @@ const styles = StyleSheet.create({
     cancelExchangeBtn: {
         paddingVertical: 8,
         paddingHorizontal: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 15,
     },
 

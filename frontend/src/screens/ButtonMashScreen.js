@@ -8,11 +8,13 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const GAME_DURATION = 10000;
 
 const ButtonMashScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
 
     useGameDisconnectHandler({
@@ -174,7 +176,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
                         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                             <NeonText size={120} weight="bold" glow color={COLORS.limeGlow}>{countdown || 'GO!'}</NeonText>
                         </Animated.View>
-                        <NeonText size={18} color="#888" style={styles.subtitle}>Get ready to tap!</NeonText>
+                        <NeonText size={18} color={COLORS.textMuted} style={styles.subtitle}>Get ready to tap!</NeonText>
                     </View>
                 )}
 
@@ -182,7 +184,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
                     <View style={styles.playingContainer}>
                         <View style={styles.timerContainer}>
                             <NeonText size={48} weight="bold" glow color={timeLeft <= 3 ? COLORS.hotPink : COLORS.neonCyan}>{timeLeft}</NeonText>
-                            <NeonText size={14} color="#888">seconds</NeonText>
+                            <NeonText size={14} color={COLORS.textMuted}>seconds</NeonText>
                         </View>
 
                         <View style={styles.progressBarContainer}>
@@ -203,7 +205,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
                         <View style={styles.liveLeaderboard}>
                             {leaderboard.slice(0, 3).map((player, index) => (
                                 <View key={index} style={styles.leaderboardItem}>
-                                    <NeonText size={12} color={index === 0 ? COLORS.limeGlow : '#888'}>
+                                    <NeonText size={12} color={index === 0 ? COLORS.limeGlow : COLORS.textMuted}>
                                         {index + 1}. {player.name}: {player.tapCount}
                                     </NeonText>
                                 </View>
@@ -215,8 +217,8 @@ const ButtonMashScreen = ({ route, navigation }) => {
                 {(phase === 'waiting' || (phase === 'playing' && timeLeft <= 0)) && (
                     <View style={styles.centerContent}>
                         <NeonText size={64} weight="bold" glow color={COLORS.limeGlow}>{tapCount}</NeonText>
-                        <NeonText size={20} color="#888" style={styles.subtitle}>TAPS!</NeonText>
-                        <NeonText size={16} color="#666" style={{ marginTop: 30 }}>Waiting for results...</NeonText>
+                        <NeonText size={20} color={COLORS.textMuted} style={styles.subtitle}>TAPS!</NeonText>
+                        <NeonText size={16} color={COLORS.textMuted} style={{ marginTop: 30 }}>Waiting for results...</NeonText>
                     </View>
                 )}
 
@@ -230,7 +232,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
                         <View style={styles.rankingsContainer}>
                             {results.rankings?.map((player, index) => (
                                 <View key={index} style={[styles.rankingRow, index === 0 && styles.winnerRow, (player.id === myId || player.userId === myId) && styles.myRow]}>
-                                    <NeonText size={18} weight="bold" color={index === 0 ? COLORS.limeGlow : '#fff'}>#{index + 1}</NeonText>
+                                    <NeonText size={18} weight="bold" color={index === 0 ? COLORS.limeGlow : COLORS.white}>#{index + 1}</NeonText>
                                     <NeonText size={16} style={styles.rankName}>{player.name}</NeonText>
                                     <NeonText size={18} weight="bold" color={COLORS.neonCyan}>{player.tapCount}</NeonText>
                                 </View>
@@ -248,19 +250,19 @@ const ButtonMashScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 50 },
     header: { alignItems: 'center', marginBottom: 20 },
     centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     subtitle: { marginTop: 10 },
     playingContainer: { flex: 1, alignItems: 'center', paddingHorizontal: 20 },
     timerContainer: { alignItems: 'center', marginBottom: 10 },
-    progressBarContainer: { width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden', marginBottom: 20 },
+    progressBarContainer: { width: '100%', height: 8, backgroundColor: COLORS.surfaceLight, borderRadius: 4, overflow: 'hidden', marginBottom: 20 },
     progressBar: { height: '100%', backgroundColor: COLORS.limeGlow, borderRadius: 4 },
     tapCountContainer: { alignItems: 'center', marginBottom: 30 },
     buttonWrapper: { width: 180, height: 180, marginBottom: 30 },
     mashButton: { width: '100%', height: '100%', borderRadius: 100, backgroundColor: COLORS.limeGlow, justifyContent: 'center', alignItems: 'center', shadowColor: COLORS.limeGlow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 30, elevation: 20 },
-    liveLeaderboard: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12, padding: 10, minWidth: 150 },
+    liveLeaderboard: { backgroundColor: COLORS.overlayDark, borderRadius: 12, padding: 10, minWidth: 150 },
     leaderboardItem: { paddingVertical: 4 },
     resultsContainer: { flex: 1, alignItems: 'center', paddingHorizontal: 20, paddingTop: 20 },
     winnerText: { marginBottom: 5 },

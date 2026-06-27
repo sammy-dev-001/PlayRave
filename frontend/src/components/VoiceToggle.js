@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, View} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import VoiceService from '../services/VoiceService';
 
 const VoiceToggle = ({ roomId, style }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [isMuted, setIsMuted] = useState(false);
     const [isAvailable, setIsAvailable] = useState(false);
     const [isJoining, setIsJoining] = useState(true);
@@ -44,8 +46,8 @@ const VoiceToggle = ({ roomId, style }) => {
     if (isJoining) {
         return (
             <View style={[styles.container, styles.joining, style]}>
-                <Ionicons name="mic" size={20} color="#888" />
-                <NeonText size={10} color="#888">...</NeonText>
+                <Ionicons name="mic" size={20} color={COLORS.textMuted} />
+                <NeonText size={10} color={COLORS.textMuted}>...</NeonText>
             </View>
         );
     }
@@ -76,7 +78,7 @@ const VoiceToggle = ({ roomId, style }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexDirection: 'column',
         alignItems: 'center',
@@ -97,7 +99,7 @@ const styles = StyleSheet.create({
     },
     joining: {
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderColor: '#888',
+        borderColor: COLORS.textMuted,
     },
 });
 

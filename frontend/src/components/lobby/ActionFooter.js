@@ -4,11 +4,13 @@ import {
     Platform
 } from 'react-native';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import HapticService from '../../services/HapticService';
 import SoundService from '../../services/SoundService';
 
 const AnimatedButton = ({ title, icon, onPress, style, textColor, disabled, children }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -65,6 +67,8 @@ const ActionFooter = ({
     isReady,
     disabled,
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     if (isHost) {
         return (
             <View style={styles.footer}>
@@ -112,7 +116,7 @@ const ActionFooter = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     footer: {
         paddingHorizontal: 20,
         paddingTop: 12,
@@ -158,7 +162,7 @@ const styles = StyleSheet.create({
     leaveBtn: {
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: COLORS.surfaceLight,
         backgroundColor: 'rgba(17, 24, 39, 0.5)',
         paddingVertical: 14,
         alignItems: 'center',

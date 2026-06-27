@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import GameIcon from './GameIcon';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Game metadata for recommendations
 const GAME_DATA = {
@@ -171,6 +171,8 @@ const SmartGameRecommendations = ({
     onSelectGame,
     visible = true
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const recommendations = useMemo(() => {
         return getRecommendations(playerCount, null, previousGames);
     }, [playerCount, previousGames]);
@@ -181,7 +183,7 @@ const SmartGameRecommendations = ({
         <View style={styles.container}>
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="bulb" size={16} color={COLORS.electricPurple} /><NeonText size={14} weight="bold" color={COLORS.electricPurple}>RECOMMENDED FOR YOU</NeonText></View>
-                <NeonText size={10} color="#888">
+                <NeonText size={10} color={COLORS.textMuted}>
                     Based on {playerCount} players & time
                 </NeonText>
             </View>
@@ -206,7 +208,7 @@ const SmartGameRecommendations = ({
                         <NeonText size={12} weight="bold" numberOfLines={1}>
                             {gameId.replace(/-/g, ' ')}
                         </NeonText>
-                        <NeonText size={9} color="#888" numberOfLines={2} style={styles.reason}>
+                        <NeonText size={9} color={COLORS.textMuted} numberOfLines={2} style={styles.reason}>
                             {reason}
                         </NeonText>
                     </TouchableOpacity>
@@ -216,7 +218,7 @@ const SmartGameRecommendations = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         marginVertical: 15,
         paddingVertical: 15,
@@ -240,7 +242,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     topPick: {
         borderColor: COLORS.limeGlow,

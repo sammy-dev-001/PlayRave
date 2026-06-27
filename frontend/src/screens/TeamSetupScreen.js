@@ -12,7 +12,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Default team colors
 const TEAM_COLORS = [
@@ -31,6 +31,8 @@ const DEFAULT_TEAM_NAMES = [
 ];
 
 const TeamSetupScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName } = route.params;
     const [teams, setTeams] = useState([
         { id: 1, name: DEFAULT_TEAM_NAMES[0], color: TEAM_COLORS[0], players: [] },
@@ -235,7 +237,7 @@ const TeamSetupScreen = ({ route, navigation }) => {
                         </NeonText>
                     </TouchableOpacity>
                 )}
-                <NeonText size={12} color="#888">
+                <NeonText size={12} color={COLORS.textMuted}>
                     {team.players.length} players
                 </NeonText>
             </View>
@@ -266,7 +268,7 @@ const TeamSetupScreen = ({ route, navigation }) => {
                 <NeonText size={28} weight="bold" glow>
                     TEAM SETUP
                 </NeonText>
-                <NeonText size={14} color="#888" style={styles.subtitle}>
+                <NeonText size={14} color={COLORS.textMuted} style={styles.subtitle}>
                     Divide players into teams for battle!
                 </NeonText>
             </View>
@@ -329,7 +331,7 @@ const TeamSetupScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 20,
@@ -361,8 +363,8 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     teamNameInput: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        color: '#fff',
+        backgroundColor: COLORS.surfaceLight,
+        color: COLORS.white,
         padding: 5,
         borderRadius: 4,
         minWidth: 100,
@@ -429,7 +431,7 @@ const styles = StyleSheet.create({
     waiting: {
         textAlign: 'center',
         fontStyle: 'italic',
-        color: '#888',
+        color: COLORS.textMuted,
         marginTop: 20,
     }
 });

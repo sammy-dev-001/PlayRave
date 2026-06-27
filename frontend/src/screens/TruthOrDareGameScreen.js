@@ -9,11 +9,13 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import truthOrDarePrompts, { getRandomTruth, getRandomDare } from '../data/truthOrDarePrompts';
 import getGenderSpecificPrompt from '../data/genderSpecificPrompts';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
 
 const TruthOrDareGameScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players, category = 'normal' } = route.params;
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [gameState, setGameState] = useState('choose'); // choose, showing
@@ -227,7 +229,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
                                 style={styles.doneButton}
                             />
                         </View>
-                        <NeonText size={14} color="#888" style={styles.nextPlayer}>
+                        <NeonText size={14} color={COLORS.textMuted} style={styles.nextPlayer}>
                             Next: {players[(currentPlayerIndex + 1) % players.length].name}
                         </NeonText>
                     </View>
@@ -244,7 +246,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 40,
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     categoryBadge: {
         marginTop: 10,
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
     counterContainer: {
         flexDirection: 'row',
         marginTop: 10,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: COLORS.overlayDark,
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 15,

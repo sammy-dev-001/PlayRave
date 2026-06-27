@@ -14,10 +14,10 @@ import {
     Animated
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import NeonBackground from '../components/NeonBackground';
+import ThemeBackground from '../components/ThemeBackground';
 import MuteButton from '../components/MuteButton';
 import NeonText from '../components/NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const MAX_PLAYERS = 8;
 
@@ -28,6 +28,8 @@ const GENDERS = [
 ];
 
 const LocalPartySetupScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [playerName, setPlayerName] = useState('');
     const [selectedGender, setSelectedGender] = useState('male');
     const [players, setPlayers] = useState([]);
@@ -122,13 +124,13 @@ const LocalPartySetupScreen = ({ navigation }) => {
     return (
         <View style={styles.screen}>
             <StatusBar barStyle="light-content" backgroundColor="#05050A" />
-            <NeonBackground />
+            <ThemeBackground />
 
             <SafeAreaView style={styles.safeArea}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                        <Ionicons name="chevron-back" size={24} color={COLORS.white} />
                     </TouchableOpacity>
                     <MuteButton style={styles.muteOverride} />
                 </View>
@@ -283,11 +285,13 @@ const LocalPartySetupScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     screen: {
         flex: 1,
-        height: '100%',
-        minHeight: '100vh',
+        ...Platform.select({
+            web: { height: '100%', minHeight: '100vh' },
+            default: { flex: 1 },
+        }),
         backgroundColor: '#05050A',
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },

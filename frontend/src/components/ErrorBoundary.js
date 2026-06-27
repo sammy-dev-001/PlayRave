@@ -1,13 +1,16 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ErrorService, { ErrorSeverity } from '../services/ErrorService';
 
 /**
  * Error Boundary component that catches JavaScript errors anywhere in the child
  * component tree, logs those errors, and displays a fallback UI.
+ *
+ * NOTE: Class components cannot use hooks, so COLORS are passed in via the
+ * `colors` prop by the ErrorBoundaryWrapper functional component below.
  */
-class ErrorBoundary extends React.Component {
+class ErrorBoundaryInner extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -58,6 +61,9 @@ class ErrorBoundary extends React.Component {
                 return this.props.fallback;
             }
 
+            // Build styles from the colors prop (passed in by the wrapper)
+            const styles = getStyles(this.props.colors);
+
             // Default fallback UI with neon theme
             return (
                 <View style={styles.container}>
@@ -100,7 +106,7 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.deepNightBlack,
@@ -176,5 +182,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
+
+/**
+ * Functional wrapper so the class-based ErrorBoundaryInner can receive
+ * theme colors without using hooks (which are forbidden in class components).
+ */
+const ErrorBoundary = (props) => {
+    const { COLORS } = useTheme();
+    return <ErrorBoundaryInner {...props} colors={COLORS} />;
+};
 
 export default ErrorBoundary;

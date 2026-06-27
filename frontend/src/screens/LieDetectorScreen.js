@@ -8,10 +8,12 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 
 const LieDetectorScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialState } = route.params;
     const roomId = room?.id;
 
@@ -122,7 +124,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
                     <NeonText size={48}>{currentPlayer?.avatar || '👤'}</NeonText>
                 </Animated.View>
                 <NeonText size={20} weight="bold" glow>{currentPlayer?.name}</NeonText>
-                <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : '#888'}>
+                <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : COLORS.textMuted}>
                     {isMyTurn ? "IT'S YOUR TURN!" : "is in the hot seat"}
                 </NeonText>
             </View>
@@ -150,14 +152,14 @@ const LieDetectorScreen = ({ route, navigation }) => {
                             onPress={() => setSelectedChoice('truth')}
                         >
                             <NeonText size={24}></NeonText>
-                            <NeonText size={14} color={selectedChoice === 'truth' ? '#fff' : '#888'}>TRUTH</NeonText>
+                            <NeonText size={14} color={selectedChoice === 'truth' ? COLORS.white : COLORS.textMuted}>TRUTH</NeonText>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.choiceBtn, selectedChoice === 'lie' && styles.lieSelected]}
                             onPress={() => setSelectedChoice('lie')}
                         >
                             <NeonText size={24}>✗</NeonText>
-                            <NeonText size={14} color={selectedChoice === 'lie' ? '#fff' : '#888'}>LIE</NeonText>
+                            <NeonText size={14} color={selectedChoice === 'lie' ? COLORS.white : COLORS.textMuted}>LIE</NeonText>
                         </TouchableOpacity>
                     </View>
                     <NeonButton
@@ -169,7 +171,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
                 </View>
             ) : (
                 <View style={styles.waitingSection}>
-                    <NeonText size={16} color="#888">Waiting for {currentPlayer?.name} to answer...</NeonText>
+                    <NeonText size={16} color={COLORS.textMuted}>Waiting for {currentPlayer?.name} to answer...</NeonText>
                 </View>
             )}
         </View>
@@ -191,12 +193,12 @@ const LieDetectorScreen = ({ route, navigation }) => {
             {isMyTurn ? (
                 <View style={styles.waitingSection}>
                     <NeonText size={16} color={COLORS.neonCyan}>Others are voting on your answer...</NeonText>
-                    <NeonText size={14} color="#888">{voteCount}/{totalVoters} votes</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>{voteCount}/{totalVoters} votes</NeonText>
                 </View>
             ) : myVote ? (
                 <View style={styles.waitingSection}>
                     <NeonText size={16} color={COLORS.limeGlow}>Vote submitted! ({myVote.toUpperCase()})</NeonText>
-                    <NeonText size={14} color="#888">Waiting for others... {voteCount}/{totalVoters}</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>Waiting for others... {voteCount}/{totalVoters}</NeonText>
                 </View>
             ) : (
                 <View style={styles.voteSection}>
@@ -223,7 +225,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
             <View style={[styles.revealCard, revealData?.wasLie ? styles.lieReveal : styles.truthReveal]}>
                 <NeonText size={48}>{revealData?.wasLie ? '🤥' : '😇'}</NeonText>
                 <NeonText size={24} weight="bold">IT WAS A {revealData?.wasLie ? 'LIE!' : 'TRUTH!'}</NeonText>
-                <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                     {currentPlayer?.name} fooled {revealData?.fooledCount || 0} player(s)
                 </NeonText>
             </View>
@@ -267,14 +269,14 @@ const LieDetectorScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20, paddingHorizontal: 20 },
     title: { textAlign: 'center', marginBottom: 20 },
     phaseContainer: { flex: 1, alignItems: 'center' },
     playerSpotlight: { alignItems: 'center', marginVertical: 20 },
     playerAvatar: {
         width: 100, height: 100, borderRadius: 50,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center', marginBottom: 10
     },
     questionCard: {
@@ -285,13 +287,13 @@ const styles = StyleSheet.create({
     answerSection: { width: '100%' },
     input: {
         backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12,
-        padding: 15, color: '#fff', fontSize: 16, minHeight: 80, textAlignVertical: 'top'
+        padding: 15, color: COLORS.white, fontSize: 16, minHeight: 80, textAlignVertical: 'top'
     },
     choiceLabel: { marginTop: 20, marginBottom: 10, textAlign: 'center' },
     choiceButtons: { flexDirection: 'row', gap: 15, justifyContent: 'center' },
     choiceBtn: {
         flex: 1, padding: 15, borderRadius: 12, alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)'
+        backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 2, borderColor: COLORS.surfaceLight
     },
     truthSelected: { borderColor: COLORS.limeGlow, backgroundColor: 'rgba(198,255,74,0.15)' },
     lieSelected: { borderColor: COLORS.hotPink, backgroundColor: 'rgba(255,87,170,0.15)' },

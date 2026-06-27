@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const RaveLights = ({ trigger, duration = 2000, intensity = 'medium' }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const flashAnim = useRef(new Animated.Value(0)).current;
     const colorAnim = useRef(new Animated.Value(0)).current;
 
@@ -85,7 +87,7 @@ const RaveLights = ({ trigger, duration = 2000, intensity = 'medium' }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         position: 'absolute',
         top: 0,

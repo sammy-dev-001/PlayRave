@@ -10,11 +10,13 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import EmptyState from '../components/EmptyState';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const LeaderboardScreen = () => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { user } = useAuth();
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,17 +58,17 @@ const LeaderboardScreen = () => {
                     {medalEmoji ? (
                         <NeonText size={24}>{medalEmoji}</NeonText>
                     ) : (
-                        <NeonText size={18} color="#888">#{rank}</NeonText>
+                        <NeonText size={18} color={COLORS.textMuted}>#{rank}</NeonText>
                     )}
                 </View>
                 <View style={styles.avatarContainer}>
                     <NeonText size={28}>{item.avatar}</NeonText>
                 </View>
                 <View style={styles.info}>
-                    <NeonText size={16} weight="bold" color={isMe ? COLORS.neonCyan : '#fff'}>
+                    <NeonText size={16} weight="bold" color={isMe ? COLORS.neonCyan : COLORS.white}>
                         {item.username} {isMe && '(You)'}
                     </NeonText>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         Level {item.level} • {item.gamesWon} wins
                     </NeonText>
                 </View>
@@ -74,7 +76,7 @@ const LeaderboardScreen = () => {
                     <NeonText size={16} weight="bold" color={COLORS.limeGlow}>
                         {item.totalXp}
                     </NeonText>
-                    <NeonText size={10} color="#666">XP</NeonText>
+                    <NeonText size={10} color={COLORS.textDarkMuted}>XP</NeonText>
                 </View>
             </View>
         );
@@ -85,7 +87,7 @@ const LeaderboardScreen = () => {
             <View style={styles.container}>
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name="trophy" size={26} color={COLORS.limeGlow} /><NeonText size={28} weight="bold" glow>LEADERBOARD</NeonText></View>
-                    <NeonText size={14} color="#888">Top players worldwide</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>Top players worldwide</NeonText>
                 </View>
 
                 {loading ? (
@@ -119,7 +121,7 @@ const LeaderboardScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20 },
     header: { alignItems: 'center', marginBottom: 25, paddingHorizontal: 20 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     rankContainer: { width: 45, alignItems: 'center' },
     avatarContainer: {
         width: 50, height: 50, borderRadius: 25,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center', marginRight: 12
     },
     info: { flex: 1 },

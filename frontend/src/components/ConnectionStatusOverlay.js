@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, StyleSheet, Animated, SafeAreaView,
+    View, StyleSheet, Animated,
     Platform
 } from 'react-native';
 import NeonText from './NeonText';
 import SocketService, { ConnectionState } from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ConnectionStatusOverlay = () => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [state, setState] = useState(SocketService.connectionState);
     const [visible, setVisible] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
@@ -83,7 +85,7 @@ const ConnectionStatusOverlay = () => {
 
     return (
         <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <View style={[styles.banner, { borderColor: config.color }]}>
                     <NeonText 
                         size={18} 
@@ -97,14 +99,14 @@ const ConnectionStatusOverlay = () => {
                         {config.subtitle}
                     </NeonText>
                 </View>
-            </SafeAreaView>
+            </View>
         </Animated.View>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
-        position: 'absolute',
+        position: Platform.OS === 'web' ? 'fixed' : 'absolute',
         top: 0,
         left: 0,
         right: 0,

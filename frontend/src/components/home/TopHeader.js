@@ -3,9 +3,11 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from '../NeonText';
 import SoundService from '../../services/SoundService';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const TopHeader = ({ onSettingsPress, onProfilePress, isAuthenticated }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [isSoundMuted, setIsSoundMuted] = useState(SoundService.getMuted());
     const [isMusicMuted, setIsMusicMuted] = useState(SoundService.getMusicMuted());
 
@@ -61,7 +63,7 @@ const TopHeader = ({ onSettingsPress, onProfilePress, isAuthenticated }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         justifyContent: 'space-between',

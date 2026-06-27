@@ -4,7 +4,8 @@ import {
     Platform
 } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -13,13 +14,15 @@ const GameCard = ({
     title,
     description,
     icon,
-    color = COLORS.electricPurple,
+    color = '#B14EFF', // COLORS.electricPurple — hardcoded to avoid module-load crash
     onPress,
     disabled = false,
     comingSoon = false,
     index = 0, // For stagger animation
     compact = false,
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     // Staggered entrance animation
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(30)).current;
@@ -118,7 +121,7 @@ const GameCard = ({
                     {!compact && description && (
                         <NeonText
                             size={12}
-                            color="#888"
+                            color={COLORS.textMuted}
                             style={styles.description}
                             numberOfLines={2}
                         >
@@ -182,7 +185,7 @@ export const GameCardGrid = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     cardWrapper: {
         marginBottom: 12,
     },

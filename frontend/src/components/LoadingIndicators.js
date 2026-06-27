@@ -4,15 +4,17 @@ import {
     Platform
 } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Spinning loader with neon glow
 export const NeonLoader = ({
     size = 60,
-    color = COLORS.neonCyan,
+    color = '#00F8FF', // COLORS.neonCyan — hardcoded to avoid module-load crash
     text = 'Loading...',
     showText = true
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const rotation = useRef(new Animated.Value(0)).current;
     const pulseScale = useRef(new Animated.Value(1)).current;
 
@@ -95,7 +97,9 @@ export const NeonLoader = ({
 };
 
 // Dots loader
-export const DotsLoader = ({ size = 10, color = COLORS.neonCyan, count = 3 }) => {
+export const DotsLoader = ({ size = 10, color = '#00F8FF', count = 3 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const animations = useRef(
         Array.from({ length: count }, () => new Animated.Value(0))
     ).current;
@@ -165,6 +169,8 @@ export const SkeletonLoader = ({
     borderRadius = 8,
     style
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const shimmer = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -208,8 +214,10 @@ export const SkeletonLoader = ({
 export const LoadingOverlay = ({
     visible,
     text = 'Loading...',
-    color = COLORS.neonCyan
+    color = '#00F8FF' // COLORS.neonCyan — hardcoded to avoid module-load crash
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -237,8 +245,9 @@ export const StatusIndicator = ({
     size = 60,
     animated = true
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(animated ? 0 : 1)).current;
-    const rotation = useRef(new Animated.Value(animated ? 0 : 1)).current;
 
     const colors = {
         success: COLORS.limeGlow,
@@ -286,7 +295,7 @@ export const StatusIndicator = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     loaderContainer: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -301,7 +310,7 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
     },
     loaderInner: {
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: COLORS.overlayDark,
     },
     loaderText: {
         marginTop: 15,
@@ -312,7 +321,7 @@ const styles = StyleSheet.create({
     },
     dot: {},
     skeleton: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         overflow: 'hidden',
     },
     shimmer: {
@@ -320,7 +329,7 @@ const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         width: 100,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,

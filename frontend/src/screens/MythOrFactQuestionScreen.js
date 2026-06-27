@@ -6,9 +6,11 @@ import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const MythOrFactQuestionScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, statement: initialStatement, statementIndex: initialIndex, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
@@ -196,7 +198,7 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
     statementContainer: { marginBottom: 50, alignItems: 'center', padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.electricPurple },
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
     factButton: { borderColor: COLORS.limeGlow },
     submitButton: { marginTop: 20 },
     submittedText: { textAlign: 'center', marginTop: 30, fontStyle: 'italic', color: COLORS.limeGlow },
-    spectatorText: { textAlign: 'center', marginTop: 20, fontStyle: 'italic', color: '#888', fontSize: 14 }
+    spectatorText: { textAlign: 'center', marginTop: 20, fontStyle: 'italic', color: COLORS.textMuted, fontSize: 14 }
 });
 
 export default MythOrFactQuestionScreen;

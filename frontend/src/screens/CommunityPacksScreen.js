@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,6 +29,8 @@ const TABS = [
 ];
 
 const CommunityPacksScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { isAuthenticated } = useAuth();
     const [packs, setPacks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -69,14 +71,14 @@ const CommunityPacksScreen = ({ navigation }) => {
             </View>
             <View style={styles.packInfo}>
                 <NeonText size={15} weight="bold">{item.name}</NeonText>
-                <NeonText size={12} color="#888">{item.items?.length || 0} items</NeonText>
+                <NeonText size={12} color={COLORS.textMuted}>{item.items?.length || 0} items</NeonText>
             </View>
             <View style={styles.stats}>
                 <TouchableOpacity onPress={() => handleLike(item)} style={styles.likeBtn}>
                     <NeonText size={16}>{item.liked ? '❤️' : '🤍'}</NeonText>
-                    <NeonText size={12} color="#888">{item.likes}</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>{item.likes}</NeonText>
                 </TouchableOpacity>
-                <NeonText size={10} color="#666">▶ {item.plays}</NeonText>
+                <NeonText size={10} color={COLORS.textDarkMuted}>▶ {item.plays}</NeonText>
             </View>
         </TouchableOpacity>
     );
@@ -99,7 +101,7 @@ const CommunityPacksScreen = ({ navigation }) => {
                             style={[styles.tab, selectedType === tab.id && styles.tabActive]}
                             onPress={() => setSelectedType(tab.id)}
                         >
-                            <NeonText size={14} color={selectedType === tab.id ? '#fff' : '#888'}>{tab.name}</NeonText>
+                            <NeonText size={14} color={selectedType === tab.id ? COLORS.white : COLORS.textMuted}>{tab.name}</NeonText>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -115,8 +117,8 @@ const CommunityPacksScreen = ({ navigation }) => {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <NeonText size={48}>🌍</NeonText>
-                            <NeonText size={16} color="#888">No community packs yet</NeonText>
-                            <NeonText size={14} color="#666">Be the first to share!</NeonText>
+                            <NeonText size={16} color={COLORS.textMuted}>No community packs yet</NeonText>
+                            <NeonText size={14} color={COLORS.textMuted}>Be the first to share!</NeonText>
                         </View>
                     }
                 />
@@ -125,7 +127,7 @@ const CommunityPacksScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 15 },
     tabs: { flexDirection: 'row', paddingHorizontal: 15, marginBottom: 15 },
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
     },
     packIcon: {
         width: 50, height: 50, borderRadius: 10,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center', marginRight: 12
     },
     packInfo: { flex: 1 },

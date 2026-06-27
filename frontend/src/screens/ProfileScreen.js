@@ -15,10 +15,12 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import StatsDisplay from '../components/StatsDisplay';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { user, isGuest, logout, updateProfilePicture } = useAuth();
     const progressAnim = useRef(new Animated.Value(0)).current;
     const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -160,14 +162,14 @@ const ProfileScreen = ({ navigation }) => {
                         <NeonText size={18} weight="bold" color={COLORS.neonCyan}>
                             Level {user.level}
                         </NeonText>
-                        <NeonText size={14} color="#888">
+                        <NeonText size={14} color={COLORS.textMuted}>
                             {user.xp || 0} / {xpForNext} XP
                         </NeonText>
                     </View>
                     <View style={styles.progressBar}>
                         <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
                     </View>
-                    <NeonText size={12} color="#666" style={styles.totalXp}>
+                    <NeonText size={12} color={COLORS.textDarkMuted} style={styles.totalXp}>
                         Total XP: {user.totalXp || 0}
                     </NeonText>
                 </View>
@@ -180,25 +182,25 @@ const ProfileScreen = ({ navigation }) => {
                             <NeonText size={32} weight="bold" color={COLORS.limeGlow}>
                                 {user.gamesPlayed || 0}
                             </NeonText>
-                            <NeonText size={12} color="#888">Games Played</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Games Played</NeonText>
                         </View>
                         <View style={styles.statCard}>
                             <NeonText size={32} weight="bold" color={COLORS.neonCyan}>
                                 {user.gamesWon || 0}
                             </NeonText>
-                            <NeonText size={12} color="#888">Victories</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Victories</NeonText>
                         </View>
                         <View style={styles.statCard}>
                             <NeonText size={32} weight="bold" color={COLORS.hotPink}>
                                 {winRate}%
                             </NeonText>
-                            <NeonText size={12} color="#888">Win Rate</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Win Rate</NeonText>
                         </View>
                         <View style={styles.statCard}>
                             <NeonText size={32} weight="bold" color={COLORS.electricPurple}>
                                 {user.level || 1}
                             </NeonText>
-                            <NeonText size={12} color="#888">Level</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Level</NeonText>
                         </View>
                     </View>
                 </View>
@@ -233,12 +235,12 @@ const ProfileScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20, paddingHorizontal: 20 },
     header: { alignItems: 'center', marginBottom: 30 },
     avatarContainer: {
         width: 120, height: 120, borderRadius: 60,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center',
         borderWidth: 3, borderColor: COLORS.neonCyan,
         marginBottom: 15
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     levelHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
     progressBar: {
         height: 12, borderRadius: 6,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         overflow: 'hidden'
     },
     progressFill: {

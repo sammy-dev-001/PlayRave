@@ -7,13 +7,15 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import SoundService from '../services/SoundService';
 import { getRandomLocalQuestions } from '../data/localTriviaQuestions';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const LocalTriviaScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [], isSinglePlayer = false } = route.params;
     
     // Safety ref for cleanup
@@ -173,10 +175,10 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                             .sort((a, b) => b[1] - a[1])
                             .map(([name, score], i) => (
                                 <View key={name} style={styles.scoreRow}>
-                                    <NeonText size={24} color={i === 0 ? COLORS.limeGlow : '#FFF'}>
+                                    <NeonText size={24} color={i === 0 ? COLORS.limeGlow : COLORS.white}>
                                         {i === 0 ? '🏆 ' : ''}{name}
                                     </NeonText>
-                                    <NeonText size={24} weight="bold" color={i === 0 ? COLORS.limeGlow : '#FFF'} variant="arcade">
+                                    <NeonText size={24} weight="bold" color={i === 0 ? COLORS.limeGlow : COLORS.white} variant="arcade">
                                         {score}
                                     </NeonText>
                                 </View>
@@ -222,7 +224,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                     </View>
 
                     <Animated.View style={[styles.questionCard, { opacity: fadeAnim }]}>
-                        <NeonText size={14} color="#888" style={{ marginBottom: 10 }}>{currentQuestion.category}</NeonText>
+                        <NeonText size={14} color={COLORS.textMuted} style={{ marginBottom: 10 }}>{currentQuestion.category}</NeonText>
                         <NeonText size={24} weight="bold" style={styles.questionText}>
                             {currentQuestion.question}
                         </NeonText>
@@ -265,7 +267,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
     scrollContent: { flexGrow: 1, justifyContent: 'center' },
     gameArea: { padding: 20, zIndex: 10 },

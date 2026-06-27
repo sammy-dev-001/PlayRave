@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * TurnTimer - Visual countdown timer for turn-based games
@@ -156,14 +156,14 @@ const TurnTimer = memo(({
             </View>
             {showLabel && (
                 <View style={styles.label}>
-                    <Ionicons name={timeLeft <= 10 ? 'warning' : 'timer-outline'} size={14} color="#888" />
+                    <Ionicons name={timeLeft <= 10 ? 'warning' : 'timer-outline'} size={14} color={COLORS.textMuted} />
                 </View>
             )}
         </Animated.View>
     );
 });
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         alignItems: 'center',
     },
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
         borderRadius: 100,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: COLORS.overlayDark,
     },
     label: {
         marginTop: 4,

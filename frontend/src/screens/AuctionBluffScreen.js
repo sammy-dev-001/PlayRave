@@ -10,7 +10,8 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+
 import { getRandomAuctionItems } from '../data/auctionItems';
 
 const formatMoney = (amount) => {
@@ -25,6 +26,8 @@ const formatMoney = (amount) => {
 };
 
 const AuctionBluffScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [items] = useState(() => getRandomAuctionItems(5));
     const [currentItemIndex, setCurrentItemIndex] = useState(0);
@@ -239,7 +242,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                             <View key={score.name} style={styles.scoreRow}>
                                 <View style={styles.scoreLeft}>
                                     <NeonText size={16}>{index + 1}. {score.name}</NeonText>
-                                    <NeonText size={12} color="#888">
+                                    <NeonText size={12} color={COLORS.textMuted}>
                                         {score.itemCount} items • {score.profit >= 0 ? '+' : ''}{formatMoney(score.profit)} profit
                                     </NeonText>
                                     {score.bonus > 0 && (
@@ -322,11 +325,11 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.votePlayerCard}>
-                    <NeonText size={14} color="#888">PASS THE PHONE TO:</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>PASS THE PHONE TO:</NeonText>
                     <NeonText size={32} weight="bold" glow>
                         {votingPlayer.name}
                     </NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                         Is the claim about {currentItem.name} real or a bluff?
                     </NeonText>
                 </View>
@@ -361,7 +364,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.voteProgress}>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         {votingPlayerIndex + 1} of {players.length} voted
                     </NeonText>
                     <View style={styles.voteDots}>
@@ -437,7 +440,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                         ))}
                     </View>
 
-                    <NeonText size={12} color="#888" style={{ marginTop: 10, textAlign: 'center' }}>
+                    <NeonText size={12} color={COLORS.textMuted} style={{ marginTop: 10, textAlign: 'center' }}>
                         Correct guessers earn ₦5M bonus!
                     </NeonText>
                 </View>
@@ -468,7 +471,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.currentBidSection}>
-                    <NeonText size={14} color="#888">CURRENT BID</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>CURRENT BID</NeonText>
                     <NeonText size={36} weight="bold" color={COLORS.limeGlow}>
                         {formatMoney(currentBid)}
                     </NeonText>
@@ -481,7 +484,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
 
                 <View style={styles.playerTurn}>
                     <NeonText size={18} weight="bold" glow>{currentPlayer.name}'s turn</NeonText>
-                    <NeonText size={12} color="#888">Budget: {formatMoney(playerBudget)}</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>Budget: {formatMoney(playerBudget)}</NeonText>
                 </View>
 
                 <View style={styles.bidButtons}>
@@ -533,11 +536,11 @@ const AuctionBluffScreen = ({ route, navigation }) => {
 
                     <View style={styles.revealFacts}>
                         <View style={styles.revealFactBox}>
-                            <NeonText size={12} color="#888">THE CLAIM</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>THE CLAIM</NeonText>
                             <NeonText size={14}>"{displayedFact}"</NeonText>
                         </View>
                         <View style={styles.revealFactBox}>
-                            <NeonText size={12} color="#888">ACTUAL VALUE</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>ACTUAL VALUE</NeonText>
                             <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
                                 {formatMoney(actualValue)}
                             </NeonText>
@@ -556,7 +559,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
                             </NeonText>
                         </View>
                     ) : (
-                        <NeonText size={16} color="#888">No one bid on this item!</NeonText>
+                        <NeonText size={16} color={COLORS.textMuted}>No one bid on this item!</NeonText>
                     )}
 
                     {correctGuessers.length > 0 && (
@@ -583,7 +586,7 @@ const AuctionBluffScreen = ({ route, navigation }) => {
     return null;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 20,
@@ -680,7 +683,7 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: COLORS.borderDefault,
     },
     voteDotActive: {
         backgroundColor: COLORS.limeGlow,
@@ -707,7 +710,7 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         overflow: 'hidden',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         marginBottom: 5,
     },
     voteBarFill: {
@@ -823,7 +826,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     },
     scoreLeft: {
         flex: 1,

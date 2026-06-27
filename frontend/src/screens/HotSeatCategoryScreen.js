@@ -12,7 +12,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const CATEGORIES = [
     {
@@ -63,6 +63,8 @@ const CATEGORIES = [
 ];
 
 const HotSeatCategoryScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [starting, setStarting] = useState(false);
@@ -190,7 +192,7 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
                                         styles.card,
                                         {
                                             backgroundColor: isSelected ? cat.bg : 'rgba(255,255,255,0.03)',
-                                            borderColor: isSelected ? cat.borderColor : 'rgba(255,255,255,0.1)',
+                                            borderColor: isSelected ? cat.borderColor : COLORS.surfaceLight,
                                             borderWidth: isSelected ? 3 : 2,
                                             shadowColor: isSelected ? cat.glowColor : 'transparent',
                                         },
@@ -214,7 +216,7 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
                                         <NeonText
                                             size={24}
                                             weight="bold"
-                                            color={isSelected ? cat.color : '#fff'}
+                                            color={isSelected ? cat.color : COLORS.white}
                                             glow={isSelected}
                                             style={{ letterSpacing: 0.5 }}
                                         >
@@ -275,7 +277,7 @@ const HotSeatCategoryScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexGrow: 1,
         paddingHorizontal: 18,

@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import HapticService from '../../services/HapticService';
 import SoundService from '../../services/SoundService';
 
 const GradientButton = ({ title, subtitle, onPress, disabled }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -63,6 +65,8 @@ const GradientButton = ({ title, subtitle, onPress, disabled }) => {
 };
 
 const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -109,6 +113,8 @@ const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
 };
 
 const OnlineLobbyCard = ({ onHostPress, onJoinPress, disabled }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.card}>
             {/* Header */}
@@ -143,7 +149,7 @@ const OnlineLobbyCard = ({ onHostPress, onJoinPress, disabled }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     card: {
         backgroundColor: 'rgba(17, 24, 39, 0.8)',
         borderRadius: 16,

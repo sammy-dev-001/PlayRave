@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -13,6 +13,8 @@ const REACTION_EMOJIS = ['🔥', '😂', '💀', '🎉', '👏', '😱', '🤯',
 
 // Floating reaction that animates across screen
 const FloatingReaction = ({ emoji, id, onComplete }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const animValue = useRef(new Animated.Value(0)).current;
     const xPos = useRef(Math.random() * (SCREEN_WIDTH - 50)).current;
 
@@ -62,6 +64,8 @@ const FloatingReaction = ({ emoji, id, onComplete }) => {
 
 // Reaction Picker UI
 const ReactionPicker = ({ roomId, playerName, visible = true }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [expanded, setExpanded] = useState(false);
     const [cooldown, setCooldown] = useState(false);
 
@@ -106,6 +110,8 @@ const ReactionPicker = ({ roomId, playerName, visible = true }) => {
 
 // Container that listens for reactions and displays them
 const ReactionOverlay = ({ roomId, playerName, children }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [reactions, setReactions] = useState([]);
     const reactionId = useRef(0);
 
@@ -143,7 +149,7 @@ const ReactionOverlay = ({ roomId, playerName, children }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
         position: 'relative',

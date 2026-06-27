@@ -4,13 +4,15 @@ import {
     Platform
 } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ErrorService from '../services/ErrorService';
 
 /**
  * Toast notification component for non-blocking error messages
  */
 const ErrorToast = () => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState('');
     const [canRetry, setCanRetry] = useState(false);
@@ -90,7 +92,7 @@ const ErrorToast = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         position: 'absolute',
         top: 60,

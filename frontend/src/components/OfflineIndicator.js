@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const OfflineIndicator = () => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [isOnline, setIsOnline] = useState(true);
     const [showIndicator, setShowIndicator] = useState(false);
 
@@ -42,11 +44,11 @@ const OfflineIndicator = () => {
             styles.container,
             isOnline ? styles.online : styles.offline
         ]}>
-            <NeonText size={12} color="#fff" weight="bold">
+            <NeonText size={12} color={COLORS.white} weight="bold">
                 {isOnline ? '✓ Back Online' : '⚠ Offline Mode'}
             </NeonText>
             {!isOnline && (
-                <NeonText size={10} color="#fff" style={{ marginTop: 2 }}>
+                <NeonText size={10} color={COLORS.white} style={{ marginTop: 2 }}>
                     Some features may be limited
                 </NeonText>
             )}
@@ -54,7 +56,7 @@ const OfflineIndicator = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         position: 'absolute',
         top: 100,

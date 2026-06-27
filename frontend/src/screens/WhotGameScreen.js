@@ -1,23 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Alert, Animated } from 'react-native';
+import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Alert, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import WhotCard from '../components/WhotCard';
 import WhotToast from '../components/WhotToast';
+import LiveChat from '../components/LiveChat';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const SPECIAL_TOAST_CONFIG = {
-    'pick2':          { message: 'Pick 2!',            icon: '⚡', color: COLORS.hotPink },
-    'pick3':          { message: 'Pick 3!',            icon: '🔥', color: COLORS.hotPink },
-    'general-market': { message: 'General Market!',    icon: '🛒', color: COLORS.neonCyan },
-    'skip':           { message: 'Hold On! Skipped',   icon: '✋', color: COLORS.limeGlow },
-    'suspension':     { message: 'Suspension!',        icon: '⏸️', color: COLORS.electricPurple },
-};
+const getSpecialToastConfig = (COLORS) => ({
+    'pick2': { message: 'Pick 2!', icon: '⚡', color: COLORS.hotPink },
+    'pick3': { message: 'Pick 3!', icon: '🔥', color: COLORS.hotPink },
+    'general-market': { message: 'General Market!', icon: '🛒', color: COLORS.neonCyan },
+    'skip': { message: 'Hold On! ', icon: '✋', color: COLORS.limeGlow },
+    'suspension': { message: 'Suspension!', icon: '⏸️', color: COLORS.electricPurple },
+    'went-to-market': { message: 'Went to Market', icon: '🏃', color: COLORS.textMuted },
+});
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 const getShapeSymbol = (shape) => {
@@ -27,6 +29,8 @@ const getShapeSymbol = (shape) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const WhotGameScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, gameState: initialGameState } = route.params;
     const gamePlayers = route.params.players || room.players;
 
@@ -39,10 +43,10 @@ const WhotGameScreen = ({ route, navigation }) => {
     const myId = SocketService.userId;
 
     // ── Core State ────────────────────────────────────────────────────────────
-    const [gameState, setGameState]       = useState(initialGameState || null);
+    const [gameState, setGameState] = useState(initialGameState || null);
     const [showShapeSelector, setShowShapeSelector] = useState(false);
-    const [selectedCardId, setSelectedCardId]       = useState(null);
-    const [winner, setWinner]             = useState(null);
+    const [selectedCardId, setSelectedCardId] = useState(null);
+    const [winner, setWinner] = useState(null);
 
     // ── Feature 1: Last Card alert tracking ──────────────────────────────────
     // Tracks which player IDs have already triggered the "Last Card!" badge
@@ -55,6 +59,10 @@ const WhotGameScreen = ({ route, navigation }) => {
         setToast({ ...config, visible: true });
     };
     const dismissToast = () => setToast(prev => ({ ...prev, visible: false }));
+
+    // ── Chat State ────────────────────────────────────────────────────────────
+    const [chatMessages, setChatMessages] = useState([]);
+    const [isChatMinimized, setIsChatMinimized] = useState(true);
 
     // ── Feature 1: "Last Card!" pulse animation ───────────────────────────────
     const lastCardPulse = useRef(new Animated.Value(1)).current;
@@ -70,7 +78,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     }, []);
 
     // ── Computed ──────────────────────────────────────────────────────────────
-    const isMyTurn    = gameState?.currentPlayerId === myId;
+    const isMyTurn = gameState?.currentPlayerId === myId;
     const isSpectator = !gameState?.playerHand;
 
     // ── Stale closure refs ─────────────────────────────────────────────────────
@@ -113,7 +121,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             }
 
             // ── Feature 2: Special Card Toast ──────────────────────────────
-            const toastConfig = SPECIAL_TOAST_CONFIG[actionTaken];
+            const toastConfig = getSpecialToastConfig(COLORS)[actionTaken];
             if (toastConfig && !gameWinner) {
                 // Small delay so state-update renders first
                 setTimeout(() => showToast(toastConfig), 100);
@@ -141,6 +149,8 @@ const WhotGameScreen = ({ route, navigation }) => {
             }
         };
 
+
+
         const onGameStateSync = (data) => {
             if (data && (data.gameType === 'whot' || data.type === 'whot')) {
                 setGameState(data.gameState || data);
@@ -151,24 +161,30 @@ const WhotGameScreen = ({ route, navigation }) => {
             showToast({ message: data.message || 'Invalid move', icon: '⚠️', color: COLORS.hotPink });
         };
 
-        SocketService.on('game-started',      onGameStarted);
+        const onChatReceived = (msg) => {
+            setChatMessages(prev => [...prev, msg]);
+        };
+
+        SocketService.on('game-started', onGameStarted);
         SocketService.on('whot-state-update', onStateUpdate);
-        SocketService.on('whot-card-played',  onStateUpdate);   // Legacy
-        SocketService.on('whot-card-drawn',   onStateUpdate);   // Legacy
-        SocketService.on('whot-game-ended',   onGameEnded);
-        SocketService.on('game-state-sync',   onGameStateSync);
-        SocketService.on('error',             onError);
+        SocketService.on('whot-card-played', onStateUpdate);   // Legacy
+        SocketService.on('whot-card-drawn', onStateUpdate);   // Legacy
+        SocketService.on('whot-game-ended', onGameEnded);
+        SocketService.on('game-state-sync', onGameStateSync);
+        SocketService.on('error', onError);
+        SocketService.on('chat-message-received', onChatReceived);
 
         SocketService.emit('whot-get-state', { roomId: room.id });
 
         return () => {
-            SocketService.off('game-started',      onGameStarted);
+            SocketService.off('game-started', onGameStarted);
             SocketService.off('whot-state-update', onStateUpdate);
-            SocketService.off('whot-card-played',  onStateUpdate);
-            SocketService.off('whot-card-drawn',   onStateUpdate);
-            SocketService.off('whot-game-ended',   onGameEnded);
-            SocketService.off('game-state-sync',   onGameStateSync);
-            SocketService.off('error',             onError);
+            SocketService.off('whot-card-played', onStateUpdate);
+            SocketService.off('whot-card-drawn', onStateUpdate);
+            SocketService.off('whot-game-ended', onGameEnded);
+            SocketService.off('game-state-sync', onGameStateSync);
+            SocketService.off('error', onError);
+            SocketService.off('chat-message-received', onChatReceived);
         };
     }, [navigation, room.id]);
 
@@ -177,6 +193,13 @@ const WhotGameScreen = ({ route, navigation }) => {
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleEndGame = () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm("Are you sure you want to end the game for everyone?")) {
+                SocketService.emit('whot-end-game', { roomId: room.id });
+            }
+            return;
+        }
+
         Alert.alert(
             'End Game',
             'Are you sure you want to end the game for everyone?',
@@ -188,7 +211,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
 
     const handleCardPress = (card) => {
-        if (!isMyTurn || winner) return;
+        if (!isMyTurn || winner || (gameState && gameState.generalMarketTurns > 0)) return;
         if (card.shape === 'whot') {
             setSelectedCardId(card.id);
             setShowShapeSelector(true);
@@ -215,6 +238,14 @@ const WhotGameScreen = ({ route, navigation }) => {
     const getPlayerName = (playerId) => {
         const player = gamePlayers.find(p => p.uid === playerId || p.userId === playerId || p.id === playerId);
         return player?.name || 'Unknown';
+    };
+
+    const handleSendChatMessage = (text) => {
+        SocketService.emit('chat-message', { roomId: room.id, text });
+    };
+
+    const handleSendReaction = (emoji) => {
+        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
     };
 
     // ── Loading State ─────────────────────────────────────────────────────────
@@ -274,7 +305,7 @@ const WhotGameScreen = ({ route, navigation }) => {
 
                 {/* Top Card */}
                 <View style={styles.topCardContainer}>
-                    <NeonText size={14} color="#888" style={styles.label}>TOP CARD</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.label}>TOP CARD</NeonText>
                     <WhotCard card={gameState.topCard} disabled isTopCard />
                     {gameState.calledShape && (
                         <View style={styles.calledBadge}>
@@ -341,23 +372,25 @@ const WhotGameScreen = ({ route, navigation }) => {
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>
                             {gameState.playerHand?.map((card, index) => (
-                                <View key={card.id} style={[styles.cardWrapper, { zIndex: index + 1 }]}>
+                                <View key={card.id} style={[styles.cardWrapper, index === gameState.playerHand.length - 1 && { marginRight: 0 }, { zIndex: index + 1 }]}>
                                     <WhotCard
                                         card={card}
                                         onPress={() => handleCardPress(card)}
-                                        disabled={!isMyTurn || !!winner}
+                                        disabled={!isMyTurn || !!winner || (gameState && gameState.generalMarketTurns > 0)}
                                     />
                                 </View>
                             ))}
                         </ScrollView>
 
                         <NeonButton
-                            title={gameState.attackStack > 0
-                                ? `PICK ${gameState.attackStack} CARDS!`
-                                : `DRAW CARD (${gameState.deckCount} left)`}
+                            title={gameState.generalMarketTurns > 0
+                                ? `GO TO MARKET (1 CARD)`
+                                : gameState.attackStack > 0
+                                    ? `PICK ${gameState.attackStack} CARDS!`
+                                    : `DRAW CARD (${gameState.deckCount} left)`}
                             onPress={handleDrawCard}
                             disabled={!isMyTurn || !!winner}
-                            variant={gameState.attackStack > 0 ? 'primary' : 'secondary'}
+                            variant={gameState.attackStack > 0 || gameState.generalMarketTurns > 0 ? 'primary' : 'secondary'}
                             style={styles.drawButton}
                         />
                     </View>
@@ -392,11 +425,24 @@ const WhotGameScreen = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Live Chat Overlay */}
+            <View style={styles.chatOverlay}>
+                <LiveChat
+                    messages={chatMessages}
+                    onSendMessage={handleSendChatMessage}
+                    onSendReaction={handleSendReaction}
+                    currentUser={{ id: myId, name: getPlayerName(myId) }}
+                    isMinimized={isChatMinimized}
+                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
+                />
+            </View>
+
         </NeonContainer>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         paddingHorizontal: 15,
         paddingBottom: 30,
@@ -545,9 +591,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 15,
         alignItems: 'center',
-        justifyContent: 'center',
         borderWidth: 1,
         borderColor: 'rgba(0, 240, 255, 0.3)',
+    },
+    chatOverlay: {
+        position: 'absolute',
+        bottom: 20,
+        left: 10,
+        right: 10,
+        zIndex: 100,
     },
 });
 

@@ -7,9 +7,11 @@ import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import ProfileService from '../services/ProfileService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, gameState: initialGameState, players, playerName } = route.params;
 
     useGameDisconnectHandler({
@@ -153,7 +155,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
             <NeonContainer>
                 <View style={styles.header}>
                     <NeonText size={28} weight="bold" glow>GAME OVER!</NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                         {gameState.roundNumber} rounds completed
                     </NeonText>
                 </View>
@@ -196,7 +198,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
                         {gameState.category?.toUpperCase()}
                     </NeonText>
                 </View>
-                <NeonText size={14} color="#888">
+                <NeonText size={14} color={COLORS.textMuted}>
                     Round {gameState.roundNumber} / {gameState.maxRounds || 30}
                 </NeonText>
             </View>
@@ -235,7 +237,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
                     <NeonText size={16} color={COLORS.neonCyan}>
                         {myResponse ? "You've done it! 🍺" : "You're innocent! 😇"}
                     </NeonText>
-                    <NeonText size={14} color="#888">
+                    <NeonText size={14} color={COLORS.textMuted}>
                         Waiting for others...
                     </NeonText>
                 </View>
@@ -245,8 +247,9 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
             <ScrollView style={styles.playersContainer} showsVerticalScrollIndicator={false}>
                 <View style={styles.playersGrid}>
                     {players.map(player => {
-                        const response = gameState.playerResponses?.[player.id];
-                        const score = gameState.playerScores?.[player.id] || 0;
+                        const playerId = player.uid || player.userId;
+                        const response = gameState.playerResponses?.[playerId];
+                        const score = gameState.playerScores?.[playerId] || 0;
                         return (
                             <View
                                 key={player.id}
@@ -289,7 +292,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginTop: 50,

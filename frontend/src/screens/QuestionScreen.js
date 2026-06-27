@@ -7,9 +7,11 @@ import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import SoundService from '../services/SoundService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const QuestionScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, question: initialQuestion, questionIndex: initialQuestionIndex, hostParticipates, isHost, isTournamentMode } = route.params;
 
     useGameDisconnectHandler({
@@ -195,7 +197,7 @@ const QuestionScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
     questionContainer: { marginBottom: 40, alignItems: 'center' },

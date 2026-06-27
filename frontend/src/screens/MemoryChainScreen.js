@@ -11,7 +11,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Ionicons for the memory game
 const MEMORY_ITEMS = [
@@ -21,6 +21,8 @@ const MEMORY_ITEMS = [
 ];
 
 const MemoryChainScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [] } = route.params || {};
 
     // Early validation
@@ -208,12 +210,12 @@ const MemoryChainScreen = ({ route, navigation }) => {
                     <NeonText size={20} color={COLORS.neonCyan}>
                         Remembered {currentSequence.length} items!
                     </NeonText>
-                    <NeonText size={16} color="#888">
+                    <NeonText size={16} color={COLORS.textMuted}>
                         Score: {winnerScore} points
                     </NeonText>
 
                     <View style={styles.finalScores}>
-                        <NeonText size={14} color="#888" style={styles.scoresTitle}>
+                        <NeonText size={14} color={COLORS.textMuted} style={styles.scoresTitle}>
                             ELIMINATION ORDER
                         </NeonText>
                         {eliminated.map((name, index) => (
@@ -221,7 +223,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                                 <NeonText size={14} color={COLORS.hotPink}>
                                     {eliminated.length - index}. {name}
                                 </NeonText>
-                                <NeonText size={12} color="#888">
+                                <NeonText size={12} color={COLORS.textMuted}>
                                     {scores[name]} pts
                                 </NeonText>
                             </View>
@@ -255,7 +257,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                     <NeonText size={16}>
                         {currentPlayer.name}'s turn
                     </NeonText>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         {activePlayers.length} players remaining
                     </NeonText>
                 </View>
@@ -370,7 +372,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                                 {currentPlayer.name} is eliminated!
                             </NeonText>
                             <View style={styles.correctSequence}>
-                                <NeonText size={12} color="#888">The sequence was:</NeonText>
+                                <NeonText size={12} color={COLORS.textMuted}>The sequence was:</NeonText>
                                 <View style={styles.sequenceRow}>
                                     {currentSequence.map((item, i) => (
                                         <Ionicons 
@@ -412,7 +414,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
     return null;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 20,
@@ -448,7 +450,7 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: COLORS.borderDefault,
     },
     dotActive: {
         backgroundColor: COLORS.neonCyan,
@@ -466,7 +468,7 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: COLORS.borderDefault,
     },
     inputDotFilled: {
         backgroundColor: COLORS.limeGlow,

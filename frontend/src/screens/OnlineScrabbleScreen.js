@@ -8,13 +8,15 @@ import NeonButton from '../components/NeonButton';
 import ScorePopup from '../components/ScorePopup';
 import SocketService from '../services/socket';
 import { BOARD_SIZE, CENTER_SQUARE, BONUS_SQUARES } from '../data/scrabbleData';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
 
 const OnlineScrabbleScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, gameState: initialGameState } = route.params;
-    
+
     // Identity persistence and reconnection handling
     useGameDisconnectHandler({
         navigation,
@@ -33,11 +35,11 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const BOARD_PADDING = isDesktop ? 60 : 20;
     const ESTIMATED_CONTROLS_HEIGHT = isDesktop ? 60 : 300;
     const maxAvailableDim = Math.min(
-        screenWidth - SIDEBAR_WIDTH - BOARD_PADDING, 
-        Math.max(screenHeight - ESTIMATED_CONTROLS_HEIGHT, 300), 
+        screenWidth - SIDEBAR_WIDTH - BOARD_PADDING,
+        Math.max(screenHeight - ESTIMATED_CONTROLS_HEIGHT, 300),
         1000 // Allow large expansion on desktop
     );
-    
+
     const MIN_TILE_SIZE = 20;
     const idealTileSize = Math.floor(maxAvailableDim / BOARD_SIZE);
     const tileSize = Math.max(idealTileSize, MIN_TILE_SIZE);
@@ -64,7 +66,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const [placedTiles, setPlacedTiles] = useState([]);
     const [placementHistory, setPlacementHistory] = useState([]); // Track for undo
     const [endGameModalVisible, setEndGameModalVisible] = useState(false);
-    
+
     // Custom Error Modal State
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
@@ -158,14 +160,14 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             const fatalMessages = ['Game not found', 'Room not found', 'Session expired'];
             if (fatalMessages.some(msg => error.message?.includes(msg))) {
                 console.log('Fatal game error — navigating out:', error.message);
-                
+
                 // Map players list for scoreboard - use 'userId' for persistent identity
                 // Fallback to room.players if state is empty, or use the latest players ref
                 const activePlayers = playersRef.current.length > 0 ? playersRef.current : (room.players || []);
-                const scoreboardData = activePlayers.map(p => ({ 
-                    playerId: p.userId || p.uid || p.id, 
-                    playerName: p.name, 
-                    score: p.score || 0 
+                const scoreboardData = activePlayers.map(p => ({
+                    playerId: p.userId || p.uid || p.id,
+                    playerName: p.name,
+                    score: p.score || 0
                 }));
 
                 navigation.navigate('Scoreboard', {
@@ -190,16 +192,16 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         // Listen for game ended due to insufficient players (player left mid-game)
         const handleInsufficientPlayers = ({ message, finalScores }) => {
             console.log('Game ended - insufficient players:', message);
-            
+
             let scoreboardData = [];
             if (finalScores) {
                 // finalScores from engine might be a map or array
                 if (Array.isArray(finalScores)) {
                     scoreboardData = finalScores;
                 } else {
-                    scoreboardData = Object.entries(finalScores).map(([id, score]) => ({ 
-                        playerId: id, 
-                        score 
+                    scoreboardData = Object.entries(finalScores).map(([id, score]) => ({
+                        playerId: id,
+                        score
                     }));
                 }
             }
@@ -303,7 +305,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     // FIX: Scrabble Drag and Drop
     const handleTileDrop = (handIndex, moveX, moveY) => {
         if (!boardGridRef.current || !isMyTurn) return;
-        
+
         boardGridRef.current.measure((x, y, width, height, pageX, pageY) => {
             // Check if dropped inside the board grid
             const dropX = moveX - pageX;
@@ -315,7 +317,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
 
                 // Set selection state purely for UI consistency
                 setSelectedTileIndex(handIndex);
-                
+
                 // Immediately press the board square using the dragIndex parameter
                 handleBoardSquarePress(gridX, gridY, handIndex);
             }
@@ -636,7 +638,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     return (
         <NeonContainer>
             <View style={[styles.mainLayout, isDesktop && styles.desktopLayout]}>
-                
+
                 {/* ─ DESKTOP SIDEBAR OR MOBILE HEADER ─ */}
                 {isDesktop ? (
                     <View style={styles.sidebar}>
@@ -645,13 +647,13 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                             <View style={styles.desktopScoreContainer}>
                                 {tilesInBag !== null && (
                                     <View style={[styles.tilesBadge, { flex: 1, paddingVertical: 10 }]}>
-                                        <NeonText size={10} color="#888">🎲 TILES</NeonText>
+                                        <NeonText size={10} color={COLORS.textMuted}>🎲 TILES</NeonText>
                                         <NeonText size={16} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
                                     </View>
                                 )}
                                 {players.map(p => (
                                     <View key={p.id} style={[styles.miniScore, styles.desktopMiniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
-                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'} numberOfLines={1}>{p.name}</NeonText>
+                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : COLORS.textMuted} numberOfLines={1}>{p.name}</NeonText>
                                         <NeonText size={16} weight="bold">{p.score}</NeonText>
                                     </View>
                                 ))}
@@ -667,7 +669,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         <ScrollView contentContainerStyle={styles.desktopControlsScroll} bounces={false}>
                             <View style={styles.desktopControlsArea}>
                                 <View style={styles.rackContainer}>
-                                    <NeonText size={14} color="#666" style={{ marginBottom: 10 }}>Your Rack:</NeonText>
+                                    <NeonText size={14} color={COLORS.textDarkMuted} style={{ marginBottom: 10 }}>Your Rack:</NeonText>
                                     <View style={styles.desktopRack}>
                                         {renderRackTiles()}
                                     </View>
@@ -689,14 +691,14 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                             <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
                             {tilesInBag !== null && (
                                 <View style={styles.tilesBadge}>
-                                    <NeonText size={10} color="#888">🎲 TILES LEFT</NeonText>
+                                    <NeonText size={10} color={COLORS.textMuted}>🎲 TILES LEFT</NeonText>
                                     <NeonText size={14} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
                                 </View>
                             )}
                             <View style={styles.scoreRow}>
                                 {players.map(p => (
                                     <View key={p.id} style={[styles.miniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
-                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : '#888'}>{p.name}</NeonText>
+                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : COLORS.textMuted}>{p.name}</NeonText>
                                         <NeonText size={14} weight="bold">{p.score}</NeonText>
                                     </View>
                                 ))}
@@ -720,7 +722,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         bounces={false}
                     >
                         <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
-                            <View 
+                            <View
                                 style={styles.gridContainer}
                                 ref={boardGridRef}
                                 collapsable={false}
@@ -735,7 +737,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 {!isDesktop && (
                     <View style={styles.controlsArea}>
                         <View style={styles.rackContainer}>
-                            <NeonText size={12} color="#666" style={{ marginBottom: 4 }}>Your Rack:</NeonText>
+                            <NeonText size={12} color={COLORS.textDarkMuted} style={{ marginBottom: 4 }}>Your Rack:</NeonText>
                             {renderRackTiles()}
                         </View>
                         <View style={styles.gameButtons}>
@@ -778,7 +780,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         <NeonText size={20} weight="bold" glow style={{ marginBottom: 5 }}>
                             Choose a Letter
                         </NeonText>
-                        <NeonText size={12} color="#888" style={{ marginBottom: 15 }}>
+                        <NeonText size={12} color={COLORS.textMuted} style={{ marginBottom: 15 }}>
                             Select what letter your blank tile will represent
                         </NeonText>
                         <View style={styles.letterGrid}>
@@ -839,9 +841,9 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 animationType="fade"
                 onRequestClose={() => setErrorModalVisible(false)}
             >
-                <TouchableOpacity 
-                    style={styles.modalOverlay} 
-                    activeOpacity={1} 
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
                     onPress={() => setErrorModalVisible(false)}
                 >
                     <TouchableWithoutFeedback>
@@ -863,7 +865,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -906,7 +908,7 @@ const styles = StyleSheet.create({
     turnIndicator: {
         paddingVertical: 8,
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: COLORS.overlayDark,
     },
     boardContainer: {
         flex: 1,
@@ -932,7 +934,7 @@ const styles = StyleSheet.create({
     },
     square: {
         borderWidth: 0.5,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
         userSelect: 'none',
@@ -1002,7 +1004,7 @@ const styles = StyleSheet.create({
     smallBtn: {
         paddingVertical: 5,
         paddingHorizontal: 15,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 15,
     },
     disabledBtn: {
@@ -1026,7 +1028,7 @@ const styles = StyleSheet.create({
     cancelExchangeBtn: {
         paddingVertical: 8,
         paddingHorizontal: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 15,
     },
     endGameBtn: {

@@ -1,11 +1,37 @@
 // Theme presets for PlayRave customization
 // Each theme defines a complete color palette
 
+export const FONTS = {
+    // Using Outfit for body, Righteous for all bold headers, Orbitron for arcade feel
+    bold: 'Righteous',    // Global header font
+    regular: 'Outfit',    // Global body font
+    display: 'Righteous', // Retro-futuristic party font
+    arcade: 'Orbitron',   // High-tech sci-fi gaming font
+};
+
+export const SHADOWS = {
+    neonGlow: {
+        shadowColor: '#00F8FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    purpleGlow: {
+        shadowColor: '#B14EFF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+};
+
 export const THEME_PRESETS = {
     neon: {
         id: 'neon',
         name: 'Neon',
         emoji: '🌃',
+        backgroundImage: require('../../assets/images/neon_background.png'),
         colors: {
             primary: '#C6FF4A',        // Lime glow
             secondary: '#00F8FF',       // Neon cyan
@@ -13,88 +39,79 @@ export const THEME_PRESETS = {
             tertiary: '#B14EFF',        // Electric purple
             background: '#0A0A1A',      // Deep night black
             backgroundSecondary: '#12122A',
-            surface: 'rgba(255,255,255,0.05)',
-            text: '#FFFFFF',
-            textSecondary: '#888888',
+            surface: '#111827',
+            surfaceLight: 'rgba(255, 255, 255, 0.1)',
+            surfaceDark: 'rgba(0, 0, 0, 0.3)',
+            overlayLight: 'rgba(255, 255, 255, 0.1)',
+            overlayDark: 'rgba(0, 0, 0, 0.5)',
+            overlayDarker: 'rgba(0, 0, 0, 0.7)',
+            textPrimary: '#FFFFFF',
+            textSecondary: '#F0F0F0',
+            textMuted: '#888888',
+            textDarkMuted: '#666666',
+            borderDefault: 'rgba(255, 255, 255, 0.2)',
+            borderLight: 'rgba(255, 255, 255, 0.1)',
             success: '#4CAF50',
             error: '#FF5252',
             warning: '#FFC107',
         }
     },
-    sunset: {
-        id: 'sunset',
-        name: 'Sunset',
-        emoji: '🌅',
+    cyber: {
+        id: 'cyber',
+        name: 'Cyber Light',
+        emoji: '☀️',
+        backgroundImage: null,
         colors: {
-            primary: '#FF6B6B',         // Coral red
-            secondary: '#FFE66D',        // Golden yellow
-            accent: '#FF8E53',           // Orange
-            tertiary: '#FEC89A',         // Peach
-            background: '#1A0F1A',       // Dark purple-black
-            backgroundSecondary: '#2A1F2A',
-            surface: 'rgba(255,235,200,0.08)',
-            text: '#FFFFFF',
-            textSecondary: '#B8A090',
-            success: '#98D8AA',
-            error: '#FF6B6B',
-            warning: '#FFE66D',
+            primary: '#0284C7',
+            secondary: '#7C3AED',
+            accent: '#E11D48',
+            tertiary: '#16A34A',
+            background: '#F8FAFC',
+            backgroundSecondary: '#F1F5F9',
+            surface: '#FFFFFF',
+            surfaceLight: 'rgba(0, 0, 0, 0.05)',
+            surfaceDark: 'rgba(0, 0, 0, 0.1)',
+            overlayLight: 'rgba(255, 255, 255, 0.8)',
+            overlayDark: 'rgba(0, 0, 0, 0.2)',
+            overlayDarker: 'rgba(0, 0, 0, 0.4)',
+            textPrimary: '#0F172A',
+            textSecondary: '#334155',
+            textMuted: '#64748B',
+            textDarkMuted: '#94A3B8',
+            borderDefault: 'rgba(0, 0, 0, 0.1)',
+            borderLight: 'rgba(0, 0, 0, 0.05)',
+            success: '#16A34A',
+            error: '#DC2626',
+            warning: '#D97706',
         }
     },
-    ocean: {
-        id: 'ocean',
-        name: 'Ocean',
-        emoji: '🌊',
+    synthwave: {
+        id: 'synthwave',
+        name: 'Synthwave',
+        emoji: '📼',
+        backgroundImage: null,
         colors: {
-            primary: '#00CED1',          // Dark turquoise
-            secondary: '#1E90FF',        // Dodger blue
-            accent: '#87CEEB',           // Sky blue
-            tertiary: '#48D1CC',         // Medium turquoise
-            background: '#0A1520',       // Deep ocean blue
-            backgroundSecondary: '#122535',
-            surface: 'rgba(135,206,235,0.08)',
-            text: '#FFFFFF',
-            textSecondary: '#7EC8E3',
-            success: '#00CED1',
-            error: '#FF6B6B',
+            primary: '#FF6B6B',
+            secondary: '#4D4DFF',
+            accent: '#FFD700',
+            tertiary: '#00FA9A',
+            background: '#2A0845',
+            backgroundSecondary: '#1A0033',
+            surface: '#1A0033',
+            surfaceLight: 'rgba(255, 107, 107, 0.15)',
+            surfaceDark: 'rgba(0, 0, 0, 0.4)',
+            overlayLight: 'rgba(255, 107, 107, 0.1)',
+            overlayDark: 'rgba(26, 0, 51, 0.6)',
+            overlayDarker: 'rgba(26, 0, 51, 0.8)',
+            textPrimary: '#FFD700',
+            textSecondary: '#FF6B6B',
+            textMuted: '#A06CD5',
+            textDarkMuted: '#7A4988',
+            borderDefault: 'rgba(255, 107, 107, 0.3)',
+            borderLight: 'rgba(255, 107, 107, 0.1)',
+            success: '#00FA9A',
+            error: '#FF0000',
             warning: '#FFD700',
-        }
-    },
-    forest: {
-        id: 'forest',
-        name: 'Forest',
-        emoji: '🌲',
-        colors: {
-            primary: '#32CD32',          // Lime green
-            secondary: '#90EE90',        // Light green
-            accent: '#228B22',           // Forest green
-            tertiary: '#98FB98',         // Pale green
-            background: '#0A150A',       // Deep forest black
-            backgroundSecondary: '#152015',
-            surface: 'rgba(144,238,144,0.08)',
-            text: '#FFFFFF',
-            textSecondary: '#90B890',
-            success: '#32CD32',
-            error: '#FF6347',
-            warning: '#FFD700',
-        }
-    },
-    midnight: {
-        id: 'midnight',
-        name: 'Midnight',
-        emoji: '🌙',
-        colors: {
-            primary: '#9370DB',          // Medium purple
-            secondary: '#E6E6FA',        // Lavender
-            accent: '#DDA0DD',           // Plum
-            tertiary: '#BA55D3',         // Medium orchid
-            background: '#0F0A1A',       // Deep violet black
-            backgroundSecondary: '#1A1525',
-            surface: 'rgba(230,230,250,0.06)',
-            text: '#FFFFFF',
-            textSecondary: '#B8A8C8',
-            success: '#9370DB',
-            error: '#FF69B4',
-            warning: '#DDA0DD',
         }
     }
 };
@@ -110,7 +127,7 @@ export const getTheme = (themeId) => {
 // Get all theme IDs
 export const getThemeIds = () => Object.keys(THEME_PRESETS);
 
-// Convert legacy COLORS to theme-aware format
+// Convert legacy COLORS to theme-aware format (now returning all semantic tokens)
 export const getLegacyColors = (theme) => ({
     electricPurple: theme.colors.tertiary,
     neonCyan: theme.colors.secondary,
@@ -118,6 +135,26 @@ export const getLegacyColors = (theme) => ({
     limeGlow: theme.colors.primary,
     deepNightBlack: theme.colors.background,
     darkOverlay: `${theme.colors.background}CC`,
-    white: theme.colors.text,
+    white: theme.colors.textPrimary,
     offWhite: theme.colors.textSecondary,
+    cancelRed: theme.colors.error,
+    // New Semantic Tokens
+    background: theme.colors.background,
+    surface: theme.colors.surface,
+    surfaceLight: theme.colors.surfaceLight,
+    surfaceDark: theme.colors.surfaceDark,
+    overlayLight: theme.colors.overlayLight,
+    overlayDark: theme.colors.overlayDark,
+    overlayDarker: theme.colors.overlayDarker,
+    textPrimary: theme.colors.textPrimary,
+    textSecondary: theme.colors.textSecondary,
+    textMuted: theme.colors.textMuted,
+    textDarkMuted: theme.colors.textDarkMuted,
+    borderDefault: theme.colors.borderDefault,
+    borderLight: theme.colors.borderLight,
+    primary: theme.colors.primary,
+    secondary: theme.colors.secondary,
+    accent: theme.colors.accent,
+    success: theme.colors.success,
+    danger: theme.colors.error,
 });

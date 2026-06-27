@@ -4,11 +4,13 @@ import {
     Platform
 } from 'react-native';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import HapticService from '../../services/HapticService';
 import SoundService from '../../services/SoundService';
 
 const ModeCard = ({ title, subtitle, onPress }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -57,6 +59,8 @@ const ModeCard = ({ title, subtitle, onPress }) => {
 };
 
 const SecondaryModes = ({ onLocalPress, onLANPress }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
             <NeonText
@@ -84,7 +88,7 @@ const SecondaryModes = ({ onLocalPress, onLANPress }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         paddingHorizontal: 20,
         marginTop: 24,
@@ -104,7 +108,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(17, 24, 39, 0.8)',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: COLORS.surfaceLight,
         paddingVertical: 22,
         paddingHorizontal: 16,
         alignItems: 'center',

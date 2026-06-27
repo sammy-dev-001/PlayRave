@@ -8,9 +8,9 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
-const TRIVIA_MODES = [
+const getTriviaModes = (COLORS) => [
     {
         id: 'trivia',
         name: 'Quick Trivia',
@@ -38,6 +38,8 @@ const TRIVIA_MODES = [
 ];
 
 const TriviaHubScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedMode, setSelectedMode] = useState(null);
     const [starting, setStarting] = useState(false);
@@ -84,7 +86,7 @@ const TriviaHubScreen = ({ route, navigation }) => {
         if (!selectedMode || starting) return;
         setStarting(true);
 
-        const mode = TRIVIA_MODES.find(m => m.id === selectedMode);
+        const mode = getTriviaModes(COLORS).find(m => m.id === selectedMode);
         
         // Update the room's game type on the server
         SocketService.emit('set-game-type', {
@@ -114,7 +116,7 @@ const TriviaHubScreen = ({ route, navigation }) => {
                 </Animated.View>
 
                 <Animated.View style={{ opacity: entranceFade }}>
-                    {TRIVIA_MODES.map((mode, i) => {
+                    {getTriviaModes(COLORS).map((mode, i) => {
                         const isSelected = selectedMode === mode.id;
                         return (
                             <Animated.View key={mode.id} style={{ transform: [{ scale: cardAnims[i] }], marginBottom: 16 }}>
@@ -123,7 +125,7 @@ const TriviaHubScreen = ({ route, navigation }) => {
                                         styles.card,
                                         {
                                             backgroundColor: isSelected ? mode.bg : 'rgba(255,255,255,0.03)',
-                                            borderColor: isSelected ? mode.borderColor : 'rgba(255,255,255,0.1)',
+                                            borderColor: isSelected ? mode.borderColor : COLORS.surfaceLight,
                                             borderWidth: isSelected ? 3 : 2,
                                             shadowColor: isSelected ? mode.glowColor : 'transparent',
                                         },
@@ -139,7 +141,7 @@ const TriviaHubScreen = ({ route, navigation }) => {
                                     )}
                                     <NeonText size={50} style={styles.emoji}>{mode.emoji}</NeonText>
                                     <View style={styles.cardText}>
-                                        <NeonText size={24} weight="bold" color={isSelected ? mode.color : '#fff'} glow={isSelected}>{mode.name}</NeonText>
+                                        <NeonText size={24} weight="bold" color={isSelected ? mode.color : COLORS.white} glow={isSelected}>{mode.name}</NeonText>
                                         <View style={[styles.taglinePill, { borderColor: mode.color }]}>
                                             <NeonText size={12} color={mode.color} style={{ fontStyle: 'italic' }}>{mode.tagline}</NeonText>
                                         </View>
@@ -172,7 +174,7 @@ const TriviaHubScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flexGrow: 1, paddingHorizontal: 18, paddingBottom: 50 },
     header: { alignItems: 'center', marginTop: 24, marginBottom: 28 },
     iconRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },

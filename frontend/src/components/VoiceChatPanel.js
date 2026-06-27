@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import VoiceService from '../services/VoiceService';
 
 const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [isAvailable, setIsAvailable] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
@@ -90,7 +92,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
 
             {!isConnected ? (
                 <TouchableOpacity style={styles.joinBtn} onPress={handleJoinVoice}>
-                    <NeonText size={14} color="#fff">Join Voice Chat</NeonText>
+                    <NeonText size={14} color={COLORS.white}>Join Voice Chat</NeonText>
                 </TouchableOpacity>
             ) : (
                 <View style={styles.controls}>
@@ -114,7 +116,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
                         </View>
                     ))}
                     {users.length > 4 && (
-                        <NeonText size={10} color="#888">+{users.length - 4}</NeonText>
+                        <NeonText size={10} color={COLORS.textMuted}>+{users.length - 4}</NeonText>
                     )}
                 </View>
             )}
@@ -122,14 +124,14 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         backgroundColor: 'rgba(0,0,0,0.6)',
         borderRadius: 12,
         padding: 12,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)'
+        borderColor: COLORS.surfaceLight
     },
     header: {
         flexDirection: 'row',
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
     },
     controlBtn: {
         width: 50, height: 50, borderRadius: 25,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center'
     },
     mutedBtn: {
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     },
     userBadge: {
         width: 30, height: 30, borderRadius: 15,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center'
     },
     speaking: {

@@ -12,7 +12,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Win conditions ────────────────────────────────────────────────────────────
 const WIN_LINES = [
@@ -101,6 +101,8 @@ const getAIMove = (board, difficulty, aiSym, playerSym) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const LocalTicTacToeScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players, difficulty = 'medium' } = route.params;
     const playerName = players[0]?.name || 'You';
 
@@ -266,28 +268,28 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                     <Ionicons
                         name={isWin ? 'trophy' : isDraw ? 'remove-circle' : 'sad'}
                         size={80}
-                        color={isWin ? COLORS.limeGlow : isDraw ? '#888' : COLORS.hotPink}
+                        color={isWin ? COLORS.limeGlow : isDraw ? COLORS.textMuted : COLORS.hotPink}
                         style={{ marginBottom: 10 }}
                     />
-                    <NeonText size={36} weight="bold" glow color={isWin ? COLORS.limeGlow : isDraw ? '#888' : COLORS.hotPink}>
+                    <NeonText size={36} weight="bold" glow color={isWin ? COLORS.limeGlow : isDraw ? COLORS.textMuted : COLORS.hotPink}>
                         {isWin ? 'YOU WIN!' : isDraw ? "IT'S A DRAW" : 'AI WINS!'}
                     </NeonText>
-                    <NeonText size={16} color="#888" style={{ marginTop: 8 }}>
+                    <NeonText size={16} color={COLORS.textMuted} style={{ marginTop: 8 }}>
                         {isWin ? `Great job, ${playerName}!` : isDraw ? 'Nobody wins this round.' : 'Better luck next time!'}
                     </NeonText>
 
                     <View style={styles.scoreBoard}>
                         <View style={styles.scoreItem}>
                             <NeonText size={28} weight="bold" color={COLORS.neonCyan}>{scores.player}</NeonText>
-                            <NeonText size={12} color="#888">{playerName}</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>{playerName}</NeonText>
                         </View>
                         <View style={styles.scoreItem}>
                             <NeonText size={28} weight="bold" color="#555">{scores.draws}</NeonText>
-                            <NeonText size={12} color="#888">Draws</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Draws</NeonText>
                         </View>
                         <View style={styles.scoreItem}>
                             <NeonText size={28} weight="bold" color={COLORS.hotPink}>{scores.ai}</NeonText>
-                            <NeonText size={12} color="#888">AI</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>AI</NeonText>
                         </View>
                     </View>
 
@@ -361,7 +363,7 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: 40,
@@ -410,7 +412,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     board: {
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: COLORS.overlayDark,
         borderRadius: 18,
         padding: 12,
         borderWidth: 2,

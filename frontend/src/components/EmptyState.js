@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import NeonButton from './NeonButton';
 
 const EmptyState = ({
@@ -12,6 +12,8 @@ const EmptyState = ({
     onAction,
     style
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={[styles.container, style]}>
             <View style={styles.iconContainer}>
@@ -20,7 +22,7 @@ const EmptyState = ({
             <NeonText size={20} weight="bold" color={COLORS.neonCyan} style={styles.title}>
                 {title}
             </NeonText>
-            <NeonText size={14} color="#888" style={styles.message}>
+            <NeonText size={14} color={COLORS.textMuted} style={styles.message}>
                 {message}
             </NeonText>
             {actionLabel && onAction && (
@@ -35,7 +37,7 @@ const EmptyState = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',

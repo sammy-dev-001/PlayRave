@@ -14,7 +14,7 @@ Play with friends in the same room on a single device!
 - **Local Charades**: A high-energy acting game with custom word packs.
 - **Tic-Tac-Toe**: Play against a friend or a smart AI.
 
-### 🌐 Online Multiplayer (Coming Soon/WIP)
+### 🌐 Online Multiplayer
 Connect with friends globally!
 - **Real-time Socket.io integration** for seamless gameplay.
 - **Lobby System**: Create or join rooms with unique codes.

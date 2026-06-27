@@ -3,12 +3,15 @@ import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import LiveChat from '../components/LiveChat';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
 
 const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, category = 'normal', players = [], playerName } = route.params;
     
     // Session persistence and reconnection handling
@@ -40,6 +43,10 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     // FIX 10: Completion toast shown briefly when a turn ends
     const [completionToast, setCompletionToast] = useState(null);
     const completionTimerRef = useRef(null);
+
+    // Chat State
+    const [chatMessages, setChatMessages] = useState([]);
+    const [isChatMinimized, setIsChatMinimized] = useState(true);
 
     // Build player name lookup
     useEffect(() => {
@@ -114,6 +121,10 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             handleLeaveGame();
         };
 
+        const onChatReceived = (msg) => {
+            setChatMessages(prev => [...prev, msg]);
+        };
+
         SocketService.on('truth-or-dare-chosen', onTruthOrDareChosen);
         SocketService.on('truth-or-dare-turn-complete', onTurnComplete);
         SocketService.on('truth-or-dare-ended', onGameEnded);
@@ -121,6 +132,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         SocketService.on('room-updated', onRoomUpdated);
         SocketService.on('game-state-sync', onStateSync);
         SocketService.on('game-ended-insufficient-players', onInsufficientPlayers);
+        SocketService.on('chat-message-received', onChatReceived);
 
         return () => {
             SocketService.off('truth-or-dare-chosen', onTruthOrDareChosen);
@@ -130,6 +142,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             SocketService.off('room-updated', onRoomUpdated);
             SocketService.off('game-state-sync', onStateSync);
             SocketService.off('game-ended-insufficient-players', onInsufficientPlayers);
+            SocketService.off('chat-message-received', onChatReceived);
         };
     }, [navigation, room, playerNames]);
 
@@ -142,6 +155,14 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
 
     const handleChooseTruth = () => {
         SocketService.emit('choose-truth-or-dare', { roomId: room.id, choice: 'truth' });
+    };
+
+    const handleSendChatMessage = (text) => {
+        SocketService.emit('chat-message', { roomId: room.id, text });
+    };
+
+    const handleSendReaction = (emoji) => {
+        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
     };
 
     const handleChooseDare = () => {
@@ -203,7 +224,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                         {category.toUpperCase()}
                     </NeonText>
                 </View>
-                <NeonText size={14} color="#888" style={styles.turnCount}>
+                <NeonText size={14} color={COLORS.textMuted} style={styles.turnCount}>
                     Turn {gameState.turnCount + 1}
                 </NeonText>
             </View>
@@ -240,7 +261,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                         >
                             {gameState.promptType?.toUpperCase()}
                         </NeonText>
-                        <NeonText size={14} color="#888" style={{ marginTop: 5 }}>
+                        <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 5 }}>
                             {currentPlayerName}'s challenge
                         </NeonText>
                     </View>
@@ -255,7 +276,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                         <NeonText size={48} style={styles.watchingEmoji}>
                             {gameState.promptType === 'truth' ? '💬' : '🎯'}
                         </NeonText>
-                        <NeonText size={16} color="#888" style={styles.watchingHint}>
+                        <NeonText size={16} color={COLORS.textMuted} style={styles.watchingHint}>
                             Wait for {currentPlayerName} to complete...
                         </NeonText>
                     </View>
@@ -323,11 +344,23 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                     style={styles.endButton}
                 />
             )}
+
+            {/* Live Chat Overlay */}
+            <View style={styles.chatOverlay}>
+                <LiveChat
+                    messages={chatMessages}
+                    onSendMessage={handleSendChatMessage}
+                    onSendReaction={handleSendReaction}
+                    currentUser={{ id: SocketService.userId || SocketService.socket?.id, name: playerName }}
+                    isMinimized={isChatMinimized}
+                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
+                />
+            </View>
         </NeonContainer>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -355,7 +388,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 16,
         borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: COLORS.borderDefault,
     },
     myTurnContainer: {
         borderColor: COLORS.limeGlow,
@@ -454,6 +487,13 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.8,
         shadowRadius: 12,
         elevation: 20,
+    },
+    chatOverlay: {
+        position: 'absolute',
+        bottom: 20,
+        left: 10,
+        right: 10,
+        zIndex: 100,
     },
 });
 

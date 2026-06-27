@@ -11,10 +11,10 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Available games for playlist
-const AVAILABLE_GAMES = [
+const getAvailableGames = (COLORS) => [
     { id: 'trivia', name: 'Quick Trivia', icon: 'bulb', color: COLORS.neonCyan },
     { id: 'myth-or-fact', name: 'Myth or Fact', icon: 'help-circle', color: COLORS.hotPink },
     { id: 'whos-most-likely', name: "Who's Most Likely", icon: 'people', color: COLORS.electricPurple },
@@ -26,6 +26,9 @@ const AVAILABLE_GAMES = [
 ];
 
 const PlaylistSetupScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const AVAILABLE_GAMES = React.useMemo(() => getAvailableGames(COLORS), [COLORS]);
     const { room, playerName } = route.params;
     const [playlist, setPlaylist] = useState([]);
     const [showGamePicker, setShowGamePicker] = useState(false);
@@ -217,7 +220,7 @@ const PlaylistSetupScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 10,

@@ -5,9 +5,11 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedCategory, setSelectedCategory] = useState('normal');
 
@@ -112,7 +114,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
                         >
                             {category.name}
                         </NeonText>
-                        <NeonText size={14} color="#888" style={styles.categoryDescription}>
+                        <NeonText size={14} color={COLORS.textMuted} style={styles.categoryDescription}>
                             {category.description}
                         </NeonText>
                         {selectedCategory === category.id && (
@@ -134,7 +136,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
                 />
             ) : (
                 <View style={styles.waitingContainer}>
-                    <NeonText size={16} color="#888">
+                    <NeonText size={16} color={COLORS.textMuted}>
                         Waiting for host to start the game...
                     </NeonText>
                 </View>
@@ -143,7 +145,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 30,
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     selectedCard: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderWidth: 3,
     },
     categoryIcon: {

@@ -12,7 +12,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameIcon from '../components/GameIcon';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Map game IDs to their screen names
 const GAME_SCREENS = {
@@ -31,6 +31,8 @@ const GAME_SCREENS = {
 };
 
 const TournamentLobbyScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, tournament: initialTournament } = route.params;
     const [tournament, setTournament] = useState(initialTournament);
     const [currentStandings, setCurrentStandings] = useState([]);
@@ -141,7 +143,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                 ]}
             >
                 <GameIcon gameId={gameId} size={24} />
-                <NeonText size={10} color={isCompleted ? COLORS.limeGlow : (isCurrent ? '#fff' : '#888')}>
+                <NeonText size={10} color={isCompleted ? COLORS.limeGlow : (isCurrent ? COLORS.white : COLORS.textMuted)}>
                     {index + 1}
                 </NeonText>
                 {isCompleted && <NeonText size={10}></NeonText>}
@@ -157,7 +159,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                     <NeonText size={22} weight="bold" glow color={COLORS.electricPurple}>
                         {tournament.name}
                     </NeonText>
-                    <NeonText size={14} color="#888">
+                    <NeonText size={14} color={COLORS.textMuted}>
                         Game {tournament.currentGameIndex + 1} of {tournament.games.length}
                     </NeonText>
                 </View>
@@ -177,7 +179,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                         <NeonText size={80} weight="bold" glow color={COLORS.neonCyan}>
                             {countdown}
                         </NeonText>
-                        <NeonText size={18} color="#fff">
+                        <NeonText size={18} color={COLORS.white}>
                             Starting {tournament.games[tournament.currentGameIndex]}...
                         </NeonText>
                     </View>
@@ -194,7 +196,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                                 styles.standingRow,
                                 index === 0 && styles.leaderRow
                             ]}>
-                                <NeonText size={14} color={index === 0 ? COLORS.limeGlow : '#fff'}>
+                                <NeonText size={14} color={index === 0 ? COLORS.limeGlow : COLORS.white}>
                                     #{standing.rank} {index === 0 ? '' : ''}
                                 </NeonText>
                                 <NeonText size={14} style={styles.playerName}>
@@ -211,7 +213,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                 {/* Lobby State */}
                 {phase === 'lobby' && countdown === null && (
                     <View style={styles.lobbyContainer}>
-                        <NeonText size={16} color="#888">
+                        <NeonText size={16} color={COLORS.textMuted}>
                             {room.players?.length || 0} players ready
                         </NeonText>
                         {isHost && (
@@ -222,7 +224,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                             />
                         )}
                         {!isHost && (
-                            <NeonText size={14} color="#888">
+                            <NeonText size={14} color={COLORS.textMuted}>
                                 Waiting for host to start...
                             </NeonText>
                         )}
@@ -235,7 +237,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
                         <NeonText size={18} weight="bold" color={COLORS.limeGlow}>
                             Game Complete!
                         </NeonText>
-                        <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                        <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                             Next up: {tournament.games[tournament.currentGameIndex]}
                         </NeonText>
                         {isHost && (
@@ -252,7 +254,7 @@ const TournamentLobbyScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         padding: 20,
         paddingTop: 60,
@@ -279,7 +281,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     completedPill: {
         borderColor: COLORS.limeGlow,
@@ -304,7 +306,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     },
     leaderRow: {
         backgroundColor: 'rgba(198, 255, 74, 0.1)',

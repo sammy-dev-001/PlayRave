@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import GameIcon from '../components/GameIcon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Game categories for organization (Sync with GameSelectionScreen)
-const GAME_CATEGORIES = {
+const getGameCategories = (COLORS) => ({
     party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
     competitive: { name: 'Competitive', icon: 'trophy', color: COLORS.neonCyan },
     trivia: { name: 'Trivia & Knowledge', icon: 'bulb', color: COLORS.limeGlow },
     speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
-};
+});
 
-const LOCAL_GAMES = [
+const getLocalGames = (COLORS) => [
     {
         id: 'trivia',
         name: 'Quick Trivia',
@@ -144,6 +144,8 @@ const LOCAL_GAMES = [
 ];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players, isSinglePlayer = false } = route.params;
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedVibe, setSelectedVibe] = useState('all');
@@ -154,14 +156,14 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     // Process games into categories
     const gamesByCategory = React.useMemo(() => {
         const grouped = {};
-        Object.keys(GAME_CATEGORIES).forEach(key => {
+        Object.keys(getGameCategories(COLORS)).forEach(key => {
             grouped[key] = [];
         });
 
         // Filter available games first
         let available = isSinglePlayer
-            ? LOCAL_GAMES.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-            : LOCAL_GAMES.filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
+            ? getLocalGames(COLORS).filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
+            : getLocalGames(COLORS).filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
 
         if (selectedVibe !== 'all') {
             available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
@@ -233,7 +235,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 
                 <View style={styles.metaRow}>
                     <View style={styles.badge}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="people" size={12} color="#FFF" /><NeonText size={10} color="#FFF">{game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText></View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="people" size={12} color={COLORS.white} /><NeonText size={10} color={COLORS.textMuted}>{game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText></View>
                     </View>
                     {game.category === 'speed' && (
                         <View style={[styles.badge, { backgroundColor: '#FF3FA440' }]}>
@@ -295,17 +297,17 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+                    <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search games..."
-                        placeholderTextColor="#888"
+                        placeholderTextColor={COLORS.textMuted}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         autoCorrect={false}
                     />
                 </View>
-                {Object.entries(GAME_CATEGORIES).map(([key, category]) => {
+                {Object.entries(getGameCategories(COLORS)).map(([key, category]) => {
                     const categoryGames = gamesByCategory[key];
                     if (!categoryGames || categoryGames.length === 0) return null;
 
@@ -326,7 +328,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 20,
@@ -366,17 +368,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         marginBottom: 25,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     searchIcon: {
         marginRight: 10,
     },
     searchInput: {
         flex: 1,
-        color: '#FFF',
+        color: COLORS.white,
         fontSize: 16,
         paddingVertical: 12,
-        outlineStyle: 'none',
+        ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
     },
     header: {
         alignItems: 'center',
@@ -437,7 +439,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     badge: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 8,

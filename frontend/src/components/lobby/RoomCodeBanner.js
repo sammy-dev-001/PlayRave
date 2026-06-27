@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const RoomCodeBanner = ({ roomCode, onSharePress, onQRPress }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
 
@@ -28,7 +30,7 @@ const RoomCodeBanner = ({ roomCode, onSharePress, onQRPress }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         alignItems: 'center',
         paddingVertical: 16,

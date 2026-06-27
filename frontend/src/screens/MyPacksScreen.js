@@ -12,7 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +24,8 @@ const TYPE_ICONS = {
 };
 
 const MyPacksScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { isGuest } = useAuth();
     const [packs, setPacks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -78,10 +80,10 @@ const MyPacksScreen = ({ navigation }) => {
             </View>
             <View style={styles.packInfo}>
                 <NeonText size={16} weight="bold">{item.name}</NeonText>
-                <NeonText size={12} color="#888">
+                <NeonText size={12} color={COLORS.textMuted}>
                     {item.items?.length || 0} items • {item.isPublic ? '🌐 Public' : '🔒 Private'}
                 </NeonText>
-                <NeonText size={10} color="#666">{item.plays} plays • {item.likes} likes</NeonText>
+                <NeonText size={10} color={COLORS.textDarkMuted}>{item.plays} plays • {item.likes} likes</NeonText>
             </View>
             <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
                 <NeonText size={20} color={COLORS.hotPink}>🗑️</NeonText>
@@ -95,7 +97,7 @@ const MyPacksScreen = ({ navigation }) => {
                 <View style={styles.guestContainer}>
                     <NeonText size={48}>👤</NeonText>
                     <NeonText size={20} weight="bold" style={styles.guestTitle}>Account Required</NeonText>
-                    <NeonText size={14} color="#888" style={styles.guestText}>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.guestText}>
                         Create an account to save your custom packs
                     </NeonText>
                     <NeonButton title="CREATE ACCOUNT" onPress={() => navigation.navigate('Auth')} style={styles.authBtn} />
@@ -125,8 +127,8 @@ const MyPacksScreen = ({ navigation }) => {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <NeonText size={48}>📝</NeonText>
-                            <NeonText size={16} color="#888">No packs yet</NeonText>
-                            <NeonText size={14} color="#666">Create your first custom pack!</NeonText>
+                            <NeonText size={16} color={COLORS.textMuted}>No packs yet</NeonText>
+                            <NeonText size={14} color={COLORS.textMuted}>Create your first custom pack!</NeonText>
                         </View>
                     }
                 />
@@ -137,7 +139,7 @@ const MyPacksScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 },
     list: { paddingHorizontal: 20, paddingBottom: 100 },
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     },
     packIcon: {
         width: 60, height: 60, borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         justifyContent: 'center', alignItems: 'center', marginRight: 15
     },
     packInfo: { flex: 1 },

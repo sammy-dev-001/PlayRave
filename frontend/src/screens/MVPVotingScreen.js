@@ -13,9 +13,13 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SHADOWS } from '../constants/themes';
+
 
 const MVPVotingScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, finalScores, fromGame } = route.params;
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [hasVoted, setHasVoted] = useState(false);
@@ -180,7 +184,7 @@ const MVPVotingScreen = ({ route, navigation }) => {
                 <NeonText size={28} weight="bold" glow>
                     VOTE FOR MVP
                 </NeonText>
-                <NeonText size={14} color="#888" style={styles.subtitle}>
+                <NeonText size={14} color={COLORS.textMuted} style={styles.subtitle}>
                     Who was the Most Valuable Player?
                 </NeonText>
                 <View style={styles.timer}>
@@ -196,7 +200,7 @@ const MVPVotingScreen = ({ route, navigation }) => {
                     <NeonText size={20} style={styles.waitingText}>
                         Vote submitted!
                     </NeonText>
-                    <NeonText size={14} color="#888">
+                    <NeonText size={14} color={COLORS.textMuted}>
                         Waiting for other players...
                     </NeonText>
                 </View>
@@ -229,7 +233,7 @@ const MVPVotingScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 30,

@@ -10,10 +10,12 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { getRandomCategories } from '../data/speedCategories';
 
 const SpeedCategoriesScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [] } = route.params || {};
 
     // Early validation
@@ -225,7 +227,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.playerTurnCard}>
-                    <NeonText size={16} color="#888">IT'S YOUR TURN</NeonText>
+                    <NeonText size={16} color={COLORS.textMuted}>IT'S YOUR TURN</NeonText>
                     <NeonText size={32} weight="bold" color={COLORS.limeGlow}>
                         {currentPlayer.name}
                     </NeonText>
@@ -233,7 +235,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
 
                 <View style={styles.categoryCard}>
                     <NeonText size={64}>{currentCategory.emoji}</NeonText>
-                    <NeonText size={14} color="#888" style={styles.challengeLabel}>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.challengeLabel}>
                         NAME 5...
                     </NeonText>
                     <NeonText size={24} weight="bold" style={styles.categoryText}>
@@ -271,7 +273,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
                 <View style={styles.miniScoreboard}>
                     {sortedScores.slice(0, 3).map(([name, score], index) => (
                         <View key={name} style={styles.miniScoreRow}>
-                            <NeonText size={12} color={index === 0 ? COLORS.limeGlow : '#888'}>
+                            <NeonText size={12} color={index === 0 ? COLORS.limeGlow : COLORS.textMuted}>
                                 {index + 1}. {name}: {score}
                             </NeonText>
                         </View>
@@ -378,7 +380,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
                         <NeonText size={48} weight="bold" color={COLORS.limeGlow}>
                             {scores[currentPlayer.name]}
                         </NeonText>
-                        <NeonText size={16} color="#888">total points for {currentPlayer.name}</NeonText>
+                        <NeonText size={16} color={COLORS.textMuted}>total points for {currentPlayer.name}</NeonText>
                     </View>
 
                     <NeonButton
@@ -396,7 +398,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
     return null;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 20,
@@ -430,7 +432,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
         paddingHorizontal: 15,
         paddingVertical: 5,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 20,
     },
     instruction: {
@@ -463,7 +465,7 @@ const styles = StyleSheet.create({
     },
     progressContainer: {
         height: 10,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 5,
         marginHorizontal: 20,
         marginBottom: 30,

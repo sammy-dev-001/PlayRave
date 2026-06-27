@@ -9,7 +9,7 @@ import {
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import SocialService from '../services/SocialService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ShareResultModal = ({
     visible,
@@ -20,6 +20,8 @@ const ShareResultModal = ({
     rank,
     totalPlayers
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const isWinner = rank === 1;
     const rankEmoji = rank === 1 ? '🏆' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🎮';
 
@@ -66,17 +68,17 @@ const ShareResultModal = ({
                             {/* Result Card */}
                             <View style={styles.resultCard}>
                                 <View style={styles.resultRow}>
-                                    <NeonText size={14} color="#888">GAME</NeonText>
+                                    <NeonText size={14} color={COLORS.textMuted}>GAME</NeonText>
                                     <NeonText size={16} weight="bold">{gameName}</NeonText>
                                 </View>
                                 <View style={styles.resultRow}>
-                                    <NeonText size={14} color="#888">SCORE</NeonText>
+                                    <NeonText size={14} color={COLORS.textMuted}>SCORE</NeonText>
                                     <NeonText size={24} weight="bold" color={COLORS.limeGlow}>
                                         {score}
                                     </NeonText>
                                 </View>
                                 <View style={styles.resultRow}>
-                                    <NeonText size={14} color="#888">RANK</NeonText>
+                                    <NeonText size={14} color={COLORS.textMuted}>RANK</NeonText>
                                     <NeonText size={16} weight="bold" color={COLORS.neonCyan}>
                                         #{rank} of {totalPlayers}
                                     </NeonText>
@@ -84,7 +86,7 @@ const ShareResultModal = ({
                             </View>
 
                             {/* Share Options */}
-                            <NeonText size={14} color="#888" style={styles.shareLabel}>
+                            <NeonText size={14} color={COLORS.textMuted} style={styles.shareLabel}>
                                 SHARE YOUR RESULT
                             </NeonText>
 
@@ -132,7 +134,7 @@ const ShareResultModal = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -168,7 +170,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     },
     shareLabel: {
         textAlign: 'center',

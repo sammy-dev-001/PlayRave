@@ -13,9 +13,11 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ColorRushScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({
@@ -32,7 +34,7 @@ const ColorRushScreen = ({ route, navigation }) => {
     const [currentRound, setCurrentRound] = useState(1);
     const [totalRounds, setTotalRounds] = useState(initialGameState?.totalRounds || 15);
     const [targetColorName, setTargetColorName] = useState('');
-    const [displayColorHex, setDisplayColorHex] = useState('#fff');
+    const [displayColorHex, setDisplayColorHex] = useState(COLORS.white);
     const [colorButtons, setColorButtons] = useState([]);
     const [myScore, setMyScore] = useState(0);
     const [standings, setStandings] = useState([]);
@@ -172,7 +174,7 @@ const ColorRushScreen = ({ route, navigation }) => {
                         COLOR RUSH
                     </NeonText>
                     <View style={styles.roundInfo}>
-                        <NeonText size={14} color="#888">
+                        <NeonText size={14} color={COLORS.textMuted}>
                             Round {currentRound}/{totalRounds}
                         </NeonText>
                         <NeonText size={16} weight="bold" color={COLORS.limeGlow}>
@@ -186,10 +188,10 @@ const ColorRushScreen = ({ route, navigation }) => {
                         <NeonText size={28} weight="bold" glow>
                             Round {currentRound}
                         </NeonText>
-                        <NeonText size={16} color="#888" style={styles.subtitle}>
+                        <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
                             Tap the color that matches the WORD!
                         </NeonText>
-                        <NeonText size={14} color="#666" style={styles.hint}>
+                        <NeonText size={14} color={COLORS.textDarkMuted} style={styles.hint}>
                             ⚠️ Be careful - the word color might trick you!
                         </NeonText>
                         {isHost && (
@@ -213,7 +215,7 @@ const ColorRushScreen = ({ route, navigation }) => {
                 {phase === 'playing' && (
                     <View style={styles.playingContainer}>
                         <View style={styles.targetContainer}>
-                            <NeonText size={14} color="#888">Tap the color:</NeonText>
+                            <NeonText size={14} color={COLORS.textMuted}>Tap the color:</NeonText>
                             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                                 <NeonText
                                     size={64}
@@ -325,7 +327,7 @@ const ColorRushScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 50, paddingHorizontal: 20 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     roundInfo: { alignItems: 'flex-end' },
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8
     },
     dimmedButton: { opacity: 0.4 },
-    correctButton: { borderWidth: 4, borderColor: '#fff' },
+    correctButton: { borderWidth: 4, borderColor: COLORS.white },
     resultText: { textAlign: 'center', marginTop: 30 },
     resultsContainer: { flex: 1, paddingTop: 20 },
     resultsTitle: { textAlign: 'center', marginBottom: 20 },

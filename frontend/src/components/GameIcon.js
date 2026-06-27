@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const gameIcons = {
     // Original Set
@@ -46,6 +46,8 @@ const ALIASES = {
 };
 
 const GameIcon = ({ gameId, size = 60, style, fallbackIcon }) => {
+    const { COLORS } = useTheme();
+
     const useId = ALIASES[gameId] || gameId;
     const source = gameIcons[useId];
 

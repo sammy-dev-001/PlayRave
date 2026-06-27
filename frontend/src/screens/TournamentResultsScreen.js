@@ -11,9 +11,11 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import ConfettiEffect from '../components/ConfettiEffect';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const TournamentResultsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, tournament, champion, standings } = route.params;
 
     const trophyAnim = useRef(new Animated.Value(0)).current;
@@ -70,7 +72,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
                         <NeonText size={32} weight="bold" glow color={COLORS.neonCyan}>
                             {champion?.name || 'Unknown'}
                         </NeonText>
-                        <NeonText size={18} color="#fff">
+                        <NeonText size={18} color={COLORS.white}>
                             Total Score: {standings[0]?.score || 0} points
                         </NeonText>
                     </View>
@@ -86,26 +88,26 @@ const TournamentResultsScreen = ({ route, navigation }) => {
                             <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
                                 {tournament.games?.length || 0}
                             </NeonText>
-                            <NeonText size={12} color="#888">Games Played</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Games Played</NeonText>
                         </View>
                         <View style={styles.statItem}>
                             <NeonText size={24} weight="bold" color={COLORS.hotPink}>
                                 {standings?.length || 0}
                             </NeonText>
-                            <NeonText size={12} color="#888">Players</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Players</NeonText>
                         </View>
                         <View style={styles.statItem}>
                             <NeonText size={24} weight="bold" color={COLORS.limeGlow}>
                                 {standings?.reduce((sum, s) => sum + s.score, 0) || 0}
                             </NeonText>
-                            <NeonText size={12} color="#888">Total Points</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Total Points</NeonText>
                         </View>
                     </View>
                 </View>
 
                 {/* Final Standings */}
                 <View style={styles.standingsSection}>
-                    <NeonText size={16} weight="bold" color="#fff">
+                    <NeonText size={16} weight="bold" color={COLORS.white}>
                         🏅 Final Standings
                     </NeonText>
                     {standings?.map((standing, index) => (
@@ -125,7 +127,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
                                 <NeonText
                                     size={16}
                                     weight={index < 3 ? 'bold' : 'normal'}
-                                    color={index === 0 ? COLORS.limeGlow : '#fff'}
+                                    color={index === 0 ? COLORS.limeGlow : COLORS.white}
                                 >
                                     {standing.player?.name}
                                 </NeonText>
@@ -142,7 +144,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
 
                 {/* Game Breakdown */}
                 <View style={styles.breakdownSection}>
-                    <NeonText size={16} weight="bold" color="#888">
+                    <NeonText size={16} weight="bold" color={COLORS.textMuted}>
                         Games Played
                     </NeonText>
                     <View style={styles.gamesRow}>
@@ -175,7 +177,7 @@ const TournamentResultsScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         padding: 20,
         paddingTop: 60,
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     goldRow: {
         backgroundColor: 'rgba(255, 215, 0, 0.15)',
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     gameBadge: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 15,

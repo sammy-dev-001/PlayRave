@@ -4,9 +4,11 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const WordRushResultsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, results, hostParticipates, isHost } = route.params;
     const [countdown, setCountdown] = useState(3);
 
@@ -35,13 +37,19 @@ const WordRushResultsScreen = ({ route, navigation }) => {
             navigation.navigate('WordRushWinner', { room, winner });
         };
 
+        const onGameEnded = () => {
+            navigation.navigate('Lobby', { room, isHost, playerName: route.params.playerName });
+        };
+
         SocketService.on('word-rush-ready-for-next', onReadyForNext);
         SocketService.on('word-rush-winner', onWinner);
+        SocketService.on('word-rush-ended', onGameEnded);
 
         return () => {
             clearInterval(timer);
             SocketService.off('word-rush-ready-for-next', onReadyForNext);
             SocketService.off('word-rush-winner', onWinner);
+            SocketService.off('word-rush-ended', onGameEnded);
         };
     }, [isHost, navigation, room.id]);
 
@@ -75,7 +83,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
                         {item.word || 'NO WORD'}
                     </NeonText>
                     {item.reactionTime !== null && (
-                        <NeonText size={14} color="#888" style={styles.time}>
+                        <NeonText size={14} color={COLORS.textMuted} style={styles.time}>
                             {(item.reactionTime / 1000).toFixed(2)}s
                         </NeonText>
                     )}
@@ -143,7 +151,7 @@ const WordRushResultsScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: { alignItems: 'center', marginBottom: 20 },
     title: { letterSpacing: 2 },
     letterDisplay: { alignItems: 'center', marginBottom: 20 },

@@ -6,9 +6,11 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ProfilePictureSelector = ({ selectedAvatar, onAvatarChange }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Default avatars (emoji options)
@@ -118,7 +120,7 @@ const ProfilePictureSelector = ({ selectedAvatar, onAvatarChange }) => {
             </TouchableOpacity>
 
             {/* Default Avatars */}
-            <NeonText size={12} color="#888" style={styles.orText}>or choose an emoji</NeonText>
+            <NeonText size={12} color={COLORS.textMuted} style={styles.orText}>or choose an emoji</NeonText>
             <View style={styles.defaultAvatars}>
                 {defaultAvatars.map((emoji, index) => (
                     <TouchableOpacity
@@ -137,7 +139,7 @@ const ProfilePictureSelector = ({ selectedAvatar, onAvatarChange }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         alignItems: 'center',
         marginVertical: 20,

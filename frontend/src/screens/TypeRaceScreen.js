@@ -5,9 +5,11 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const TypeRaceScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
 
     useGameDisconnectHandler({
@@ -156,7 +158,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
 
     const renderSentence = () => {
         return targetSentence.split('').map((char, index) => {
-            let color = '#666';
+            let color = COLORS.textDarkMuted;
             if (index < typedText.length) {
                 color = typedText[index] === char ? COLORS.limeGlow : COLORS.hotPink;
             }
@@ -170,7 +172,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                 <View style={styles.header}>
                     <NeonText size={24} weight="bold" glow color={COLORS.neonCyan}>TYPE RACE</NeonText>
                     <View style={styles.roundInfo}>
-                        <NeonText size={14} color="#888">Round {currentRound}/{totalRounds}</NeonText>
+                        <NeonText size={14} color={COLORS.textMuted}>Round {currentRound}/{totalRounds}</NeonText>
                         <NeonText size={16} weight="bold" color={COLORS.limeGlow}>Score: {myScore}</NeonText>
                     </View>
                 </View>
@@ -178,9 +180,9 @@ const TypeRaceScreen = ({ route, navigation }) => {
                 {phase === 'waiting' && (
                     <View style={styles.centerContent}>
                         <NeonText size={24} weight="bold" glow>Round {currentRound}</NeonText>
-                        <NeonText size={16} color="#888" style={styles.subtitle}>Type the sentence exactly as shown!</NeonText>
+                        <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>Type the sentence exactly as shown!</NeonText>
                         {isHost && <NeonButton title="START ROUND" onPress={() => SocketService.emit('type-race-start-round', { roomId: room.id })} style={styles.startButton} />}
-                        {!isHost && <NeonText size={14} color="#666" style={styles.subtitle}>Waiting for host...</NeonText>}
+                        {!isHost && <NeonText size={14} color={COLORS.textDarkMuted} style={styles.subtitle}>Waiting for host...</NeonText>}
                     </View>
                 )}
 
@@ -216,7 +218,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                         <View style={styles.playersProgress}>
                             {Object.entries(playerProgress).map(([id, data]) => (
                                 <View key={id} style={styles.playerProgressRow}>
-                                    <NeonText size={12} color="#888" style={{ width: 80 }}>{data.name}</NeonText>
+                                    <NeonText size={12} color={COLORS.textMuted} style={{ width: 80 }}>{data.name}</NeonText>
                                     <View style={styles.miniProgress}>
                                         <View style={[styles.miniProgressBar, { width: `${data.progress}%` }]} />
                                     </View>
@@ -241,7 +243,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                                     <NeonText size={18} weight="bold">#{index + 1}</NeonText>
                                     <View style={styles.resultInfo}>
                                         <NeonText size={16}>{player.name}</NeonText>
-                                        <NeonText size={12} color="#888">{player.finished ? `${player.time?.toFixed(2)}s • ${player.accuracy}%` : 'Did not finish'}</NeonText>
+                                        <NeonText size={12} color={COLORS.textMuted}>{player.finished ? `${player.time?.toFixed(2)}s • ${player.accuracy}%` : 'Did not finish'}</NeonText>
                                     </View>
                                     <NeonText size={18} weight="bold" color={COLORS.neonCyan}>+{player.points}</NeonText>
                                 </View>
@@ -271,7 +273,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 40, paddingHorizontal: 10 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     roundInfo: { alignItems: 'flex-end' },
@@ -279,15 +281,15 @@ const styles = StyleSheet.create({
     subtitle: { marginTop: 10, textAlign: 'center' },
     startButton: { marginTop: 30, minWidth: 200 },
     typingContainer: { flex: 1 },
-    progressContainer: { height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3, marginBottom: 20, overflow: 'hidden' },
+    progressContainer: { height: 6, backgroundColor: COLORS.surfaceLight, borderRadius: 3, marginBottom: 20, overflow: 'hidden' },
     progressBar: { height: '100%', backgroundColor: COLORS.limeGlow },
-    sentenceContainer: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12, padding: 15, marginBottom: 20, minHeight: 80 },
+    sentenceContainer: { backgroundColor: COLORS.overlayDark, borderRadius: 12, padding: 15, marginBottom: 20, minHeight: 80 },
     sentenceWrap: { flexDirection: 'row', flexWrap: 'wrap' },
     sentenceChar: { fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' },
-    textInput: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 15, fontSize: 18, color: '#fff', borderWidth: 2, borderColor: COLORS.neonCyan, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' },
+    textInput: { backgroundColor: COLORS.surfaceLight, borderRadius: 12, padding: 15, fontSize: 18, color: COLORS.white, borderWidth: 2, borderColor: COLORS.neonCyan, fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier' },
     playersProgress: { marginTop: 20 },
     playerProgressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-    miniProgress: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, marginLeft: 10, overflow: 'hidden' },
+    miniProgress: { flex: 1, height: 4, backgroundColor: COLORS.surfaceLight, borderRadius: 2, marginLeft: 10, overflow: 'hidden' },
     miniProgressBar: { height: '100%', backgroundColor: COLORS.neonCyan },
     skipButton: { marginTop: 20, alignSelf: 'center', padding: 10 },
     resultsContainer: { flex: 1, paddingTop: 10 },

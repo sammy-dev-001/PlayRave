@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * WhotToast — A non-blocking, auto-dismissing notification overlay.
@@ -14,7 +14,9 @@ import { COLORS } from '../constants/theme';
  *   duration (number)  — How long to show before fading out (ms, default 2200)
  *   onDone   (fn)      — Called once the fade-out animation finishes
  */
-const WhotToast = ({ message, icon = '', color = COLORS.neonCyan, visible, duration = 2200, onDone }) => {
+const WhotToast = ({ message, icon = '', color = '#00F8FF', visible, duration = 2200, onDone }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-20)).current;
     // Keep the component mounted until the exit animation completes
@@ -84,7 +86,7 @@ const WhotToast = ({ message, icon = '', color = COLORS.neonCyan, visible, durat
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         position: 'absolute',
         top: 60,

@@ -7,9 +7,11 @@ import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const HotSeatScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({
@@ -143,7 +145,7 @@ const HotSeatScreen = ({ route, navigation }) => {
                     </View>
 
                     <View style={styles.hotSeatPlayerCard}>
-                        <NeonText size={14} color="#888">IN THE HOT SEAT:</NeonText>
+                        <NeonText size={14} color={COLORS.textMuted}>IN THE HOT SEAT:</NeonText>
                         <NeonText size={32} weight="bold" glow color={COLORS.neonCyan}>
                             {hotSeatPlayerName}
                         </NeonText>
@@ -156,7 +158,7 @@ const HotSeatScreen = ({ route, navigation }) => {
                                 <NeonText size={20} weight="bold" style={styles.marginTop}>
                                     You're in the hot seat!
                                 </NeonText>
-                                <NeonText size={14} color="#888" style={styles.marginTop}>
+                                <NeonText size={14} color={COLORS.textMuted} style={styles.marginTop}>
                                     Waiting for others to submit questions for you...
                                 </NeonText>
                                 <View style={styles.progressContainer}>
@@ -173,7 +175,7 @@ const HotSeatScreen = ({ route, navigation }) => {
                                         <NeonText size={18} weight="bold" style={styles.marginTop}>
                                             Question Submitted!
                                         </NeonText>
-                                        <NeonText size={14} color="#888" style={styles.marginTop}>
+                                        <NeonText size={14} color={COLORS.textMuted} style={styles.marginTop}>
                                             Waiting for others... ({submittedCount}/{totalExpected})
                                         </NeonText>
                                     </View>
@@ -185,7 +187,7 @@ const HotSeatScreen = ({ route, navigation }) => {
                                         <TextInput
                                             style={styles.input}
                                             placeholder="Type your question..."
-                                            placeholderTextColor="#666"
+                                            placeholderTextColor={COLORS.textMuted}
                                             value={questionInput}
                                             onChangeText={setQuestionInput}
                                             multiline
@@ -203,7 +205,7 @@ const HotSeatScreen = ({ route, navigation }) => {
                     ) : phase === 'answering' ? (
                         <View style={styles.answeringContainer}>
                             <View style={styles.questionProgress}>
-                                <NeonText size={14} color="#888">
+                                <NeonText size={14} color={COLORS.textMuted}>
                                     Question {currentQuestionIndex + 1} of {questions?.length || 0}
                                 </NeonText>
                             </View>
@@ -248,7 +250,7 @@ const HotSeatScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         paddingBottom: 40,

@@ -79,7 +79,11 @@ export const AuthProvider = ({ children }) => {
     };
 
     const register = async (email, password, username) => {
-        const { user: userData } = await ApiService.register(email, password, username);
+        let guestData = null;
+        if (isGuest && user) {
+            guestData = user;
+        }
+        const { user: userData } = await ApiService.register(email, password, username, guestData);
         setUser(userData);
         setIsGuest(false);
         // Note: We no longer remove the guest profile key here
@@ -216,7 +220,7 @@ export const AuthProvider = ({ children }) => {
             user,
             isLoading,
             isGuest,
-            isAuthenticated: !!user,
+            isAuthenticated: !!user && !isGuest,
             register,
             login,
             logout,

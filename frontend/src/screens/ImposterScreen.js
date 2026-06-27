@@ -13,7 +13,8 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
-import { COLORS } from '../constants/theme';
+import LiveChat from '../components/LiveChat';
+import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
@@ -27,6 +28,8 @@ const GAME_PHASES = {
 };
 
 const ImposterScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState, players: initialPlayers, myWord: initialMyWord, isImposter: initialIsImposter } = route.params;
 
     // FIX 4: Disconnect handler — if server drops, navigate back to lobby
@@ -51,10 +54,18 @@ const ImposterScreen = ({ route, navigation }) => {
     const [timer, setTimer] = useState(0);
     const [discussionStarted, setDiscussionStarted] = useState(false);
 
+    // Chat State
+    const [chatMessages, setChatMessages] = useState([]);
+    const [isChatMinimized, setIsChatMinimized] = useState(true);
+
     // Animation
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        const onChatReceived = (msg) => {
+            setChatMessages(prev => [...prev, msg]);
+        };
+
         // Socket event listeners
         SocketService.on('game-started', handleGameStarted);
         SocketService.on('imposter-phase-changed', handlePhaseChange);
@@ -63,6 +74,7 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.on('imposter-votes-update', handleVotesUpdate);
         SocketService.on('imposter-round-results', handleRoundResults);
         SocketService.on('room-updated', handleRoomUpdate);
+        SocketService.on('chat-message-received', onChatReceived);
 
         // Request current state on mount (recovery)
         console.log("ImposterScreen mounted, requesting state...");
@@ -76,6 +88,7 @@ const ImposterScreen = ({ route, navigation }) => {
             SocketService.off('imposter-votes-update', handleVotesUpdate);
             SocketService.off('imposter-round-results', handleRoundResults);
             SocketService.off('room-updated', handleRoomUpdate);
+            SocketService.off('chat-message-received', onChatReceived);
         };
     }, []);
 
@@ -141,6 +154,14 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.emit('imposter-start-voting', { roomId: room.id });
     };
 
+    const handleSendChatMessage = (text) => {
+        SocketService.emit('chat-message', { roomId: room.id, text });
+    };
+
+    const handleSendReaction = (emoji) => {
+        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
+    };
+
     const submitVote = () => {
         if (!selectedPlayer) return;
         SocketService.emit('imposter-vote', {
@@ -166,7 +187,7 @@ const ImposterScreen = ({ route, navigation }) => {
             <NeonText size={24} weight="bold" glow>
                 🕵️ IMPOSTER
             </NeonText>
-            <NeonText size={16} color="#888" style={styles.subtitle}>
+            <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
                 Waiting for host to start...
             </NeonText>
             {isHost && (
@@ -197,7 +218,7 @@ const ImposterScreen = ({ route, navigation }) => {
 
     const renderWordRevealPhase = () => (
         <View style={styles.revealContainer}>
-            <NeonText size={18} color="#888" style={styles.instruction}>
+            <NeonText size={18} color={COLORS.textMuted} style={styles.instruction}>
                 Your word is...
             </NeonText>
 
@@ -217,7 +238,7 @@ const ImposterScreen = ({ route, navigation }) => {
                     <NeonText size={20} color={COLORS.hotPink} weight="bold">
                         😈 YOU ARE THE IMPOSTER!
                     </NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10, textAlign: 'center' }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10, textAlign: 'center' }}>
                         Stay hidden! Ask questions without revealing you have a different word.
                     </NeonText>
                 </View>
@@ -228,7 +249,7 @@ const ImposterScreen = ({ route, navigation }) => {
                     <NeonText size={16} color={COLORS.limeGlow}>
                         You have the normal word
                     </NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10, textAlign: 'center' }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10, textAlign: 'center' }}>
                         Find the imposter without revealing the word!
                     </NeonText>
                 </View>
@@ -243,7 +264,7 @@ const ImposterScreen = ({ route, navigation }) => {
             )}
 
             {!isHost && (
-                <NeonText size={14} color="#666" style={{ marginTop: 30 }}>
+                <NeonText size={14} color={COLORS.textDarkMuted} style={{ marginTop: 30 }}>
                     Waiting for host to start discussion...
                 </NeonText>
             )}
@@ -266,7 +287,7 @@ const ImposterScreen = ({ route, navigation }) => {
                 <NeonText size={16} color={isImposter ? COLORS.hotPink : COLORS.limeGlow} weight="bold">
                     Your word: {myWord}
                 </NeonText>
-                <NeonText size={14} color="#888" style={{ marginTop: 10, textAlign: 'center' }}>
+                <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10, textAlign: 'center' }}>
                     {isImposter
                         ? "Blend in with the group and figure out what their word is!"
                         : "Ask questions to find who has a different word!"}
@@ -302,7 +323,7 @@ const ImposterScreen = ({ route, navigation }) => {
         <View style={styles.votingContainer}>
             <View style={styles.timerBadge}>
                 <NeonText size={24} weight="bold" color={timer <= 5 ? COLORS.hotPink : COLORS.neonCyan} glow>
-                    {timer}s
+                    {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                 </NeonText>
             </View>
 
@@ -310,7 +331,7 @@ const ImposterScreen = ({ route, navigation }) => {
                 🗳️ VOTE FOR THE IMPOSTER
             </NeonText>
 
-            <ScrollView style={styles.playersList} contentContainerStyle={styles.playersContent}>
+            <View style={[styles.playersList, styles.playersContent]}>
                 {/* FIX 11: Filter by userId instead of name (name filter is fragile with duplicates) */}
                 {players.filter(p => (p.userId || p.uid || p.id) !== myUserId).map((player) => {
                     const pid = player.userId || player.uid || player.id || player.name;
@@ -334,7 +355,7 @@ const ImposterScreen = ({ route, navigation }) => {
                         </TouchableOpacity>
                     );
                 })}
-            </ScrollView>
+            </View>
 
             <NeonButton
                 title="LOCK IN VOTE"
@@ -352,7 +373,7 @@ const ImposterScreen = ({ route, navigation }) => {
             </NeonText>
 
             <View style={styles.imposterReveal}>
-                <NeonText size={16} color="#888">The imposter was...</NeonText>
+                <NeonText size={16} color={COLORS.textMuted}>The imposter was...</NeonText>
                 <NeonText size={32} weight="bold" color={COLORS.hotPink} glow style={{ marginTop: 15 }}>
                     {roundResults?.imposterName || 'Unknown'}
                 </NeonText>
@@ -363,14 +384,14 @@ const ImposterScreen = ({ route, navigation }) => {
 
             <View style={styles.wordComparison}>
                 <View style={styles.wordBox}>
-                    <NeonText size={14} color="#888" >Normal Word</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted} >Normal Word</NeonText>
                     <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
                         {roundResults?.normalWord || '?'}
                     </NeonText>
                 </View>
-                <NeonText size={24} color="#666"> vs </NeonText>
+                <NeonText size={24} color={COLORS.textDarkMuted}> vs </NeonText>
                 <View style={styles.wordBox}>
-                    <NeonText size={14} color="#888">Imposter Word</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>Imposter Word</NeonText>
                     <NeonText size={24} weight="bold" color={COLORS.hotPink}>
                         {roundResults?.imposterWord || '?'}
                     </NeonText>
@@ -382,7 +403,7 @@ const ImposterScreen = ({ route, navigation }) => {
                     <NeonText size={20} color={COLORS.limeGlow} weight="bold">
                         IMPOSTER CAUGHT!
                     </NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                         Most players voted correctly
                     </NeonText>
                 </View>
@@ -391,7 +412,7 @@ const ImposterScreen = ({ route, navigation }) => {
                     <NeonText size={20} color={COLORS.hotPink} weight="bold">
                         😈 IMPOSTER ESCAPED!
                     </NeonText>
-                    <NeonText size={14} color="#888" style={{ marginTop: 10 }}>
+                    <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 10 }}>
                         The imposter fooled you all
                     </NeonText>
                 </View>
@@ -437,23 +458,35 @@ const ImposterScreen = ({ route, navigation }) => {
             <GameOverlay roomId={room.id} playerName={playerName}>
                 <View style={styles.header}>
                     <NeonText size={16} color={COLORS.electricPurple}>IMPOSTER</NeonText>
-                    <NeonText size={12} color="#666">Room: {room.id}</NeonText>
+                    <NeonText size={12} color={COLORS.textDarkMuted}>Room: {room.id}</NeonText>
                 </View>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                     {renderPhase()}
                 </ScrollView>
             </GameOverlay>
+
+            {/* Live Chat Overlay */}
+            <View style={styles.chatOverlay}>
+                <LiveChat
+                    messages={chatMessages}
+                    onSendMessage={handleSendChatMessage}
+                    onSendReaction={handleSendReaction}
+                    currentUser={{ id: myUserId, name: playerName }}
+                    isMinimized={isChatMinimized}
+                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
+                />
+            </View>
         </NeonContainer>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingTop: 10,
         paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)'
+        borderBottomColor: COLORS.surfaceLight
     },
     centeredContent: {
         flex: 1,
@@ -534,7 +567,8 @@ const styles = StyleSheet.create({
         padding: 20
     },
     playersList: {
-        maxHeight: 300
+        width: '100%',
+        marginVertical: 10
     },
     playersContent: {
         gap: 12
@@ -606,7 +640,14 @@ const styles = StyleSheet.create({
     },
     endButton: {
         flex: 1
-    }
+    },
+    chatOverlay: {
+        position: 'absolute',
+        bottom: 20,
+        left: 10,
+        right: 10,
+        zIndex: 100,
+    },
 });
 
 export default ImposterScreen;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME_PRESETS, DEFAULT_THEME, getTheme, getLegacyColors } from '../constants/themes';
 
@@ -60,7 +60,7 @@ export const ThemeProvider = ({ children }) => {
     };
 
     // Change theme
-    const setTheme = async (themeId) => {
+    const setTheme = useCallback(async (themeId) => {
         if (!THEME_PRESETS[themeId]) {
             console.warn(`Theme "${themeId}" not found`);
             return;
@@ -72,30 +72,29 @@ export const ThemeProvider = ({ children }) => {
         } catch (error) {
             console.error('Failed to save theme:', error);
         }
-    };
+    }, []);
 
     // Update game settings
-    const updateGameSettings = async (gameType, settings) => {
-        const newSettings = {
-            ...gameSettings,
-            [gameType]: {
-                ...gameSettings[gameType],
-                ...settings
-            }
-        };
-        setGameSettings(newSettings);
-
-        try {
-            await AsyncStorage.setItem(GAME_SETTINGS_KEY, JSON.stringify(newSettings));
-        } catch (error) {
-            console.error('Failed to save game settings:', error);
-        }
-    };
+    const updateGameSettings = useCallback(async (gameType, settings) => {
+        setGameSettings(prevSettings => {
+            const newSettings = {
+                ...prevSettings,
+                [gameType]: {
+                    ...prevSettings[gameType],
+                    ...settings
+                }
+            };
+            AsyncStorage.setItem(GAME_SETTINGS_KEY, JSON.stringify(newSettings)).catch(error => {
+                console.error('Failed to save game settings:', error);
+            });
+            return newSettings;
+        });
+    }, []);
 
     // Get settings for a specific game
-    const getGameSettings = (gameType) => {
+    const getGameSettings = useCallback((gameType) => {
         return gameSettings[gameType] || {};
-    };
+    }, [gameSettings]);
 
     // Memoized current theme object
     const theme = useMemo(() => getTheme(currentThemeId), [currentThemeId]);
@@ -113,7 +112,7 @@ export const ThemeProvider = ({ children }) => {
         })),
         []);
 
-    const value = {
+    const value = useMemo(() => ({
         // Theme
         theme,
         currentThemeId,
@@ -126,7 +125,7 @@ export const ThemeProvider = ({ children }) => {
         gameSettings,
         updateGameSettings,
         getGameSettings,
-    };
+    }), [theme, currentThemeId, setTheme, availableThemes, COLORS, isLoading, gameSettings, updateGameSettings, getGameSettings]);
 
     return (
         <ThemeContext.Provider value={value}>

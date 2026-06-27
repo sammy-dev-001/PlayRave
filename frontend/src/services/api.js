@@ -47,10 +47,12 @@ class ApiService {
     }
 
     // Auth endpoints
-    async register(email, password, username) {
+    async register(email, password, username, guestData = null) {
+        const body = { email, password, username };
+        if (guestData) body.guestData = guestData;
         const data = await this.request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, username }),
+            body: JSON.stringify(body),
         });
         await this.setToken(data.token);
         return data;

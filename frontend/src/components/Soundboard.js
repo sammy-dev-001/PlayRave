@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Sound definitions with web-compatible audio
 const SOUNDS = {
@@ -28,12 +28,14 @@ const SoundButton = ({ sound, onPress, disabled }) => (
         disabled={disabled}
     >
         <Ionicons name={sound.icon} size={24} color={COLORS.neonCyan} />
-        <NeonText size={10} color="#888">{sound.name}</NeonText>
+        <NeonText size={10} color={COLORS.textMuted}>{sound.name}</NeonText>
     </TouchableOpacity>
 );
 
 // Main Soundboard component
 const Soundboard = ({ roomId, playerName, visible = true }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [expanded, setExpanded] = useState(false);
     const [cooldown, setCooldown] = useState(false);
     const [lastPlayed, setLastPlayed] = useState(null);
@@ -60,7 +62,7 @@ const Soundboard = ({ roomId, playerName, visible = true }) => {
                     <View style={styles.header}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="volume-high" size={16} color={COLORS.neonCyan} /><NeonText size={14} weight="bold" color={COLORS.neonCyan}>SOUNDBOARD</NeonText></View>
                         <TouchableOpacity onPress={() => setExpanded(false)}>
-                            <Ionicons name="close" size={22} color="#fff" />
+                            <Ionicons name="close" size={22} color={COLORS.white} />
                         </TouchableOpacity>
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -90,6 +92,8 @@ const Soundboard = ({ roomId, playerName, visible = true }) => {
 
 // Sound notification popup when someone plays a sound
 const SoundNotification = ({ soundId, playerName, visible, onComplete }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     useEffect(() => {
         if (visible) {
             const timer = setTimeout(onComplete, 2000);
@@ -105,7 +109,7 @@ const SoundNotification = ({ soundId, playerName, visible, onComplete }) => {
     return (
         <View style={styles.notification}>
             <Ionicons name={sound.icon} size={30} color={COLORS.neonCyan} />
-            <NeonText size={12} color="#fff">
+            <NeonText size={12} color={COLORS.white}>
                 {playerName} played {sound.name}
             </NeonText>
         </View>
@@ -149,7 +153,7 @@ const playSoundLocally = (soundId) => {
     }
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         position: 'absolute',
         bottom: 100,
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
     soundButton: {
         width: 60,
         height: 60,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',

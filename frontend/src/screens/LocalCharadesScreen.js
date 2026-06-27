@@ -11,12 +11,12 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
 
 // ─── Word Data ────────────────────────────────────────────────────────────────
-const CATEGORIES = {
+const getCategories = (COLORS) => ({
     Movies: {
         label: 'Movies & TV',
         iconName: 'film-outline',
@@ -269,9 +269,13 @@ CATEGORIES.Mixed = {
         medium: Object.values(CATEGORIES).flatMap(c => c.words.medium),
         hard: Object.values(CATEGORIES).flatMap(c => c.words.hard),
     }
-};
+});
 
-const DIFFICULTY_OPTIONS = [
+const getDifficultyOptions = (COLORS) => [
+    { key: 'easy', label: 'Easy', iconName: 'happy-outline', color: COLORS.limeGlow, desc: 'Simple & fun for everyone' },
+    { key: 'medium', label: 'Medium', iconName: 'flame-outline', color: '#FF8C42', desc: 'Mix of familiar & tricky' },
+    { key: 'hard', label: 'Hard', iconName: 'skull-outline', color: COLORS.hotPink, desc: 'Only the bold survive' },
+]; = [
     { key: 'easy', label: 'Easy', iconName: 'happy-outline', color: COLORS.limeGlow, desc: 'Simple & fun for everyone' },
     { key: 'medium', label: 'Medium', iconName: 'flame-outline', color: '#FF8C42', desc: 'Mix of familiar & tricky' },
     { key: 'hard', label: 'Hard', iconName: 'skull-outline', color: COLORS.hotPink, desc: 'Only the bold survive' },
@@ -289,17 +293,21 @@ const shuffle = (arr) => {
     return a;
 };
 
-const getRank = (score, total) => {
+const getRank = (score, total, COLORS) => {
     const pct = total > 0 ? score / total : 0;
     if (pct >= 0.8) return { label: 'LEGEND', iconName: 'trophy-outline', color: '#FFD700' };
     if (pct >= 0.6) return { label: 'PRO', iconName: 'flame-outline', color: COLORS.hotPink };
     if (pct >= 0.4) return { label: 'DECENT', iconName: 'flash-outline', color: COLORS.neonCyan };
     if (pct >= 0.2) return { label: 'TRYING', iconName: 'sad-outline', color: COLORS.limeGlow };
-    return { label: 'SAPA', iconName: 'skull-outline', color: '#888' };
+    return { label: 'SAPA', iconName: 'skull-outline', color: COLORS.textMuted };
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const LocalCharadesScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const CATEGORIES = React.useMemo(() => getCategories(COLORS), [COLORS]);
+    const DIFFICULTY_OPTIONS = React.useMemo(() => getDifficultyOptions(COLORS), [COLORS]);
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const routePlayers = route?.params?.players || null;
 
     // ── State ──
@@ -649,7 +657,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
             <NeonText size={22} weight="bold" color={COLORS.white} style={{ marginBottom: 8 }}>
                 Choose Difficulty
             </NeonText>
-            <NeonText size={13} color="#666" style={{ marginBottom: 32, textAlign: 'center' }}>
+            <NeonText size={13} color={COLORS.textDarkMuted} style={{ marginBottom: 32, textAlign: 'center' }}>
                 Harder = rarer words + more chaos
             </NeonText>
 
@@ -664,7 +672,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                         <Ionicons name={d.iconName} size={30} color={d.color} />
                         <View style={styles.diffInfo}>
                             <NeonText size={20} weight="bold" color={d.color}>{d.label}</NeonText>
-                            <NeonText size={12} color="#666">{d.desc}</NeonText>
+                            <NeonText size={12} color={COLORS.textDarkMuted}>{d.desc}</NeonText>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={d.color} />
                     </TouchableOpacity>
@@ -710,11 +718,11 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         <View style={styles.centeredFlex}>
             {players && (
                 <View style={[styles.playerTurnBadge, { borderColor: category.color }]}>
-                    <NeonText size={13} color="#888">ACTING NOW</NeonText>
+                    <NeonText size={13} color={COLORS.textMuted}>ACTING NOW</NeonText>
                     <NeonText size={28} weight="bold" color={category.color}>
                         {currentPlayer?.name}
                     </NeonText>
-                    <NeonText size={12} color="#666">
+                    <NeonText size={12} color={COLORS.textDarkMuted}>
                         Round {roundNumber} of {totalRounds}
                     </NeonText>
                 </View>
@@ -901,8 +909,8 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                     onPress={() => skips < MAX_SKIPS && nextWord(false)}
                     activeOpacity={skips < MAX_SKIPS ? 0.7 : 1}
                 >
-                    <Ionicons name="close" size={28} color="#fff" />
-                    <NeonText size={16} weight="bold" color="#fff">
+                    <Ionicons name="close" size={28} color={COLORS.white} />
+                    <NeonText size={16} weight="bold" color={COLORS.textMuted}>
                         PASS{skips >= MAX_SKIPS ? ' (MAX)' : ` (${MAX_SKIPS - skips})`}
                     </NeonText>
                 </TouchableOpacity>
@@ -936,7 +944,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                 </NeonText>
 
                 {players && (
-                    <NeonText size={18} color="#888" style={{ marginBottom: 24 }}>
+                    <NeonText size={18} color={COLORS.textMuted} style={{ marginBottom: 24 }}>
                         {currentPlayer?.name}'s round is done
                     </NeonText>
                 )}
@@ -945,16 +953,16 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                 <View style={styles.roundResultCard}>
                     <View style={styles.roundResultRow}>
                         <View style={styles.roundStat}>
-                            <NeonText size={11} color="#888">SCORE</NeonText>
+                            <NeonText size={11} color={COLORS.textDarkMuted}>SCORE</NeonText>
                             <NeonText size={52} weight="bold" color={COLORS.limeGlow} glow>{score}</NeonText>
-                            <NeonText size={12} color="#666">{score === 1 ? 'word' : 'words'}</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>{score === 1 ? 'word' : 'words'}</NeonText>
                         </View>
                         <View style={styles.roundStatDivider} />
                         <View style={styles.roundStat}>
-                            <NeonText size={11} color="#888">BEST STREAK</NeonText>
+                            <NeonText size={11} color={COLORS.textDarkMuted}>BEST STREAK</NeonText>
                             <NeonText size={52} weight="bold" color="#FF8C42" glow>{maxStreak}</NeonText>
-                            <NeonText size={12} color="#666">
-                                <Ionicons name="flame-outline" size={12} color="#666" /> in a row
+                            <NeonText size={12} color={COLORS.textDarkMuted}>
+                                <Ionicons name="flame-outline" size={12} color={COLORS.textMuted} /> in a row
                             </NeonText>
                         </View>
                     </View>
@@ -968,7 +976,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                 {/* Leaderboard if multiplayer */}
                 {players && players.some(p => p.totalScore > 0 || currentPlayerIndex > 0) && (
                     <View style={styles.miniLeaderboard}>
-                        <NeonText size={12} color="#666" style={{ marginBottom: 10, letterSpacing: 2 }}>
+                        <NeonText size={12} color={COLORS.textMuted} style={{ marginBottom: 10, letterSpacing: 2 }}>
                             CURRENT STANDINGS
                         </NeonText>
                         {[...players]
@@ -1015,21 +1023,21 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                     <NeonText size={34} weight="bold" glow color={rank.color} style={{ marginTop: 8, marginBottom: 4 }}>
                         {rank.label}!
                     </NeonText>
-                    <NeonText size={15} color="#888" style={{ marginBottom: 32 }}>
+                    <NeonText size={15} color={COLORS.textDarkMuted} style={{ marginBottom: 32 }}>
                         {category.label} · {difficulty.label} Mode
                     </NeonText>
 
                     <View style={styles.soloResultCard}>
                         <NeonText size={80} weight="bold" color={COLORS.limeGlow} glow>{score}</NeonText>
-                        <NeonText size={18} color="#888">{score === 1 ? 'word guessed' : 'words guessed'}</NeonText>
+                        <NeonText size={18} color={COLORS.textDarkMuted}>{score === 1 ? 'word guessed' : 'words guessed'}</NeonText>
                         <View style={styles.soloStats}>
                             <View style={styles.soloStat}>
                                 <NeonText size={22} weight="bold" color="#FF8C42">{maxStreak}</NeonText>
-                                <NeonText size={11} color="#666">best streak</NeonText>
+                                <NeonText size={11} color={COLORS.textMuted}>best streak</NeonText>
                             </View>
                             <View style={styles.soloStat}>
                                 <NeonText size={22} weight="bold" color={COLORS.hotPink}>{skips}</NeonText>
-                                <NeonText size={11} color="#666">skips used</NeonText>
+                                <NeonText size={11} color={COLORS.textDarkMuted}>skips used</NeonText>
                             </View>
                         </View>
                     </View>
@@ -1053,13 +1061,13 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         return (
             <ScrollView style={styles.flex} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 40 }}>
                 <Ionicons name="trophy" size={70} color="#FFD700" style={{ marginTop: 20 }} />
-                <NeonText size={13} color="#888" style={{ marginTop: 8, letterSpacing: 2 }}>
+                <NeonText size={13} color={COLORS.textDarkMuted} style={{ marginTop: 8, letterSpacing: 2 }}>
                     {isTie ? 'GAME OVER — IT\'S A TIE!' : 'GAME OVER — WINNER IS'}
                 </NeonText>
                 <NeonText size={36} weight="bold" glow color="#FFD700" style={{ marginBottom: 4 }}>
                     {isTie ? 'TIE!' : winner.name}
                 </NeonText>
-                <NeonText size={14} color="#666" style={{ marginBottom: 24 }}>
+                <NeonText size={14} color={COLORS.textDarkMuted} style={{ marginBottom: 24 }}>
                     {category.label} · {difficulty.label}
                 </NeonText>
 
@@ -1082,7 +1090,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                                 <NeonText size={isWinner ? 36 : 28} weight="bold" color={i < 3 ? colors[i] : COLORS.limeGlow} glow>
                                     {p.totalScore}
                                 </NeonText>
-                                <NeonText size={11} color="#666">pts</NeonText>
+                                <NeonText size={11} color={COLORS.textDarkMuted}>pts</NeonText>
                             </View>
                         );
                     })}
@@ -1096,19 +1104,19 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                             <NeonText size={22} weight="bold" color={COLORS.limeGlow}>
                                 {players.reduce((sum, p) => sum + (p.totalScore || 0), 0)}
                             </NeonText>
-                            <NeonText size={11} color="#666">total words</NeonText>
+                            <NeonText size={11} color={COLORS.textDarkMuted}>total words</NeonText>
                         </View>
                         <View style={styles.funStat}>
                             <NeonText size={22} weight="bold" color={COLORS.neonCyan}>
                                 {players.length}
                             </NeonText>
-                            <NeonText size={11} color="#666">players</NeonText>
+                            <NeonText size={11} color={COLORS.textMuted}>players</NeonText>
                         </View>
                         <View style={styles.funStat}>
                             <NeonText size={22} weight="bold" color="#FF8C42">
                                 <Ionicons name={difficulty.iconName} size={22} color="#FF8C42" />
                             </NeonText>
-                            <NeonText size={11} color="#666">{difficulty.label} mode</NeonText>
+                            <NeonText size={11} color={COLORS.textMuted}>{difficulty.label} mode</NeonText>
                         </View>
                     </View>
                 </View>
@@ -1146,7 +1154,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     flex: {
         flex: 1,
         paddingHorizontal: 16,
@@ -1309,7 +1317,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     timerContainer: {
         alignItems: 'center',
@@ -1432,7 +1440,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.04)',
         borderRadius: 24,
         borderWidth: 1.5,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
         paddingVertical: 24,
         paddingHorizontal: 16,
         marginBottom: 20,

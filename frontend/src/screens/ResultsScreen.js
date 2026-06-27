@@ -7,9 +7,11 @@ import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ResultsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, results, hostParticipates, isHost } = route.params;
     const [countdown, setCountdown] = useState(5);
 
@@ -141,7 +143,7 @@ const ResultsScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 30,
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         fontStyle: 'italic',
-        color: '#888',
+        color: COLORS.textMuted,
     }
 });
 

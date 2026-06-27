@@ -5,9 +5,11 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const CustomQuestionsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName } = route.params;
     const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState({
@@ -128,7 +130,7 @@ const CustomQuestionsScreen = ({ route, navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your question..."
-                        placeholderTextColor="#666"
+                        placeholderTextColor={COLORS.textMuted}
                         value={currentQuestion.question}
                         onChangeText={(text) => setCurrentQuestion({ ...currentQuestion, question: text })}
                         multiline
@@ -151,7 +153,7 @@ const CustomQuestionsScreen = ({ route, navigation }) => {
                             <TextInput
                                 style={[styles.input, styles.optionInput]}
                                 placeholder={`Option ${index + 1}`}
-                                placeholderTextColor="#666"
+                                placeholderTextColor={COLORS.textMuted}
                                 value={option}
                                 onChangeText={(text) => handleOptionChange(index, text)}
                             />
@@ -215,7 +217,7 @@ const CustomQuestionsScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 30,
@@ -229,7 +231,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     input: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderWidth: 1,
         borderColor: 'rgba(177, 78, 255, 0.3)',
         borderRadius: 8,
@@ -297,7 +299,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         paddingTop: 10,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)',
+        borderTopColor: COLORS.surfaceLight,
     },
     continueButton: {
         marginTop: 10,

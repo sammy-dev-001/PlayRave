@@ -45,7 +45,46 @@ export const UNPOPULAR_OPINIONS = [
     { text: "Tablets are useless devices.", category: "Tech" },
     { text: "Wireless earbuds are easy to lose and annoying.", category: "Tech" },
     { text: "Selfies are cringe.", category: "Tech" },
-    { text: "LinkedIn is the worst social network.", category: "Tech" }
+    { text: "LinkedIn is the worst social network.", category: "Tech" },
+    // Politics & Religion
+    { text: "All taxes should be abolished.", category: "Politics" },
+    { text: "Religion should be banned from public spaces.", category: "Religion" },
+    
+    // Science & Health
+    { text: "Climate change is a hoax.", category: "Science" },
+    { text: "Vaccines are dangerous and unnecessary.", category: "Health" },
+    { text: "The Earth is flat.", category: "Science" },
+    { text: "Genetic editing of embryos is acceptable.", category: "Science" },
+    { text: "Space colonization should be prioritized over solving Earth problems.", category: "Science" },
+    { text: "Quantum consciousness exists.", category: "Science" },
+    { text: "Extinction of species is beneficial for evolution.", category: "Science" },
+    { text: "Humans are the most dangerous species.", category: "Science" },
+
+    // Justice & Social
+    { text: "Capital punishment is the only solution for crime.", category: "Justice" },
+    { text: "Cancel culture is ruining free speech.", category: "Social" },
+    { text: "Gender is a social construct with no basis in biology.", category: "Gender" },
+    { text: "The concept of nationality is outdated.", category: "Society" },
+    { text: "Political correctness is a threat to free thought.", category: "Social" },
+    { text: "Social hierarchies are natural and necessary.", category: "Sociology" },
+
+    // Tech & Future
+    { text: "Artificial intelligence will destroy humanity.", category: "Tech" },
+    { text: "Privacy is a social construct.", category: "Tech" },
+    { text: "Digital immortality is the future of humanity.", category: "Tech" },
+    { text: "Consciousness can be uploaded.", category: "Tech" },
+
+    // Philosophy & Ethics
+    { text: "Artificial wombs should be mainstream.", category: "Ethics" },
+    { text: "Universal basic income will ruin work ethic.", category: "Economics" },
+    { text: "Meritocracy is a myth.", category: "Philosophy" },
+    { text: "Time travel paradoxes prove reality is simulated.", category: "Philosophy" },
+    { text: "All art should be censored for moral standards.", category: "Culture" },
+    { text: "Traditional education is obsolete.", category: "Education" },
+    { text: "The pursuit of happiness is overrated.", category: "Philosophy" },
+    { text: "The universe has an inherent purpose.", category: "Philosophy" },
+    { text: "Economic growth is inherently destructive.", category: "Economics" },
+    { text: "Monarchy should be restored worldwide.", category: "Politics" }
 ];
 
 export const OPINION_CONFIG = {

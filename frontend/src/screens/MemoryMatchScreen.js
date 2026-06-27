@@ -12,33 +12,36 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
 
-// Card content - Ionicons for matching with specific colors
-const CARD_PAIRS = [
-    { name: 'game-controller', color: COLORS.neonCyan },
-    { name: 'flash', color: COLORS.limeGlow },
-    { name: 'headset', color: COLORS.hotPink },
-    { name: 'musical-notes', color: COLORS.electricPurple },
-    { name: 'planet', color: COLORS.neonCyan },
-    { name: 'rocket', color: COLORS.hotPink },
-    { name: 'star', color: '#FFD700' },
-    { name: 'flame', color: '#FF8C42' },
-    { name: 'heart', color: '#FF4444' },
-    { name: 'diamond', color: '#00E5FF' },
-    { name: 'skull', color: '#BBBBBB' },
-    { name: 'rose', color: '#FB9EC6' },
-    { name: 'pizza', color: '#FFC107' },
-    { name: 'beer', color: '#FF9800' },
-    { name: 'ice-cream', color: '#FF80AB' },
-    { name: 'moon', color: '#E040FB' },
-    { name: 'sunny', color: '#FFF176' },
-    { name: 'snow', color: '#B3E5FC' }
-];
-
 const MemoryMatchScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    
+    // Card content - Ionicons for matching with specific colors
+    const CARD_PAIRS = React.useMemo(() => [
+        { name: 'game-controller', color: COLORS.neonCyan },
+        { name: 'flash', color: COLORS.limeGlow },
+        { name: 'headset', color: COLORS.hotPink },
+        { name: 'musical-notes', color: COLORS.electricPurple },
+        { name: 'planet', color: COLORS.neonCyan },
+        { name: 'rocket', color: COLORS.hotPink },
+        { name: 'star', color: '#FFD700' },
+        { name: 'flame', color: '#FF8C42' },
+        { name: 'heart', color: '#FF4444' },
+        { name: 'diamond', color: '#00E5FF' },
+        { name: 'skull', color: '#BBBBBB' },
+        { name: 'rose', color: '#FB9EC6' },
+        { name: 'pizza', color: '#FFC107' },
+        { name: 'beer', color: '#FF9800' },
+        { name: 'ice-cream', color: '#FF80AB' },
+        { name: 'moon', color: '#E040FB' },
+        { name: 'sunny', color: '#FFF176' },
+        { name: 'snow', color: '#B3E5FC' }
+    ], [COLORS]);
+
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [] } = route.params || {};
 
     const [gamePhase, setGamePhase] = useState('setup'); // setup, playing, finished
@@ -256,17 +259,17 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                                         style={[styles.gridOption, gridSize === size && styles.selectedGrid]}
                                         onPress={() => setGridSize(size)}
                                     >
-                                        <NeonText size={18} weight="bold" color={gridSize === size ? COLORS.limeGlow : '#888'}>
+                                        <NeonText size={18} weight="bold" color={gridSize === size ? COLORS.limeGlow : COLORS.textMuted}>
                                             {size}x{size}
                                         </NeonText>
-                                        <NeonText size={12} color="#666">
+                                        <NeonText size={12} color={COLORS.textDarkMuted}>
                                             {(size * size) / 2} pairs
                                         </NeonText>
                                     </TouchableOpacity>
                                 ))}
                             </View>
 
-                            <NeonText size={16} color="#888" style={styles.playersLabel}>
+                            <NeonText size={16} color={COLORS.textMuted} style={styles.playersLabel}>
                                 Players: {players.length}
                             </NeonText>
                             <View style={styles.playersList}>
@@ -292,7 +295,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                                 <NeonText size={16} color={COLORS.limeGlow}>
                                     {currentPlayer?.name}'s turn
                                 </NeonText>
-                                <NeonText size={14} color="#888">
+                                <NeonText size={14} color={COLORS.textMuted}>
                                     Pairs: {matchedPairs.length}/{(gridSize * gridSize) / 2}
                                 </NeonText>
                             </View>
@@ -352,7 +355,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
                                             currentPlayerIndex === index && styles.activeScoreBox
                                         ]}
                                     >
-                                        <NeonText size={12} color="#888">{player.name}</NeonText>
+                                        <NeonText size={12} color={COLORS.textMuted}>{player.name}</NeonText>
                                         <NeonText size={20} weight="bold" color={COLORS.limeGlow}>
                                             {scores[player.id] || 0}
                                         </NeonText>
@@ -398,7 +401,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     scrollContent: { flexGrow: 1 },
     container: { flex: 1, paddingTop: 50, paddingHorizontal: 20, alignItems: 'center' },
     header: { 

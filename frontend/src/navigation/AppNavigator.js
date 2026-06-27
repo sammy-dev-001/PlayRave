@@ -1,4 +1,5 @@
 import React, { Suspense, lazy } from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GameProvider } from '../context/GameContext';
@@ -7,7 +8,8 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import GameErrorBoundary from '../components/GameErrorBoundary';
 import LoadingScreen from '../components/LoadingScreen';
 import ConnectionStatusOverlay from '../components/ConnectionStatusOverlay';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+
 
 // Core screens - loaded immediately
 import HomeScreen from '../screens/HomeScreen';
@@ -179,6 +181,7 @@ const LazyWhispersHubScreen = withSuspense(WhispersHubScreen);
 const LazyTriviaHubScreen = withSuspense(TriviaHubScreen);
 
 const AppNavigator = () => {
+    const { COLORS } = useTheme();
     return (
         <ErrorBoundary
             errorMessage="The app encountered an unexpected error. Please try again."
@@ -186,98 +189,100 @@ const AppNavigator = () => {
         >
             <AuthProvider>
                 <GameProvider>
-                    <NavigationContainer>
+                    <View style={{ flex: 1 }}>
+                        <NavigationContainer>
+                            <Stack.Navigator
+                                screenOptions={{
+                                    headerShown: false,
+                                    contentStyle: { backgroundColor: COLORS.background }
+                                }}
+                                initialRouteName="Home"
+                            >
+                                {/* Core screens - loaded immediately */}
+                                <Stack.Screen name="Home" component={HomeScreen} />
+                                <Stack.Screen name="Join" component={JoinScreen} />
+                                <Stack.Screen name="GameSelection" component={GameSelectionScreen} />
+                                <Stack.Screen name="Lobby" component={LobbyScreen} />
+                                <Stack.Screen name="LocalPartySetup" component={LocalPartySetupScreen} />
+                                <Stack.Screen name="LocalGameSelection" component={LocalGameSelectionScreen} />
+                                <Stack.Screen name="Profile" component={ProfileScreen} />
+                                <Stack.Screen name="Settings" component={LazySettingsScreen} />
+
+                                {/* Tournament screens */}
+                                <Stack.Screen name="TournamentSetup" component={LazyTournamentSetupScreen} />
+                                <Stack.Screen name="TournamentLobby" component={LazyTournamentLobbyScreen} />
+                                <Stack.Screen name="TournamentResults" component={LazyTournamentResultsScreen} />
+
+                                {/* Lazy-loaded game screens */}
+                                <Stack.Screen name="CustomQuestions" component={LazyCustomQuestionsScreen} />
+                                <Stack.Screen name="Question" component={LazyQuestionScreen} />
+                                <Stack.Screen name="Results" component={LazyResultsScreen} />
+                                <Stack.Screen name="MythOrFactQuestion" component={LazyMythOrFactQuestionScreen} />
+                                <Stack.Screen name="MythOrFactResults" component={LazyMythOrFactResultsScreen} />
+                                <Stack.Screen name="WhosMostLikelyQuestion" component={LazyWhosMostLikelyQuestionScreen} />
+                                <Stack.Screen name="WhosMostLikelyResults" component={LazyWhosMostLikelyResultsScreen} />
+                                <Stack.Screen name="NeonTapGame" component={LazyNeonTapGameScreen} />
+                                <Stack.Screen name="NeonTapResults" component={LazyNeonTapResultsScreen} />
+                                <Stack.Screen name="WordRushGame" component={LazyWordRushGameScreen} />
+                                <Stack.Screen name="WordRushResults" component={LazyWordRushResultsScreen} />
+                                <Stack.Screen name="WordRushWinner" component={LazyWordRushWinnerScreen} />
+                                <Stack.Screen name="TruthOrDareCategorySelection" component={LazyTruthOrDareCategorySelectionScreen} />
+                                <Stack.Screen name="TruthOrDareGame" component={LazyTruthOrDareGameScreen} />
+                                <Stack.Screen name="OnlineTruthOrDareCategory" component={LazyOnlineTruthOrDareCategoryScreen} />
+                                <Stack.Screen name="OnlineTruthOrDareGame" component={LazyOnlineTruthOrDareGameScreen} />
+                                <Stack.Screen name="WouldYouRather" component={LazyWouldYouRatherScreen} />
+                                <Stack.Screen name="SpinTheBottle" component={LazySpinTheBottleScreen} />
+                                <Stack.Screen name="WhotGame" component={LazyWhotGameScreen} />
+                                <Stack.Screen name="Scoreboard" component={LazyScoreboardScreen} />
+                                <Stack.Screen name="NeverHaveIEverCategory" component={LazyNeverHaveIEverCategoryScreen} />
+                                <Stack.Screen name="NeverHaveIEver" component={LazyNeverHaveIEverScreen} />
+                                <Stack.Screen name="OnlineNHIECategory" component={LazyOnlineNHIECategoryScreen} />
+                                <Stack.Screen name="OnlineNeverHaveIEver" component={LazyOnlineNeverHaveIEverScreen} />
+                                <Stack.Screen name="Scrabble" component={LazyScrabbleScreen} />
+                                <Stack.Screen name="OnlineScrabble" component={LazyOnlineScrabbleScreen} />
+                                <Stack.Screen name="ScrabbleDifficulty" component={LazyScrabbleDifficultyScreen} />
+                                <Stack.Screen name="ScrabbleAI" component={LazyScrabbleScreen} />
+                                <Stack.Screen name="MVPVoting" component={LazyMVPVotingScreen} />
+                                <Stack.Screen name="TeamSetup" component={LazyTeamSetupScreen} />
+                                <Stack.Screen name="PlaylistSetup" component={LazyPlaylistSetupScreen} />
+                                <Stack.Screen name="CaptionThis" component={LazyCaptionThisScreen} />
+                                <Stack.Screen name="SpeedCategories" component={LazySpeedCategoriesScreen} />
+                                <Stack.Screen name="AuctionBluff" component={LazyAuctionBluffScreen} />
+                                <Stack.Screen name="MemoryChain" component={LazyMemoryChainScreen} />
+                                <Stack.Screen name="Spectator" component={LazySpectatorScreen} />
+                                <Stack.Screen name="JoinSpectator" component={LazyJoinSpectatorScreen} />
+                                <Stack.Screen name="ConfessionRoulette" component={LazyConfessionRouletteScreen} />
+                                <Stack.Screen name="Imposter" component={LazyImposterScreen} />
+                                <Stack.Screen name="UnpopularOpinions" component={LazyUnpopularOpinionsScreen} />
+                                <Stack.Screen name="SpillTheTea" component={LazySpillTheTeaScreen} />
+                                <Stack.Screen name="HotSeat" component={LazyHotSeatScreen} />
+                                <Stack.Screen name="HotSeatCategory" component={LazyHotSeatCategoryScreen} />
+                                <Stack.Screen name="HotSeatMC" component={LazyHotSeatMCScreen} />
+                                <Stack.Screen name="ButtonMash" component={LazyButtonMashScreen} />
+                                <Stack.Screen name="TypeRace" component={LazyTypeRaceScreen} />
+                                <Stack.Screen name="MathBlitz" component={LazyMathBlitzScreen} />
+                                <Stack.Screen name="ColorRush" component={LazyColorRushScreen} />
+                                <Stack.Screen name="MemoryMatch" component={LazyMemoryMatchScreen} />
+                                <Stack.Screen name="TicTacToe" component={LazyTicTacToeScreen} />
+                                <Stack.Screen name="TicTacToeDifficulty" component={LazyTicTacToeDifficultyScreen} />
+                                <Stack.Screen name="LocalTrivia" component={LazyLocalTriviaScreen} />
+                                <Stack.Screen name="LocalTicTacToe" component={LazyLocalTicTacToeScreen} />
+                                <Stack.Screen name="DrawBattle" component={LazyDrawBattleScreen} />
+                                <Stack.Screen name="Auth" component={withSuspense(AuthScreen)} />
+                                <Stack.Screen name="Leaderboard" component={withSuspense(LeaderboardScreen)} />
+                                <Stack.Screen name="MyPacks" component={withSuspense(MyPacksScreen)} />
+                                <Stack.Screen name="CommunityPacks" component={withSuspense(CommunityPacksScreen)} />
+                                <Stack.Screen name="CustomPackEditor" component={withSuspense(CustomPackEditorScreen)} />
+                                <Stack.Screen name="Challenges" component={withSuspense(ChallengesScreen)} />
+                                <Stack.Screen name="LieDetector" component={LazyLieDetectorScreen} />
+                                <Stack.Screen name="LANMode" component={LazyLANModeScreen} />
+                                <Stack.Screen name="LocalCharades" component={LazyLocalCharadesScreen} />
+                                <Stack.Screen name="WhispersHub" component={LazyWhispersHubScreen} />
+                                <Stack.Screen name="TriviaHub" component={LazyTriviaHubScreen} />
+                            </Stack.Navigator>
+                        </NavigationContainer>
                         <ConnectionStatusOverlay />
-                        <Stack.Navigator
-                            screenOptions={{
-                                headerShown: false,
-                                contentStyle: { backgroundColor: COLORS.deepNightBlack }
-                            }}
-                            initialRouteName="Home"
-                        >
-                            {/* Core screens - loaded immediately */}
-                            <Stack.Screen name="Home" component={HomeScreen} />
-                            <Stack.Screen name="Join" component={JoinScreen} />
-                            <Stack.Screen name="GameSelection" component={GameSelectionScreen} />
-                            <Stack.Screen name="Lobby" component={LobbyScreen} />
-                            <Stack.Screen name="LocalPartySetup" component={LocalPartySetupScreen} />
-                            <Stack.Screen name="LocalGameSelection" component={LocalGameSelectionScreen} />
-                            <Stack.Screen name="Profile" component={ProfileScreen} />
-                            <Stack.Screen name="Settings" component={LazySettingsScreen} />
-
-                            {/* Tournament screens */}
-                            <Stack.Screen name="TournamentSetup" component={LazyTournamentSetupScreen} />
-                            <Stack.Screen name="TournamentLobby" component={LazyTournamentLobbyScreen} />
-                            <Stack.Screen name="TournamentResults" component={LazyTournamentResultsScreen} />
-
-                            {/* Lazy-loaded game screens */}
-                            <Stack.Screen name="CustomQuestions" component={LazyCustomQuestionsScreen} />
-                            <Stack.Screen name="Question" component={LazyQuestionScreen} />
-                            <Stack.Screen name="Results" component={LazyResultsScreen} />
-                            <Stack.Screen name="MythOrFactQuestion" component={LazyMythOrFactQuestionScreen} />
-                            <Stack.Screen name="MythOrFactResults" component={LazyMythOrFactResultsScreen} />
-                            <Stack.Screen name="WhosMostLikelyQuestion" component={LazyWhosMostLikelyQuestionScreen} />
-                            <Stack.Screen name="WhosMostLikelyResults" component={LazyWhosMostLikelyResultsScreen} />
-                            <Stack.Screen name="NeonTapGame" component={LazyNeonTapGameScreen} />
-                            <Stack.Screen name="NeonTapResults" component={LazyNeonTapResultsScreen} />
-                            <Stack.Screen name="WordRushGame" component={LazyWordRushGameScreen} />
-                            <Stack.Screen name="WordRushResults" component={LazyWordRushResultsScreen} />
-                            <Stack.Screen name="WordRushWinner" component={LazyWordRushWinnerScreen} />
-                            <Stack.Screen name="TruthOrDareCategorySelection" component={LazyTruthOrDareCategorySelectionScreen} />
-                            <Stack.Screen name="TruthOrDareGame" component={LazyTruthOrDareGameScreen} />
-                            <Stack.Screen name="OnlineTruthOrDareCategory" component={LazyOnlineTruthOrDareCategoryScreen} />
-                            <Stack.Screen name="OnlineTruthOrDareGame" component={LazyOnlineTruthOrDareGameScreen} />
-                            <Stack.Screen name="WouldYouRather" component={LazyWouldYouRatherScreen} />
-                            <Stack.Screen name="SpinTheBottle" component={LazySpinTheBottleScreen} />
-                            <Stack.Screen name="WhotGame" component={LazyWhotGameScreen} />
-                            <Stack.Screen name="Scoreboard" component={LazyScoreboardScreen} />
-                            <Stack.Screen name="NeverHaveIEverCategory" component={LazyNeverHaveIEverCategoryScreen} />
-                            <Stack.Screen name="NeverHaveIEver" component={LazyNeverHaveIEverScreen} />
-                            <Stack.Screen name="OnlineNHIECategory" component={LazyOnlineNHIECategoryScreen} />
-                            <Stack.Screen name="OnlineNeverHaveIEver" component={LazyOnlineNeverHaveIEverScreen} />
-                            <Stack.Screen name="Scrabble" component={LazyScrabbleScreen} />
-                            <Stack.Screen name="OnlineScrabble" component={LazyOnlineScrabbleScreen} />
-                            <Stack.Screen name="ScrabbleDifficulty" component={LazyScrabbleDifficultyScreen} />
-                            <Stack.Screen name="ScrabbleAI" component={LazyScrabbleScreen} />
-                            <Stack.Screen name="MVPVoting" component={LazyMVPVotingScreen} />
-                            <Stack.Screen name="TeamSetup" component={LazyTeamSetupScreen} />
-                            <Stack.Screen name="PlaylistSetup" component={LazyPlaylistSetupScreen} />
-                            <Stack.Screen name="CaptionThis" component={LazyCaptionThisScreen} />
-                            <Stack.Screen name="SpeedCategories" component={LazySpeedCategoriesScreen} />
-                            <Stack.Screen name="AuctionBluff" component={LazyAuctionBluffScreen} />
-                            <Stack.Screen name="MemoryChain" component={LazyMemoryChainScreen} />
-                            <Stack.Screen name="Spectator" component={LazySpectatorScreen} />
-                            <Stack.Screen name="JoinSpectator" component={LazyJoinSpectatorScreen} />
-                            <Stack.Screen name="ConfessionRoulette" component={LazyConfessionRouletteScreen} />
-                            <Stack.Screen name="Imposter" component={LazyImposterScreen} />
-                            <Stack.Screen name="UnpopularOpinions" component={LazyUnpopularOpinionsScreen} />
-                            <Stack.Screen name="SpillTheTea" component={LazySpillTheTeaScreen} />
-                            <Stack.Screen name="HotSeat" component={LazyHotSeatScreen} />
-                            <Stack.Screen name="HotSeatCategory" component={LazyHotSeatCategoryScreen} />
-                            <Stack.Screen name="HotSeatMC" component={LazyHotSeatMCScreen} />
-                            <Stack.Screen name="ButtonMash" component={LazyButtonMashScreen} />
-                            <Stack.Screen name="TypeRace" component={LazyTypeRaceScreen} />
-                            <Stack.Screen name="MathBlitz" component={LazyMathBlitzScreen} />
-                            <Stack.Screen name="ColorRush" component={LazyColorRushScreen} />
-                            <Stack.Screen name="MemoryMatch" component={LazyMemoryMatchScreen} />
-                            <Stack.Screen name="TicTacToe" component={LazyTicTacToeScreen} />
-                            <Stack.Screen name="TicTacToeDifficulty" component={LazyTicTacToeDifficultyScreen} />
-                            <Stack.Screen name="LocalTrivia" component={LazyLocalTriviaScreen} />
-                            <Stack.Screen name="LocalTicTacToe" component={LazyLocalTicTacToeScreen} />
-                            <Stack.Screen name="DrawBattle" component={LazyDrawBattleScreen} />
-                            <Stack.Screen name="Auth" component={withSuspense(AuthScreen)} />
-                            <Stack.Screen name="Leaderboard" component={withSuspense(LeaderboardScreen)} />
-                            <Stack.Screen name="MyPacks" component={withSuspense(MyPacksScreen)} />
-                            <Stack.Screen name="CommunityPacks" component={withSuspense(CommunityPacksScreen)} />
-                            <Stack.Screen name="CustomPackEditor" component={withSuspense(CustomPackEditorScreen)} />
-                            <Stack.Screen name="Challenges" component={withSuspense(ChallengesScreen)} />
-                            <Stack.Screen name="LieDetector" component={LazyLieDetectorScreen} />
-                            <Stack.Screen name="LANMode" component={LazyLANModeScreen} />
-                            <Stack.Screen name="LocalCharades" component={LazyLocalCharadesScreen} />
-                            <Stack.Screen name="WhispersHub" component={LazyWhispersHubScreen} />
-                            <Stack.Screen name="TriviaHub" component={LazyTriviaHubScreen} />
-                        </Stack.Navigator>
-                    </NavigationContainer>
+                    </View>
                 </GameProvider>
             </AuthProvider>
         </ErrorBoundary>

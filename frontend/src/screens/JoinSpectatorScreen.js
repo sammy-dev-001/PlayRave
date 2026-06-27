@@ -10,9 +10,11 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const JoinSpectatorScreen = ({ navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [roomCode, setRoomCode] = useState('');
     const [spectatorName, setSpectatorName] = useState('');
     const [loading, setLoading] = useState(false);
@@ -76,7 +78,7 @@ const JoinSpectatorScreen = ({ navigation }) => {
                     <NeonText size={28} weight="bold" glow style={styles.title}>
                         SPECTATE GAME
                     </NeonText>
-                    <NeonText size={14} color="#888" style={styles.subtitle}>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.subtitle}>
                         Watch your friends play without participating!
                     </NeonText>
                 </View>
@@ -91,7 +93,7 @@ const JoinSpectatorScreen = ({ navigation }) => {
                             value={spectatorName}
                             onChangeText={setSpectatorName}
                             placeholder="Enter your name"
-                            placeholderTextColor="#666"
+                            placeholderTextColor={COLORS.textMuted}
                             maxLength={20}
                         />
                     </View>
@@ -105,7 +107,7 @@ const JoinSpectatorScreen = ({ navigation }) => {
                             value={roomCode}
                             onChangeText={(text) => setRoomCode(text.toUpperCase())}
                             placeholder="XXXX"
-                            placeholderTextColor="#666"
+                            placeholderTextColor={COLORS.textMuted}
                             maxLength={6}
                             autoCapitalize="characters"
                         />
@@ -120,19 +122,19 @@ const JoinSpectatorScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.info}>
-                    <NeonText size={12} color="#666">
+                    <NeonText size={12} color={COLORS.textDarkMuted}>
                         💡 As a spectator you can:
                     </NeonText>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         • Watch the game in real-time
                     </NeonText>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         • See player scores and answers
                     </NeonText>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         • Chat with other spectators
                     </NeonText>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         • Send emoji reactions
                     </NeonText>
                 </View>
@@ -141,7 +143,7 @@ const JoinSpectatorScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
@@ -168,10 +170,10 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     input: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 12,
         padding: 15,
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 16,
         borderWidth: 1,
         borderColor: COLORS.electricPurple,

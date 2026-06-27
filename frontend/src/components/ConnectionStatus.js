@@ -5,9 +5,11 @@ import {
 } from 'react-native';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const ConnectionStatus = ({ showLabel = true, size = 'small' }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [status, setStatus] = useState('connecting'); // connecting, connected, disconnected, reconnecting
     const [reconnectAttempt, setReconnectAttempt] = useState(0);
     const pulseAnim = React.useRef(new Animated.Value(1)).current;
@@ -119,7 +121,7 @@ const ConnectionStatus = ({ showLabel = true, size = 'small' }) => {
                 };
             default:
                 return {
-                    color: '#666',
+                    color: COLORS.textDarkMuted,
                     label: 'Unknown',
                     showDot: false,
                 };
@@ -157,7 +159,7 @@ const ConnectionStatus = ({ showLabel = true, size = 'small' }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',

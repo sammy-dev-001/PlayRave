@@ -5,7 +5,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import RaveLights from '../components/RaveLights';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── WhosMostLikelyResultsScreen ──────────────────────────────────────────────
 //
@@ -22,6 +22,8 @@ import { COLORS } from '../constants/theme';
 // ──────────────────────────────────────────────────────────────────────────────
 
 const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const {
         room,
         results,
@@ -90,7 +92,7 @@ const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
     // ── Render ────────────────────────────────────────────────────────────
     const renderVoteResult = ({ item, index }) => {
         const podiumColors = [COLORS.limeGlow, COLORS.neonCyan, '#FF9500'];
-        const rankColor    = index < 3 ? podiumColors[index] : '#888';
+        const rankColor    = index < 3 ? podiumColors[index] : COLORS.textMuted;
 
         return (
             <View style={[styles.voteRow, item.isWinner && styles.winnerRow]}>
@@ -113,7 +115,7 @@ const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
                     <NeonText size={18} color={COLORS.hotPink} weight="bold">
                         {item.votes}
                     </NeonText>
-                    <NeonText size={12} color="#666">
+                    <NeonText size={12} color={COLORS.textDarkMuted}>
                         {item.votes === 1 ? 'vote' : 'votes'}
                     </NeonText>
                 </View>
@@ -130,7 +132,7 @@ const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
                 <NeonText size={28} weight="bold" glow style={styles.title}>
                     RESULTS
                 </NeonText>
-                <NeonText size={13} color="#666">
+                <NeonText size={13} color={COLORS.textDarkMuted}>
                     {results?.isLastPrompt ? 'Final round!' : `Next prompt coming up...`}
                 </NeonText>
             </View>
@@ -175,7 +177,7 @@ const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 16,
@@ -213,7 +215,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
         textAlign: 'center',
         letterSpacing: 1,
-        color: '#888',
+        color: COLORS.textMuted,
     },
     list: {
         paddingBottom: 16,
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         fontStyle: 'italic',
-        color: '#666',
+        color: COLORS.textDarkMuted,
         fontSize: 14,
     },
 });

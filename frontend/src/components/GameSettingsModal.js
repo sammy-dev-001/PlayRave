@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+
 
 // Default settings for different game types
 const DEFAULT_SETTINGS = {
@@ -51,6 +52,8 @@ const GameSettingsModal = ({
     gameType = 'trivia',
     initialSettings = {}
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const defaults = DEFAULT_SETTINGS[gameType] || {};
     const [settings, setSettings] = useState({ ...defaults, ...initialSettings });
 
@@ -117,7 +120,7 @@ const GameSettingsModal = ({
                         >
                             <NeonText
                                 size={12}
-                                color={current === opt ? COLORS.limeGlow : '#888'}
+                                color={current === opt ? COLORS.limeGlow : COLORS.textMuted}
                             >
                                 {opt.toUpperCase()}
                             </NeonText>
@@ -190,7 +193,7 @@ const GameSettingsModal = ({
 
             default:
                 return (
-                    <NeonText size={14} color="#888" style={styles.noSettings}>
+                    <NeonText size={14} color={COLORS.textMuted} style={styles.noSettings}>
                         No customization options available for this game.
                     </NeonText>
                 );
@@ -244,7 +247,7 @@ const GameSettingsModal = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -289,7 +292,7 @@ const styles = StyleSheet.create({
         height: 50,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 10,
     },
     pickerValue: {

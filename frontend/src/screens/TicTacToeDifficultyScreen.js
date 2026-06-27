@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const TicTacToeDifficultyScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
 
@@ -77,7 +79,7 @@ const TicTacToeDifficultyScreen = ({ route, navigation }) => {
                         <NeonText size={24} weight="bold" style={styles.difficultyName}>
                             {diff.name}
                         </NeonText>
-                        <NeonText size={14} color="#888" style={styles.difficultyDesc}>
+                        <NeonText size={14} color={COLORS.textMuted} style={styles.difficultyDesc}>
                             {diff.description}
                         </NeonText>
                         {selectedDifficulty === diff.id && (
@@ -101,7 +103,7 @@ const TicTacToeDifficultyScreen = ({ route, navigation }) => {
 };
 
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 30,
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     selectedCard: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderWidth: 3,
     },
     difficultyName: {

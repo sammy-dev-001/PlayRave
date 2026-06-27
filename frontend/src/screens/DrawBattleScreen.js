@@ -15,14 +15,16 @@ import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CANVAS_SIZE = Math.min(SCREEN_WIDTH - 40, 320);
 
-const BRUSH_COLORS = ['#ffffff', COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlow, COLORS.electricPurple, '#ff9900'];
+const BRUSH_COLORS = [COLORS.white, COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlow, COLORS.electricPurple, '#ff9900'];
 
 const DrawBattleScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({
@@ -37,7 +39,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
     const [prompt, setPrompt] = useState(initialGameState?.currentPrompt || '');
     const [timeLeft, setTimeLeft] = useState(60);
     const [dots, setDots] = useState([]);
-    const [brushColor, setBrushColor] = useState('#ffffff');
+    const [brushColor, setBrushColor] = useState(COLORS.white);
     const [drawings, setDrawings] = useState([]);
     const [submittedCount, setSubmittedCount] = useState(0);
     const [totalPlayers, setTotalPlayers] = useState(room?.players?.length || 0);
@@ -202,7 +204,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
                     <View style={styles.header}>
                         <View>
                             <NeonText size={18} weight="bold" glow color={COLORS.hotPink}>DRAW BATTLE</NeonText>
-                            <NeonText size={12} color="#888">Round {currentRound}/{totalRounds}</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>Round {currentRound}/{totalRounds}</NeonText>
                         </View>
                         <View style={styles.scoreBadge}>
                             <NeonText size={12} color="#aaa">MY SCORE</NeonText>
@@ -214,7 +216,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
                         <View style={styles.centerContent}>
                             <Ionicons name="brush" size={60} color={COLORS.neonCyan} />
                             <NeonText size={24} weight="bold" glow style={styles.marginTop}>Ready for Round {currentRound}?</NeonText>
-                            <NeonText size={16} color="#888" style={styles.textCenter}>You'll have 60 seconds to draw the prompt. Best drawing wins the votes!</NeonText>
+                            <NeonText size={16} color={COLORS.textMuted} style={styles.textCenter}>You'll have 60 seconds to draw the prompt. Best drawing wins the votes!</NeonText>
                             {isHost ? (
                                 <NeonButton title="START ROUND" onPress={handleStartRound} style={styles.startBtn} />
                             ) : (
@@ -226,12 +228,12 @@ const DrawBattleScreen = ({ route, navigation }) => {
                     {phase === 'drawing' && (
                         <View style={styles.drawingContainer}>
                             <View style={styles.promptCard}>
-                                <NeonText size={14} color="#888">DRAW THIS:</NeonText>
+                                <NeonText size={14} color={COLORS.textMuted}>DRAW THIS:</NeonText>
                                 <NeonText size={24} weight="bold" color={COLORS.neonCyan} glow>{prompt}</NeonText>
                                 <View style={styles.timerBar}>
                                     <View style={[styles.timerProgress, { width: `${(timeLeft/60)*100}%`, backgroundColor: timeLeft <= 10 ? COLORS.hotPink : COLORS.limeGlow }]} />
                                 </View>
-                                <NeonText size={14} color={timeLeft <= 10 ? COLORS.hotPink : '#888'}>{timeLeft}s remaining</NeonText>
+                                <NeonText size={14} color={timeLeft <= 10 ? COLORS.hotPink : COLORS.textMuted}>{timeLeft}s remaining</NeonText>
                             </View>
 
                             <View style={[styles.canvas, { width: CANVAS_SIZE, height: CANVAS_SIZE }]} {...panResponder.panHandlers}>
@@ -247,7 +249,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
                                     ))}
                                 </ScrollView>
                                 <TouchableOpacity style={styles.clearBtn} onPress={() => setDots([])}>
-                                    <Ionicons name="trash-outline" size={24} color="#888" />
+                                    <Ionicons name="trash-outline" size={24} color={COLORS.textMuted} />
                                 </TouchableOpacity>
                             </View>
 
@@ -259,14 +261,14 @@ const DrawBattleScreen = ({ route, navigation }) => {
                         <View style={styles.centerContent}>
                             <Ionicons name="cloud-upload" size={60} color={COLORS.limeGlow} />
                             <NeonText size={22} weight="bold" color={COLORS.limeGlow} style={styles.marginTop}>Drawing Sent!</NeonText>
-                            <NeonText size={16} color="#888" style={styles.marginTop}>Waiting for others... ({submittedCount}/{totalPlayers})</NeonText>
+                            <NeonText size={16} color={COLORS.textMuted} style={styles.marginTop}>Waiting for others... ({submittedCount}/{totalPlayers})</NeonText>
                         </View>
                     )}
 
                     {phase === 'voting' && (
                         <View style={styles.votingContainer}>
                             <View style={styles.votingHeader}>
-                                <NeonText size={14} color="#888">PROMPT WAS:</NeonText>
+                                <NeonText size={14} color={COLORS.textMuted}>PROMPT WAS:</NeonText>
                                 <NeonText size={20} weight="bold" color={COLORS.neonCyan}>"{prompt}"</NeonText>
                                 <NeonText size={14} color={COLORS.hotPink} style={styles.marginTop}>Vote for the best one!</NeonText>
                             </View>
@@ -303,14 +305,14 @@ const DrawBattleScreen = ({ route, navigation }) => {
                             
                             {roundResults.winner && (
                                 <View style={styles.winnerCard}>
-                                    <NeonText size={14} color="#888">ROUND WINNER</NeonText>
+                                    <NeonText size={14} color={COLORS.textMuted}>ROUND WINNER</NeonText>
                                     <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow>{roundResults.winner.name}</NeonText>
                                     {renderMiniDrawing(roundResults.results[0].drawing, 200)}
                                 </View>
                             )}
 
                             <View style={styles.standingsList}>
-                                <NeonText size={14} weight="bold" color="#666" style={styles.standingTitle}>LEADERBOARD</NeonText>
+                                <NeonText size={14} weight="bold" color={COLORS.textDarkMuted} style={styles.standingTitle}>LEADERBOARD</NeonText>
                                 {roundResults.standings.map((p, i) => (
                                     <View key={p.userId} style={styles.standingRow}>
                                         <NeonText size={16} color={i === 0 ? COLORS.neonCyan : '#ccc'}>#{i+1} {p.name}</NeonText>
@@ -332,7 +334,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
                     {phase === 'finished' && finalResults && (
                         <View style={styles.centerContent}>
                             <Ionicons name="trophy" size={80} color="#FFD700" />
-                            <NeonText size={14} color="#888" style={styles.marginTop}>GAME CHAMPION</NeonText>
+                            <NeonText size={14} color={COLORS.textMuted} style={styles.marginTop}>GAME CHAMPION</NeonText>
                             <NeonText size={36} weight="bold" glow color={COLORS.limeGlow}>{finalResults.winner?.name}</NeonText>
                             <NeonText size={24} color={COLORS.neonCyan}>{finalResults.winner?.score} total pts</NeonText>
                             
@@ -345,7 +347,7 @@ const DrawBattleScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     scrollContent: { flexGrow: 1, paddingBottom: 40 },
     header: { 
         flexDirection: 'row', 
@@ -378,7 +380,7 @@ const styles = StyleSheet.create({
     timerBar: {
         width: '100%',
         height: 6,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 3,
         marginVertical: 12,
         overflow: 'hidden'
@@ -410,10 +412,10 @@ const styles = StyleSheet.create({
     },
     colorPicker: { flexDirection: 'row', gap: 12, paddingRight: 10 },
     colorBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
-    selectedColor: { borderColor: '#fff', borderWidth: 3 },
+    selectedColor: { borderColor: COLORS.white, borderWidth: 3 },
     clearBtn: {
         padding: 10,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 10,
         marginLeft: 10
     },

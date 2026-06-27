@@ -14,12 +14,14 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
 // ─── Disconnected player avatar chip ────────────────────────────────────────
 const PlayerChip = ({ player, guessed }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -43,7 +45,7 @@ const PlayerChip = ({ player, guessed }) => {
         ]}>
             {/* Avatar letter */}
             <View style={[chipStyles.avatar, { backgroundColor: player.avatarColor || '#333' }]}>
-                <NeonText size={14} weight="bold" color="#fff">
+                <NeonText size={14} weight="bold" color={COLORS.white}>
                     {player.name?.charAt(0).toUpperCase() || '?'}
                 </NeonText>
             </View>
@@ -57,7 +59,7 @@ const PlayerChip = ({ player, guessed }) => {
 
             <NeonText
                 size={11}
-                color={player.isDisconnected ? '#666' : guessed ? COLORS.limeGlow : '#ccc'}
+                color={player.isDisconnected ? COLORS.textDarkMuted : guessed ? COLORS.limeGlow : '#ccc'}
                 style={chipStyles.chipName}
                 numberOfLines={1}
             >
@@ -110,6 +112,8 @@ const chipStyles = StyleSheet.create({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 const HotSeatMCScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room: initialRoom, playerName, isHost, players: initialPlayers, gameState: initialGameState } = route.params;
 
     const [gameState, setGameState] = useState(initialGameState || null);
@@ -269,7 +273,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
 
                         {finishedData.winner && (
                             <View style={styles.winnerCard}>
-                                <NeonText size={13} color="#888" style={{ letterSpacing: 2 }}>👑 WINNER</NeonText>
+                                <NeonText size={13} color={COLORS.textMuted} style={{ letterSpacing: 2 }}>👑 WINNER</NeonText>
                                 <NeonText size={30} weight="bold" color={COLORS.neonCyan} glow style={{ marginTop: 8 }}>
                                     {finishedData.winner.name}
                                 </NeonText>
@@ -338,7 +342,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
 
     const renderTargetBadge = () => (
         <View style={styles.targetBadge}>
-            <NeonText size={11} color="#666" style={{ letterSpacing: 2 }}>IN THE HOT SEAT</NeonText>
+            <NeonText size={11} color={COLORS.textDarkMuted} style={{ letterSpacing: 2 }}>IN THE HOT SEAT</NeonText>
             <NeonText size={26} weight="bold" glow color={COLORS.neonCyan} style={{ marginTop: 4 }}>
                 {targetUserName}
             </NeonText>
@@ -413,7 +417,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
 
         return (
             <View style={styles.chipSection}>
-                <NeonText size={12} color="#666" style={{ marginBottom: 12, letterSpacing: 1 }}>
+                <NeonText size={12} color={COLORS.textDarkMuted} style={{ marginBottom: 12, letterSpacing: 1 }}>
                     GUESSERS
                 </NeonText>
                 <View style={styles.chipRow}>
@@ -574,7 +578,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
                                         </NeonText>
                                     </View>
                                     <View>
-                                        <NeonText size={14} weight="bold" color={gr.isCorrect ? '#fff' : '#bbb'}>
+                                        <NeonText size={14} weight="bold" color={gr.isCorrect ? COLORS.white : '#bbb'}>
                                             {gr.playerName}
                                         </NeonText>
                                         <NeonText size={12} color="#777">
@@ -594,7 +598,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
                     </View>
 
                     <Animated.View style={[styles.targetBonusCard, { transform: [{ scale: bonusScale }], opacity: bonusOpacity }]}>
-                        <NeonText size={13} color="#888">{targetUserName} earned</NeonText>
+                        <NeonText size={13} color={COLORS.textMuted}>{targetUserName} earned</NeonText>
                         <NeonText size={32} weight="bold" color={COLORS.neonCyan} glow style={{ marginVertical: 4 }}>
                             +{targetBonus} pts
                         </NeonText>
@@ -630,7 +634,7 @@ const HotSeatMCScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         paddingBottom: 50,

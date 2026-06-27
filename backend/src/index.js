@@ -268,7 +268,15 @@ io.on("connection", (socket) => {
         }
     });
 
-    // ── 3. REQUEST-SYNC (Reconnect / Tab Wake) ──────────────────────
+    // ── 3. CHECK-ROOM (Pre-rejoin room existence check) ─────────────
+    // Used by HomeScreen to verify a room is still alive before showing
+    // the CoD-style rejoin modal. Lightweight — no auth required.
+    socket.on("check-room", ({ roomId }) => {
+        const exists = !!(roomId && roomManager.rooms && roomManager.rooms.has(roomId));
+        socket.emit("check-room-result", { roomId, exists });
+    });
+
+    // ── 4. REQUEST-SYNC (Reconnect / Tab Wake) ──────────────────────
     socket.on("request-room-sync", async ({ roomId, userId }) => {
         console.log("[Gateway] request-room-sync:", roomId, userId);
 
@@ -586,7 +594,7 @@ io.on("connection", (socket) => {
         
         // Use existing userId or create a temporary one for this session
         const userId = sessionManager.getUserIdBySocket(socket.id) || `local-user-${socket.id}`;
-        const roomId = `local-${socket.id}`;
+        const roomId = `local-${userId}`;
 
         // Ensure session and room mapping
         sessionManager.registerClient(userId, socket.id, { playerName });
@@ -609,11 +617,47 @@ io.on("connection", (socket) => {
         console.log(`[Gateway] Scrabble AI game initialized in room ${roomId}`);
     });
 
+    // ── 10. IN-GAME CHAT EVENTS ──────────────────────────────────────────
+
+    socket.on('chat-message', ({ roomId, text }) => {
+        const userId = sessionManager.getUserIdBySocket(socket.id);
+        const user = sessionManager.getClient(userId);
+        if (!userId || !roomId) return;
+
+        const message = {
+            id: Date.now().toString() + Math.random().toString(36).substring(7),
+            userId,
+            userName: user?.playerName || 'Player',
+            text,
+            type: 'text',
+            timestamp: Date.now()
+        };
+        
+        io.to(roomId).emit('chat-message-received', message);
+    });
+
+    socket.on('chat-reaction', ({ roomId, emoji }) => {
+        const userId = sessionManager.getUserIdBySocket(socket.id);
+        const user = sessionManager.getClient(userId);
+        if (!userId || !roomId) return;
+
+        const message = {
+            id: Date.now().toString() + Math.random().toString(36).substring(7),
+            userId,
+            userName: user?.playerName || 'Player',
+            emoji,
+            type: 'reaction',
+            timestamp: Date.now()
+        };
+        
+        io.to(roomId).emit('chat-message-received', message);
+    });
+
     socket.on("tic-tac-toe-single-player-start", ({ difficulty, playerName }) => {
         console.log("[Gateway] Starting Tic-Tac-Toe AI Game:", playerName, difficulty);
         
         const userId = sessionManager.getUserIdBySocket(socket.id) || `local-user-${socket.id}`;
-        const roomId = `local-${socket.id}`;
+        const roomId = `local-${userId}`;
 
         sessionManager.registerClient(userId, socket.id, { playerName });
         sessionManager.setRoom(userId, roomId);

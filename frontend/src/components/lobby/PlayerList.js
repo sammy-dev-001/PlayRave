@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const PlayerRow = ({ player, isMe, isHost, canKick, onKick }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const isBase64Image =
         player.avatar &&
         typeof player.avatar === 'string' &&
@@ -63,6 +65,8 @@ const PlayerRow = ({ player, isMe, isHost, canKick, onKick }) => {
 };
 
 const PlayerList = ({ players, currentPlayerId, isHost, maxPlayers = 8, onKick }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const count = players?.length || 0;
 
     return (
@@ -108,7 +112,7 @@ const PlayerList = ({ players, currentPlayerId, isHost, maxPlayers = 8, onKick }
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         paddingHorizontal: 20,
         marginBottom: 16,

@@ -33,6 +33,8 @@ export const useAccessibility = () => useContext(AccessibilityContext);
 
 // Accessibility Provider Component
 export const AccessibilityProvider = ({ children }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [settings, setSettings] = useState(defaultSettings);
     const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
 
@@ -169,6 +171,8 @@ export const AccessibilityProvider = ({ children }) => {
 
 // Accessibility Settings UI Component
 export const AccessibilitySettings = ({ onClose }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const {
         settings,
         updateSetting,
@@ -181,7 +185,7 @@ export const AccessibilitySettings = ({ onClose }) => {
             <View style={styles.settingInfo}>
                 <NeonText size={14}>{label}</NeonText>
                 {description && (
-                    <NeonText size={10} color="#888">{description}</NeonText>
+                    <NeonText size={10} color={COLORS.textMuted}>{description}</NeonText>
                 )}
             </View>
             <TouchableOpacity
@@ -247,9 +251,9 @@ export const AccessibilitySettings = ({ onClose }) => {
 // Import necessary components for the settings UI
 import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -275,7 +279,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     },
     settingInfo: {
         flex: 1,
@@ -285,7 +289,7 @@ const styles = StyleSheet.create({
         width: 50,
         height: 28,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: COLORS.borderDefault,
         padding: 2,
     },
     toggleActive: {
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.white,
     },
     toggleThumbActive: {
         marginLeft: 'auto',

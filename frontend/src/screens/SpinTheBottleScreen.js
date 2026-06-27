@@ -6,9 +6,11 @@ import {
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const SpinTheBottleScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [isSpinning, setIsSpinning] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -145,7 +147,7 @@ const SpinTheBottleScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 40,
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
     playerDot: {
         position: 'absolute',
         padding: 10,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 20,
         borderWidth: 2,
         borderColor: COLORS.electricPurple,

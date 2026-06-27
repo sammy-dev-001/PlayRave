@@ -9,6 +9,7 @@
 const sessionManager = require('./SessionManager');
 const roomManager = require('./roomManager');
 const gamePersistence = require('./GamePersistenceManager');
+const deltaSyncManager = require('./DeltaSyncManager');
 
 // ── Engine Registry ─────────────────────────────────────────────────────
 const engineRegistry = {
@@ -121,11 +122,23 @@ class GameRouter {
         if (!instruction || !instruction.action) return;
 
         switch (instruction.action) {
-            case 'broadcast':
-                // Broadcast to everyone in the room
-                io.to(roomId).emit(instruction.event, instruction.data);
+            case 'broadcast': {
+                // Determine if this is a speed-game broadcast that can be compressed
+                const room = roomManager.rooms ? roomManager.rooms.get(roomId) : null;
+                const gameType = room?.gameType || null;
 
-                // AUTO-TRANSITION: If the engine data signals the game is finished, 
+                if (gameType && deltaSyncManager.isSpeedGame(gameType) && instruction.data) {
+                    const { payload, wasDelta } = deltaSyncManager.getPayload(roomId, gameType, instruction.data);
+                    if (wasDelta && process.env.DELTA_DEBUG === 'true') {
+                        console.log(`[GameRouter] Room ${roomId}: broadcasting delta for ${gameType}`);
+                    }
+                    io.to(roomId).emit(instruction.event, payload);
+                } else {
+                    // Non-speed game or no data — broadcast full state as before
+                    io.to(roomId).emit(instruction.event, instruction.data);
+                }
+
+                // AUTO-TRANSITION: If the engine data signals the game is finished,
                 // move the room back to LOBBY state automatically.
                 if (instruction.data && (instruction.data.finished === true || instruction.data.gameOver === true)) {
                     console.log(`[GameRouter] Auto-transitioning room ${roomId} to LOBBY (detected end of game)`);
@@ -133,6 +146,7 @@ class GameRouter {
                     roomManager.setGameState(roomId, 'LOBBY');
                 }
                 break;
+            }
 
             case 'emit':
                 // Emit strictly to a single player using SessionManager mapping
@@ -331,6 +345,9 @@ class GameRouter {
             engineRegistry[gameType].activeGames.delete(roomId);
             gamePersistence.deleteGame(roomId);
         }
+
+        // Clear delta cache for this room
+        deltaSyncManager.clearRoom(roomId);
     }
 
     async removePlayer(roomId, userId, io) {

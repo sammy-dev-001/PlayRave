@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import NeonText from './NeonText';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Achievement definitions
 const ACHIEVEMENTS = {
@@ -33,6 +33,8 @@ const ACHIEVEMENTS = {
 
 // Achievement popup component
 const AchievementPopup = ({ achievement, visible, onComplete }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -76,7 +78,7 @@ const AchievementPopup = ({ achievement, visible, onComplete }) => {
                 <NeonText size={22} weight="bold" glow color={COLORS.neonCyan}>
                     {achievementData.name}
                 </NeonText>
-                <NeonText size={14} color="#888">
+                <NeonText size={14} color={COLORS.textMuted}>
                     {achievementData.description}
                 </NeonText>
             </View>
@@ -86,6 +88,8 @@ const AchievementPopup = ({ achievement, visible, onComplete }) => {
 
 // Badge display for profile
 const AchievementBadge = ({ achievementId, size = 'medium' }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const achievement = ACHIEVEMENTS[achievementId];
     if (!achievement) return null;
 
@@ -106,6 +110,8 @@ const AchievementBadge = ({ achievementId, size = 'medium' }) => {
 
 // Achievement grid for profile
 const AchievementGrid = ({ unlockedAchievements = [] }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.grid}>
             <NeonText size={16} weight="bold" style={styles.gridTitle}>
@@ -121,7 +127,7 @@ const AchievementGrid = ({ unlockedAchievements = [] }) => {
                                 style={[styles.gridItem, !isUnlocked && styles.locked]}
                             >
                                 <NeonText size={28}>{isUnlocked ? achievement.emoji : '🔒'}</NeonText>
-                                <NeonText size={9} color={isUnlocked ? '#fff' : '#555'} numberOfLines={1}>
+                                <NeonText size={9} color={isUnlocked ? COLORS.white : '#555'} numberOfLines={1}>
                                     {achievement.name}
                                 </NeonText>
                             </TouchableOpacity>
@@ -169,7 +175,7 @@ const useAchievements = (roomId) => {
     };
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     popup: {
         position: 'absolute',
         top: '25%',
@@ -196,7 +202,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     badge: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
@@ -221,7 +227,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: COLORS.borderDefault,
     },
     locked: {
         opacity: 0.4,

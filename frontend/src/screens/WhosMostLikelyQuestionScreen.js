@@ -5,7 +5,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── WhosMostLikelyQuestionScreen ─────────────────────────────────────────────
 //
@@ -24,6 +24,8 @@ import { COLORS } from '../constants/theme';
 // ──────────────────────────────────────────────────────────────────────────────
 
 const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const {
         room,
         players,
@@ -203,7 +205,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
                     <NeonText size={22} color={COLORS.electricPurple} glow>
                         Getting ready...
                     </NeonText>
-                    <NeonText size={14} color="#666" style={{ marginTop: 10 }}>
+                    <NeonText size={14} color={COLORS.textDarkMuted} style={{ marginTop: 10 }}>
                         Waiting for server
                     </NeonText>
                 </View>
@@ -290,7 +292,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -352,7 +354,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         fontStyle: 'italic',
-        color: '#888',
+        color: COLORS.textMuted,
         fontSize: 14,
     },
     loadingContainer: {

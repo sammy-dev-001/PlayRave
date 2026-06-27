@@ -11,26 +11,35 @@ import {
     StatusBar,
     Animated
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import NeonBackground from '../components/NeonBackground';
+import ThemeBackground from '../components/ThemeBackground';
 import MuteButton from '../components/MuteButton';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { navigateToGame } from '../utils/gameNavigation';
+import { STORAGE_KEYS } from '../constants/storage';
+
 
 const JoinScreen = ({ navigation, route }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { user } = useAuth();
     const [name, setName] = useState(route.params?.playerName || '');
     const [code, setCode] = useState(route.params?.roomCode || '');
     const avatar = route.params?.avatar;
     const avatarColor = route.params?.avatarColor;
 
-    // Pulse animation for the button
+    // Pulse animation stored in a ref so it can be stopped on unmount.
+    // The previous pattern (.start(() => pulse())) was recursive with no escape,
+    // causing warnings when the component unmounted mid-animation.
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const pulseLoopRef = useRef(null);
 
     useEffect(() => {
-        const pulse = () => {
+        pulseLoopRef.current = Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
                     toValue: 1.05,
@@ -42,9 +51,17 @@ const JoinScreen = ({ navigation, route }) => {
                     duration: 1500,
                     useNativeDriver: Platform.OS !== 'web',
                 }),
-            ]).start(() => pulse());
+            ])
+        );
+        pulseLoopRef.current.start();
+
+        return () => {
+            // Stop animation on unmount to prevent updates on unmounted component
+            if (pulseLoopRef.current) {
+                pulseLoopRef.current.stop();
+                pulseLoopRef.current = null;
+            }
         };
-        pulse();
     }, []);
 
     const handleJoin = () => {
@@ -63,8 +80,80 @@ const JoinScreen = ({ navigation, route }) => {
     };
 
     useEffect(() => {
-        const onJoined = (room) => {
-            navigation.navigate('Lobby', { room, isHost: false, playerName: name, selectedGame: room.gameType });
+        // roomRef stores the room snapshot from room-joined so the
+        // game-state-sync handler (which may fire ~50ms later) can use it.
+        const roomRef = { current: null };
+        const syncTimeoutRef = { current: null };
+
+        /**
+         * Navigate directly to the active game screen.
+         * One-shot: clears roomRef after navigating so that a late game-state-sync
+         * rebroadcast cannot trigger a second navigation.
+         */
+        const goToGame = (room, gameState = null) => {
+            if (syncTimeoutRef.current) {
+                clearTimeout(syncTimeoutRef.current);
+                syncTimeoutRef.current = null;
+            }
+            // Clear before navigating — onGameStateSync checks this ref as its guard.
+            // Setting it to null here makes every subsequent call a no-op.
+            roomRef.current = null;
+            const myUid = user?.id;
+            const isHost = room?.players?.find(p => (p.uid || p.userId) === myUid)?.isHost || false;
+            navigateToGame(navigation, room, gameState, name, isHost);
+        };
+
+        const onJoined = async (room) => {
+            // Save session checkpoint so HomeScreen can show rejoin modal on next open
+            try {
+                await AsyncStorage.setItem(STORAGE_KEYS.LAST_SESSION, JSON.stringify({
+                    roomId: room.id,
+                    playerName: name,
+                    avatar,
+                    avatarColor,
+                    userId: user?.id,
+                    gameType: room.gameType,
+                    savedAt: Date.now(),
+                }));
+            } catch (_) { /* storage errors are non-fatal */ }
+
+            if (room.gameState === 'PLAYING' || room.gameState === 'GAMEOVER') {
+                // Game is in progress — store room and wait briefly for game-state-sync
+                console.log('[JoinScreen] Rejoining mid-game:', room.gameType);
+                roomRef.current = room;
+
+                // Fallback: if game-state-sync doesn't arrive within 2s, navigate anyway
+                syncTimeoutRef.current = setTimeout(() => {
+                    console.log('[JoinScreen] game-state-sync timeout — navigating with room data only');
+                    goToGame(roomRef.current, null);
+                }, 2000);
+            } else {
+                // Room is in LOBBY — standard flow.
+                // Derive isHost from the player list, not hardcoded false.
+                // A host who re-enters via JoinScreen should still see the host UI.
+                const myUid = user?.id;
+                const resolvedIsHost = room?.players?.find(
+                    p => (p.uid || p.userId) === myUid
+                )?.isHost || false;
+
+                navigation.navigate('Lobby', {
+                    room,
+                    isHost: resolvedIsHost,
+                    playerName: name,
+                    selectedGame: room.gameType,
+                });
+            }
+        };
+
+        const onGameStateSync = ({ gameState, gameType }) => {
+            // Only navigate if we are actually waiting for a mid-game rejoin.
+            // Previously checked syncTimeoutRef.current too, but that is null
+            // once the fallback timeout fires — causing late game-state-sync
+            // packets to be silently dropped. roomRef.current is the correct guard.
+            if (roomRef.current) {
+                console.log('[JoinScreen] game-state-sync received — navigating to game');
+                goToGame(roomRef.current, gameState);
+            }
         };
 
         const onError = ({ message }) => {
@@ -72,24 +161,28 @@ const JoinScreen = ({ navigation, route }) => {
         };
 
         SocketService.on('room-joined', onJoined);
+        SocketService.on('game-state-sync', onGameStateSync);
         SocketService.on('error', onError);
 
         return () => {
+            if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
             SocketService.off('room-joined', onJoined);
+            SocketService.off('game-state-sync', onGameStateSync);
             SocketService.off('error', onError);
         };
-    }, [navigation, name]);
+    }, [navigation, name, user?.id]);
+
 
     return (
         <View style={styles.screen}>
             <StatusBar barStyle="light-content" backgroundColor="#05050A" />
-            <NeonBackground />
+            <ThemeBackground />
 
             <SafeAreaView style={styles.safeArea}>
                 {/* Header — same pattern as LobbyScreen */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                        <Ionicons name="chevron-back" size={24} color={COLORS.white} />
                     </TouchableOpacity>
                     <MuteButton style={styles.muteOverride} />
                 </View>
@@ -121,7 +214,7 @@ const JoinScreen = ({ navigation, route }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="Guest"
-                                        placeholderTextColor="#666"
+                                        placeholderTextColor={COLORS.textMuted}
                                         value={name}
                                         onChangeText={setName}
                                         autoCorrect={false}
@@ -141,11 +234,11 @@ const JoinScreen = ({ navigation, route }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="ABCD"
-                                        placeholderTextColor="#666"
+                                        placeholderTextColor={COLORS.textMuted}
                                         value={code}
                                         onChangeText={text => setCode(text.toUpperCase())}
                                         autoCapitalize="characters"
-                                        maxLength={4}
+                                        maxLength={5}
                                         autoCorrect={false}
                                     />
                                 </View>
@@ -178,11 +271,13 @@ const JoinScreen = ({ navigation, route }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     screen: {
         flex: 1,
-        height: '100%',
-        minHeight: '100vh',
+        ...Platform.select({
+            web: { height: '100%', minHeight: '100vh' },
+            default: { flex: 1 },
+        }),
         backgroundColor: '#05050A',
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
@@ -266,7 +361,7 @@ const styles = StyleSheet.create({
         height: 58,
         paddingHorizontal: 15,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     iconBox: {
         width: 30,
@@ -281,7 +376,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         height: '100%',
         paddingLeft: 5,
-        outlineStyle: 'none',
+        ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
     },
     enterButton: {
         marginTop: 15,

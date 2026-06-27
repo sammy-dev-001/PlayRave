@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, SafeAreaView, Platform, StatusBar, ScrollView, Dimensions } from 'react-native';
-import { COLORS } from '../constants/theme';
-import NeonBackground from './NeonBackground';
+import { useTheme } from '../context/ThemeContext';
+import ThemeBackground from './ThemeBackground';
 import MuteButton from './MuteButton';
 import BackButton from './BackButton';
 
@@ -17,6 +17,9 @@ const NeonContainer = ({
     scrollable = false,
     hideBackground = false,
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+
     // Responsive padding
     const getPadding = () => {
         if (SCREEN_WIDTH < 375) return 12;
@@ -44,7 +47,7 @@ const NeonContainer = ({
     return (
         <View style={[styles.rootContainer, rootStyle]}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.deepNightBlack} />
-            {!hideBackground && <NeonBackground />}
+            {!hideBackground && <ThemeBackground />}
             {showBackButton && <BackButton onPress={onBackPress} />}
             {showMuteButton && <MuteButton />}
             <SafeAreaView style={styles.safeArea}>
@@ -54,11 +57,15 @@ const NeonContainer = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     rootContainer: {
         flex: 1,
-        height: '100%', // Critical for web
-        minHeight: '100vh', // Web fallback
+        // 'minHeight: 100vh' is web-only CSS and crashes Android (String→Boolean cast).
+        // Use Platform.select to apply it only where valid.
+        ...Platform.select({
+            web: { height: '100%', minHeight: '100vh' },
+            default: { flex: 1 },
+        }),
         backgroundColor: COLORS.deepNightBlack,
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
@@ -67,21 +74,18 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
-        height: '100%',
+        ...Platform.select({ web: { height: '100%' }, default: {} }),
     },
     scrollContent: {
         flexGrow: 1,
-        minHeight: '100%',
-        paddingTop: 60, // Account for back button
-        paddingBottom: 100, // Extra space for nav bar clearance on all screens
+        paddingTop: 60,    // Account for back button
+        paddingBottom: 100, // Extra space for nav bar clearance
     },
     container: {
         flex: 1,
-        height: '100%',
-        paddingTop: 60, // Account for back button
-        paddingBottom: Platform.OS === 'ios' ? 100 : 80, // Extra bottom padding for nav clearance
+        paddingTop: 60,   // Account for back button
+        paddingBottom: Platform.OS === 'ios' ? 100 : 80,
     },
 });
 
 export default NeonContainer;
-

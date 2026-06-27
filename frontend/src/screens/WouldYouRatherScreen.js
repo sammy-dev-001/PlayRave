@@ -8,11 +8,13 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { getRandomQuestion } from '../data/wouldYouRatherQuestions';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 const WouldYouRatherScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [currentQuestion, setCurrentQuestion] = useState(getRandomQuestion());
     const [usedQuestions, setUsedQuestions] = useState([currentQuestion.id]);
@@ -325,7 +327,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={18} color="#000" /><NeonText size={18} weight="bold" color="#000">NEXT QUESTION</NeonText></View>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.endGameBtn} onPress={handleEndGame} activeOpacity={0.7}>
-                            <NeonText size={14} color="#888">
+                            <NeonText size={14} color={COLORS.textMuted}>
                                 End Game
                             </NeonText>
                         </TouchableOpacity>
@@ -353,7 +355,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                 styles.playerCard,
                 { transform: [{ translateY: playerBounce }] }
             ]}>
-                <NeonText size={12} color="#888">PASS TO</NeonText>
+                <NeonText size={12} color={COLORS.textMuted}>PASS TO</NeonText>
                 <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow>
                     {currentPlayer.name}
                 </NeonText>
@@ -387,7 +389,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         <View style={styles.choiceLabel}>
                             <View style={styles.optionBadge}><NeonText size={16} weight="bold" color="#000">A</NeonText></View>
                         </View>
-                        <NeonText size={18} weight="bold" color="#fff" style={styles.choiceText}>
+                        <NeonText size={18} weight="bold" color={COLORS.white} style={styles.choiceText}>
                             {currentQuestion.optionA}
                         </NeonText>
                         <View style={styles.choiceGlow} />
@@ -403,7 +405,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         ]
                     }
                 ]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={18} color="#fff" /><NeonText size={20} weight="bold" color="#fff">VS</NeonText><Ionicons name="flash" size={18} color="#fff" /></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={18} color={COLORS.white} /><NeonText size={20} weight="bold" color={COLORS.white}>VS</NeonText><Ionicons name="flash" size={18} color={COLORS.textMuted} /></View>
                 </Animated.View>
 
                 {/* Option B */}
@@ -420,7 +422,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                         <View style={styles.choiceLabelB}>
                             <View style={[styles.optionBadge, { backgroundColor: COLORS.hotPink }]}><NeonText size={16} weight="bold" color="#000">B</NeonText></View>
                         </View>
-                        <NeonText size={18} weight="bold" color="#fff" style={styles.choiceText}>
+                        <NeonText size={18} weight="bold" color={COLORS.textMuted} style={styles.choiceText}>
                             {currentQuestion.optionB}
                         </NeonText>
                         <View style={styles.choiceGlowB} />
@@ -436,7 +438,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 15,
@@ -645,7 +647,7 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
     },
     streakBanner: {
         alignItems: 'center',

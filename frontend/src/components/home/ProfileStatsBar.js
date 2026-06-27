@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const ProfileStatsBar = ({ onPress }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
             {/* Left icon */}
@@ -27,7 +29,7 @@ const ProfileStatsBar = ({ onPress }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',

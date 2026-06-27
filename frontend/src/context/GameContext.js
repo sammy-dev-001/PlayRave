@@ -3,9 +3,12 @@ import {
     AppState,
     Platform
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import SocketService, { ConnectionState } from '../services/socket';
 import { useAuth } from './AuthContext';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
+import { STORAGE_KEYS } from '../constants/storage';
+
 
 // Initial state
 const initialState = {
@@ -14,7 +17,7 @@ const initialState = {
         name: '',
         avatar: null,
         avatarColor: null,
-        id: null, // socket ID
+        id: null,  // socket ID
         uid: null, // persistent user ID
     },
 
@@ -179,9 +182,9 @@ export function GameProvider({ children }) {
             console.log('[BOOT] Auth hydration complete. Connecting socket...');
             if (user?.id) {
                 SocketService.userId = user.id;
-                dispatch({ 
-                    type: ActionTypes.UPDATE_PLAYER, 
-                    payload: { uid: user.id } 
+                dispatch({
+                    type: ActionTypes.UPDATE_PLAYER,
+                    payload: { uid: user.id }
                 });
             }
             SocketService.connect();
@@ -192,14 +195,13 @@ export function GameProvider({ children }) {
     useEffect(() => {
         const handleForeground = () => {
             console.log('App/Tab returned to focus. Checking connection...');
-            
+
             // 1. Ensure socket is connected
             if (!SocketService.isConnected()) {
                 SocketService.reconnect();
             }
 
             // 2. If we were in a room, request a full sync
-            // Wait briefly for reconnection to complete before syncing
             const doSync = () => {
                 if (state.room?.id && user?.id && SocketService.isConnected()) {
                     console.log('Requesting room sync for user:', user.id);
@@ -213,7 +215,6 @@ export function GameProvider({ children }) {
             if (SocketService.isConnected()) {
                 doSync();
             } else {
-                // Socket not connected yet — wait for it, then sync
                 const syncTimeout = setTimeout(doSync, 1500);
                 const onConnect = () => {
                     clearTimeout(syncTimeout);
@@ -221,7 +222,6 @@ export function GameProvider({ children }) {
                     SocketService.off('connect', onConnect);
                 };
                 SocketService.on('connect', onConnect);
-                // Clean up listener if it doesn't fire within 10s
                 setTimeout(() => SocketService.off('connect', onConnect), 10000);
             }
         };
@@ -309,8 +309,10 @@ export function GameProvider({ children }) {
             dispatch({ type: ActionTypes.UPDATE_ROOM, payload: room });
         }, []),
 
-        clearRoom: useCallback(() => {
+        clearRoom: useCallback(async () => {
             SocketService.clearRoomData();
+            // Intentional leave — clear session checkpoint so HomeScreen won't show rejoin modal
+            try { await AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION); } catch (_) {}
             dispatch({ type: ActionTypes.CLEAR_ROOM });
         }, []),
 
@@ -338,8 +340,10 @@ export function GameProvider({ children }) {
             dispatch({ type: ActionTypes.CLEAR_ERROR });
         }, []),
 
-        resetState: useCallback(() => {
+        resetState: useCallback(async () => {
             SocketService.clearRoomData();
+            // Intentional reset — clear session checkpoint
+            try { await AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION); } catch (_) {}
             dispatch({ type: ActionTypes.RESET_STATE });
         }, []),
     };

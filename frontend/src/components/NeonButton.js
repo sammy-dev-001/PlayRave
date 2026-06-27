@@ -3,7 +3,9 @@ import {
     TouchableOpacity, StyleSheet, View, Animated,
     Platform
 } from 'react-native';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SHADOWS } from '../constants/themes';
+
 import NeonText from './NeonText';
 import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
@@ -21,6 +23,8 @@ const NeonButton = ({
     loading = false,
     sound = true, // New prop to control sound
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const isPrimary = variant === 'primary';
     const borderColor = isPrimary ? COLORS.neonCyan : COLORS.hotPink;
     const glowStyle = isPrimary ? SHADOWS.neonGlow : SHADOWS.purpleGlow;
@@ -139,12 +143,12 @@ const NeonButton = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         marginVertical: 10,
     },
     button: {
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: COLORS.overlayDark,
         borderWidth: 2,
         borderRadius: 12,
         alignItems: 'center',

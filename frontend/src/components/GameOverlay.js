@@ -8,10 +8,12 @@ import { StreakBadge, StreakMilestonePopup, useWinStreak } from './WinStreakSyst
 import { Soundboard, SoundNotification, useSoundboard } from './Soundboard';
 import { AchievementPopup, useAchievements } from './AchievementSystem';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Player Left Notification Component
 const PlayerLeftNotification = ({ playerName, visible, onComplete }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const slideAnim = useRef(new Animated.Value(-100)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -57,6 +59,8 @@ const GameOverlay = ({
     showSoundboard = true,
     showReactions = true,
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [playerLeft, setPlayerLeft] = useState(null);
     const [isConnected, setIsConnected] = useState(true);
 
@@ -198,7 +202,7 @@ export const withGameOverlay = (WrappedComponent) => {
     };
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -217,7 +221,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     playerLeftText: {
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 14,
         fontWeight: 'bold',
     },
@@ -232,7 +236,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     connectionText: {
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 12,
         fontWeight: 'bold',
     },

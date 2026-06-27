@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform, TextInput, ImageBackground } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform, TextInput, ImageBackground, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+
 import SmartGameRecommendations from '../components/SmartRecommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -38,14 +39,14 @@ const GAME_IMAGES = {
     'rapid-fire': require('../../assets/images/game_rapid_fire.png')
 };
 
-const GAME_CATEGORIES = {
+const getGameCategories = (COLORS) => ({
     party: { name: 'Party', icon: 'ribbon', color: COLORS.hotPink },
     competitive: { name: 'Versus', icon: 'trophy', color: COLORS.neonCyan },
     trivia: { name: 'Knowledge', icon: 'bulb', color: COLORS.limeGlow },
     speed: { name: 'Speed', icon: 'flash', color: COLORS.electricPurple },
-};
+});
 
-const AVAILABLE_GAMES = [
+const getAvailableGames = (COLORS) => [
     { id: 'trivia', name: 'Trivia Hub', description: 'Quick Trivia, Myth or Fact, and more.', color: COLORS.neonCyan, category: 'trivia', minPlayers: 1, maxPlayers: 10, vibes: ['brain'] },
     { id: 'whos-most-likely', name: "Who's Most Likely To", description: 'Vote for your friends', color: COLORS.electricPurple, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'] },
     { id: 'scrabble', name: 'Scrabble', description: 'Classic word game.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
@@ -67,26 +68,27 @@ const AVAILABLE_GAMES = [
     { id: 'caption-this', name: 'Caption This', description: 'Funny image captions.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
     { id: 'auction-bluff', name: 'Auction Bluff', description: 'Bid and bluff.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 3, maxPlayers: 6, vibes: ['brain'] },
     { id: 'speed-categories', name: 'Speed Categories', description: 'Category word race.', color: COLORS.electricPurple, category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'] },
-    { id: 'memory-match', name: 'Memory Match', description: 'Flip and find pairs.', color: COLORS.limeGlow, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
+    { id: 'memory-match', name: 'Memory Match', description: 'Flip and find pairs.', color: COLORS.limeGlow, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] }
 ];
 
 const GameSelectionScreen = ({ route, navigation }) => {
     const { room, playerName } = route.params;
+    const { COLORS } = useTheme();
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [waitingForNavigation, setWaitingForNavigation] = useState(false);
 
-    const filteredGames = AVAILABLE_GAMES.filter(game => {
+    const filteredGames = getAvailableGames(COLORS).filter(game => {
         const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
-        const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             game.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            game.description.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
     const handleGameSelect = (game) => {
         if (waitingForNavigation) return;
         setWaitingForNavigation(true);
-        
+
         if (game.id === 'hot-seat') {
             SocketService.emit('game-selected', { roomId: room.id, gameType: 'hot-seat-mc' });
             navigation.navigate('Lobby', { room: { ...room, gameType: 'hot-seat-mc' }, playerName });
@@ -107,29 +109,28 @@ const GameSelectionScreen = ({ route, navigation }) => {
             onPress={() => handleGameSelect(game)}
             disabled={waitingForNavigation}
         >
-            <ImageBackground 
-                source={GAME_IMAGES[game.id] || GAME_IMAGES['trivia']} 
-                style={styles.cardImage}
-                imageStyle={{ borderRadius: 15 }}
-            >
-                <View style={styles.cardOverlay}>
-                    <View style={styles.cardHeader}>
-                        <View style={styles.playerBadge}>
-                            <Ionicons name="people" size={10} color="#fff" />
-                            <NeonText size={10} color="#fff">{game.minPlayers}-{game.maxPlayers}</NeonText>
-                        </View>
-                    </View>
-                    
-                    <View style={styles.cardFooter}>
-                        <NeonText size={16} weight="bold" color="#fff" glow variant="arcade">
-                            {game.name.toUpperCase()}
-                        </NeonText>
-                        <NeonText size={9} color="rgba(255,255,255,0.7)" numberOfLines={1}>
-                            {game.description}
-                        </NeonText>
+            <Image
+                source={GAME_IMAGES[game.id] || GAME_IMAGES['trivia']}
+                style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]}
+                resizeMode="contain"
+            />
+            <View style={styles.cardOverlay}>
+                <View style={styles.cardHeader}>
+                    <View style={styles.playerBadge}>
+                        <Ionicons name="people" size={10} color="#fff" />
+                        <NeonText size={10} color="#fff">{game.minPlayers}-{game.maxPlayers}</NeonText>
                     </View>
                 </View>
-            </ImageBackground>
+
+                <View style={styles.cardFooter}>
+                    <NeonText size={16} weight="bold" color="#fff" glow variant="arcade">
+                        {game.name.toUpperCase()}
+                    </NeonText>
+                    <NeonText size={9} color="rgba(255,255,255,0.7)" numberOfLines={1}>
+                        {game.description}
+                    </NeonText>
+                </View>
+            </View>
         </TouchableOpacity>
     );
 
@@ -169,14 +170,14 @@ const GameSelectionScreen = ({ route, navigation }) => {
 
             <SmartGameRecommendations room={room} onSelect={handleGameSelect} />
 
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
                 style={styles.categoryScroll}
                 contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
             >
                 {renderCategoryTab('all', 'All', 'grid', COLORS.neonCyan)}
-                {Object.entries(GAME_CATEGORIES).map(([id, cat]) => 
+                {Object.entries(getGameCategories(COLORS)).map(([id, cat]) =>
                     renderCategoryTab(id, cat.name, cat.icon, cat.color)
                 )}
             </ScrollView>
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
     },
-    searchInput: { flex: 1, color: '#fff', fontSize: 14, outlineStyle: 'none' },
+    searchInput: { flex: 1, color: '#fff', fontSize: 14, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
     categoryScroll: { maxHeight: 45, marginBottom: 20 },
     categoryTab: {
         flexDirection: 'row',
@@ -230,20 +231,21 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: '#0a0a1a',
     },
-    cardImage: { 
-        flex: 1, 
-        justifyContent: 'flex-end' 
+    cardImage: {
+        flex: 1,
+        justifyContent: 'flex-end'
     },
     cardOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.1)',
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.2)',
         padding: 6,
         justifyContent: 'space-between'
     },
-    cardHeader: { 
-        flexDirection: 'row', 
-        justifyContent: 'flex-end' 
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end'
     },
     playerBadge: {
         flexDirection: 'row',
@@ -261,9 +263,9 @@ const styles = StyleSheet.create({
         borderWidth: 0.5,
         borderColor: 'rgba(255,255,255,0.1)'
     },
-    gameName: { 
+    gameName: {
         marginBottom: 0,
-        fontSize: 12 
+        fontSize: 12
     }
 });
 

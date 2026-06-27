@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import NeonContainer from './NeonContainer';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 class GameErrorBoundary extends React.Component {
@@ -60,7 +60,7 @@ class GameErrorBoundary extends React.Component {
                         />
                         {/* Optionally display error details in dev */}
                         {__DEV__ && this.state.error && (
-                            <NeonText size={12} color="#888" style={styles.errorText}>
+                            <NeonText size={12} color={COLORS.textMuted} style={styles.errorText}>
                                 {this.state.error.toString()}
                             </NeonText>
                         )}
@@ -73,7 +73,7 @@ class GameErrorBoundary extends React.Component {
     }
 }
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',

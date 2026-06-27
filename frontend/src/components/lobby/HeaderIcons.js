@@ -3,15 +3,17 @@ import { View, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-n
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from '../NeonText';
 import VoiceToggle from '../VoiceToggle';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const HeaderIcons = ({ onBackPress, roomId }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
             <View style={styles.leftRow}>
                 {/* Back arrow */}
                 <TouchableOpacity style={styles.backBtn} onPress={onBackPress}>
-                    <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                    <Ionicons name="chevron-back" size={24} color={COLORS.white} />
                 </TouchableOpacity>
 
                 {/* Room Code */}
@@ -35,7 +37,7 @@ const HeaderIcons = ({ onBackPress, roomId }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         justifyContent: 'space-between',

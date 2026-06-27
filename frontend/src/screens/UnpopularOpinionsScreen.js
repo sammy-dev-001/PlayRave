@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
@@ -25,6 +25,8 @@ const GAME_PHASES = {
 };
 
 const UnpopularOpinionsScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState } = route.params;
 
     useGameDisconnectHandler({
@@ -153,7 +155,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
             <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow>
                 UNPOPULAR OPINIONS
             </NeonText>
-            <NeonText size={16} color="#888" style={styles.subtitle}>
+            <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
                 Waiting for host to start...
             </NeonText>
             {isHost && (
@@ -175,7 +177,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
             </View>
 
             <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                <NeonText size={14} color="#666" style={styles.categoryBadge}>
+                <NeonText size={14} color={COLORS.textDarkMuted} style={styles.categoryBadge}>
                     {currentOpinion?.category || 'General'}
                 </NeonText>
                 <NeonText size={24} weight="bold" style={styles.opinionText}>
@@ -195,7 +197,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
                     disabled={myVote !== null}
                 >
                     <NeonText size={32}>👍</NeonText>
-                    <NeonText size={18} weight="bold" color="#fff">AGREE</NeonText>
+                    <NeonText size={18} weight="bold" color={COLORS.white}>AGREE</NeonText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -209,7 +211,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
                     disabled={myVote !== null}
                 >
                     <NeonText size={32}>👎</NeonText>
-                    <NeonText size={18} weight="bold" color="#fff">DISAGREE</NeonText>
+                    <NeonText size={18} weight="bold" color={COLORS.white}>DISAGREE</NeonText>
                 </TouchableOpacity>
             </View>
 
@@ -233,7 +235,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
 
         return (
             <View style={styles.resultsContent}>
-                <NeonText size={14} color="#888" style={{ marginBottom: 20 }}>
+                <NeonText size={14} color={COLORS.textMuted} style={{ marginBottom: 20 }}>
                     "{currentOpinion?.text}"
                 </NeonText>
 
@@ -241,13 +243,13 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
                     <View style={styles.resultBar}>
                         <View style={[styles.fillBar, { height: `${agreePercent}%`, backgroundColor: COLORS.neonCyan }]} />
                         <NeonText size={16} weight="bold" style={styles.barLabel}>{agreeCount}</NeonText>
-                        <NeonText size={14} color="#888">AGREE</NeonText>
+                        <NeonText size={14} color={COLORS.textMuted}>AGREE</NeonText>
                     </View>
 
                     <View style={styles.resultBar}>
                         <View style={[styles.fillBar, { height: `${disagreePercent}%`, backgroundColor: COLORS.hotPink }]} />
                         <NeonText size={16} weight="bold" style={styles.barLabel}>{disagreeCount}</NeonText>
-                        <NeonText size={14} color="#888">DISAGREE</NeonText>
+                        <NeonText size={14} color={COLORS.textMuted}>DISAGREE</NeonText>
                     </View>
                 </View>
 
@@ -317,7 +319,7 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
         <NeonContainer>
             <View style={styles.header}>
                 <NeonText size={16} color={COLORS.limeGlow}>UNPOPULAR OPINIONS</NeonText>
-                <NeonText size={12} color="#666">Room: {room.id}</NeonText>
+                <NeonText size={12} color={COLORS.textDarkMuted}>Room: {room.id}</NeonText>
             </View>
 
             {phase === GAME_PHASES.WAITING && renderWaitingPhase()}
@@ -328,13 +330,13 @@ const UnpopularOpinionsScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingTop: 10,
         paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)'
+        borderBottomColor: COLORS.surfaceLight
     },
     centeredContent: {
         flex: 1,
@@ -462,7 +464,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 15,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)'
+        borderBottomColor: COLORS.surfaceLight
     },
     endButton: {
         width: '100%'

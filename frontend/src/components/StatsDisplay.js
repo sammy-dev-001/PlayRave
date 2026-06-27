@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import PlayerStatsService from '../services/PlayerStatsService';
 import { responsive } from '../utils/responsive';
 
 const StatsDisplay = ({ refreshKey = 0 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -28,7 +30,7 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
     if (loading || !stats) {
         return (
             <View style={styles.container}>
-                <NeonText color="#888">Loading stats...</NeonText>
+                <NeonText color={COLORS.textMuted}>Loading stats...</NeonText>
             </View>
         );
     }
@@ -50,19 +52,19 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
                     <NeonText size={28} weight="bold" color={COLORS.neonCyan} glow>
                         {stats.gamesPlayed}
                     </NeonText>
-                    <NeonText size={12} color="#888">Games</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>Games</NeonText>
                 </View>
                 <View style={styles.statBox}>
                     <NeonText size={28} weight="bold" color={COLORS.limeGlow} glow>
                         {stats.wins}
                     </NeonText>
-                    <NeonText size={12} color="#888">Wins</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>Wins</NeonText>
                 </View>
                 <View style={styles.statBox}>
                     <NeonText size={28} weight="bold" color={COLORS.hotPink} glow>
                         {stats.winRate}%
                     </NeonText>
-                    <NeonText size={12} color="#888">Win Rate</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>Win Rate</NeonText>
                 </View>
             </View>
 
@@ -72,13 +74,13 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
                     <NeonText size={20} weight="bold" color={COLORS.electricPurple}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flame" size={18} color={COLORS.electricPurple} /><NeonText size={20} weight="bold" color={COLORS.electricPurple}>{stats.streakDays}</NeonText></View>
                     </NeonText>
-                    <NeonText size={11} color="#888">Day Streak</NeonText>
+                    <NeonText size={11} color={COLORS.textMuted}>Day Streak</NeonText>
                 </View>
                 <View style={styles.statBoxSmall}>
                     <NeonText size={20} weight="bold" color={COLORS.neonCyan}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="star" size={18} color={COLORS.neonCyan} /><NeonText size={20} weight="bold" color={COLORS.neonCyan}>{stats.totalScore.toLocaleString()}</NeonText></View>
                     </NeonText>
-                    <NeonText size={11} color="#888">Total Score</NeonText>
+                    <NeonText size={11} color={COLORS.textMuted}>Total Score</NeonText>
                 </View>
             </View>
 
@@ -94,7 +96,7 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
                                 {gameNames[game.type] || game.type}
                             </NeonText>
                             <View style={styles.gameRowStats}>
-                                <NeonText size={12} color="#888">
+                                <NeonText size={12} color={COLORS.textMuted}>
                                     {game.played} played
                                 </NeonText>
                                 <NeonText size={12} color={COLORS.limeGlow}>
@@ -116,7 +118,7 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
                                 <NeonText size={12} weight="bold" color={COLORS.limeGlow}>
                                     {achievement.name}
                                 </NeonText>
-                                <NeonText size={10} color="#888">
+                                <NeonText size={10} color={COLORS.textMuted}>
                                     {achievement.description}
                                 </NeonText>
                             </View>
@@ -128,7 +130,7 @@ const StatsDisplay = ({ refreshKey = 0 }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         padding: responsive(12, 16, 20),
         backgroundColor: 'rgba(255,255,255,0.03)',

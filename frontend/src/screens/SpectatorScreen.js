@@ -12,9 +12,11 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import LiveChat from '../components/LiveChat';
 import SocketService from '../services/socket';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const SpectatorScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, spectatorName } = route.params;
     const [gameState, setGameState] = useState(null);
     const [players, setPlayers] = useState(room?.players || []);
@@ -137,7 +139,7 @@ const SpectatorScreen = ({ route, navigation }) => {
                     </NeonText>
                 </View>
                 <View style={styles.headerRight}>
-                    <NeonText size={12} color="#888">
+                    <NeonText size={12} color={COLORS.textMuted}>
                         {spectatorCount}
                     </NeonText>
                 </View>
@@ -166,7 +168,7 @@ const SpectatorScreen = ({ route, navigation }) => {
                                 <View style={styles.options}>
                                     {currentQuestion.options.map((opt, i) => (
                                         <View key={i} style={styles.optionItem}>
-                                            <NeonText size={14} color="#888">
+                                            <NeonText size={14} color={COLORS.textMuted}>
                                                 {String.fromCharCode(65 + i)}. {opt}
                                             </NeonText>
                                         </View>
@@ -233,14 +235,14 @@ const SpectatorScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingBottom: 15,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
+        borderBottomColor: COLORS.surfaceLight,
     },
     headerLeft: {
         width: 40,
@@ -307,7 +309,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         minWidth: 80,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.surfaceLight,
     },
     leadingPlayer: {
         borderColor: COLORS.limeGlow,

@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +24,8 @@ const PACK_TYPES = [
 ];
 
 const CustomPackEditorScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { packId } = route.params || {};
     const { isGuest } = useAuth();
 
@@ -113,7 +115,7 @@ const CustomPackEditorScreen = ({ route, navigation }) => {
             <View style={styles.itemContent}>
                 <NeonText size={14}>{index + 1}. {item.text || item.question}</NeonText>
                 {item.option2 && (
-                    <NeonText size={12} color="#888">or {item.option2}</NeonText>
+                    <NeonText size={12} color={COLORS.textMuted}>or {item.option2}</NeonText>
                 )}
                 {item.answer && (
                     <NeonText size={12} color={COLORS.limeGlow}>Answer: {item.answer}</NeonText>
@@ -158,7 +160,7 @@ const CustomPackEditorScreen = ({ route, navigation }) => {
                                     onPress={() => setType(t.id)}
                                 >
                                     <NeonText size={20}>{t.icon}</NeonText>
-                                    <NeonText size={10} color={type === t.id ? '#fff' : '#888'}>{t.name}</NeonText>
+                                    <NeonText size={10} color={type === t.id ? COLORS.white : COLORS.textMuted}>{t.name}</NeonText>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -172,7 +174,7 @@ const CustomPackEditorScreen = ({ route, navigation }) => {
                         value={isPublic}
                         onValueChange={setIsPublic}
                         trackColor={{ false: '#333', true: COLORS.neonCyan }}
-                        thumbColor={isPublic ? COLORS.limeGlow : '#666'}
+                        thumbColor={isPublic ? COLORS.limeGlow : COLORS.textDarkMuted}
                     />
                 </View>
 
@@ -200,7 +202,7 @@ const CustomPackEditorScreen = ({ route, navigation }) => {
 
                 {/* Items List */}
                 <View style={styles.itemsSection}>
-                    <NeonText size={14} color="#888">Items ({items.length})</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>Items ({items.length})</NeonText>
                     <FlatList
                         data={items}
                         renderItem={renderItem}
@@ -224,15 +226,15 @@ const CustomPackEditorScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: { flex: 1, paddingTop: 20, paddingHorizontal: 20 },
     title: { marginBottom: 20 },
     inputGroup: { marginBottom: 20 },
     input: {
         backgroundColor: 'rgba(255,255,255,0.08)',
-        borderRadius: 10, padding: 14, color: '#fff',
+        borderRadius: 10, padding: 14, color: COLORS.white,
         fontSize: 16, marginTop: 8, borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)'
+        borderColor: COLORS.surfaceLight
     },
     typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
     typeBtn: {

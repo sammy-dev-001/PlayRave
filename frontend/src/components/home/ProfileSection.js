@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import NeonText from '../NeonText';
-import { COLORS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const ProfileSection = ({
     avatar,
@@ -13,6 +13,8 @@ const ProfileSection = ({
     onAvatarPress,
     onEditPress,
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const isCustomPhoto =
         avatar && typeof avatar === 'string' && avatar.startsWith('data:image');
 
@@ -89,7 +91,7 @@ const getRankTitle = (level) => {
 // Re-export the helper
 ProfileSection.getRankTitle = getRankTitle;
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         alignItems: 'center',
         paddingVertical: 24,

@@ -12,10 +12,13 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
-import { COLORS, SHADOWS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+
 import { getRandomCaptionPrompts } from '../data/captionPrompts';
 
 const CaptionThisScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
     const [prompts] = useState(() => getRandomCaptionPrompts(5));
@@ -213,7 +216,7 @@ const CaptionThisScreen = ({ route, navigation }) => {
                 <TextInput
                     style={styles.captionInput}
                     placeholder="Write your caption..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={COLORS.textMuted}
                     value={caption}
                     onChangeText={setCaption}
                     maxLength={100}
@@ -242,7 +245,7 @@ const CaptionThisScreen = ({ route, navigation }) => {
 
                 <View style={styles.promptCardSmall}>
                     <NeonText size={32}>{currentPrompt.emoji}</NeonText>
-                    <NeonText size={14} color="#888">{currentPrompt.description}</NeonText>
+                    <NeonText size={14} color={COLORS.textMuted}>{currentPrompt.description}</NeonText>
                 </View>
 
                 <NeonText size={16} style={styles.voterName}>
@@ -331,7 +334,7 @@ const CaptionThisScreen = ({ route, navigation }) => {
     return null;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 20,
@@ -372,10 +375,10 @@ const styles = StyleSheet.create({
         borderColor: COLORS.neonCyan,
     },
     captionInput: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: COLORS.surfaceLight,
         borderRadius: 12,
         padding: 15,
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 16,
         borderWidth: 1,
         borderColor: COLORS.electricPurple,

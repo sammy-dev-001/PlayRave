@@ -3,9 +3,11 @@ import {
     View, StyleSheet, Animated,
     Platform
 } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const SkeletonLoader = ({ width = '100%', height = 40, borderRadius = 8, style }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const shimmerAnim = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
@@ -46,9 +48,9 @@ const SkeletonLoader = ({ width = '100%', height = 40, borderRadius = 8, style }
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     skeleton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: COLORS.surfaceLight,
     },
 });
 

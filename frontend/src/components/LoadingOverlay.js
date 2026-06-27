@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import NeonText from './NeonText';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const LoadingOverlay = ({ visible = false, message = 'Loading...' }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     if (!visible) return null;
 
     return (
@@ -26,10 +28,10 @@ const LoadingOverlay = ({ visible = false, message = 'Loading...' }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: COLORS.overlayDarker,
         justifyContent: 'center',
         alignItems: 'center',
     },

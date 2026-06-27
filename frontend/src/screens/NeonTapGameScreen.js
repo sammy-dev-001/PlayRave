@@ -8,11 +8,14 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { mergeGameState, isDelta } from '../utils/deltaSync';
 
 const { width, height } = Dimensions.get('window');
 
 const NeonTapGameScreen = ({ route, navigation }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
@@ -30,6 +33,18 @@ const NeonTapGameScreen = ({ route, navigation }) => {
     const [currentRound, setCurrentRound] = useState(0);
     const [totalRounds, setTotalRounds] = useState(10);
 
+    // Refs that mirror state — assigned directly in render body (not useEffect)
+    // so they are always current by the time any event handler runs.
+    // useEffect fires after paint; direct assignment is synchronous.
+    const currentRoundRef = useRef(0);
+    const totalRoundsRef  = useRef(10);
+    const gameStateRef    = useRef('waiting');
+
+    // Synchronous ref-sync — no useEffect needed
+    currentRoundRef.current = currentRound;
+    totalRoundsRef.current  = totalRounds;
+    gameStateRef.current    = gameState;
+
     const pulseAnim = useRef(new Animated.Value(1)).current;
     // FIX 8: Store the pulse loop ref so we can stop it cleanly
     const pulseLoopRef = useRef(null);
@@ -38,8 +53,11 @@ const NeonTapGameScreen = ({ route, navigation }) => {
 
     const canTap = !isHost || hostParticipates;
 
-    // FIX 8: Proper pulse animation with stored ref
-    const startPulseAnimation = () => {
+    // Wrapped in useCallback so they have stable references across renders.
+    // This makes them safe to list as deps in useEffect without causing
+    // infinite re-runs, and eliminates the fragile pattern where a future
+    // state close-over would silently produce stale values.
+    const startPulseAnimation = React.useCallback(() => {
         if (pulseLoopRef.current) pulseLoopRef.current.stop();
         pulseAnim.setValue(1);
         pulseLoopRef.current = Animated.loop(
@@ -49,23 +67,24 @@ const NeonTapGameScreen = ({ route, navigation }) => {
             ])
         );
         pulseLoopRef.current.start();
-    };
+    }, []); // Only refs — no state deps
 
-    const stopPulseAnimation = () => {
+    const stopPulseAnimation = React.useCallback(() => {
         if (pulseLoopRef.current) {
             pulseLoopRef.current.stop();
             pulseLoopRef.current = null;
         }
         pulseAnim.stopAnimation();
-    };
+    }, []); // Only refs — no state deps
 
-    // FIX 2: Cleanup on unmount
+    // Cleanup on unmount — stopPulseAnimation is now stable via useCallback
+    // so listing it in deps is safe and correct.
     useEffect(() => {
         return () => {
             if (countdownRef.current) clearInterval(countdownRef.current);
             stopPulseAnimation();
         };
-    }, []);
+    }, [stopPulseAnimation]);
 
     useEffect(() => {
         const onRoundStarted = ({ circlePosition: pos, roundStartTime: startTime, currentRound: round, totalRounds: total }) => {
@@ -97,7 +116,6 @@ const NeonTapGameScreen = ({ route, navigation }) => {
         const onResults = (results) => {
             if (countdownRef.current) clearInterval(countdownRef.current);
             stopPulseAnimation();
-            console.log('NeonTap results:', results);
             navigation.replace('NeonTapResults', { room, results, hostParticipates, isHost });
         };
 
@@ -119,10 +137,21 @@ const NeonTapGameScreen = ({ route, navigation }) => {
         };
 
         const onGameStateSync = (data) => {
-            if (data.gameState) {
-                setCurrentRound(data.gameState.currentRound || 0);
-                setTotalRounds(data.gameState.totalRounds || 10);
-            }
+            // Use refs (not state) as the merge baseline to avoid stale closure bugs.
+            // State values captured in a useEffect closure are frozen at mount time;
+            // refs always reflect the latest value.
+            const liveState = {
+                currentRound: currentRoundRef.current,
+                totalRounds:  totalRoundsRef.current,
+                status:       gameStateRef.current,
+            };
+
+            const incoming = isDelta(data)
+                ? mergeGameState(liveState, data)
+                : (data.gameState || data);
+
+            if (incoming.currentRound !== undefined) setCurrentRound(incoming.currentRound);
+            if (incoming.totalRounds  !== undefined) setTotalRounds(incoming.totalRounds);
         };
 
         SocketService.on('neon-tap-round-started', onRoundStarted);
@@ -134,8 +163,11 @@ const NeonTapGameScreen = ({ route, navigation }) => {
         // Fetch state on mount
         SocketService.emit('get-state', { roomId: room.id });
 
-        // Start first round if host
-        if (isHost && currentRound === 0 && gameState === 'waiting') {
+        // Start first round if host — read from refs to avoid stale closure.
+        // This effect has deps [navigation, room.id, isHost], so it only re-runs
+        // if those change. Without refs, currentRound/gameState would always be
+        // their initial values (0 / 'waiting') and re-trigger the start on re-run.
+        if (isHost && currentRoundRef.current === 0 && gameStateRef.current === 'waiting') {
             setTimeout(() => {
                 SocketService.emit('start-neon-tap-round', { roomId: room.id });
             }, 1000);
@@ -148,10 +180,20 @@ const NeonTapGameScreen = ({ route, navigation }) => {
             SocketService.off('game-finished', onGameFinished);
             SocketService.off('game-state-sync', onGameStateSync);
         };
-    }, [navigation, room.id, isHost]);
+    }, [navigation, room.id, isHost, startPulseAnimation, stopPulseAnimation]);
 
     // FIX 3: Host end-game confirmation
     const handleEndGame = () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm('Are you sure you want to end the game for everyone?')) {
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                stopPulseAnimation();
+                SocketService.emit('neon-tap-end-game', { roomId: room.id });
+                navigation.navigate('Lobby', { room, isHost, playerName });
+            }
+            return;
+        }
+
         Alert.alert(
             'End Game',
             'Are you sure you want to end the game for everyone?',
@@ -243,7 +285,7 @@ const NeonTapGameScreen = ({ route, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     hostControls: {
         position: 'absolute',
         top: 10,
@@ -269,7 +311,7 @@ const styles = StyleSheet.create({
         bottom: 50,
         textAlign: 'center',
         fontStyle: 'italic',
-        color: '#888',
+        color: COLORS.textMuted,
         fontSize: 14
     }
 });
