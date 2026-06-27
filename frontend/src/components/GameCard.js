@@ -4,6 +4,7 @@ import {
     Platform
 } from 'react-native';
 import NeonText from './NeonText';
+import GlassView from './GlassView';
 import { useTheme } from '../context/ThemeContext';
 
 
@@ -21,7 +22,9 @@ const GameCard = ({
     index = 0, // For stagger animation
     compact = false,
 }) => {
-    const { COLORS } = useTheme();
+    const { theme, COLORS } = useTheme();
+    const cardBorderColor = theme?.isGlass ? theme.colors.borderDefault : color;
+    const cardBgColor = theme?.isGlass ? 'transparent' : 'rgba(0, 0, 0, 0.4)';
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     // Staggered entrance animation
     const opacity = useRef(new Animated.Value(0)).current;
@@ -95,10 +98,11 @@ const GameCard = ({
                 style={[
                     styles.card,
                     compact ? styles.cardCompact : styles.cardFull,
-                    { borderColor: color },
+                    { borderColor: cardBorderColor, backgroundColor: cardBgColor },
                     (disabled || comingSoon) && styles.cardDisabled,
                 ]}
             >
+                {theme?.isGlass && <GlassView intensity={50} style={StyleSheet.absoluteFill} tint="light" />}
                 {/* Icon */}
                 <View style={[
                     styles.iconContainer,
@@ -161,6 +165,9 @@ export const GameCardGrid = ({
         if (SCREEN_WIDTH >= 500) return 3;
         return columns;
     };
+
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
 
     return (
         <View style={[

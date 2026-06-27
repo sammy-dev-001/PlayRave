@@ -111,7 +111,37 @@ export const THEME_PRESETS = {
             borderLight: 'rgba(255, 107, 107, 0.1)',
             success: '#00FA9A',
             error: '#FF0000',
-            warning: '#FFD700',
+        }
+    },
+    'liquid-glass': {
+        id: 'liquid-glass',
+        name: 'Liquid Glass',
+        emoji: '🫧',
+        backgroundImage: null,
+        isGlass: true,              // New flag consumed by GlassView
+        blurIntensity: 40,          // Consumed by GlassView
+        colors: {
+            primary: '#A8DAFF',         // Sky blue
+            secondary: '#D0BFFF',       // Lavender
+            accent: '#FFB3C6',          // Rose quartz
+            tertiary: '#B8F0D8',        // Mint
+            background: '#0D0D1A',      // Very dark navy base
+            backgroundSecondary: '#0A0A14',
+            surface: 'rgba(255,255,255,0.08)',    // Glass card background
+            surfaceLight: 'rgba(255,255,255,0.12)',
+            surfaceDark: 'rgba(0,0,0,0.2)',
+            overlayLight: 'rgba(255,255,255,0.15)',
+            overlayDark: 'rgba(0,0,0,0.3)',
+            overlayDarker: 'rgba(0,0,0,0.5)',
+            textPrimary: '#FFFFFF',
+            textSecondary: 'rgba(255,255,255,0.85)',
+            textMuted: 'rgba(255,255,255,0.5)',
+            textDarkMuted: 'rgba(255,255,255,0.35)',
+            borderDefault: 'rgba(255,255,255,0.25)',
+            borderLight: 'rgba(255,255,255,0.12)',
+            success: '#6FE7A8',
+            error: '#FF8FA3',
+            warning: '#FFD6A5',
         }
     }
 };

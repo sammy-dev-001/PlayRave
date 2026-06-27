@@ -7,8 +7,11 @@ import { useTheme } from '../context/ThemeContext';
 import { SHADOWS } from '../constants/themes';
 
 import NeonText from './NeonText';
+import GlassView from './GlassView';
 import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
+
+const AnimatedGlassView = Animated.createAnimatedComponent(GlassView);
 import { responsive, TOUCH_TARGET_SIZE } from '../utils/responsive';
 
 const NeonButton = ({
@@ -23,11 +26,11 @@ const NeonButton = ({
     loading = false,
     sound = true, // New prop to control sound
 }) => {
-    const { COLORS } = useTheme();
+    const { theme, COLORS } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const isPrimary = variant === 'primary';
-    const borderColor = isPrimary ? COLORS.neonCyan : COLORS.hotPink;
-    const glowStyle = isPrimary ? SHADOWS.neonGlow : SHADOWS.purpleGlow;
+    const borderColor = theme?.isGlass ? theme.colors.borderDefault : (isPrimary ? COLORS.neonCyan : COLORS.hotPink);
+    const glowStyle = theme?.isGlass ? undefined : (isPrimary ? SHADOWS.neonGlow : SHADOWS.purpleGlow);
 
     // Animation refs
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -108,13 +111,14 @@ const NeonButton = ({
             style={[styles.container, style]}
             disabled={disabled || loading}
         >
-            <Animated.View style={[
+            <AnimatedGlassView style={[
                 styles.button,
                 {
                     borderColor,
                     paddingVertical: currentSize.paddingVertical,
                     paddingHorizontal: currentSize.paddingHorizontal,
                     transform: [{ scale: scaleAnim }],
+                    backgroundColor: theme?.isGlass ? 'transparent' : COLORS.overlayDark,
                 },
                 glowStyle,
                 disabled && styles.disabled
@@ -133,12 +137,12 @@ const NeonButton = ({
                 ) : (
                     <View style={styles.content}>
                         {icon && <NeonText size={currentSize.fontSize} style={styles.icon}>{icon}</NeonText>}
-                        <NeonText weight="bold" variant="arcade" size={currentSize.fontSize} color={borderColor} glow>
+                        <NeonText weight="bold" variant="arcade" size={currentSize.fontSize} color={theme?.isGlass ? '#FFFFFF' : borderColor} glow={!theme?.isGlass}>
                             {title.toUpperCase()}
                         </NeonText>
                     </View>
                 )}
-            </Animated.View>
+            </AnimatedGlassView>
         </TouchableOpacity>
     );
 };
@@ -153,6 +157,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
         ...SHADOWS.neonGlow, // Default glow
     },
     content: {
