@@ -16,7 +16,8 @@ import HapticService from '../services/HapticService';
 import SoundService from '../services/SoundService';
 
 // ─── Word Data ────────────────────────────────────────────────────────────────
-const getCategories = (COLORS) => ({
+const getCategories = (COLORS) => {
+    const cats = {
     Movies: {
         label: 'Movies & TV',
         iconName: 'film-outline',
@@ -259,23 +260,22 @@ const getCategories = (COLORS) => ({
     },
 };
 
-// Add a Mixed category that pulls words from all other categories
-CATEGORIES.Mixed = {
-    label: 'Mixed Bag',
-    iconName: 'shuffle-outline',
-    color: '#00E676', // Bright green
-    words: {
-        easy: Object.values(CATEGORIES).flatMap(c => c.words.easy),
-        medium: Object.values(CATEGORIES).flatMap(c => c.words.medium),
-        hard: Object.values(CATEGORIES).flatMap(c => c.words.hard),
-    }
-});
+    // Add a Mixed category that pulls words from all other categories
+    cats.Mixed = {
+        label: 'Mixed Bag',
+        iconName: 'shuffle-outline',
+        color: '#00E676', // Bright green
+        words: {
+            easy: Object.values(cats).flatMap(c => c.words.easy),
+            medium: Object.values(cats).flatMap(c => c.words.medium),
+            hard: Object.values(cats).flatMap(c => c.words.hard),
+        }
+    };
+
+    return cats;
+};
 
 const getDifficultyOptions = (COLORS) => [
-    { key: 'easy', label: 'Easy', iconName: 'happy-outline', color: COLORS.limeGlow, desc: 'Simple & fun for everyone' },
-    { key: 'medium', label: 'Medium', iconName: 'flame-outline', color: '#FF8C42', desc: 'Mix of familiar & tricky' },
-    { key: 'hard', label: 'Hard', iconName: 'skull-outline', color: COLORS.hotPink, desc: 'Only the bold survive' },
-]; = [
     { key: 'easy', label: 'Easy', iconName: 'happy-outline', color: COLORS.limeGlow, desc: 'Simple & fun for everyone' },
     { key: 'medium', label: 'Medium', iconName: 'flame-outline', color: '#FF8C42', desc: 'Mix of familiar & tricky' },
     { key: 'hard', label: 'Hard', iconName: 'skull-outline', color: COLORS.hotPink, desc: 'Only the bold survive' },
