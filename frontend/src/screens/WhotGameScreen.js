@@ -6,7 +6,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import WhotCard from '../components/WhotCard';
 import WhotToast from '../components/WhotToast';
-import LiveChat from '../components/LiveChat';
+import InGameOverlay from '../components/InGameOverlay';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { useTheme } from '../context/ThemeContext';
@@ -60,9 +60,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
     const dismissToast = () => setToast(prev => ({ ...prev, visible: false }));
 
-    // ── Chat State ────────────────────────────────────────────────────────────
-    const [chatMessages, setChatMessages] = useState([]);
-    const [isChatMinimized, setIsChatMinimized] = useState(true);
+    // Chat handled by InGameOverlay
 
     // ── Feature 1: "Last Card!" pulse animation ───────────────────────────────
     const lastCardPulse = useRef(new Animated.Value(1)).current;
@@ -161,9 +159,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             showToast({ message: data.message || 'Invalid move', icon: '⚠️', color: COLORS.hotPink });
         };
 
-        const onChatReceived = (msg) => {
-            setChatMessages(prev => [...prev, msg]);
-        };
+        // Chat received handled by InGameOverlay
 
         SocketService.on('game-started', onGameStarted);
         SocketService.on('whot-state-update', onStateUpdate);
@@ -172,7 +168,7 @@ const WhotGameScreen = ({ route, navigation }) => {
         SocketService.on('whot-game-ended', onGameEnded);
         SocketService.on('game-state-sync', onGameStateSync);
         SocketService.on('error', onError);
-        SocketService.on('chat-message-received', onChatReceived);
+        // chat-message-received handled by InGameOverlay
 
         SocketService.emit('whot-get-state', { roomId: room.id });
 
@@ -184,7 +180,7 @@ const WhotGameScreen = ({ route, navigation }) => {
             SocketService.off('whot-game-ended', onGameEnded);
             SocketService.off('game-state-sync', onGameStateSync);
             SocketService.off('error', onError);
-            SocketService.off('chat-message-received', onChatReceived);
+            // chat-message-received handled by InGameOverlay
         };
     }, [navigation, room.id]);
 
@@ -240,13 +236,7 @@ const WhotGameScreen = ({ route, navigation }) => {
         return player?.name || 'Unknown';
     };
 
-    const handleSendChatMessage = (text) => {
-        SocketService.emit('chat-message', { roomId: room.id, text });
-    };
-
-    const handleSendReaction = (emoji) => {
-        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
-    };
+    // Chat sending handled by InGameOverlay
 
     // ── Loading State ─────────────────────────────────────────────────────────
     if (!gameState) {
@@ -426,17 +416,8 @@ const WhotGameScreen = ({ route, navigation }) => {
                 </View>
             </Modal>
 
-            {/* Live Chat Overlay */}
-            <View style={styles.chatOverlay}>
-                <LiveChat
-                    messages={chatMessages}
-                    onSendMessage={handleSendChatMessage}
-                    onSendReaction={handleSendReaction}
-                    currentUser={{ id: myId, name: getPlayerName(myId) }}
-                    isMinimized={isChatMinimized}
-                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
-                />
-            </View>
+            {/* In-Game Voice and Chat Overlay */}
+            <InGameOverlay />
 
         </NeonContainer>
     );
@@ -594,13 +575,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(0, 240, 255, 0.3)',
     },
-    chatOverlay: {
-        position: 'absolute',
-        bottom: 20,
-        left: 10,
-        right: 10,
-        zIndex: 100,
-    },
+    // chatOverlay removed, handled inside InGameOverlay
 });
 
 export default WhotGameScreen;

@@ -119,29 +119,30 @@ export const THEME_PRESETS = {
         emoji: '🫧',
         backgroundImage: null,
         isGlass: true,              // New flag consumed by GlassView
-        blurIntensity: 40,          // Consumed by GlassView
+        glassTint: 'light',         // Tells BlurView to use a bright tint
+        blurIntensity: 60,          // Stronger blur for true iOS glass vibe
         colors: {
-            primary: '#A8DAFF',         // Sky blue
-            secondary: '#D0BFFF',       // Lavender
-            accent: '#FFB3C6',          // Rose quartz
-            tertiary: '#B8F0D8',        // Mint
-            background: '#0D0D1A',      // Very dark navy base
-            backgroundSecondary: '#0A0A14',
-            surface: 'rgba(255,255,255,0.08)',    // Glass card background
-            surfaceLight: 'rgba(255,255,255,0.12)',
-            surfaceDark: 'rgba(0,0,0,0.2)',
-            overlayLight: 'rgba(255,255,255,0.15)',
-            overlayDark: 'rgba(0,0,0,0.3)',
-            overlayDarker: 'rgba(0,0,0,0.5)',
-            textPrimary: '#FFFFFF',
-            textSecondary: 'rgba(255,255,255,0.85)',
-            textMuted: 'rgba(255,255,255,0.5)',
-            textDarkMuted: 'rgba(255,255,255,0.35)',
-            borderDefault: 'rgba(255,255,255,0.25)',
-            borderLight: 'rgba(255,255,255,0.12)',
-            success: '#6FE7A8',
-            error: '#FF8FA3',
-            warning: '#FFD6A5',
+            primary: '#007AFF',         // iOS Blue
+            secondary: '#5856D6',       // iOS Purple
+            accent: '#FF2D55',          // iOS Pink
+            tertiary: '#34C759',        // iOS Green
+            background: '#F2F2F7',      // iOS Light Gray base
+            backgroundSecondary: '#E5E5EA',
+            surface: 'rgba(255,255,255,0.65)',    // Light frosted glass
+            surfaceLight: 'rgba(255,255,255,0.85)',
+            surfaceDark: 'rgba(200,200,200,0.5)',
+            overlayLight: 'rgba(255,255,255,0.5)',
+            overlayDark: 'rgba(0,0,0,0.15)',
+            overlayDarker: 'rgba(0,0,0,0.3)',
+            textPrimary: '#000000',
+            textSecondary: 'rgba(0,0,0,0.6)',
+            textMuted: 'rgba(0,0,0,0.4)',
+            textDarkMuted: 'rgba(0,0,0,0.3)',
+            borderDefault: 'rgba(255,255,255,0.6)',
+            borderLight: 'rgba(255,255,255,0.8)',
+            success: '#34C759',
+            error: '#FF3B30',
+            warning: '#FFCC00',
         }
     }
 };

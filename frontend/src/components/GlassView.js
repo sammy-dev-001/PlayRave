@@ -11,6 +11,7 @@ const GlassView = ({ style, children, intensity, tint = 'dark', ...rest }) => {
     const { theme } = useTheme();
     const isGlass = theme?.isGlass;
     const blurAmount = intensity ?? theme?.blurIntensity ?? 40;
+    const glassTint = theme?.glassTint ?? tint;
 
     if (!isGlass) {
         return (
@@ -23,7 +24,7 @@ const GlassView = ({ style, children, intensity, tint = 'dark', ...rest }) => {
     return (
         <BlurView
             intensity={blurAmount}
-            tint={tint}
+            tint={glassTint}
             experimentalBlurMethod="dimezisBlurView" // Better Android compatibility
             style={style}
             {...rest}

@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import LiveChat from '../components/LiveChat';
+import InGameOverlay from '../components/InGameOverlay';
 import SocketService from '../services/socket';
 import { useTheme } from '../context/ThemeContext';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
@@ -44,9 +44,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     const [completionToast, setCompletionToast] = useState(null);
     const completionTimerRef = useRef(null);
 
-    // Chat State
-    const [chatMessages, setChatMessages] = useState([]);
-    const [isChatMinimized, setIsChatMinimized] = useState(true);
+    // Chat State handled by InGameOverlay
 
     // Build player name lookup
     useEffect(() => {
@@ -121,9 +119,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             handleLeaveGame();
         };
 
-        const onChatReceived = (msg) => {
-            setChatMessages(prev => [...prev, msg]);
-        };
+        // Chat received handled by InGameOverlay
 
         SocketService.on('truth-or-dare-chosen', onTruthOrDareChosen);
         SocketService.on('truth-or-dare-turn-complete', onTurnComplete);
@@ -132,7 +128,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         SocketService.on('room-updated', onRoomUpdated);
         SocketService.on('game-state-sync', onStateSync);
         SocketService.on('game-ended-insufficient-players', onInsufficientPlayers);
-        SocketService.on('chat-message-received', onChatReceived);
+        // chat-message-received handled by InGameOverlay
 
         return () => {
             SocketService.off('truth-or-dare-chosen', onTruthOrDareChosen);
@@ -142,7 +138,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
             SocketService.off('room-updated', onRoomUpdated);
             SocketService.off('game-state-sync', onStateSync);
             SocketService.off('game-ended-insufficient-players', onInsufficientPlayers);
-            SocketService.off('chat-message-received', onChatReceived);
+            // chat-message-received handled by InGameOverlay
         };
     }, [navigation, room, playerNames]);
 
@@ -157,13 +153,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         SocketService.emit('choose-truth-or-dare', { roomId: room.id, choice: 'truth' });
     };
 
-    const handleSendChatMessage = (text) => {
-        SocketService.emit('chat-message', { roomId: room.id, text });
-    };
-
-    const handleSendReaction = (emoji) => {
-        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
-    };
+    // Chat sending handled by InGameOverlay
 
     const handleChooseDare = () => {
         SocketService.emit('choose-truth-or-dare', { roomId: room.id, choice: 'dare' });
@@ -345,17 +335,8 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                 />
             )}
 
-            {/* Live Chat Overlay */}
-            <View style={styles.chatOverlay}>
-                <LiveChat
-                    messages={chatMessages}
-                    onSendMessage={handleSendChatMessage}
-                    onSendReaction={handleSendReaction}
-                    currentUser={{ id: SocketService.userId || SocketService.socket?.id, name: playerName }}
-                    isMinimized={isChatMinimized}
-                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
-                />
-            </View>
+            {/* In-Game Voice and Chat Overlay */}
+            <InGameOverlay />
         </NeonContainer>
     );
 };
@@ -488,13 +469,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         shadowRadius: 12,
         elevation: 20,
     },
-    chatOverlay: {
-        position: 'absolute',
-        bottom: 20,
-        left: 10,
-        right: 10,
-        zIndex: 100,
-    },
+    // chatOverlay removed, handled inside InGameOverlay
 });
 
 export default OnlineTruthOrDareGameScreen;

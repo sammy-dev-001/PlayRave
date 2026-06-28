@@ -12,6 +12,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
+import InGameOverlay from '../components/InGameOverlay';
 import MuteButton from '../components/MuteButton';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
@@ -306,6 +307,7 @@ const SpillTheTeaScreen = ({ route, navigation }) => {
                     {renderPhase()}
                 </ScrollView>
             </GameOverlay>
+            <InGameOverlay />
         </NeonContainer>
     );
 };

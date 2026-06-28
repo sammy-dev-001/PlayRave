@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
-import LiveChat from '../components/LiveChat';
+import InGameOverlay from '../components/InGameOverlay';
 import SocketService from '../services/socket';
 import { useTheme } from '../context/ThemeContext';
 
@@ -45,9 +45,7 @@ const WhispersHubScreen = ({ route, navigation }) => {
     const [selectedMode, setSelectedMode] = useState(null);
     const [starting, setStarting] = useState(false);
 
-    // Chat State
-    const [chatMessages, setChatMessages] = useState([]);
-    const [isChatMinimized, setIsChatMinimized] = useState(true);
+    // Chat State handled by InGameOverlay
 
     const anim0 = useRef(new Animated.Value(1)).current;
     const anim1 = useRef(new Animated.Value(1)).current;
@@ -83,15 +81,13 @@ const WhispersHubScreen = ({ route, navigation }) => {
             }
         };
 
-        const onChatReceived = (msg) => {
-            setChatMessages(prev => [...prev, msg]);
-        };
+        // Chat received handled by InGameOverlay
 
         SocketService.on('game-started', onGameStarted);
-        SocketService.on('chat-message-received', onChatReceived);
+        // chat-message-received handled by InGameOverlay
         return () => {
             SocketService.off('game-started', onGameStarted);
-            SocketService.off('chat-message-received', onChatReceived);
+            // chat-message-received handled by InGameOverlay
         };
     }, [navigation, room, isHost, playerName]);
 
@@ -114,13 +110,7 @@ const WhispersHubScreen = ({ route, navigation }) => {
         });
     };
 
-    const handleSendChatMessage = (text) => {
-        SocketService.emit('chat-message', { roomId: room.id, text });
-    };
-
-    const handleSendReaction = (emoji) => {
-        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
-    };
+    // Chat sending handled by InGameOverlay
 
     return (
         <NeonContainer showBackButton scrollable>
@@ -192,17 +182,8 @@ const WhispersHubScreen = ({ route, navigation }) => {
                 )}
             </ScrollView>
 
-            {/* Live Chat Overlay */}
-            <View style={styles.chatOverlay}>
-                <LiveChat
-                    messages={chatMessages}
-                    onSendMessage={handleSendChatMessage}
-                    onSendReaction={handleSendReaction}
-                    currentUser={{ id: SocketService.userId || SocketService.socket?.id, name: playerName }}
-                    isMinimized={isChatMinimized}
-                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
-                />
-            </View>
+            {/* In-Game Voice and Chat Overlay */}
+            <InGameOverlay />
         </NeonContainer>
     );
 };
@@ -221,13 +202,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     cardDesc: { textAlign: 'center', lineHeight: 19, paddingHorizontal: 8 },
     startSection: { marginTop: 20, alignItems: 'center' },
     waitingContainer: { alignItems: 'center', paddingVertical: 36 },
-    chatOverlay: {
-        position: 'absolute',
-        bottom: 20,
-        left: 10,
-        right: 10,
-        zIndex: 100,
-    },
+    // chatOverlay removed, handled inside InGameOverlay
 });
 
 export default WhispersHubScreen;

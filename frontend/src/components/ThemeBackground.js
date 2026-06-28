@@ -29,6 +29,7 @@ const AuroraBackground = ({ theme }) => {
             );
         };
 
+        // Slow, gentle breathing animations
         const a1 = createAnimation(anim1, 15000);
         const a2 = createAnimation(anim2, 18000);
         const a3 = createAnimation(anim3, 22000);
@@ -44,58 +45,59 @@ const AuroraBackground = ({ theme }) => {
         };
     }, []);
 
-    // Interpolate positions for the blobs
-    const getTransform = (anim, outputX, outputY) => ({
+    // Interpolate positions for subtle breathing/floating transforms
+    const getTransform = (anim, outputX, outputY, scaleRange = [1, 1.1]) => ({
         transform: [
             { translateX: anim.interpolate({ inputRange: [0, 1], outputRange: outputX }) },
             { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: outputY }) },
+            { scale: anim.interpolate({ inputRange: [0, 1], outputRange: scaleRange }) },
         ]
     });
 
     return (
         <View style={StyleSheet.absoluteFill}>
-            {/* Base dark background */}
+            {/* Base background */}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background }]} />
 
-            {/* Blob 1: Top Left -> Bottom Right */}
+            {/* Blob 1: Top Right */}
             <Animated.View style={[
                 styles.blob,
-                getTransform(anim1, [-100, SCREEN_WIDTH / 2], [-100, SCREEN_HEIGHT / 2]),
-                { width: SCREEN_WIDTH * 1.5, height: SCREEN_WIDTH * 1.5, opacity: 0.4 }
+                getTransform(anim1, [-20, 20], [-20, 20], [1, 1.15]),
+                { top: -SCREEN_HEIGHT * 0.2, right: -SCREEN_WIDTH * 0.2, width: SCREEN_WIDTH * 1.5, height: SCREEN_WIDTH * 1.5, opacity: 0.6 }
             ]}>
                 <LinearGradient
-                    colors={['rgba(168,218,255,0.8)', 'rgba(168,218,255,0)']}
+                    colors={[theme.colors.primary, 'transparent']}
                     style={StyleSheet.absoluteFill}
                     start={{ x: 0.5, y: 0.5 }}
-                    end={{ x: 1, y: 1 }}
+                    end={{ x: 0, y: 1 }}
                 />
             </Animated.View>
 
-            {/* Blob 2: Bottom Right -> Top Left */}
+            {/* Blob 2: Bottom Left */}
             <Animated.View style={[
                 styles.blob,
-                getTransform(anim2, [SCREEN_WIDTH, -SCREEN_WIDTH / 3], [SCREEN_HEIGHT, -SCREEN_HEIGHT / 3]),
-                { width: SCREEN_WIDTH * 1.8, height: SCREEN_WIDTH * 1.8, opacity: 0.3 }
+                getTransform(anim2, [20, -20], [20, -20], [1.1, 1]),
+                { bottom: -SCREEN_HEIGHT * 0.2, left: -SCREEN_WIDTH * 0.2, width: SCREEN_WIDTH * 1.8, height: SCREEN_WIDTH * 1.8, opacity: 0.5 }
             ]}>
                 <LinearGradient
-                    colors={['rgba(208,191,255,0.7)', 'rgba(208,191,255,0)']}
-                    style={StyleSheet.absoluteFill}
-                    start={{ x: 0.5, y: 0.5 }}
-                    end={{ x: 0, y: 0 }}
-                />
-            </Animated.View>
-
-            {/* Blob 3: Center -> Center horizontal sweep */}
-            <Animated.View style={[
-                styles.blob,
-                getTransform(anim3, [-SCREEN_WIDTH / 2, SCREEN_WIDTH], [SCREEN_HEIGHT / 2, SCREEN_HEIGHT / 2]),
-                { width: SCREEN_WIDTH * 1.2, height: SCREEN_WIDTH * 1.2, opacity: 0.3 }
-            ]}>
-                <LinearGradient
-                    colors={['rgba(255,179,198,0.6)', 'rgba(255,179,198,0)']}
+                    colors={[theme.colors.secondary, 'transparent']}
                     style={StyleSheet.absoluteFill}
                     start={{ x: 0.5, y: 0.5 }}
                     end={{ x: 1, y: 0 }}
+                />
+            </Animated.View>
+
+            {/* Blob 3: Center Offset */}
+            <Animated.View style={[
+                styles.blob,
+                getTransform(anim3, [-30, 30], [30, -30], [1, 1.2]),
+                { top: SCREEN_HEIGHT * 0.2, left: SCREEN_WIDTH * 0.1, width: SCREEN_WIDTH * 1.2, height: SCREEN_WIDTH * 1.2, opacity: 0.4 }
+            ]}>
+                <LinearGradient
+                    colors={[theme.colors.accent, 'transparent']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0.5, y: 0.5 }}
+                    end={{ x: 0, y: 0 }}
                 />
             </Animated.View>
         </View>
@@ -140,7 +142,6 @@ const styles = StyleSheet.create({
     blob: {
         position: 'absolute',
         borderRadius: 9999,
-        // Since we are applying radial-like gradients using linear gradients
     }
 });
 

@@ -8,6 +8,7 @@ import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import ProfileService from '../services/ProfileService';
 import { useTheme } from '../context/ThemeContext';
+import InGameOverlay from '../components/InGameOverlay';
 
 const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -183,6 +184,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
                 <View style={styles.actions}>
                     <NeonButton title="RETURN TO LOBBY" onPress={handleReturnToLobby} />
                 </View>
+                <InGameOverlay />
             </NeonContainer>
         );
     }
@@ -288,6 +290,7 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
                     onPress={handleEndGame}
                 />
             </View>
+            <InGameOverlay />
         </NeonContainer>
     );
 };

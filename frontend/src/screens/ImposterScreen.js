@@ -13,7 +13,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
-import LiveChat from '../components/LiveChat';
+import InGameOverlay from '../components/InGameOverlay';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
@@ -54,17 +54,13 @@ const ImposterScreen = ({ route, navigation }) => {
     const [timer, setTimer] = useState(0);
     const [discussionStarted, setDiscussionStarted] = useState(false);
 
-    // Chat State
-    const [chatMessages, setChatMessages] = useState([]);
-    const [isChatMinimized, setIsChatMinimized] = useState(true);
+    // Chat State handled by InGameOverlay
 
     // Animation
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        const onChatReceived = (msg) => {
-            setChatMessages(prev => [...prev, msg]);
-        };
+        // Chat received handled by InGameOverlay
 
         // Socket event listeners
         SocketService.on('game-started', handleGameStarted);
@@ -74,7 +70,7 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.on('imposter-votes-update', handleVotesUpdate);
         SocketService.on('imposter-round-results', handleRoundResults);
         SocketService.on('room-updated', handleRoomUpdate);
-        SocketService.on('chat-message-received', onChatReceived);
+        // chat-message-received handled by InGameOverlay
 
         // Request current state on mount (recovery)
         console.log("ImposterScreen mounted, requesting state...");
@@ -88,7 +84,7 @@ const ImposterScreen = ({ route, navigation }) => {
             SocketService.off('imposter-votes-update', handleVotesUpdate);
             SocketService.off('imposter-round-results', handleRoundResults);
             SocketService.off('room-updated', handleRoomUpdate);
-            SocketService.off('chat-message-received', onChatReceived);
+            // chat-message-received handled by InGameOverlay
         };
     }, []);
 
@@ -154,13 +150,7 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.emit('imposter-start-voting', { roomId: room.id });
     };
 
-    const handleSendChatMessage = (text) => {
-        SocketService.emit('chat-message', { roomId: room.id, text });
-    };
-
-    const handleSendReaction = (emoji) => {
-        SocketService.emit('chat-reaction', { roomId: room.id, emoji });
-    };
+    // Chat sending handled by InGameOverlay
 
     const submitVote = () => {
         if (!selectedPlayer) return;
@@ -465,17 +455,8 @@ const ImposterScreen = ({ route, navigation }) => {
                 </ScrollView>
             </GameOverlay>
 
-            {/* Live Chat Overlay */}
-            <View style={styles.chatOverlay}>
-                <LiveChat
-                    messages={chatMessages}
-                    onSendMessage={handleSendChatMessage}
-                    onSendReaction={handleSendReaction}
-                    currentUser={{ id: myUserId, name: playerName }}
-                    isMinimized={isChatMinimized}
-                    onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
-                />
-            </View>
+            {/* In-Game Voice and Chat Overlay */}
+            <InGameOverlay />
         </NeonContainer>
     );
 };
@@ -641,13 +622,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     endButton: {
         flex: 1
     },
-    chatOverlay: {
-        position: 'absolute',
-        bottom: 20,
-        left: 10,
-        right: 10,
-        zIndex: 100,
-    },
+    // chatOverlay removed, handled inside InGameOverlay
 });
 
 export default ImposterScreen;

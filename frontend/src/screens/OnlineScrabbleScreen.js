@@ -10,6 +10,7 @@ import SocketService from '../services/socket';
 import { BOARD_SIZE, CENTER_SQUARE, BONUS_SQUARES } from '../data/scrabbleData';
 import { useTheme } from '../context/ThemeContext';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
+import InGameOverlay from '../components/InGameOverlay';
 
 
 const OnlineScrabbleScreen = ({ route, navigation }) => {
@@ -861,6 +862,8 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     </TouchableWithoutFeedback>
                 </TouchableOpacity>
             </Modal>
+            
+            <InGameOverlay />
         </NeonContainer>
     );
 };
