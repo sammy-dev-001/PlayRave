@@ -134,6 +134,9 @@ class VoiceService {
             return true;
         } catch (error) {
             console.error('VoiceService: Web join error:', error);
+            if (this.isWeb && typeof window !== 'undefined') {
+                window.alert('Failed to connect to voice chat: ' + (error.message || error));
+            }
             return false;
         }
     }
