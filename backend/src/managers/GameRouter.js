@@ -258,9 +258,13 @@ class GameRouter {
             }
             
             // If io is provided, immediately execute the start broadcasts
-            if (io) {
+            if (instruction) {
                 this.executeInstruction(instruction, io, room.id);
             }
+
+            // Set room state globally
+            roomManager.setGameState(room.id, 'PLAYING');
+            roomManager.setGameType(room.id, gameType);
 
             // Persist initial game state
             const initialState = engine.activeGames.get(room.id);

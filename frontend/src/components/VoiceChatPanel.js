@@ -1,21 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    View, StyleSheet, TouchableOpacity, Animated,
-    Platform
-} from 'react-native';
+import { TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
 import VoiceService from '../services/VoiceService';
 
 const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
-    const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const { COLORS, theme } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
     const [isAvailable, setIsAvailable] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
-    const [speakingUsers, setSpeakingUsers] = useState({});
-    const [users, setUsers] = useState([]);
+    const [isMuted, setIsMuted] = useState(true); 
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -27,7 +21,6 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
 
     useEffect(() => {
         if (isConnected && !isMuted) {
-            // Pulse animation when connected and unmuted
             Animated.loop(
                 Animated.sequence([
                     Animated.timing(pulseAnim, { toValue: 1.2, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
@@ -42,145 +35,54 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     const initVoice = async () => {
         const available = await VoiceService.init();
         setIsAvailable(available);
+    };
 
-        if (available) {
-            VoiceService.onUserJoined = (uid) => {
-                setUsers(prev => [...prev, { uid, name: `User ${uid}` }]);
-            };
-            VoiceService.onUserLeft = (uid) => {
-                setUsers(prev => prev.filter(u => u.uid !== uid));
-            };
-            VoiceService.onAudioVolumeIndication = (volumes) => {
-                const speaking = {};
-                volumes.forEach(v => {
-                    if (v.level > 5) speaking[v.uid] = true;
-                });
-                setSpeakingUsers(speaking);
-            };
+    const handlePress = async () => {
+        if (!isConnected) {
+            if (!roomId) return;
+            const success = await VoiceService.joinChannel(`playrave-${roomId}`);
+            setIsConnected(success);
+            setIsMuted(false); 
+        } else {
+            const muted = VoiceService.toggleMute();
+            setIsMuted(muted);
         }
     };
 
-    const handleJoinVoice = async () => {
-        if (!roomId) return;
-        const success = await VoiceService.joinChannel(`playrave-${roomId}`);
-        setIsConnected(success);
-    };
-
-    const handleLeaveVoice = async () => {
-        await VoiceService.leaveChannel();
-        setIsConnected(false);
-    };
-
-    const handleToggleMute = () => {
-        const muted = VoiceService.toggleMute();
-        setIsMuted(muted);
+    const handleLongPress = async () => {
+        if (isConnected) {
+            await VoiceService.leaveChannel();
+            setIsConnected(false);
+        }
     };
 
     if (!visible || !isAvailable) return null;
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Ionicons name="mic" size={14} color={COLORS.neonCyan} /><NeonText size={12} color={COLORS.neonCyan}>VOICE</NeonText></View>
-                {isConnected && (
-                    <View style={styles.connectedBadge}>
-                        <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
-                        <NeonText size={10} color={COLORS.limeGlow}>LIVE</NeonText>
-                    </View>
-                )}
-            </View>
-
-            {!isConnected ? (
-                <TouchableOpacity style={styles.joinBtn} onPress={handleJoinVoice}>
-                    <NeonText size={14} color={COLORS.white}>Join Voice Chat</NeonText>
-                </TouchableOpacity>
-            ) : (
-                <View style={styles.controls}>
-                    <TouchableOpacity
-                        style={[styles.controlBtn, isMuted && styles.mutedBtn]}
-                        onPress={handleToggleMute}
-                    >
-                        <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={22} color={isMuted ? '#ff4444' : COLORS.limeGlow} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.controlBtn} onPress={handleLeaveVoice}>
-                        <Ionicons name="call" size={22} color="#ff4444" />
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            {isConnected && users.length > 0 && (
-                <View style={styles.usersList}>
-                    {users.slice(0, 4).map(u => (
-                        <View key={u.uid} style={[styles.userBadge, speakingUsers[u.uid] && styles.speaking]}>
-                            <Ionicons name="person" size={14} color="#ccc" />
-                        </View>
-                    ))}
-                    {users.length > 4 && (
-                        <NeonText size={10} color={COLORS.textMuted}>+{users.length - 4}</NeonText>
-                    )}
-                </View>
-            )}
-        </View>
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <TouchableOpacity
+                style={styles.button}
+                onPress={handlePress}
+                onLongPress={handleLongPress}
+                activeOpacity={0.7}
+            >
+                <Ionicons
+                    name={!isConnected ? 'mic-outline' : (isMuted ? 'mic-off' : 'mic')}
+                    size={20}
+                    color={!isConnected ? COLORS.textDarkMuted : (isMuted ? '#ff4444' : COLORS.neonCyan)}
+                />
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
-const getStyles = (COLORS) => StyleSheet.create({
-    container: {
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 15,
+const getStyles = (COLORS, theme) => StyleSheet.create({
+    button: {
+        padding: 8,
+        backgroundColor: theme?.isGlass ? 'rgba(255,255,255,0.1)' : COLORS.overlayDark,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: COLORS.surfaceLight
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10
-    },
-    connectedBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5
-    },
-    liveDot: {
-        width: 8, height: 8, borderRadius: 4,
-        backgroundColor: COLORS.limeGlow
-    },
-    joinBtn: {
-        backgroundColor: COLORS.neonCyan + '30',
-        borderRadius: 8,
-        padding: 12,
-        alignItems: 'center'
-    },
-    controls: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 15
-    },
-    controlBtn: {
-        width: 50, height: 50, borderRadius: 25,
-        backgroundColor: COLORS.surfaceLight,
-        justifyContent: 'center', alignItems: 'center'
-    },
-    mutedBtn: {
-        backgroundColor: COLORS.hotPink + '40'
-    },
-    usersList: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 10,
-        gap: 8
-    },
-    userBadge: {
-        width: 30, height: 30, borderRadius: 15,
-        backgroundColor: COLORS.surfaceLight,
-        justifyContent: 'center', alignItems: 'center'
-    },
-    speaking: {
-        borderWidth: 2,
-        borderColor: COLORS.limeGlow
+        borderColor: theme?.isGlass ? 'rgba(255,255,255,0.4)' : COLORS.electricPurple,
     }
 });
 

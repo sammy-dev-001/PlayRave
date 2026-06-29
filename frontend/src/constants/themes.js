@@ -117,29 +117,46 @@ export const THEME_PRESETS = {
         id: 'liquid-glass',
         name: 'Liquid Glass',
         emoji: '🫧',
-        backgroundImage: null,
-        isGlass: true,              // New flag consumed by GlassView
-        glassTint: 'light',         // Tells BlurView to use a bright tint
-        blurIntensity: 60,          // Stronger blur for true iOS glass vibe
+        // Use the neon background so glass panels pop against the colourful gradient
+        backgroundImage: require('../../assets/images/neon_background.png'),
+        isGlass: true,
+        glassTint: 'light',
+        blurIntensity: 55,
         colors: {
-            primary: '#007AFF',         // iOS Blue
-            secondary: '#5856D6',       // iOS Purple
-            accent: '#FF2D55',          // iOS Pink
+            // Accent colours — translucent gel versions of the iOS/PlayRave palette
+            primary: '#00C2FF',         // Cyan gel (Host Party button)
+            secondary: '#A78BFA',       // Soft violet
+            accent: '#FF2D55',          // Hot pink
             tertiary: '#34C759',        // iOS Green
-            background: '#F2F2F7',      // iOS Light Gray base
-            backgroundSecondary: '#E5E5EA',
-            surface: 'rgba(255,255,255,0.65)',    // Light frosted glass
-            surfaceLight: 'rgba(255,255,255,0.85)',
-            surfaceDark: 'rgba(200,200,200,0.5)',
-            overlayLight: 'rgba(255,255,255,0.5)',
-            overlayDark: 'rgba(0,0,0,0.15)',
-            overlayDarker: 'rgba(0,0,0,0.3)',
-            textPrimary: '#000000',
-            textSecondary: 'rgba(0,0,0,0.6)',
-            textMuted: 'rgba(0,0,0,0.4)',
-            textDarkMuted: 'rgba(0,0,0,0.3)',
-            borderDefault: 'rgba(255,255,255,0.6)',
-            borderLight: 'rgba(255,255,255,0.8)',
+
+            // Background — the image provides the gradient; no solid fill
+            background: 'transparent',
+            backgroundSecondary: 'transparent',
+
+            // Surfaces — FULLY transparent so only blur + border are visible
+            surface: 'rgba(255,255,255,0.08)',
+            surfaceLight: 'rgba(255,255,255,0.04)',
+            surfaceDark: 'rgba(255,255,255,0.12)',
+
+            // Overlays
+            overlayLight: 'rgba(255,255,255,0.15)',
+            overlayDark: 'rgba(0,0,0,0.08)',
+            overlayDarker: 'rgba(0,0,0,0.18)',
+
+            // Text — white pops on the dark-ish neon background
+            textPrimary: '#FFFFFF',
+            textSecondary: 'rgba(255,255,255,0.85)',
+            textMuted: 'rgba(255,255,255,0.55)',
+            textDarkMuted: 'rgba(255,255,255,0.35)',
+
+            // Borders — bright white edge catches the light like real glass
+            borderDefault: 'rgba(255,255,255,0.55)',
+            borderLight: 'rgba(255,255,255,0.80)',
+
+            // Specular / sheen — used by GlassView highlight layer
+            glassHighlight: 'rgba(255,255,255,0.70)',
+            glassSheen: 'rgba(255,255,255,0.18)',
+
             success: '#34C759',
             error: '#FF3B30',
             warning: '#FFCC00',

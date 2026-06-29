@@ -8,6 +8,7 @@ import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
 import HapticService from '../../services/HapticService';
 import SoundService from '../../services/SoundService';
+import GlassView from '../GlassView';
 
 const GradientButton = ({ title, subtitle, onPress, disabled }) => {
     const { COLORS } = useTheme();
@@ -113,10 +114,10 @@ const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
 };
 
 const OnlineLobbyCard = ({ onHostPress, onJoinPress, disabled }) => {
-    const { COLORS } = useTheme();
+    const { COLORS, theme } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
-        <View style={styles.card}>
+        <GlassView style={[styles.card, theme?.isGlass && { backgroundColor: 'transparent', borderWidth: 0 }]}>
             {/* Header */}
             <View style={styles.headerRow}>
                 <NeonText
@@ -145,7 +146,7 @@ const OnlineLobbyCard = ({ onHostPress, onJoinPress, disabled }) => {
                 onPress={onJoinPress}
                 disabled={disabled}
             />
-        </View>
+        </GlassView>
     );
 };
 

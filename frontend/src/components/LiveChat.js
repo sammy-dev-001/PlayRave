@@ -10,6 +10,7 @@ import {
     Animated
 } from 'react-native';
 import NeonText from './NeonText';
+import GlassView from './GlassView';
 import { useTheme } from '../context/ThemeContext';
 
 // Quick reaction emojis
@@ -139,10 +140,12 @@ const LiveChat = ({
                     </Animated.View>
                 )}
                 <TouchableOpacity
-                    style={styles.minimizedChat}
                     onPress={onToggleMinimize}
+                    activeOpacity={0.8}
                 >
-                    <NeonText size={14}>💬 {messages.length}</NeonText>
+                    <GlassView style={styles.minimizedChat} variant="primary">
+                        <NeonText size={14}>💬 {messages.length}</NeonText>
+                    </GlassView>
                 </TouchableOpacity>
             </View>
         );
@@ -150,10 +153,11 @@ const LiveChat = ({
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={styles.keyboardContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            {/* Header */}
+            <GlassView style={styles.container}>
+                {/* Header */}
             <View style={styles.header}>
                 <NeonText size={14} weight="bold">💬 LIVE CHAT</NeonText>
                 <TouchableOpacity onPress={onToggleMinimize}>
@@ -212,18 +216,19 @@ const LiveChat = ({
                         ➤
                     </NeonText>
                 </TouchableOpacity>
-            </View>
+                </View>
+            </GlassView>
         </KeyboardAvoidingView>
     );
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
+    keyboardContainer: {
+        maxHeight: 320,
+    },
     container: {
-        maxHeight: 300,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.electricPurple,
+        flex: 1,
+        borderRadius: 16,
         overflow: 'hidden',
     },
     minimizedContainer: {
@@ -240,12 +245,12 @@ const getStyles = (COLORS) => StyleSheet.create({
         maxWidth: 200,
     },
     minimizedChat: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        borderRadius: 20,
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        borderWidth: 1,
-        borderColor: COLORS.electricPurple,
+        borderRadius: 24,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     header: {
         flexDirection: 'row',
@@ -263,15 +268,15 @@ const getStyles = (COLORS) => StyleSheet.create({
         padding: 10,
     },
     messageBubble: {
-        backgroundColor: COLORS.surfaceLight,
-        borderRadius: 12,
-        padding: 8,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        padding: 10,
         marginBottom: 5,
-        maxWidth: '80%',
+        maxWidth: '85%',
         alignSelf: 'flex-start',
     },
     ownMessage: {
-        backgroundColor: 'rgba(0, 248, 255, 0.2)',
+        backgroundColor: 'rgba(0, 194, 255, 0.2)',
         alignSelf: 'flex-end',
     },
     systemMessage: {
@@ -309,10 +314,10 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     input: {
         flex: 1,
-        backgroundColor: COLORS.surfaceLight,
+        backgroundColor: 'rgba(0,0,0,0.2)',
         borderRadius: 20,
         paddingHorizontal: 15,
-        paddingVertical: 8,
+        paddingVertical: 10,
         marginHorizontal: 8,
         color: COLORS.white,
         fontSize: 14,

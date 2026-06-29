@@ -2,34 +2,41 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
+import GlassView from '../GlassView';
 
 const ProfileStatsBar = ({ onPress }) => {
-    const { COLORS } = useTheme();
+    const { COLORS, theme } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     return (
-        <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
-            {/* Left icon */}
-            <View style={styles.iconCircle}>
-                <NeonText size={20} color={COLORS.neonCyan}>👤</NeonText>
-            </View>
+        <TouchableOpacity style={styles.touchableWrapper} onPress={onPress} activeOpacity={0.7}>
+            <GlassView style={[styles.container, theme?.isGlass && { backgroundColor: 'transparent', borderWidth: 0 }]}>
+                {/* Left icon */}
+                <View style={styles.iconCircle}>
+                    <NeonText size={20} color={COLORS.neonCyan}>👤</NeonText>
+                </View>
 
-            {/* Text */}
-            <View style={styles.textBlock}>
-                <NeonText size={14} weight="bold" color={COLORS.white}>
-                    MY PROFILE & STATS
-                </NeonText>
-                <NeonText size={10} color="#6B7280" style={styles.subtitle}>
-                    TROPHIES, HISTORY & CUSTOMIZATION
-                </NeonText>
-            </View>
+                {/* Text */}
+                <View style={styles.textBlock}>
+                    <NeonText size={14} weight="bold" color={COLORS.white}>
+                        MY PROFILE & STATS
+                    </NeonText>
+                    <NeonText size={10} color="#6B7280" style={styles.subtitle}>
+                        TROPHIES, HISTORY & CUSTOMIZATION
+                    </NeonText>
+                </View>
 
-            {/* Right arrow */}
-            <NeonText size={18} color="#6B7280">›</NeonText>
+                {/* Right arrow */}
+                <NeonText size={18} color="#6B7280">›</NeonText>
+            </GlassView>
         </TouchableOpacity>
     );
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
+    touchableWrapper: {
+        marginHorizontal: 20,
+        marginTop: 24,
+    },
     container: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -37,8 +44,6 @@ const getStyles = (COLORS) => StyleSheet.create({
         borderRadius: 14,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.08)',
-        marginHorizontal: 20,
-        marginTop: 24,
         paddingVertical: 16,
         paddingHorizontal: 16,
     },

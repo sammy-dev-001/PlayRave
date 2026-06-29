@@ -21,10 +21,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { navigateToGame } from '../utils/gameNavigation';
 import { STORAGE_KEYS } from '../constants/storage';
-
+import GlassView from '../components/GlassView';
 
 const JoinScreen = ({ navigation, route }) => {
-    const { COLORS } = useTheme();
+    const { COLORS, theme } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { user } = useAuth();
     const [name, setName] = useState(route.params?.playerName || '');
@@ -201,7 +201,7 @@ const JoinScreen = ({ navigation, route }) => {
                         </View>
 
                         {/* Main Card */}
-                        <View style={styles.card}>
+                        <GlassView style={[styles.card, theme?.isGlass && { backgroundColor: 'transparent', borderWidth: 0 }]}>
                             {/* Input: Your Name */}
                             <View style={styles.inputGroup}>
                                 <NeonText size={12} weight="bold" color={COLORS.neonCyan} style={styles.label}>
@@ -256,7 +256,7 @@ const JoinScreen = ({ navigation, route }) => {
                                     </NeonText>
                                 </TouchableOpacity>
                             </Animated.View>
-                        </View>
+                        </GlassView>
 
                         {/* Footer Text */}
                         <View style={styles.footerSection}>

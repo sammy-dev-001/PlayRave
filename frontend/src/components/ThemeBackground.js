@@ -107,6 +107,23 @@ const AuroraBackground = ({ theme }) => {
 const ThemeBackground = () => {
     const { theme } = useTheme();
 
+    // Liquid-glass: render the image full-bleed so frosted panels float over it
+    if (theme.isGlass && theme.backgroundImage) {
+        return (
+            <View style={styles.container}>
+                <ImageBackground
+                    source={theme.backgroundImage}
+                    style={styles.image}
+                    resizeMode="cover"
+                    imageStyle={{ opacity: 1 }}
+                />
+                {/* Very subtle darkening so white text stays legible */}
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.22)' }]} />
+            </View>
+        );
+    }
+
+    // Liquid-glass without an image → aurora blobs (fallback)
     if (theme.isGlass) {
         return <AuroraBackground theme={theme} />;
     }

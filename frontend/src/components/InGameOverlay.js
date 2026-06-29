@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import LiveChat from './LiveChat';
 import VoiceChatPanel from './VoiceChatPanel';
 import SocketService from '../services/socket';
@@ -41,14 +41,23 @@ const InGameOverlay = () => {
     if (!room) return null;
 
     return (
-        <KeyboardAvoidingView 
-            style={styles.overlayContainer} 
-            pointerEvents="box-none"
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <View style={styles.voiceContainer} pointerEvents="box-none">
-                <VoiceChatPanel roomId={room.id} playerName={currentUser?.name} visible={true} />
-            </View>
+        <>
+            {!isChatMinimized && (
+                <TouchableWithoutFeedback onPress={() => {
+                    Keyboard.dismiss();
+                    setIsChatMinimized(true);
+                }}>
+                    <View style={styles.backdrop} />
+                </TouchableWithoutFeedback>
+            )}
+            <KeyboardAvoidingView 
+                style={styles.overlayContainer} 
+                pointerEvents="box-none"
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                <View style={styles.voiceContainer} pointerEvents="box-none">
+                    <VoiceChatPanel roomId={room.id} playerName={currentUser?.name} visible={true} />
+                </View>
 
             <View style={styles.chatContainer} pointerEvents="box-none">
                 <LiveChat
@@ -60,7 +69,8 @@ const InGameOverlay = () => {
                     onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
                 />
             </View>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </>
     );
 };
 
@@ -70,11 +80,16 @@ const styles = StyleSheet.create({
         zIndex: 1000,
         elevation: 1000,
     },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 999,
+        backgroundColor: 'rgba(0,0,0,0.3)', // Dim the background when chat is open
+    },
     voiceContainer: {
         position: 'absolute',
-        top: 60,
-        right: 15,
-        width: 180,
+        top: 10,
+        right: 110, // Places it right next to the MuteButton icons
+        zIndex: 1000,
     },
     chatContainer: {
         position: 'absolute',

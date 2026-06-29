@@ -7,9 +7,10 @@ import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
 import HapticService from '../../services/HapticService';
 import SoundService from '../../services/SoundService';
+import GlassView from '../GlassView';
 
 const ModeCard = ({ title, subtitle, onPress }) => {
-    const { COLORS } = useTheme();
+    const { COLORS, theme } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -44,15 +45,15 @@ const ModeCard = ({ title, subtitle, onPress }) => {
             activeOpacity={1}
             style={styles.cardTouchable}
         >
-            <Animated.View
-                style={[styles.modeCard, { transform: [{ scale: scaleAnim }] }]}
-            >
-                <NeonText size={16} weight="bold" color={COLORS.white}>
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                <GlassView style={[styles.modeCard, theme?.isGlass && { backgroundColor: 'transparent', borderWidth: 0 }]}>
+                    <NeonText size={16} weight="bold" color={COLORS.white}>
                     {title}
                 </NeonText>
                 <NeonText size={10} color="#6B7280" style={styles.subtitle}>
                     {subtitle}
                 </NeonText>
+                </GlassView>
             </Animated.View>
         </TouchableOpacity>
     );

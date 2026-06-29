@@ -29,8 +29,15 @@ const NeonButton = ({
     const { theme, COLORS } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const isPrimary = variant === 'primary';
-    const borderColor = theme?.isGlass ? theme.colors.borderDefault : (isPrimary ? COLORS.neonCyan : COLORS.hotPink);
-    const glowStyle = theme?.isGlass ? undefined : (isPrimary ? SHADOWS.neonGlow : SHADOWS.purpleGlow);
+    const isGlass = theme?.isGlass;
+
+    // Glass mode: cyan border for primary, white border for secondary
+    // Non-glass: neon glow colours
+    const borderColor = isGlass
+        ? (isPrimary ? 'rgba(0,194,255,0.85)' : 'rgba(255,255,255,0.50)')
+        : (isPrimary ? COLORS.neonCyan : COLORS.hotPink);
+    const glowStyle = isGlass ? undefined : (isPrimary ? SHADOWS.neonGlow : SHADOWS.purpleGlow);
+    const glassVariant = isGlass ? (isPrimary ? 'primary' : 'default') : undefined;
 
     // Animation refs
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -111,14 +118,17 @@ const NeonButton = ({
             style={[styles.container, style]}
             disabled={disabled || loading}
         >
-            <AnimatedGlassView style={[
+            <AnimatedGlassView
+                variant={glassVariant}
+                style={[
                 styles.button,
                 {
                     borderColor,
+                    borderRadius: isGlass ? 28 : 12,  // pill shape for liquid glass
                     paddingVertical: currentSize.paddingVertical,
                     paddingHorizontal: currentSize.paddingHorizontal,
                     transform: [{ scale: scaleAnim }],
-                    backgroundColor: theme?.isGlass ? 'transparent' : COLORS.overlayDark,
+                    backgroundColor: isGlass ? 'transparent' : COLORS.overlayDark,
                 },
                 glowStyle,
                 disabled && styles.disabled
@@ -137,7 +147,13 @@ const NeonButton = ({
                 ) : (
                     <View style={styles.content}>
                         {icon && <NeonText size={currentSize.fontSize} style={styles.icon}>{icon}</NeonText>}
-                        <NeonText weight="bold" variant="arcade" size={currentSize.fontSize} color={theme?.isGlass ? '#FFFFFF' : borderColor} glow={!theme?.isGlass}>
+                        <NeonText
+                            weight="bold"
+                            variant="arcade"
+                            size={currentSize.fontSize}
+                            color={isGlass ? '#FFFFFF' : borderColor}
+                            glow={!isGlass}
+                        >
                             {title.toUpperCase()}
                         </NeonText>
                     </View>

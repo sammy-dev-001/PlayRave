@@ -17,8 +17,8 @@ const NeonContainer = ({
     scrollable = false,
     hideBackground = false,
 }) => {
-    const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const { theme, COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
 
     // Responsive padding
     const getPadding = () => {
@@ -57,16 +57,16 @@ const NeonContainer = ({
     );
 };
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, theme) => StyleSheet.create({
     rootContainer: {
         flex: 1,
-        // 'minHeight: 100vh' is web-only CSS and crashes Android (String→Boolean cast).
-        // Use Platform.select to apply it only where valid.
         ...Platform.select({
             web: { height: '100%', minHeight: '100vh' },
             default: { flex: 1 },
         }),
-        backgroundColor: COLORS.deepNightBlack,
+        // Glass themes: ThemeBackground renders the full-bleed image, so keep this transparent.
+        // All other themes: fill with the deep background colour.
+        backgroundColor: theme?.isGlass ? 'transparent' : COLORS.deepNightBlack,
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     safeArea: {

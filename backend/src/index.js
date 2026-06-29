@@ -603,7 +603,7 @@ io.on("connection", (socket) => {
         // Create the persistent local room
         const room = roomManager.createLocalRoom(roomId, userId, socket.id, playerName || "Player 1");
         room.gameType = 'scrabble';
-        room.gameState = 'PLAYING';
+        roomManager.setGameState(roomId, 'PLAYING');
 
         socket.join(roomId);
 
@@ -664,7 +664,7 @@ io.on("connection", (socket) => {
 
         const room = roomManager.createLocalRoom(roomId, userId, socket.id, playerName || "Player 1");
         room.gameType = 'tic-tac-toe';
-        room.gameState = 'PLAYING';
+        roomManager.setGameState(roomId, 'PLAYING');
 
         socket.join(roomId);
 
