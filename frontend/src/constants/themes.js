@@ -120,8 +120,8 @@ export const THEME_PRESETS = {
         // Use the neon background so glass panels pop against the colourful gradient
         backgroundImage: require('../../assets/images/neon_background.png'),
         isGlass: true,
-        glassTint: 'light',
-        blurIntensity: 55,
+        glassTint: 'dark',
+        blurIntensity: 25,
         colors: {
             // Accent colours — translucent gel versions of the iOS/PlayRave palette
             primary: '#00C2FF',         // Cyan gel (Host Party button)

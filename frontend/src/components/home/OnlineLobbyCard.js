@@ -11,7 +11,7 @@ import SoundService from '../../services/SoundService';
 import GlassView from '../GlassView';
 
 const GradientButton = ({ title, subtitle, onPress, disabled }) => {
-    const { COLORS } = useTheme();
+    const { COLORS, theme } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -46,9 +46,9 @@ const GradientButton = ({ title, subtitle, onPress, disabled }) => {
             activeOpacity={1}
             disabled={disabled}
         >
-            <Animated.View style={[styles.gradientBtnOuter, { transform: [{ scale: scaleAnim }] }]}>
+            <Animated.View style={[styles.gradientBtnOuter, { transform: [{ scale: scaleAnim }] }, theme?.isGlass && { elevation: 0, shadowOpacity: 0 }]}>
                 <LinearGradient
-                    colors={['#00D4AA', '#00B4D8', '#0096C7']}
+                    colors={theme?.isGlass ? ['rgba(0, 212, 170, 0.4)', 'rgba(0, 180, 216, 0.4)', 'rgba(0, 150, 199, 0.4)'] : ['#00D4AA', '#00B4D8', '#0096C7']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.gradientBtn}
