@@ -121,7 +121,7 @@ export const THEME_PRESETS = {
         backgroundImage: require('../../assets/images/neon_background.png'),
         isGlass: true,
         glassTint: 'dark',
-        blurIntensity: 25,
+        blurIntensity: 1,
         colors: {
             // Accent colours — translucent gel versions of the iOS/PlayRave palette
             primary: '#00C2FF',         // Cyan gel (Host Party button)
