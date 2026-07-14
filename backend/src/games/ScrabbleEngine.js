@@ -44,6 +44,9 @@ class ScrabbleEngine {
     }
 
     startGame(room, options = {}) {
+        if (options.isSinglePlayer) {
+            return this.startSinglePlayerGame(room.id, room, options.difficulty);
+        }
         const roomId = room.id;
         const hostParticipates = options.hostParticipates !== false;
 

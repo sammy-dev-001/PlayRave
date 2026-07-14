@@ -1,4 +1,4 @@
-const { getQuestionsByCategory } = require('../../frontend/src/data/realTalkData');
+const { getQuestionsByCategory } = require('../data/realTalkData');
 
 class RealTalkEngine {
     constructor() {
