@@ -766,109 +766,158 @@ const ScrabbleScreen = ({ route, navigation }) => {
         return grid;
     };
 
+    const renderActionButtons = () => (
+        <View style={styles.gameButtons}>
+            {!exchangeMode ? (
+                <>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity
+                            style={[styles.smallBtn, placementHistory.length === 0 && styles.disabledBtn]}
+                            onPress={handleUndo}
+                            disabled={placementHistory.length === 0}
+                        >
+                            <NeonText size={12}>↶ Undo</NeonText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.smallBtn} onPress={handleRecallTiles}>
+                            <NeonText size={12}>Recall</NeonText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.smallBtn} onPress={handlePass}>
+                            <NeonText size={12}>Pass</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                    <NeonButton
+                        title="PLAY WORD"
+                        onPress={handleSubmitMove}
+                        disabled={placedTiles.length === 0}
+                        style={{ marginTop: 5, paddingVertical: 8 }}
+                    />
+                    <TouchableOpacity
+                        style={[styles.exchangeBtn, tileBag.length === 0 && styles.disabledBtn]}
+                        onPress={handleToggleExchangeMode}
+                        disabled={tileBag.length === 0}
+                    >
+                        <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
+                    </TouchableOpacity>
+                </>
+            ) : (
+                <>
+                    <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 8 }}>
+                        Select tiles to exchange ({selectedTilesForExchange.length} selected)
+                    </NeonText>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={styles.cancelExchangeBtn} onPress={handleToggleExchangeMode}>
+                            <NeonText size={12}>Cancel</NeonText>
+                        </TouchableOpacity>
+                        <NeonButton
+                            title={`EXCHANGE (${selectedTilesForExchange.length})`}
+                            onPress={handleConfirmExchange}
+                            disabled={selectedTilesForExchange.length === 0}
+                            style={{ marginTop: 0, paddingVertical: 8, flex: 1 }}
+                        />
+                    </View>
+                </>
+            )}
+        </View>
+    );
+
+    const renderRackSection = () => (
+        <View style={styles.rackContainer}>
+            <NeonText size={12} color={COLORS.textDarkMuted} style={{ marginBottom: 4 }}>Your Rack:</NeonText>
+            <DraggableRack
+                hand={currentHand}
+                placedTiles={placedTiles}
+                selectedTileIndex={selectedTileIndex}
+                exchangeMode={exchangeMode}
+                selectedTilesForExchange={selectedTilesForExchange}
+                rackTileSize={rackTileSize}
+                onTilePress={handleRackTilePress}
+                onTileDrop={handleTileDrop} // Pass down the drop handler
+            />
+        </View>
+    );
+
     return (
         <NeonContainer>
-            {/* Header */}
-            <View style={styles.header}>
-                <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
-                <View style={styles.scoreRow}>
-                    {gamePlayers.map(p => (
-                        <View key={p.id} style={[styles.miniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
-                            <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : COLORS.textMuted}>{p.name}</NeonText>
-                            <NeonText size={14} weight="bold">{playerScores[p.id]}</NeonText>
+            <View style={[styles.mainLayout, isDesktop && styles.desktopLayout]}>
+                
+                {isDesktop ? (
+                    <View style={styles.sidebar}>
+                        <View style={styles.desktopHeader}>
+                            <NeonText size={24} weight="bold" glow style={{ marginBottom: 15 }}>SCRABBLE</NeonText>
+                            <View style={styles.desktopScoreContainer}>
+                                {gamePlayers.map(p => (
+                                    <View key={p.id} style={[styles.miniScore, styles.desktopMiniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
+                                        <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : COLORS.textMuted} numberOfLines={1}>{p.name}</NeonText>
+                                        <NeonText size={16} weight="bold">{playerScores[p.id]}</NeonText>
+                                    </View>
+                                ))}
+                            </View>
                         </View>
-                    ))}
-                </View>
-            </View>
-
-            {/* Scrollable Board Area */}
-            <ScrollView
-                ref={scrollViewRef}
-                style={styles.boardContainer}
-                contentContainerStyle={styles.boardContent}
-                maximumZoomScale={3}
-                minimumZoomScale={1}
-                horizontal
-                bounces={false}
-            >
-                <ScrollView nestedScrollEnabled bounces={false}>
-                    <View 
-                        style={styles.gridContainer}
-                        ref={boardGridRef}
-                        collapsable={false}
-                    >
-                        {renderGrid()}
-                    </View>
-                </ScrollView>
-            </ScrollView>
-
-            {/* Controls & Rack */}
-            <View style={styles.controlsArea}>
-                <View style={styles.rackContainer}>
-                    <NeonText size={12} color={COLORS.textDarkMuted} style={{ marginBottom: 4 }}>Your Rack:</NeonText>
-                    <DraggableRack
-                        hand={currentHand}
-                        placedTiles={placedTiles}
-                        selectedTileIndex={selectedTileIndex}
-                        exchangeMode={exchangeMode}
-                        selectedTilesForExchange={selectedTilesForExchange}
-                        rackTileSize={rackTileSize}
-                        onTilePress={handleRackTilePress}
-                        onTileDrop={handleTileDrop} // Pass down the drop handler
-                    />
-                </View>
-
-                <View style={styles.gameButtons}>
-                    {!exchangeMode ? (
-                        <>
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity
-                                    style={[styles.smallBtn, placementHistory.length === 0 && styles.disabledBtn]}
-                                    onPress={handleUndo}
-                                    disabled={placementHistory.length === 0}
-                                >
-                                    <NeonText size={12}>↶ Undo</NeonText>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.smallBtn} onPress={handleRecallTiles}>
-                                    <NeonText size={12}>Recall</NeonText>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.smallBtn} onPress={handlePass}>
-                                    <NeonText size={12}>Pass</NeonText>
-                                </TouchableOpacity>
-                            </View>
-                            <NeonButton
-                                title="PLAY WORD"
-                                onPress={handleSubmitMove}
-                                disabled={placedTiles.length === 0}
-                                style={{ marginTop: 5, paddingVertical: 8 }}
-                            />
-                            <TouchableOpacity
-                                style={[styles.exchangeBtn, tileBag.length === 0 && styles.disabledBtn]}
-                                onPress={handleToggleExchangeMode}
-                                disabled={tileBag.length === 0}
-                            >
-                                <NeonText size={12} color={COLORS.neonCyan}>🔄 Exchange Tiles</NeonText>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <>
-                            <NeonText size={14} color={COLORS.neonCyan} style={{ textAlign: 'center', marginBottom: 8 }}>
-                                Select tiles to exchange ({selectedTilesForExchange.length} selected)
+                        <View style={[styles.turnIndicator, { borderRadius: 8, marginVertical: 15 }]}>
+                            <NeonText size={14} color={COLORS.limeGlow} weight="bold">
+                                {`⏳ ${currentPlayer.name}'s Turn`}
                             </NeonText>
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity style={styles.cancelExchangeBtn} onPress={handleToggleExchangeMode}>
-                                    <NeonText size={12}>Cancel</NeonText>
-                                </TouchableOpacity>
-                                <NeonButton
-                                    title={`EXCHANGE (${selectedTilesForExchange.length})`}
-                                    onPress={handleConfirmExchange}
-                                    disabled={selectedTilesForExchange.length === 0}
-                                    style={{ marginTop: 0, paddingVertical: 8, flex: 1 }}
-                                />
+                        </View>
+                        <ScrollView contentContainerStyle={styles.desktopControlsScroll} bounces={false}>
+                            <View style={[styles.desktopControlsArea, { justifyContent: 'center', flex: 1, paddingBottom: 20 }]}>
+                                {renderActionButtons()}
                             </View>
-                        </>
-                    )}
+                        </ScrollView>
+                        <TouchableOpacity style={[styles.smallBtn, { marginTop: 'auto', alignSelf: 'center', marginBottom: 20 }]} onPress={() => setEndGameModalVisible(true)}>
+                            <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        <View style={styles.header}>
+                            <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
+                            <View style={styles.scoreRow}>
+                                {gamePlayers.map(p => (
+                                    <View key={p.id} style={[styles.miniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
+                                        <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : COLORS.textMuted}>{p.name}</NeonText>
+                                        <NeonText size={14} weight="bold">{playerScores[p.id]}</NeonText>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    </>
+                )}
+
+                <View style={[styles.boardWrapper, isDesktop && styles.desktopBoardWrapper]}>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={styles.boardContainer}
+                        contentContainerStyle={styles.boardContent}
+                        maximumZoomScale={3}
+                        minimumZoomScale={1}
+                        horizontal
+                        bounces={false}
+                    >
+                        <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
+                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                <View 
+                                    style={styles.gridContainer}
+                                    ref={boardGridRef}
+                                    collapsable={false}
+                                >
+                                    {renderGrid()}
+                                </View>
+                                {isDesktop && (
+                                    <View style={{ marginTop: 30 }}>
+                                        {renderRackSection()}
+                                    </View>
+                                )}
+                            </View>
+                        </ScrollView>
+                    </ScrollView>
                 </View>
+
+                {!isDesktop && (
+                    <View style={styles.controlsArea}>
+                        {renderRackSection()}
+                        {renderActionButtons()}
+                    </View>
+                )}
             </View>
 
             {/* Score Popup */}
@@ -880,13 +929,14 @@ const ScrabbleScreen = ({ route, navigation }) => {
                 position="center"
             />
 
-            {/* End Game Button */}
-            <TouchableOpacity
-                style={styles.endGameBtn}
-                onPress={() => setEndGameModalVisible(true)}
-            >
-                <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
-            </TouchableOpacity>
+            {!isDesktop && (
+                <TouchableOpacity
+                    style={styles.endGameBtn}
+                    onPress={() => setEndGameModalVisible(true)}
+                >
+                    <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
+                </TouchableOpacity>
+            )}
 
             {/* Blank Tile Letter Selection Modal */}
             <Modal
@@ -1019,11 +1069,53 @@ const getStyles = (COLORS) => StyleSheet.create({
     boardContainer: {
         flex: 1,
     },
+    mainLayout: {
+        flex: 1,
+        flexDirection: 'column',
+    },
+    desktopLayout: {
+        flexDirection: 'row',
+    },
+    sidebar: {
+        width: 320,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRightWidth: 1,
+        borderRightColor: '#333',
+        padding: 20,
+        display: 'flex',
+    },
+    desktopHeader: {
+        alignItems: 'center',
+    },
+    desktopScoreContainer: {
+        flexDirection: 'column',
+        width: '100%',
+        gap: 10,
+    },
+    desktopMiniScore: {
+        paddingVertical: 10,
+    },
+    desktopControlsScroll: {
+        flexGrow: 1,
+    },
+    desktopControlsArea: {
+        flex: 1,
+    },
+    boardWrapper: {
+        flex: 1,
+    },
+    desktopBoardWrapper: {
+        padding: 20,
+    },
     boardContent: {
         flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 10,
+    },
+    innerScrollContent: {
+        flexGrow: 1,
+        minHeight: '100%',
     },
     gridContainer: {
         backgroundColor: '#000',

@@ -668,13 +668,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         </View>
 
                         <ScrollView contentContainerStyle={styles.desktopControlsScroll} bounces={false}>
-                            <View style={styles.desktopControlsArea}>
-                                <View style={styles.rackContainer}>
-                                    <NeonText size={14} color={COLORS.textDarkMuted} style={{ marginBottom: 10 }}>Your Rack:</NeonText>
-                                    <View style={styles.desktopRack}>
-                                        {renderRackTiles()}
-                                    </View>
-                                </View>
+                            <View style={[styles.desktopControlsArea, { justifyContent: 'center', flex: 1, paddingBottom: 20 }]}>
                                 <View style={styles.gameButtons}>
                                     {renderActionButtons()}
                                 </View>
@@ -723,12 +717,22 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                         bounces={false}
                     >
                         <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
-                            <View
-                                style={styles.gridContainer}
-                                ref={boardGridRef}
-                                collapsable={false}
-                            >
-                                {renderGrid()}
+                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                <View
+                                    style={styles.gridContainer}
+                                    ref={boardGridRef}
+                                    collapsable={false}
+                                >
+                                    {renderGrid()}
+                                </View>
+                                {isDesktop && (
+                                    <View style={[styles.rackContainer, { marginTop: 30 }]}>
+                                        <NeonText size={14} color={COLORS.textDarkMuted} style={{ marginBottom: 10, alignSelf: 'center' }}>Your Rack:</NeonText>
+                                        <View style={[styles.desktopRack, { justifyContent: 'center' }]}>
+                                            {renderRackTiles()}
+                                        </View>
+                                    </View>
+                                )}
                             </View>
                         </ScrollView>
                     </ScrollView>
