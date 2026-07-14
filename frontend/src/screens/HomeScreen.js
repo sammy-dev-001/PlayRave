@@ -204,6 +204,7 @@ const HomeScreen = ({ navigation }) => {
             roomCode: rejoinSession.roomId,
             avatar: rejoinSession.avatar || selectedAvatar,
             avatarColor: rejoinSession.avatarColor || selectedColor,
+            isRejoining: true,
         });
     };
 

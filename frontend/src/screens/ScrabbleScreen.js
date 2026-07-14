@@ -841,10 +841,16 @@ const ScrabbleScreen = ({ route, navigation }) => {
             <View style={[styles.mainLayout, isDesktop && styles.desktopLayout]}>
                 
                 {isDesktop ? (
-                    <View style={styles.sidebar}>
-                        <View style={styles.desktopHeader}>
-                            <NeonText size={24} weight="bold" glow style={{ marginBottom: 15 }}>SCRABBLE</NeonText>
-                            <View style={styles.desktopScoreContainer}>
+                    <View style={styles.desktopLayout}>
+                        {/* ─ DESKTOP TOP HEADER ─ */}
+                        <View style={styles.desktopTopHeader}>
+                            <NeonText size={28} weight="bold" glow>SCRABBLE</NeonText>
+                            <View style={styles.desktopHeaderCenter}>
+                                <NeonText size={18} color={COLORS.limeGlow} weight="bold">
+                                    {`⏳ ${currentPlayer.name}'s Turn`}
+                                </NeonText>
+                            </View>
+                            <View style={styles.desktopScoreRow}>
                                 {gamePlayers.map(p => (
                                     <View key={p.id} style={[styles.miniScore, styles.desktopMiniScore, p.id === currentPlayer.id && styles.activeMiniScore]}>
                                         <NeonText size={10} color={p.id === currentPlayer.id ? COLORS.neonCyan : COLORS.textMuted} numberOfLines={1}>{p.name}</NeonText>
@@ -853,19 +859,51 @@ const ScrabbleScreen = ({ route, navigation }) => {
                                 ))}
                             </View>
                         </View>
-                        <View style={[styles.turnIndicator, { borderRadius: 8, marginVertical: 15 }]}>
-                            <NeonText size={14} color={COLORS.limeGlow} weight="bold">
-                                {`⏳ ${currentPlayer.name}'s Turn`}
-                            </NeonText>
-                        </View>
-                        <ScrollView contentContainerStyle={styles.desktopControlsScroll} bounces={false}>
-                            <View style={[styles.desktopControlsArea, { justifyContent: 'center', flex: 1, paddingBottom: 20 }]}>
-                                {renderActionButtons()}
+
+                        <View style={styles.desktopMainRow}>
+                            {/* ─ DESKTOP LEFT BOARD AREA ─ */}
+                            <View style={styles.desktopBoardArea}>
+                                <View style={styles.desktopBoardWrapper}>
+                                    <ScrollView
+                                        ref={scrollViewRef}
+                                        style={styles.boardContainer}
+                                        contentContainerStyle={styles.boardContent}
+                                        maximumZoomScale={3}
+                                        minimumZoomScale={1}
+                                        horizontal
+                                        bounces={false}
+                                    >
+                                        <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
+                                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                                <View 
+                                                    style={styles.gridContainer}
+                                                    ref={boardGridRef}
+                                                    collapsable={false}
+                                                >
+                                                    {renderGrid()}
+                                                </View>
+                                            </View>
+                                        </ScrollView>
+                                    </ScrollView>
+                                </View>
+                                {/* RACK PINNED AT BOTTOM OF BOARD AREA */}
+                                <View style={styles.desktopRackContainer}>
+                                    {renderRackSection()}
+                                </View>
                             </View>
-                        </ScrollView>
-                        <TouchableOpacity style={[styles.smallBtn, { marginTop: 'auto', alignSelf: 'center', marginBottom: 20 }]} onPress={() => setEndGameModalVisible(true)}>
-                            <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
-                        </TouchableOpacity>
+
+                            {/* ─ DESKTOP RIGHT SIDEBAR ─ */}
+                            <View style={styles.desktopRightSidebar}>
+                                <ScrollView contentContainerStyle={styles.desktopControlsScroll} bounces={false}>
+                                    <View style={styles.desktopControlsArea}>
+                                        {renderActionButtons()}
+                                    </View>
+                                </ScrollView>
+                                <TouchableOpacity style={[styles.smallBtn, { marginTop: 'auto', alignSelf: 'center', marginBottom: 20 }]} onPress={() => setEndGameModalVisible(true)}>
+                                    <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
                 ) : (
                     <>
@@ -883,34 +921,33 @@ const ScrabbleScreen = ({ route, navigation }) => {
                     </>
                 )}
 
-                <View style={[styles.boardWrapper, isDesktop && styles.desktopBoardWrapper]}>
-                    <ScrollView
-                        ref={scrollViewRef}
-                        style={styles.boardContainer}
-                        contentContainerStyle={styles.boardContent}
-                        maximumZoomScale={3}
-                        minimumZoomScale={1}
-                        horizontal
-                        bounces={false}
-                    >
-                        <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
-                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                                <View 
-                                    style={styles.gridContainer}
-                                    ref={boardGridRef}
-                                    collapsable={false}
-                                >
-                                    {renderGrid()}
-                                </View>
-                                {isDesktop && (
-                                    <View style={{ marginTop: 30 }}>
-                                        {renderRackSection()}
+                )}
+
+                {!isDesktop && (
+                    <View style={[styles.boardWrapper, isDesktop && styles.desktopBoardWrapper]}>
+                        <ScrollView
+                            ref={scrollViewRef}
+                            style={styles.boardContainer}
+                            contentContainerStyle={styles.boardContent}
+                            maximumZoomScale={3}
+                            minimumZoomScale={1}
+                            horizontal
+                            bounces={false}
+                        >
+                            <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
+                                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                    <View 
+                                        style={styles.gridContainer}
+                                        ref={boardGridRef}
+                                        collapsable={false}
+                                    >
+                                        {renderGrid()}
                                     </View>
-                                )}
-                            </View>
+                                </View>
+                            </ScrollView>
                         </ScrollView>
-                    </ScrollView>
-                </View>
+                    </View>
+                )}
 
                 {!isDesktop && (
                     <View style={styles.controlsArea}>
@@ -1317,6 +1354,78 @@ const getStyles = (COLORS) => StyleSheet.create({
         shadowOpacity: 0.8,
         shadowRadius: 5,
         elevation: 5,
+    },
+    // Desktop Responsive Styles
+    desktopLayout: {
+        flex: 1,
+        flexDirection: 'column',
+    },
+    desktopTopHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 40,
+        paddingBottom: 15,
+        backgroundColor: COLORS.deepNightBlack,
+        borderBottomWidth: 1,
+        borderBottomColor: '#333',
+    },
+    desktopHeaderCenter: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    desktopScoreRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    desktopMainRow: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    desktopBoardArea: {
+        flex: 3,
+        flexDirection: 'column',
+        backgroundColor: '#0a0a0a',
+    },
+    desktopBoardWrapper: {
+        flex: 1,
+        width: '100%',
+    },
+    desktopRackContainer: {
+        paddingVertical: 20,
+        paddingHorizontal: 10,
+        backgroundColor: COLORS.deepNightBlack,
+        borderTopWidth: 1,
+        borderTopColor: '#333',
+        alignItems: 'center',
+    },
+    desktopRightSidebar: {
+        flex: 1,
+        maxWidth: 320,
+        backgroundColor: COLORS.deepNightBlack,
+        borderLeftWidth: 1,
+        borderLeftColor: '#333',
+        paddingTop: 20,
+        zIndex: 10,
+    },
+    desktopMiniScore: {
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+    },
+    desktopControlsScroll: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+    },
+    desktopControlsArea: {
+        justifyContent: 'center',
+        flex: 1,
+        paddingBottom: 20,
+    },
+    desktopRack: {
+        flexDirection: 'row',
+        gap: 8,
     },
 });
 

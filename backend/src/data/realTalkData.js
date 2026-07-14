@@ -13,7 +13,6 @@ const REAL_TALK_CATEGORIES = [
             "What's the best piece of advice you've ever received?",
             "If you had to eat one meal for the rest of your life, what would it be?",
             "What's the weirdest food combination you actually enjoy?",
-            "If your life had a theme song, what would it be?",
             "What's your most controversial food opinion?",
             "What's a weird habit you have that you think nobody else does?",
             "What's the best prank you've ever pulled (or had pulled on you)?",
