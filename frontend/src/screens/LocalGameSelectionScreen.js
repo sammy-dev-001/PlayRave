@@ -159,25 +159,18 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players, isSinglePlayer = false } = route.params;
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedVibe, setSelectedVibe] = useState('all');
+    const [selectedCategory, setSelectedCategory] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
     const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories'];
 
-    // Process games into categories
-    const gamesByCategory = React.useMemo(() => {
-        const grouped = {};
-        Object.keys(getGameCategories(COLORS)).forEach(key => {
-            grouped[key] = [];
-        });
-
-        // Filter available games first
+    const filteredGames = React.useMemo(() => {
         let available = isSinglePlayer
             ? getLocalGames(COLORS).filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
             : getLocalGames(COLORS).filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
 
-        if (selectedVibe !== 'all') {
-            available = available.filter(game => game.vibes && game.vibes.includes(selectedVibe));
+        if (selectedCategory !== 'all') {
+            available = available.filter(game => game.category === selectedCategory);
         }
 
         if (searchQuery.trim()) {
@@ -187,14 +180,9 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 game.description.toLowerCase().includes(query)
             );
         }
-
-        available.forEach(game => {
-            if (grouped[game.category]) {
-                grouped[game.category].push(game);
-            }
-        });
-        return grouped;
-    }, [isSinglePlayer, searchQuery, selectedVibe]);
+        
+        return available;
+    }, [isSinglePlayer, searchQuery, selectedCategory, COLORS]);
 
     const handleSelectGame = (gameId) => {
         if (gameId === 'real-talk') {
@@ -232,33 +220,46 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         }
     };
 
+    const renderCategoryTab = (id, name, icon, color) => (
+        <TouchableOpacity
+            key={id}
+            style={[
+                styles.categoryTab,
+                selectedCategory === id && { backgroundColor: color + '33', borderColor: color }
+            ]}
+            onPress={() => setSelectedCategory(id)}
+        >
+            <Ionicons name={icon} size={18} color={selectedCategory === id ? color : '#777'} />
+            <NeonText size={12} color={selectedCategory === id ? color : '#777'} weight={selectedCategory === id ? 'bold' : 'normal'}>
+                {name}
+            </NeonText>
+        </TouchableOpacity>
+    );
+
     const renderGameCard = (game) => (
         <TouchableOpacity
             key={game.id}
-            style={[styles.gameCard, { borderColor: game.color || COLORS.neonCyan }]}
+            style={styles.gameCard}
             onPress={() => handleSelectGame(game.id)}
             disabled={game.comingSoon}
         >
-            <View style={[styles.iconContainer, { backgroundColor: `${game.color}20` }]}>
-                <GameIcon gameId={game.id} fallbackIcon={game.icon} size={80} />
-            </View>
-            <View style={styles.gameInfo}>
-                <NeonText size={18} weight="bold" color={game.color}>{game.name}</NeonText>
-                <NeonText size={12} color="#AAA" style={styles.description}>{game.description}</NeonText>
-
-                <View style={styles.metaRow}>
-                    <View style={styles.badge}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="people" size={12} color={COLORS.white} /><NeonText size={10} color={COLORS.textMuted}>{game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText></View>
+            <GameIcon gameId={game.id} fallbackIcon={game.icon} size={null} style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%', borderRadius: 12 }]} />
+            <View style={styles.cardOverlay}>
+                <View style={styles.cardHeader}>
+                    <View style={styles.playerBadge}>
+                        <Ionicons name="people" size={10} color="#fff" />
+                        <NeonText size={10} color="#fff">{game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText>
                     </View>
-                    {game.category === 'speed' && (
-                        <View style={[styles.badge, { backgroundColor: '#FF3FA440' }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="flash" size={12} color="#FF3FA4" /><NeonText size={10} color="#FF3FA4">Fast</NeonText></View>
-                        </View>
-                    )}
                 </View>
-            </View>
-            <View style={styles.arrowContainer}>
-                <Ionicons name="chevron-forward" size={20} color={game.color} />
+
+                <View style={styles.cardFooter}>
+                    <NeonText size={16} weight="bold" color="#fff" glow variant="arcade">
+                        {game.name.toUpperCase()}
+                    </NeonText>
+                    <NeonText size={9} color="rgba(255,255,255,0.7)" numberOfLines={1}>
+                        {game.description}
+                    </NeonText>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -275,190 +276,109 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 }
             </View>
 
-            <View style={styles.container}>
-                <View style={styles.vibeContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vibeScroll}>
-                        {[
-                            { id: 'all', label: 'All Games', icon: 'apps' },
-                            { id: 'hype', label: 'Hype', icon: 'flame' },
-                            { id: 'chill', label: 'Chill', icon: 'cafe' },
-                            { id: 'brain', label: 'Brain', icon: 'hardware-chip' }
-                        ].map(vibe => (
-                            <TouchableOpacity
-                                key={vibe.id}
-                                style={[
-                                    styles.vibePill,
-                                    selectedVibe === vibe.id && styles.vibePillSelected
-                                ]}
-                                onPress={() => setSelectedVibe(vibe.id)}
-                            >
-                                <Ionicons 
-                                    name={vibe.icon} 
-                                    size={16} 
-                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan} 
-                                />
-                                <NeonText 
-                                    size={14} 
-                                    color={selectedVibe === vibe.id ? COLORS.background : COLORS.neonCyan}
-                                    weight={selectedVibe === vibe.id ? 'bold' : 'normal'}
-                                >
-                                    {vibe.label}
-                                </NeonText>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search games..."
-                        placeholderTextColor={COLORS.textMuted}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        autoCorrect={false}
-                    />
-                </View>
-                {Object.entries(getGameCategories(COLORS)).map(([key, category]) => {
-                    const categoryGames = gamesByCategory[key];
-                    if (!categoryGames || categoryGames.length === 0) return null;
-
-                    return (
-                        <View key={key} style={styles.categorySection}>
-                            <View style={styles.categoryHeader}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Ionicons name={category.icon} size={18} color={category.color} /><NeonText size={20} weight="bold" color={category.color} glow>{category.name}</NeonText></View>
-                                <View style={[styles.categoryLine, { backgroundColor: category.color }]} />
-                            </View>
-                            <View style={styles.gamesGrid}>
-                                {categoryGames.map(renderGameCard)}
-                            </View>
-                        </View>
-                    );
-                })}
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={18} color="#555" style={{ marginRight: 10 }} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Find a game..."
+                    placeholderTextColor="#555"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
             </View>
+
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.categoryScroll}
+                contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+            >
+                {renderCategoryTab('all', 'All', 'grid', COLORS.neonCyan)}
+                {Object.entries(getGameCategories(COLORS)).map(([id, cat]) =>
+                    renderCategoryTab(id, cat.name, cat.icon, cat.color)
+                )}
+            </ScrollView>
+
+            <View style={styles.gameGrid}>
+                {filteredGames.map(renderGameCard)}
+            </View>
+            
+            <View style={{ height: 60 }} />
         </NeonContainer >
     );
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 40,
-    },
-    vibeContainer: {
-        marginBottom: 20,
-    },
-    vibeScroll: {
-        gap: 10,
-        paddingHorizontal: 2,
-    },
-    vibePill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0,255,255,0.05)',
-        borderWidth: 1,
-        borderColor: COLORS.neonCyan,
-    },
-    vibePillSelected: {
-        backgroundColor: COLORS.neonCyan,
-        shadowColor: COLORS.neonCyan,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-        elevation: 5,
-    },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 12,
+        marginHorizontal: 20,
         paddingHorizontal: 15,
-        marginBottom: 25,
+        height: 45,
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: COLORS.surfaceLight,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchInput: {
-        flex: 1,
-        color: COLORS.white,
-        fontSize: 16,
-        paddingVertical: 12,
-        ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
-    },
+    searchInput: { flex: 1, color: '#fff', fontSize: 14, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
     header: {
         alignItems: 'center',
-        marginBottom: 15,
-        marginTop: 10,
+        marginBottom: 20,
+        marginTop: 20,
     },
-    subtitle: {
-        textAlign: 'center',
-        marginBottom: 30,
-        marginTop: 5,
-    },
-    categorySection: {
-        marginBottom: 30,
-    },
-    categoryHeader: {
+    categoryScroll: { maxHeight: 45, marginBottom: 20 },
+    categoryTab: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
-        gap: 15,
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        gap: 6,
     },
-    categoryLine: {
-        flex: 1,
-        height: 1,
-        opacity: 0.5,
-    },
-    gamesGrid: {
-        gap: 12,
+    gameGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 12,
+        justifyContent: 'space-between',
     },
     gameCard: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 16,
-        borderRadius: 16,
+        width: SCREEN_WIDTH > 768 ? '23%' : '47%',
+        aspectRatio: 1,
+        marginBottom: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
         borderWidth: 1,
-        gap: 15,
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: '#0a0a1a',
     },
-    iconContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
+    cardOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        padding: 6,
+        justifyContent: 'space-between'
     },
-    gameInfo: {
-        flex: 1,
-        gap: 4,
-        alignItems: 'center',
-    },
-    description: {
-        lineHeight: 16,
-        textAlign: 'center',
-    },
-    metaRow: {
+    cardHeader: {
         flexDirection: 'row',
-        gap: 8,
-        marginTop: 4,
+        justifyContent: 'flex-end'
     },
-    badge: {
-        backgroundColor: COLORS.surfaceLight,
-        paddingHorizontal: 8,
+    playerBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        paddingHorizontal: 4,
         paddingVertical: 2,
-        borderRadius: 8,
+        borderRadius: 4,
+        gap: 3,
     },
-    arrowContainer: {
-        opacity: 0.5,
+    cardFooter: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        padding: 5,
+        borderRadius: 6,
+        borderWidth: 0.5,
+        borderColor: 'rgba(255,255,255,0.1)'
     },
 });
 
