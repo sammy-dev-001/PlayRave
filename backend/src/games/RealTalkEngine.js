@@ -18,9 +18,10 @@ class RealTalkEngine {
         }
     }
 
-    startGame(room, options = {}) {
+    startGame(room, payload = {}) {
         const roomId = room.id;
-        const categoryId = options.categoryId || 'icebreakers';
+        // payload comes from the start-game event: { roomId, gameType, options: { categoryId } }
+        const categoryId = payload.options?.categoryId || 'icebreakers';
         const questions = [...getQuestionsByCategory(categoryId)];
         
         // Shuffle questions
@@ -66,9 +67,14 @@ class RealTalkEngine {
         const game = this.activeGames.get(roomId);
         if (!game) return { action: 'error', message: 'Game not found' };
 
-        // Ensure the person advancing is actually in the game (any player can click next)
         const playerExists = game.players.some(p => p.userId === userId);
         if (!playerExists) return { action: 'error', message: 'Player not in game' };
+
+        // Only the current player can skip the question
+        const currentPlayer = game.players[game.currentPlayerIndex];
+        if (currentPlayer && currentPlayer.userId !== userId) {
+            return { action: 'error', message: 'Only the current player can change the question' };
+        }
 
         // Advance to next question and player
         game.currentQuestionIndex = (game.currentQuestionIndex + 1) % game.questions.length;
