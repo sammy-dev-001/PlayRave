@@ -29,6 +29,7 @@ const gameIcons = {
     'spill-the-tea': require('../../assets/images/game_spill_the_tea.png'),
     'memory-chain': require('../../assets/images/game_memory_chain.png'),
     'memory-match': require('../../assets/images/game_memory_match.png'),
+    'real-talk': require('../../assets/images/game_real_talk.png'),
 };
 
 // Aliases for reuse
