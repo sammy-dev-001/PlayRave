@@ -17,10 +17,12 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
     useEffect(() => {
         const handleGameStarted = (data) => {
             if (data.gameType === 'scrabble' && data.isSinglePlayer) {
-                console.log('Single player game started from server');
+                console.log('Single player game started from server', data.roomId);
                 setIsStarting(false);
+                
+                const roomId = data.roomId || ("local-" + (SocketService.userId || SocketService.socket?.id));
                 navigation.navigate('OnlineScrabble', {
-                    room: { id: "local-" + (SocketService.userId || SocketService.socket?.id), players: data.gameState.players },
+                    room: { id: roomId, players: data.gameState?.players || data.players },
                     playerName: players[0].name,
                     isHost: true,
                     gameState: data.gameState

@@ -25,6 +25,7 @@ const engineRegistry = {
     'whos-most-likely':     require('../games/WhosMostLikelyEngine'),
     'truth-or-dare':        require('../games/TruthOrDareEngine'),
     'never-have-i-ever':    require('../games/NeverHaveIEverEngine'),
+    'real-talk':            require('../games/RealTalkEngine'),
 
     // ── Speed & Reaction Games (Phase 1) ────────────────────────────────
     'neon-tap':             require('../games/NeonTapEngine'),
@@ -315,6 +316,7 @@ class GameRouter {
             'whos-most-likely':    3,
             'truth-or-dare':       2,
             'never-have-i-ever':   2,
+            'real-talk':           2,
             'rapid-fire':          2,
             'neon-tap':            2,
             'word-rush':           2,

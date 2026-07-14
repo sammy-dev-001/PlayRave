@@ -54,6 +54,7 @@ const getAvailableGames = (COLORS) => [
     { id: 'word-rush', name: 'Word Rush', description: 'Type words fast.', color: COLORS.hotPink, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
     { id: 'whot', name: 'Naija Whot', description: 'Classic card game.', color: COLORS.electricPurple, category: 'competitive', minPlayers: 1, maxPlayers: 8, vibes: ['chill'] },
     { id: 'truth-or-dare', name: 'Truth or Dare', description: 'Party classic.', color: COLORS.hotPink, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'] },
+    { id: 'real-talk', name: 'Real Talk', description: 'Deep questions.', color: COLORS.neonCyan, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['chill'] },
     { id: 'never-have-i-ever', name: 'Never Have I Ever', description: 'Confess your secrets.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
     { id: 'whispers', name: 'Whispers Hub', description: 'Spill the tea.', color: COLORS.hotPink, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['chill'] },
     { id: 'imposter', name: 'Imposter', description: 'Find the traitor.', color: COLORS.electricPurple, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },

@@ -150,14 +150,13 @@ class ScrabbleEngine {
             targetId: humanPlayer.userId,
             event: 'game-started',
             data: {
+                roomId: roomId,
                 gameType: 'scrabble',
                 gameState: this.getGameState(roomId, humanPlayer.userId),
                 players: players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
                 hostParticipates: true,
                 isSinglePlayer: true
             }
-
-
         };
     }
 

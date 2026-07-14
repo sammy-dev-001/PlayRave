@@ -40,6 +40,17 @@ const getLocalGames = (COLORS) => [
         maxPlayers: 10,
         vibes: ['hype']
     },
+    {
+        id: 'real-talk',
+        name: 'Real Talk',
+        description: 'Deep questions and icebreakers',
+        icon: '💬',
+        color: COLORS.neonCyan,
+        category: 'party',
+        minPlayers: 2,
+        maxPlayers: 10,
+        vibes: ['chill']
+    },
 
     {
         id: 'never-have-i-local',
@@ -186,7 +197,9 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     }, [isSinglePlayer, searchQuery, selectedVibe]);
 
     const handleSelectGame = (gameId) => {
-        if (gameId === 'truth-or-dare') {
+        if (gameId === 'real-talk') {
+            navigation.navigate('RealTalkCategory', { players, isSinglePlayer });
+        } else if (gameId === 'truth-or-dare') {
             navigation.navigate('TruthOrDareCategorySelection', { players, isSinglePlayer });
         } else if (gameId === 'would-you-rather') {
             navigation.navigate('WouldYouRather', { players, isSinglePlayer });

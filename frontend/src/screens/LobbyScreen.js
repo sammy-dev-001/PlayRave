@@ -155,6 +155,10 @@ const LobbyScreen = ({ route, navigation }) => {
             navigation.navigate('OnlineNHIECategory', { room, isHost, playerName });
             return;
         }
+        if (selectedGame === 'real-talk') {
+            navigation.navigate('OnlineRealTalkCategory', { room, isHost, playerName });
+            return;
+        }
         if (selectedGame === 'hot-seat-mc' || selectedGame === 'hot-seat') {
             navigation.navigate('HotSeatCategory', { room, isHost, playerName });
             return;
