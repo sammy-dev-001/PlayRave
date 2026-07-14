@@ -36,7 +36,8 @@ const GAME_IMAGES = {
     'speed-categories': require('../../assets/images/game_rapid_fire.png'),
     'memory-match': require('../../assets/images/game_memory_match.png'),
     'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),
-    'rapid-fire': require('../../assets/images/game_rapid_fire.png')
+    'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
+    'real-talk': require('../../assets/images/game_real_talk.png')
 };
 
 const getGameCategories = (COLORS) => ({

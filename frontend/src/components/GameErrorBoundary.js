@@ -42,6 +42,7 @@ class GameErrorBoundary extends React.Component {
 
     render() {
         if (this.state.hasError) {
+            const { styles, COLORS } = this.props;
             return (
                 <NeonContainer>
                     <View style={styles.container}>
@@ -60,7 +61,7 @@ class GameErrorBoundary extends React.Component {
                         />
                         {/* Optionally display error details in dev */}
                         {__DEV__ && this.state.error && (
-                            <NeonText size={12} color={COLORS.textMuted} style={styles.errorText}>
+                            <NeonText size={12} color={this.props.COLORS.textMuted} style={this.props.styles.errorText}>
                                 {this.state.error.toString()}
                             </NeonText>
                         )}
@@ -99,4 +100,8 @@ const getStyles = (COLORS) => StyleSheet.create({
     }
 });
 
-export default GameErrorBoundary;
+export default function GameErrorBoundaryWrapper(props) {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    return <GameErrorBoundary {...props} COLORS={COLORS} styles={styles} />;
+}

@@ -25,6 +25,8 @@ const TurnTimer = memo(({
     showLabel = true,
     style
 }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [timeLeft, setTimeLeft] = useState(duration);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const progressAnim = useRef(new Animated.Value(1)).current;
