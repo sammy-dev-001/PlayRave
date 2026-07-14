@@ -7,6 +7,7 @@ import NeonButton from '../components/NeonButton';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { REAL_TALK_CATEGORIES } from '../data/realTalkData';
+import InGameOverlay from '../components/InGameOverlay';
 
 const { width } = Dimensions.get('window');
 
@@ -145,6 +146,8 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
                     />
                 )}
             </View>
+
+            <InGameOverlay />
         </NeonContainer>
     );
 };

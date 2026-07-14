@@ -64,6 +64,15 @@ const JoinScreen = ({ navigation, route }) => {
         };
     }, []);
 
+    useEffect(() => {
+        if (route.params?.isRejoining && name && code) {
+            const timer = setTimeout(() => {
+                handleJoin();
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [route.params?.isRejoining]);
+
     const handleJoin = () => {
         if (!name || !code) {
             Alert.alert("Missing Info", "Please enter your name and a room code.");
