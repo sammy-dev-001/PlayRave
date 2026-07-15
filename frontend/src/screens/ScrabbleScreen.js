@@ -921,7 +921,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
                     </>
                 )}
 
-                )}
+
 
                 {!isDesktop && (
                     <View style={[styles.boardWrapper, isDesktop && styles.desktopBoardWrapper]}>

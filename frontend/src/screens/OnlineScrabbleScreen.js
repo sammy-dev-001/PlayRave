@@ -740,9 +740,43 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                             </NeonText>
                         </View>
                     </>
-                )}
 
-                )}
+                    {!isDesktop && (
+                        <View style={styles.boardWrapper}>
+                            <ScrollView
+                                ref={scrollViewRef}
+                                style={styles.boardContainer}
+                                contentContainerStyle={styles.boardContent}
+                                horizontal
+                                bounces={false}
+                            >
+                                <ScrollView nestedScrollEnabled bounces={false} contentContainerStyle={styles.innerScrollContent}>
+                                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                        <View
+                                            style={styles.gridContainer}
+                                            ref={boardGridRef}
+                                            collapsable={false}
+                                        >
+                                            {renderGrid()}
+                                        </View>
+                                    </View>
+                                </ScrollView>
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    {!isDesktop && (
+                        <View style={styles.controlsArea}>
+                            <View style={styles.rackContainer}>
+                                <NeonText size={12} color={COLORS.textDarkMuted} style={{ marginBottom: 4 }}>Your Rack:</NeonText>
+                                {renderRackTiles()}
+                            </View>
+                            <View style={styles.gameButtons}>
+                                {renderActionButtons()}
+                            </View>
+                        </View>
+                    )}
+                </View>
             )}
 
             {/* Score Popup */}
