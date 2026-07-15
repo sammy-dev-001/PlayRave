@@ -14,7 +14,7 @@ import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useTheme } from '../context/ThemeContext';
 
-const CATEGORIES = [
+const getCategories = (COLORS) => [
     {
         id: 'Classic',
         name: 'Classic Mode',
@@ -64,6 +64,7 @@ const CATEGORIES = [
 
 const HotSeatCategoryScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
+    const CATEGORIES = React.useMemo(() => getCategories(COLORS), [COLORS]);
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedCategory, setSelectedCategory] = useState(null);

@@ -21,16 +21,20 @@ const SOUNDS = {
 };
 
 // Soundboard button component
-const SoundButton = ({ sound, onPress, disabled }) => (
-    <TouchableOpacity
+const SoundButton = ({ sound, onPress, disabled }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    return (
+        <TouchableOpacity
         style={[styles.soundButton, disabled && styles.disabled]}
         onPress={onPress}
         disabled={disabled}
     >
         <Ionicons name={sound.icon} size={24} color={COLORS.neonCyan} />
         <NeonText size={10} color={COLORS.textMuted}>{sound.name}</NeonText>
-    </TouchableOpacity>
-);
+        </TouchableOpacity>
+    );
+};
 
 // Main Soundboard component
 const Soundboard = ({ roomId, playerName, visible = true }) => {

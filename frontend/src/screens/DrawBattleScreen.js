@@ -20,10 +20,9 @@ import { useTheme } from '../context/ThemeContext';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CANVAS_SIZE = Math.min(SCREEN_WIDTH - 40, 320);
 
-const BRUSH_COLORS = [COLORS.white, COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlow, COLORS.electricPurple, '#ff9900'];
-
 const DrawBattleScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
+    const BRUSH_COLORS = React.useMemo(() => [COLORS.white, COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlow, COLORS.electricPurple, '#ff9900'], [COLORS]);
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 

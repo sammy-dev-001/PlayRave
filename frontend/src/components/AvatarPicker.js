@@ -240,6 +240,8 @@ const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
 
 // Compact avatar display component for use in lists
 export const AvatarDisplay = ({ avatar, color, size = 40, onPress, isCustomPhoto }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const Component = onPress ? TouchableOpacity : View;
     const isBase64Image = avatar && typeof avatar === 'string' && avatar.startsWith('data:image');
 
