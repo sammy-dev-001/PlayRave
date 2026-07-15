@@ -17,6 +17,8 @@ import ThemeBackground from '../components/ThemeBackground';
 import MuteButton from '../components/MuteButton';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
+import ErrorService from '../services/ErrorService';
+import HapticService from '../services/HapticService';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { navigateToGame } from '../utils/gameNavigation';
@@ -166,7 +168,18 @@ const JoinScreen = ({ navigation, route }) => {
         };
 
         const onError = ({ message }) => {
-            Alert.alert("Error", message);
+            HapticService.error();
+            
+            let displayMessage = message;
+            if (message === 'Room not found') {
+                displayMessage = "code doesn't match any room";
+            }
+            
+            ErrorService.handleError(new Error(displayMessage), { 
+                context: 'JoinRoom',
+                severity: 'high',
+                userMessage: displayMessage 
+            });
         };
 
         SocketService.on('room-joined', onJoined);

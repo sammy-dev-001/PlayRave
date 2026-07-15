@@ -124,7 +124,7 @@ const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton scrollable showMuteButton>
             <RaveLights trigger={showRaveLights} intensity="high" />
 
             {/* ── Header ──────────────────────────────────────────────── */}

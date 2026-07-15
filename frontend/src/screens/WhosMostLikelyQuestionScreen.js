@@ -200,7 +200,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
     // ── Loading state: waiting for server's first round-start event ────────
     if (isWaiting) {
         return (
-            <NeonContainer>
+            <NeonContainer showMuteButton>
                 <View style={styles.loadingContainer}>
                     <NeonText size={22} color={COLORS.electricPurple} glow>
                         Getting ready...
@@ -214,7 +214,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
     }
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton scrollable showMuteButton>
             {/* ── Header ──────────────────────────────────────────────── */}
             <View style={styles.header}>
                 <NeonText size={13} color={COLORS.hotPink}>
