@@ -21,8 +21,20 @@ import { navigateToGame } from '../utils/gameNavigation';
 const LobbyScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
-    const [room, setRoom] = useState(route.params.room);
-    const { playerName } = route.params;
+    
+    // Guard against undefined room (e.g. if navigated here from an error boundary without params)
+    useEffect(() => {
+        if (!route.params?.room) {
+            navigation.replace('Home');
+        }
+    }, [navigation, route.params?.room]);
+
+    const [room, setRoom] = useState(route.params?.room);
+    const playerName = route.params?.playerName;
+
+    if (!room) {
+        return null; // Wait for the useEffect to redirect
+    }
 
     // Session persistence and reconnection handling
     useGameDisconnectHandler({
@@ -34,7 +46,7 @@ const LobbyScreen = ({ route, navigation }) => {
 
     const fromGame = route.params.fromGame || false;
     const [selectedGame, setSelectedGame] = useState(
-        route.params.selectedGame || route.params.room.gameType
+        route.params.selectedGame || route.params.room?.gameType
     );
     const [hostParticipates, setHostParticipates] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);

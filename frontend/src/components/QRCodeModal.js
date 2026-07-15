@@ -14,7 +14,6 @@ import NeonButton from './NeonButton';
 import { useTheme } from '../context/ThemeContext';
 import { SHADOWS } from '../constants/themes';
 
-
 // Simple QR Code generator using a custom pattern
 // For production, consider using react-native-qrcode-svg or similar
 const QRCodeDisplay = ({ value, size = 200 }) => {
@@ -42,6 +41,8 @@ const QRCodeDisplay = ({ value, size = 200 }) => {
 };
 
 const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
+    const { COLORS } = useTheme();
+    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const [copied, setCopied] = useState(false);
 
     // Generate the join URL

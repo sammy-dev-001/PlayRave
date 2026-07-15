@@ -22,7 +22,7 @@ class GameErrorBoundary extends React.Component {
         console.error("GameErrorBoundary caught an error:", error, errorInfo);
     }
 
-    handleReturnToLobby = () => {
+    handleReturnToHome = () => {
         // DO NOT reset `hasError` to false here. 
         // Doing so forces the broken component to re-render and crash again immediately.
         // Keep the error UI mounted while we navigate away.
@@ -32,10 +32,10 @@ class GameErrorBoundary extends React.Component {
             try {
                 this.props.navigation.reset({
                     index: 0,
-                    routes: [{ name: 'Lobby', params: { fromError: true } }]
+                    routes: [{ name: 'Home', params: { fromError: true } }]
                 });
             } catch (e) {
-                this.props.navigation.navigate('Lobby');
+                this.props.navigation.navigate('Home');
             }
         }
     };
@@ -54,8 +54,8 @@ class GameErrorBoundary extends React.Component {
                             An unexpected error occurred in this game. Don't worry, the rest of the app is fine.
                         </NeonText>
                         <NeonButton 
-                            title="RETURN TO LOBBY" 
-                            onPress={this.handleReturnToLobby}
+                            title="RETURN TO HOME" 
+                            onPress={this.handleReturnToHome}
                             variant="primary"
                             color={COLORS.neonCyan}
                         />

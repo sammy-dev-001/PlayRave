@@ -1,28 +1,27 @@
-import React, { lazy } from 'react';
+import React from 'react';
 import HomeScreen from '../../screens/HomeScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
-import { withSuspense } from '../NavigationUtils';
 
-const LeaderboardScreen = lazy(() => import('../../screens/LeaderboardScreen'));
-const MyPacksScreen = lazy(() => import('../../screens/MyPacksScreen'));
-const CommunityPacksScreen = lazy(() => import('../../screens/CommunityPacksScreen'));
-const CustomPackEditorScreen = lazy(() => import('../../screens/CustomPackEditorScreen'));
-const ChallengesScreen = lazy(() => import('../../screens/ChallengesScreen'));
-const WhispersHubScreen = lazy(() => import('../../screens/WhispersHubScreen'));
-const TriviaHubScreen = lazy(() => import('../../screens/TriviaHubScreen'));
-const SettingsScreen = lazy(() => import('../../screens/SettingsScreen'));
+import LeaderboardScreen from '../../screens/LeaderboardScreen';
+import MyPacksScreen from '../../screens/MyPacksScreen';
+import CommunityPacksScreen from '../../screens/CommunityPacksScreen';
+import CustomPackEditorScreen from '../../screens/CustomPackEditorScreen';
+import ChallengesScreen from '../../screens/ChallengesScreen';
+import WhispersHubScreen from '../../screens/WhispersHubScreen';
+import TriviaHubScreen from '../../screens/TriviaHubScreen';
+import SettingsScreen from '../../screens/SettingsScreen';
 
 export const MainGroup = (Stack) => (
     <Stack.Group>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="Settings" component={withSuspense(SettingsScreen)} />
-        <Stack.Screen name="Leaderboard" component={withSuspense(LeaderboardScreen)} />
-        <Stack.Screen name="MyPacks" component={withSuspense(MyPacksScreen)} />
-        <Stack.Screen name="CommunityPacks" component={withSuspense(CommunityPacksScreen)} />
-        <Stack.Screen name="CustomPackEditor" component={withSuspense(CustomPackEditorScreen)} />
-        <Stack.Screen name="Challenges" component={withSuspense(ChallengesScreen)} />
-        <Stack.Screen name="WhispersHub" component={withSuspense(WhispersHubScreen)} />
-        <Stack.Screen name="TriviaHub" component={withSuspense(TriviaHubScreen)} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+        <Stack.Screen name="MyPacks" component={MyPacksScreen} />
+        <Stack.Screen name="CommunityPacks" component={CommunityPacksScreen} />
+        <Stack.Screen name="CustomPackEditor" component={CustomPackEditorScreen} />
+        <Stack.Screen name="Challenges" component={ChallengesScreen} />
+        <Stack.Screen name="WhispersHub" component={WhispersHubScreen} />
+        <Stack.Screen name="TriviaHub" component={TriviaHubScreen} />
     </Stack.Group>
 );

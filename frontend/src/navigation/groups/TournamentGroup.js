@@ -1,14 +1,13 @@
-import React, { lazy } from 'react';
-import { withSuspense } from '../NavigationUtils';
+import React from 'react';
 
-const TournamentSetupScreen = lazy(() => import('../../screens/TournamentSetupScreen'));
-const TournamentLobbyScreen = lazy(() => import('../../screens/TournamentLobbyScreen'));
-const TournamentResultsScreen = lazy(() => import('../../screens/TournamentResultsScreen'));
+import TournamentSetupScreen from '../../screens/TournamentSetupScreen';
+import TournamentLobbyScreen from '../../screens/TournamentLobbyScreen';
+import TournamentResultsScreen from '../../screens/TournamentResultsScreen';
 
 export const TournamentGroup = (Stack) => (
     <Stack.Group>
-        <Stack.Screen name="TournamentSetup" component={withSuspense(TournamentSetupScreen)} />
-        <Stack.Screen name="TournamentLobby" component={withSuspense(TournamentLobbyScreen)} />
-        <Stack.Screen name="TournamentResults" component={withSuspense(TournamentResultsScreen)} />
+        <Stack.Screen name="TournamentSetup" component={TournamentSetupScreen} />
+        <Stack.Screen name="TournamentLobby" component={TournamentLobbyScreen} />
+        <Stack.Screen name="TournamentResults" component={TournamentResultsScreen} />
     </Stack.Group>
 );

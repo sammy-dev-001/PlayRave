@@ -1,10 +1,9 @@
-import React, { lazy } from 'react';
-import { withSuspense } from '../NavigationUtils';
+import React from 'react';
 
-const AuthScreen = lazy(() => import('../../screens/AuthScreen'));
+import AuthScreen from '../../screens/AuthScreen';
 
 export const AuthGroup = (Stack) => (
     <Stack.Group>
-        <Stack.Screen name="Auth" component={withSuspense(AuthScreen)} />
+        <Stack.Screen name="Auth" component={AuthScreen} />
     </Stack.Group>
 );
