@@ -1110,40 +1110,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         flex: 1,
         flexDirection: 'column',
     },
-    desktopLayout: {
-        flexDirection: 'row',
-    },
-    sidebar: {
-        width: 320,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRightWidth: 1,
-        borderRightColor: '#333',
-        padding: 20,
-        display: 'flex',
-    },
-    desktopHeader: {
-        alignItems: 'center',
-    },
-    desktopScoreContainer: {
-        flexDirection: 'column',
-        width: '100%',
-        gap: 10,
-    },
-    desktopMiniScore: {
-        paddingVertical: 10,
-    },
-    desktopControlsScroll: {
-        flexGrow: 1,
-    },
-    desktopControlsArea: {
-        flex: 1,
-    },
-    boardWrapper: {
-        flex: 1,
-    },
-    desktopBoardWrapper: {
-        padding: 20,
-    },
+    desktopLayout: {},
     boardContent: {
         flexGrow: 1,
         justifyContent: 'center',
@@ -1383,15 +1350,21 @@ const getStyles = (COLORS) => StyleSheet.create({
     desktopMainRow: {
         flex: 1,
         flexDirection: 'row',
+        minHeight: 0,
+        overflow: 'hidden',
     },
     desktopBoardArea: {
         flex: 3,
         flexDirection: 'column',
         backgroundColor: '#0a0a0a',
+        minHeight: 0,
+        overflow: 'hidden',
     },
     desktopBoardWrapper: {
         flex: 1,
         width: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
     },
     desktopRackContainer: {
         paddingVertical: 20,

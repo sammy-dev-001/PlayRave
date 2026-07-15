@@ -1183,15 +1183,21 @@ const getStyles = (COLORS) => StyleSheet.create({
     desktopMainRow: {
         flex: 1,
         flexDirection: 'row',
+        minHeight: 0,
+        overflow: 'hidden',
     },
     desktopBoardArea: {
         flex: 3,
         flexDirection: 'column',
         backgroundColor: '#0a0a0a',
+        minHeight: 0,
+        overflow: 'hidden',
     },
     desktopBoardWrapper: {
         flex: 1,
         width: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
     },
     desktopRackContainer: {
         paddingVertical: 20,
@@ -1232,9 +1238,6 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     boardWrapper: {
         flex: 1,
-    },
-    desktopBoardWrapper: {
-        padding: 20,
     },
 });
 
