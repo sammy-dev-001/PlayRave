@@ -5,7 +5,7 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-const { getRandomStatements } = require('../../data/mythOrFactStatements');
+const { getRandomStatements } = require('../data/mythOrFactStatements');
 
 class MythOrFactEngine {
     constructor() {
