@@ -158,7 +158,7 @@ const ButtonMashScreen = ({ route, navigation }) => {
     };
 
     const handleBackToLobby = () => {
-        SocketService.emit('button-mash-end-game', { roomId: room.id });
+        navigation.navigate('Lobby', { room, playerName, isHost });
     };
 
     const myId = SocketService.socket?.id || SocketService.userId;

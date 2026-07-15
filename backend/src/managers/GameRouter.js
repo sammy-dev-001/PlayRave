@@ -129,7 +129,7 @@ class GameRouter {
                 const gameType = room?.gameType || null;
 
                 if (gameType && deltaSyncManager.isSpeedGame(gameType) && instruction.data) {
-                    const { payload, wasDelta } = deltaSyncManager.getPayload(roomId, gameType, instruction.data);
+                    const { payload, wasDelta } = deltaSyncManager.getPayload(roomId, instruction.event, gameType, instruction.data);
                     if (wasDelta && process.env.DELTA_DEBUG === 'true') {
                         console.log(`[GameRouter] Room ${roomId}: broadcasting delta for ${gameType}`);
                     }

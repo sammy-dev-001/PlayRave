@@ -5,6 +5,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
+import ConfirmModal from '../components/ConfirmModal';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
 import { useTheme } from '../context/ThemeContext';
@@ -14,6 +15,20 @@ const ResultsScreen = ({ route, navigation }) => {
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, results, hostParticipates, isHost } = route.params;
     const [countdown, setCountdown] = useState(5);
+    const [showEndGameModal, setShowEndGameModal] = useState(false);
+
+    const handleBackPress = () => {
+        if (isHost) {
+            setShowEndGameModal(true);
+        } else {
+            navigation.navigate('Lobby', { room, isHost, fromGame: true });
+        }
+    };
+
+    const confirmEndGame = () => {
+        setShowEndGameModal(false);
+        SocketService.emit('trivia-end-game', { roomId: room.id });
+    };
 
     // Check if current player got it right for rave lights
     const myUid = SocketService.userId;
@@ -47,8 +62,13 @@ const ResultsScreen = ({ route, navigation }) => {
             navigation.navigate('Scoreboard', { room, finalScores });
         };
 
+        const onGameEnded = () => {
+            navigation.navigate('Lobby', { room, isHost: false, fromGame: true });
+        };
+
         SocketService.on('next-question-ready', onNextQuestionReady);
         SocketService.on('game-finished', onGameFinished);
+        SocketService.on('game-ended', onGameEnded);
 
         // If host participates, auto-advance after 5 seconds
         let timer;
@@ -69,6 +89,7 @@ const ResultsScreen = ({ route, navigation }) => {
             if (timer) clearInterval(timer);
             SocketService.off('next-question-ready', onNextQuestionReady);
             SocketService.off('game-finished', onGameFinished);
+            SocketService.off('game-ended', onGameEnded);
         };
     }, [hostParticipates, isHost, navigation, room]);
 
@@ -94,7 +115,7 @@ const ResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton scrollable onBackPress={handleBackPress}>
             <RaveLights trigger={showRaveLights} intensity="medium" />
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow={true} style={styles.title}>
@@ -139,6 +160,17 @@ const ResultsScreen = ({ route, navigation }) => {
                         : 'Waiting for host...'}
                 </NeonText>
             )}
+
+            <ConfirmModal
+                visible={showEndGameModal}
+                title="END GAME?"
+                message="Are you sure you want to end the game for everyone?"
+                confirmText="END GAME"
+                cancelText="CANCEL"
+                confirmVariant="primary"
+                onConfirm={confirmEndGame}
+                onCancel={() => setShowEndGameModal(false)}
+            />
         </NeonContainer>
     );
 };

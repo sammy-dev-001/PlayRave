@@ -158,7 +158,7 @@ const ColorRushScreen = ({ route, navigation }) => {
     };
 
     const handleBackToLobby = () => {
-        SocketService.emit('color-rush-end-game', { roomId: room.id });
+        navigation.navigate('Lobby', { room, playerName, isHost });
     };
 
     const flashBackground = flashAnim.interpolate({

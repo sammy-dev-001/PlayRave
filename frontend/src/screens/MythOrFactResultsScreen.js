@@ -5,6 +5,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
+import ConfirmModal from '../components/ConfirmModal';
 import SocketService from '../services/socket';
 import { useTheme } from '../context/ThemeContext';
 
@@ -13,21 +14,23 @@ const MythOrFactResultsScreen = ({ route, navigation }) => {
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, results, hostParticipates, isHost } = route.params;
     const [countdown, setCountdown] = useState(5);
+    const [showEndGameModal, setShowEndGameModal] = useState(false);
 
     // Check if current player got it right for rave lights
-    const currentPlayerId = SocketService.socket?.id;
+    // results.playerResults use userId as playerId (set by the engine)
+    const currentPlayerId = SocketService.getUserId?.() || SocketService.userId || SocketService.socket?.id;
     const currentPlayerResult = results.playerResults.find(r => r.playerId === currentPlayerId);
     const showRaveLights = currentPlayerResult?.isCorrect || false;
 
     useEffect(() => {
         const onNextStatementReady = (data) => {
             console.log('Next statement ready in results:', data);
-            const nextS = data.statement || data.gameState?.statement;
-            if (nextS) {
+            // Engine broadcasts getGameState() — a flat object with statement as a string
+            const src = data.gameState || data;
+            if (src?.statement) {
                 navigation.replace('MythOrFactQuestion', {
                     room,
-                    statement: nextS,
-                    statementIndex: nextS.statementIndex || (data.gameState?.statementIndex || 0),
+                    // Pass nothing — QuestionScreen will call get-state on mount and normalise
                     hostParticipates,
                     isHost,
                     playerName: route.params?.playerName
@@ -40,8 +43,13 @@ const MythOrFactResultsScreen = ({ route, navigation }) => {
             navigation.navigate('Scoreboard', { room, finalScores });
         };
 
-        SocketService.on('next-myth-or-fact-statement-ready', onNextStatementReady);
+        const onGameEnded = () => {
+            navigation.navigate('Lobby', { room, isHost: false, fromGame: true });
+        };
+
+        SocketService.on('myth-or-fact-next-statement', onNextStatementReady);
         SocketService.on('game-finished', onGameFinished);
+        SocketService.on('game-ended', onGameEnded);
 
         if (hostParticipates) {
             const timer = setInterval(() => {
@@ -59,25 +67,41 @@ const MythOrFactResultsScreen = ({ route, navigation }) => {
 
             return () => {
                 clearInterval(timer);
-                SocketService.off('next-myth-or-fact-statement-ready', onNextStatementReady);
+                SocketService.off('myth-or-fact-next-statement', onNextStatementReady);
                 SocketService.off('game-finished', onGameFinished);
+                SocketService.off('game-ended', onGameEnded);
             };
         }
 
         return () => {
-            SocketService.off('next-myth-or-fact-statement-ready', onNextStatementReady);
+            SocketService.off('myth-or-fact-next-statement', onNextStatementReady);
             SocketService.off('game-finished', onGameFinished);
+            SocketService.off('game-ended', onGameEnded);
         };
     }, [hostParticipates, isHost, navigation, room]);
 
+    const handleBackPress = () => {
+        if (isHost) {
+            setShowEndGameModal(true);
+        } else {
+            navigation.navigate('Lobby', { room, isHost, fromGame: true });
+        }
+    };
+
+    const confirmEndGame = () => {
+        setShowEndGameModal(false);
+        SocketService.emit('myth-or-fact-end-game', { roomId: room.id });
+    };
+
     const handleNext = () => {
         console.log('Host requesting next statement');
-        SocketService.emit('next-myth-or-fact-statement', { roomId: room.id });
+        SocketService.emit('myth-or-fact-next-statement', { roomId: room.id });
     };
 
     const renderPlayerResult = ({ item }) => {
-        const player = room.players.find(p => p.id === item.playerId);
-        const playerName = player?.name || 'Unknown';
+        // item.playerId is actually the userId (engine comment: "populated with userId")
+        const player = room.players.find(p => p.userId === item.playerId);
+        const playerName = player?.name || player?.playerName || 'Unknown';
 
         return (
             <View style={[styles.playerRow, item.isCorrect && styles.correctRow]}>
@@ -92,7 +116,7 @@ const MythOrFactResultsScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton scrollable>
+        <NeonContainer showBackButton scrollable onBackPress={handleBackPress}>
             <RaveLights trigger={showRaveLights} intensity="medium" />
             <View style={styles.header}>
                 <NeonText size={28} weight="bold" glow style={styles.title}>
@@ -149,6 +173,17 @@ const MythOrFactResultsScreen = ({ route, navigation }) => {
                         : 'Waiting for host...'}
                 </NeonText>
             )}
+            
+            <ConfirmModal
+                visible={showEndGameModal}
+                title="END GAME?"
+                message="Are you sure you want to end the game for everyone?"
+                confirmText="END GAME"
+                cancelText="CANCEL"
+                confirmVariant="primary"
+                onConfirm={confirmEndGame}
+                onCancel={() => setShowEndGameModal(false)}
+            />
         </NeonContainer>
     );
 };

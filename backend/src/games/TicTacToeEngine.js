@@ -150,13 +150,8 @@ class TicTacToeEngine {
         match.completed    = false;
 
         const data = {
-            player1:     { userId: match.player1.userId, name: match.player1.name, symbol: 'X', isAI: match.player1.isAI || false },
-            player2:     { userId: match.player2.userId, name: match.player2.name, symbol: 'O', isAI: match.player2.isAI || false },
-            currentTurn: match.currentTurn,
-            board:       match.board,
-            matchNumber: game.currentMatchIndex + 1,
-            roundNumber: game.roundNumber,
-            isAIMatch:   match.isAIMatch || false,
+            match: this._safeMatch(match),
+            phase: 'playing'
         };
 
         if (match.player1.isAI) {
@@ -422,15 +417,15 @@ class TicTacToeEngine {
                     isAIMatch:   players[i].isAI || players[i + 1].isAI || false,
                 });
             } else {
-                // Odd player — BYE (Automatically advances)
+                // Odd player — Play against AI Bot
                 matches.push({
                     player1:     players[i],
-                    player2:     { userId: `bye-${Date.now()}`, name: '(BYE)', isAI: false },
+                    player2:     { userId: `bot-${Date.now()}`, name: 'AI Bot', isAI: true },
                     board:       Array(9).fill(null),
-                    currentTurn: null,
-                    winner:      players[i], // Auto-win
-                    completed:   true,       // Auto-complete
-                    isAIMatch:   false,
+                    currentTurn: players[i].userId,
+                    winner:      null,
+                    completed:   false,
+                    isAIMatch:   true,
                 });
             }
         }

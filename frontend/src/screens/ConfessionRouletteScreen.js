@@ -19,6 +19,7 @@ import MuteButton from '../components/MuteButton';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { CONFESSION_CONFIG, CONFESSION_STARTERS } from '../data/confessionPrompts';
+import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -281,6 +282,18 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
         });
     };
 
+    const MIN_PLAYERS = 3;
+    const [startError, setStartError] = useState('');
+
+    const handleStartGame = () => {
+        if (players.length < MIN_PLAYERS) {
+            setStartError(`Needs a minimum of ${MIN_PLAYERS} players to start (${players.length}/${MIN_PLAYERS} joined)`);
+            return;
+        }
+        setStartError('');
+        SocketService.emit('confession-start', { roomId: room.id });
+    };
+
     // Render functions for each phase
     const renderWaitingPhase = () => (
         <View style={styles.centeredContent}>
@@ -290,12 +303,25 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
             <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
                 Game will start soon...
             </NeonText>
+            <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 8 }}>
+                Players: {players.length}/{MIN_PLAYERS} minimum
+            </NeonText>
             {isHost && (
-                <NeonButton
-                    title="START GAME"
-                    onPress={() => SocketService.emit('confession-start', { roomId: room.id })}
-                    style={styles.startButton}
-                />
+                <>
+                    <NeonButton
+                        title="START GAME"
+                        onPress={handleStartGame}
+                        style={styles.startButton}
+                    />
+                    {startError ? (
+                        <View style={styles.errorBanner}>
+                            <Ionicons name="warning-outline" size={16} color={COLORS.cancelRed || '#FF453A'} style={{ marginRight: 8 }} />
+                            <NeonText size={13} color={COLORS.cancelRed || '#FF453A'} style={{ flex: 1 }}>
+                                {startError}
+                            </NeonText>
+                        </View>
+                    ) : null}
+                </>
             )}
         </View>
     );
@@ -414,7 +440,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                 {players && players.length > 0 ? (
                     players.map((player, index) => (
                         <TouchableOpacity
-                            key={player.id || player.name || index}
+                            key={player.id || player.userId || player.name || index}
                             style={[
                                 styles.playerOption,
                                 selectedPlayer === player.name && styles.selectedPlayer
@@ -422,7 +448,7 @@ const ConfessionRouletteScreen = ({ route, navigation }) => {
                             onPress={() => setSelectedPlayer(player.name)}
                         >
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <NeonText size={18} style={{ marginRight: 12 }}>{player.avatar || '👤'}</NeonText>
+                                <NeonText size={18} style={{ marginRight: 12 }}>{getAvatarEmoji(player.avatar)}</NeonText>
                                 <NeonText
                                     size={16}
                                     color={selectedPlayer === player.name ? COLORS.neonCyan : COLORS.white}
@@ -592,6 +618,18 @@ const getStyles = (COLORS) => StyleSheet.create({
     startButton: {
         marginTop: 50,
         minWidth: 240
+    },
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+        backgroundColor: 'rgba(255, 69, 58, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 69, 58, 0.4)',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        maxWidth: 300,
     },
     submissionContainer: {
         flex: 1,

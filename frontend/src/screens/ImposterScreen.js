@@ -13,6 +13,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
+import { getAvatarEmoji } from '../utils/avatarUtils';
 import InGameOverlay from '../components/InGameOverlay';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
@@ -334,7 +335,7 @@ const ImposterScreen = ({ route, navigation }) => {
                             ]}
                             onPress={() => setSelectedPlayer(pid)}
                         >
-                            <NeonText size={18}>{player.avatar || '👤'}</NeonText>
+                            <NeonText size={18}>{getAvatarEmoji(player.avatar)}</NeonText>
                             <NeonText
                                 size={18}
                                 color={selectedPlayer === pid ? COLORS.neonCyan : COLORS.white}

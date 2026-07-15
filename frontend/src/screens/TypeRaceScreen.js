@@ -265,7 +265,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                                 </View>
                             ))}
                         </View>
-                        <NeonButton title="BACK TO LOBBY" variant="secondary" onPress={() => SocketService.emit('type-race-end-game', { roomId: room.id })} style={styles.backButton} />
+                        <NeonButton title="BACK TO LOBBY" variant="secondary" onPress={() => navigation.navigate('Lobby', { room, playerName, isHost })} style={styles.backButton} />
                     </View>
                 )}
             </View>

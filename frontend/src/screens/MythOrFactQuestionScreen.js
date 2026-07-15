@@ -4,6 +4,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
+import ConfirmModal from '../components/ConfirmModal';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { useTheme } from '../context/ThemeContext';
@@ -26,17 +27,35 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [timeLeft, setTimeLeft] = useState(15);
     const [hasSubmitted, setHasSubmitted] = useState(false);
+    const [showEndGameModal, setShowEndGameModal] = useState(false);
 
     const canAnswer = !isHost || hostParticipates;
 
     useEffect(() => {
+        // Normalizes the flat gameState from the engine into the object shape the UI expects:
+        // { statement: string, category: string, totalStatements: number, statementIndex: number }
+        const normalizeState = (state) => {
+            if (!state) return null;
+            // If state itself looks like a flat game-state from the engine
+            if (typeof state.statement === 'string') {
+                return {
+                    statement: state.statement,
+                    category: state.category,
+                    totalStatements: state.totalStatements,
+                    statementIndex: state.statementIndex ?? 0,
+                };
+            }
+            // Already an object with nested data
+            return state.statement || state.statement_data || null;
+        };
+
         const handleStateUpdate = (state) => {
             console.log('MythOrFact state update:', state);
             if (!state) return;
-            const stmtData = state.statement || state.statement_data;
-            if (stmtData) {
-                setStatement(stmtData);
-                setStatementIndex(state.statementIndex ?? (stmtData.statementIndex || 0));
+            const normalized = normalizeState(state);
+            if (normalized) {
+                setStatement(normalized);
+                setStatementIndex(normalized.statementIndex ?? state.statementIndex ?? 0);
             }
         };
 
@@ -53,10 +72,11 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
 
         const onNextStatement = (data) => {
             console.log('Next statement ready:', data);
-            const nextS = data.statement || data.gameState?.statement;
-            if (nextS) {
-                setStatement(nextS);
-                setStatementIndex(nextS.statementIndex || (data.gameState?.statementIndex || 0));
+            // data is a flat gameState from the engine (nextStatement returns broadcast of getGameState)
+            const normalized = normalizeState(data.gameState || data);
+            if (normalized) {
+                setStatement(normalized);
+                setStatementIndex(normalized.statementIndex ?? 0);
                 setSelectedAnswer(null);
                 setHasSubmitted(false);
                 setTimeLeft(15);
@@ -72,11 +92,16 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
             if (data.gameState) handleStateUpdate(data.gameState);
         };
 
+        const onGameEnded = () => {
+            navigation.navigate('Lobby', { room, isHost: false, fromGame: true });
+        };
+
         SocketService.on('game-started', onGameStarted);
         SocketService.on('myth-or-fact-results', onResults);
-        SocketService.on('next-myth-or-fact-statement-ready', onNextStatement);
+        SocketService.on('myth-or-fact-next-statement', onNextStatement);
         SocketService.on('game-finished', onGameFinished);
         SocketService.on('game-state-sync', onGameStateSync);
+        SocketService.on('game-ended', onGameEnded);
 
         // Fetch state on mount
         SocketService.emit('get-state', { roomId: room.id });
@@ -84,11 +109,26 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
         return () => {
             SocketService.off('game-started', onGameStarted);
             SocketService.off('myth-or-fact-results', onResults);
-            SocketService.off('next-myth-or-fact-statement-ready', onNextStatement);
+            SocketService.off('myth-or-fact-next-statement', onNextStatement);
             SocketService.off('game-finished', onGameFinished);
             SocketService.off('game-state-sync', onGameStateSync);
+            SocketService.off('game-ended', onGameEnded);
         };
     }, [navigation, room.id]);
+
+
+    const handleBackPress = () => {
+        if (isHost) {
+            setShowEndGameModal(true);
+        } else {
+            navigation.navigate('Lobby', { room, isHost, fromGame: true });
+        }
+    };
+
+    const confirmEndGame = () => {
+        setShowEndGameModal(false);
+        SocketService.emit('myth-or-fact-end-game', { roomId: room.id });
+    };
 
     useEffect(() => {
         if (!statement) return;
@@ -119,12 +159,12 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
         const finalAnswer = answer !== undefined ? answer : selectedAnswer;
         setSelectedAnswer(finalAnswer);
         setHasSubmitted(true);
-        SocketService.emit('submit-myth-or-fact-answer', { roomId: room.id, answer: finalAnswer });
+        SocketService.emit('submit-answer', { roomId: room.id, answer: finalAnswer });
     };
 
     if (!statement) {
         return (
-            <NeonContainer showBackButton onBackPress={() => navigation.navigate('Lobby', { room, isHost })}>
+            <NeonContainer showBackButton onBackPress={handleBackPress}>
                 <View style={styles.loadingContainer}>
                     <NeonText size={20} glow>Syncing game data...</NeonText>
                 </View>
@@ -133,7 +173,7 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
     }
 
     return (
-        <NeonContainer showBackButton scrollable onBackPress={() => navigation.navigate('Lobby', { room, isHost })}>
+        <NeonContainer showBackButton scrollable onBackPress={handleBackPress}>
             <GameOverlay roomId={room.id} playerName={playerName}>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
@@ -194,6 +234,17 @@ const MythOrFactQuestionScreen = ({ route, navigation }) => {
                     </NeonText>
                 )}
             </GameOverlay>
+            
+            <ConfirmModal
+                visible={showEndGameModal}
+                title="END GAME?"
+                message="Are you sure you want to end the game for everyone?"
+                confirmText="END GAME"
+                cancelText="CANCEL"
+                confirmVariant="primary"
+                onConfirm={confirmEndGame}
+                onCancel={() => setShowEndGameModal(false)}
+            />
         </NeonContainer>
     );
 };

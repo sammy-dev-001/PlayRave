@@ -1,13 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from '../NeonText';
 import VoiceToggle from '../VoiceToggle';
 import { useTheme } from '../../context/ThemeContext';
+import SoundService from '../../services/SoundService';
 
 const HeaderIcons = ({ onBackPress, roomId }) => {
     const { COLORS } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+
+    const [isSoundMuted, setIsSoundMuted] = useState(SoundService.getMuted());
+    const [isMusicMuted, setIsMusicMuted] = useState(SoundService.getMusicMuted());
+
+    useEffect(() => {
+        setIsSoundMuted(SoundService.getMuted());
+        setIsMusicMuted(SoundService.getMusicMuted());
+    }, []);
+
+    const handleToggleSound = async () => {
+        const newMuted = await SoundService.toggleMute();
+        setIsSoundMuted(newMuted);
+    };
+
+    const handleToggleMusic = async () => {
+        const newMuted = await SoundService.toggleMusicMute();
+        setIsMusicMuted(newMuted);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.leftRow}>
@@ -25,11 +45,11 @@ const HeaderIcons = ({ onBackPress, roomId }) => {
 
             {/* Right icons */}
             <View style={styles.iconsRow}>
-                <TouchableOpacity style={styles.iconBtn}>
-                    <Ionicons name="volume-high" size={20} color="#8B8FA3" />
+                <TouchableOpacity style={styles.iconBtn} onPress={handleToggleSound}>
+                    <Ionicons name={isSoundMuted ? "volume-mute" : "volume-high"} size={20} color={isSoundMuted ? "#8B8FA3" : COLORS.limeGlow} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.iconBtn}>
-                    <Ionicons name="musical-notes" size={20} color="#8B8FA3" />
+                <TouchableOpacity style={styles.iconBtn} onPress={handleToggleMusic}>
+                    <Ionicons name={isMusicMuted ? "musical-outline" : "musical-notes"} size={20} color={isMusicMuted ? "#8B8FA3" : COLORS.neonCyan} />
                 </TouchableOpacity>
                 <VoiceToggle roomId={roomId} />
             </View>

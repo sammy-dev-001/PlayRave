@@ -13,6 +13,7 @@ import EmptyState from '../components/EmptyState';
 import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const LeaderboardScreen = () => {
     const { COLORS } = useTheme();
@@ -62,7 +63,7 @@ const LeaderboardScreen = () => {
                     )}
                 </View>
                 <View style={styles.avatarContainer}>
-                    <NeonText size={28}>{item.avatar}</NeonText>
+                    <NeonText size={28}>{getAvatarEmoji(item.avatar)}</NeonText>
                 </View>
                 <View style={styles.info}>
                     <NeonText size={16} weight="bold" color={isMe ? COLORS.neonCyan : COLORS.white}>

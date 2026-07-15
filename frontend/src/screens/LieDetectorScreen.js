@@ -10,6 +10,7 @@ import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
+import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const LieDetectorScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -121,7 +122,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
 
             <View style={styles.playerSpotlight}>
                 <Animated.View style={[styles.playerAvatar, { transform: [{ scale: pulseAnim }] }]}>
-                    <NeonText size={48}>{currentPlayer?.avatar || '👤'}</NeonText>
+                    <NeonText size={48}>{getAvatarEmoji(currentPlayer?.avatar)}</NeonText>
                 </Animated.View>
                 <NeonText size={20} weight="bold" glow>{currentPlayer?.name}</NeonText>
                 <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : COLORS.textMuted}>
@@ -182,7 +183,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
             <NeonText size={14} color={COLORS.hotPink}>VOTING TIME</NeonText>
 
             <View style={styles.playerSpotlight}>
-                <NeonText size={48}>{currentPlayer?.avatar || '👤'}</NeonText>
+                <NeonText size={48}>{getAvatarEmoji(currentPlayer?.avatar)}</NeonText>
                 <NeonText size={20} weight="bold">{currentPlayer?.name} says:</NeonText>
             </View>
 
@@ -243,7 +244,7 @@ const LieDetectorScreen = ({ route, navigation }) => {
                 {rankings.map((player, idx) => (
                     <View key={player.id} style={[styles.rankRow, idx === 0 && styles.winnerRow]}>
                         <NeonText size={20}>{idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `#${idx + 1}`}</NeonText>
-                        <NeonText size={16}>{player.avatar}</NeonText>
+                        <NeonText size={16}>{getAvatarEmoji(player.avatar)}</NeonText>
                         <NeonText size={16} weight="bold" style={{ flex: 1 }}>{player.name}</NeonText>
                         <NeonText size={16} color={COLORS.limeGlow}>{player.score} pts</NeonText>
                     </View>

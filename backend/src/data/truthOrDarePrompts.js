@@ -632,8 +632,12 @@ const getRandomTruth = (category = 'normal', usedTruths = []) => {
         effectiveCategory = categories[Math.floor(Math.random() * categories.length)];
     }
 
-    const categoryTruths = truthOrDarePrompts[effectiveCategory]?.truths || truthOrDarePrompts.normal.truths;
-    const availableTruths = categoryTruths.filter(truth => !usedTruths.includes(truth));
+    const categoryTruths = truthOrDarePrompts[effectiveCategory]?.truths || truthOrDarePrompts.normal?.truths || [];
+    
+    // Ensure usedTruths is an array
+    const safeUsedTruths = Array.isArray(usedTruths) ? usedTruths : [];
+
+    const availableTruths = categoryTruths.filter(truth => !safeUsedTruths.includes(truth));
 
     // Reset if all used
     if (availableTruths.length === 0) {
@@ -651,14 +655,18 @@ const getRandomDare = (category = 'normal', usedDares = []) => {
         effectiveCategory = categories[Math.floor(Math.random() * categories.length)];
     }
 
-    const categoryDares = truthOrDarePrompts[effectiveCategory]?.dares || truthOrDarePrompts.normal.dares;
-    const availableDares = categoryDares.filter(dare => !usedDares.includes(dare));
+    const categoryDares = truthOrDarePrompts[effectiveCategory]?.dares || truthOrDarePrompts.normal?.dares || [];
+    
+    // Ensure usedDares is an array
+    const safeUsedDares = Array.isArray(usedDares) ? usedDares : [];
 
-    // Reset if all used
+    const availableDares = categoryDares.filter(dare => !safeUsedDares.includes(dare));
+    
     if (availableDares.length === 0) {
+        // Reset if all used
         return categoryDares[Math.floor(Math.random() * categoryDares.length)];
     }
-
+    
     return availableDares[Math.floor(Math.random() * availableDares.length)];
 };
 

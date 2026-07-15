@@ -4,6 +4,7 @@ import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import GameOverlay from '../components/GameOverlay';
+import ConfirmModal from '../components/ConfirmModal';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import SoundService from '../services/SoundService';
@@ -25,8 +26,22 @@ const QuestionScreen = ({ route, navigation }) => {
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [timeLeft, setTimeLeft] = useState(15);
     const [hasSubmitted, setHasSubmitted] = useState(false);
+    const [showEndGameModal, setShowEndGameModal] = useState(false);
 
     const canAnswer = !isHost || hostParticipates;
+
+    const handleBackPress = () => {
+        if (isHost) {
+            setShowEndGameModal(true);
+        } else {
+            navigation.navigate('Lobby', { room, isHost });
+        }
+    };
+
+    const confirmEndGame = () => {
+        setShowEndGameModal(false);
+        SocketService.emit('trivia-end-game', { roomId: room.id });
+    };
 
     useEffect(() => {
         const handleStateUpdate = (state) => {
@@ -135,7 +150,7 @@ const QuestionScreen = ({ route, navigation }) => {
 
     if (!question) {
         return (
-            <NeonContainer showBackButton onBackPress={() => navigation.navigate('Lobby', { room, isHost })}>
+            <NeonContainer showBackButton onBackPress={handleBackPress}>
                 <View style={styles.loadingContainer}>
                     <NeonText size={20} glow>Syncing question data...</NeonText>
                 </View>
@@ -144,7 +159,7 @@ const QuestionScreen = ({ route, navigation }) => {
     }
 
     return (
-        <NeonContainer showMuteButton showBackButton onBackPress={() => navigation.navigate('Lobby', { room, isHost })}>
+        <NeonContainer showMuteButton showBackButton onBackPress={handleBackPress}>
             <GameOverlay roomId={room.id} playerName={route.params.playerName || 'Player'}>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
@@ -193,6 +208,17 @@ const QuestionScreen = ({ route, navigation }) => {
                     </NeonText>
                 )}
             </GameOverlay>
+
+            <ConfirmModal
+                visible={showEndGameModal}
+                title="END GAME?"
+                message="Are you sure you want to end the game for everyone?"
+                confirmText="END GAME"
+                cancelText="CANCEL"
+                confirmVariant="primary"
+                onConfirm={confirmEndGame}
+                onCancel={() => setShowEndGameModal(false)}
+            />
         </NeonContainer>
     );
 };

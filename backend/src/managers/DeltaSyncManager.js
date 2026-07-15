@@ -11,10 +11,6 @@
 
 const SPEED_GAMES = new Set([
     'neon-tap',
-    'button-mash',
-    'type-race',
-    'math-blitz',
-    'color-rush',
 ]);
 
 // Threshold: only send delta if it saves at least 30% of payload size.
@@ -75,8 +71,9 @@ class DeltaSyncManager {
      * @param {object} newState
      * @returns {{ _delta: true, changed: object, removed: string[] } | null}
      */
-    computeDelta(roomId, newState) {
-        const prev = this.stateCache.get(roomId);
+    computeDelta(roomId, eventName, newState) {
+        const cacheKey = `${roomId}_${eventName}`;
+        const prev = this.stateCache.get(cacheKey);
 
         if (!prev) {
             // No previous state — must send full state first
@@ -112,20 +109,22 @@ class DeltaSyncManager {
      * Updates the cache on every call.
      *
      * @param {string} roomId
+     * @param {string} eventName
      * @param {string} gameType
      * @param {object} fullState
      * @returns {{ payload: object, wasDelta: boolean }}
      */
-    getPayload(roomId, gameType, fullState) {
+    getPayload(roomId, eventName, gameType, fullState) {
         if (!this.isSpeedGame(gameType)) {
             return { payload: fullState, wasDelta: false };
         }
 
-        const delta = this.computeDelta(roomId, fullState);
+        const delta = this.computeDelta(roomId, eventName, fullState);
 
         // Update the cache. Use structuredClone (Node 17+) — faster than
         // JSON.parse(JSON.stringify()) and avoids double-serialization.
-        this.stateCache.set(roomId, structuredClone(fullState));
+        const cacheKey = `${roomId}_${eventName}`;
+        this.stateCache.set(cacheKey, structuredClone(fullState));
 
         if (!delta) {
             // No previous state, or nothing changed — send full state
@@ -138,7 +137,7 @@ class DeltaSyncManager {
 
         if (deltaSize < fullSize * DELTA_SIZE_THRESHOLD) {
             if (DELTA_DEBUG) {
-                console.log(`[DeltaSync] Room ${roomId}: delta ${deltaSize}B vs full ${fullSize}B — sending delta`);
+                console.log(`[DeltaSync] Room ${roomId} (${eventName}): delta ${deltaSize}B vs full ${fullSize}B — sending delta`);
             }
             return { payload: delta, wasDelta: true };
         }

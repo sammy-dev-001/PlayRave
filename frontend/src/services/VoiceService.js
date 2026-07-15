@@ -168,7 +168,7 @@ class VoiceService {
         this.isMuted = !this.isMuted;
 
         if (this.isWeb && this.localAudioTrack) {
-            this.localAudioTrack.setEnabled(!this.isMuted);
+            this.localAudioTrack.setMuted(this.isMuted).catch(e => console.error("Agora mute error:", e));
         }
 
         console.log('VoiceService: Muted:', this.isMuted);
@@ -179,7 +179,7 @@ class VoiceService {
         this.isMuted = muted;
 
         if (this.isWeb && this.localAudioTrack) {
-            this.localAudioTrack.setEnabled(!muted);
+            this.localAudioTrack.setMuted(muted).catch(e => console.error("Agora mute error:", e));
         }
     }
 

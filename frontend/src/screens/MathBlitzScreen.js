@@ -193,7 +193,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
     };
 
     const handleBackToLobby = () => {
-        SocketService.emit('math-blitz-end-game', { roomId: room.id });
+        navigation.navigate('Lobby', { room, playerName, isHost });
     };
 
     return (

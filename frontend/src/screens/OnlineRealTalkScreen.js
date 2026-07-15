@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { REAL_TALK_CATEGORIES } from '../data/realTalkData';
 import InGameOverlay from '../components/InGameOverlay';
+import ConfirmModal from '../components/ConfirmModal';
 
 const { width } = Dimensions.get('window');
 
@@ -19,6 +20,7 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
     const [gameState, setGameState] = useState(initialGameState || null);
     const [flipAnim] = useState(new Animated.Value(0));
     const [lastQuestion, setLastQuestion] = useState(initialGameState ? initialGameState.currentQuestion : null);
+    const [showEndGameModal, setShowEndGameModal] = useState(false);
 
     useEffect(() => {
         const handleStateUpdate = (response) => {
@@ -49,7 +51,7 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
         };
 
         const handleGameEnded = () => {
-            navigation.navigate('Lobby', { room, isHost: false, playerName: room.players.find(p => p.userId === SocketService.userId || p.uid === SocketService.userId)?.name, selectedGame: room.gameType, fromGame: true });
+            navigation.navigate('Lobby', { room, isHost: isHost, playerName: room.players.find(p => p.userId === SocketService.userId || p.uid === SocketService.userId)?.name, selectedGame: room.gameType, fromGame: true });
         };
 
         SocketService.on('real-talk-state-update', handleStateUpdate);
@@ -71,9 +73,22 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
         SocketService.emit('real-talk-next-question', { roomId: room.id });
     };
 
-    const handleEndGame = () => {
+    const handleEndGameRequest = () => {
         if (isHost) {
-            SocketService.emit('real-talk-end-game', { roomId: room.id });
+            setShowEndGameModal(true);
+        }
+    };
+
+    const confirmEndGame = () => {
+        setShowEndGameModal(false);
+        SocketService.emit('real-talk-end-game', { roomId: room.id });
+    };
+
+    const handleBackPress = () => {
+        if (isHost) {
+            setShowEndGameModal(true);
+        } else {
+            navigation.navigate('Lobby', { room, isHost });
         }
     };
 
@@ -102,7 +117,7 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
     return (
         <NeonContainer 
             showBackButton 
-            onBackPress={() => navigation.navigate('GameLobby', { room })}
+            onBackPress={handleBackPress}
         >
             <View style={styles.header}>
                 <Ionicons name={category.icon} size={32} color={category.color} />
@@ -139,7 +154,7 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
                 {isHost && (
                     <NeonButton
                         title="END GAME"
-                        onPress={handleEndGame}
+                        onPress={handleEndGameRequest}
                         style={{ marginTop: 15 }}
                         color={COLORS.danger || '#FF3B30'}
                         variant="outline"
@@ -148,6 +163,17 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
             </View>
 
             <InGameOverlay />
+            
+            <ConfirmModal
+                visible={showEndGameModal}
+                title="END GAME?"
+                message="Are you sure you want to end the game for everyone?"
+                confirmText="END GAME"
+                cancelText="CANCEL"
+                variant="danger"
+                onConfirm={confirmEndGame}
+                onCancel={() => setShowEndGameModal(false)}
+            />
         </NeonContainer>
     );
 };

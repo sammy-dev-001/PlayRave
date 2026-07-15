@@ -14,6 +14,18 @@ class MythOrFactEngine {
 
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
+            case 'myth-or-fact-get-state':
+            case 'get-state':
+                return {
+                    action: 'emit',
+                    targetId: userId,
+                    event: 'game-state-sync',
+                    data: {
+                        gameType: 'myth-or-fact',
+                        gameState: this.getGameState(roomId, userId),
+                        timestamp: Date.now()
+                    }
+                };
             case 'myth-or-fact-submit-answer':
             case 'submit-answer': // fallback
                 return this.submitAnswer(roomId, userId, payload.answer);
@@ -205,7 +217,7 @@ class MythOrFactEngine {
 
     endGame(roomId) {
         this.activeGames.delete(roomId);
-        return { action: 'broadcast', event: 'game-ended', data: { message: 'Game ended by host' } };
+        return { action: 'game-ended', event: 'game-ended', data: { message: 'Game ended by host' } };
     }
 }
 
