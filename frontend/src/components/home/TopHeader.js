@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from '../NeonText';
 import SoundService from '../../services/SoundService';
@@ -31,9 +31,11 @@ const TopHeader = ({ onSettingsPress, onProfilePress, isAuthenticated }) => {
         <View style={styles.container}>
             {/* Left: Logo */}
             <View style={styles.logoRow}>
-                <View style={styles.logoBolt}>
-                    <Ionicons name="flash" size={20} color={COLORS.deepNightBlack} />
-                </View>
+                <Image 
+                    source={require('../../assets/icon.png')} 
+                    style={styles.logoImage} 
+                    resizeMode="contain"
+                />
                 <NeonText size={20} weight="bold" color={COLORS.white} style={styles.logoText}>
                     PLAYRAVE
                 </NeonText>
@@ -77,13 +79,10 @@ const getStyles = (COLORS) => StyleSheet.create({
         alignItems: 'center',
         gap: 8,
     },
-    logoBolt: {
+    logoImage: {
         width: 36,
         height: 36,
-        borderRadius: 10,
-        backgroundColor: COLORS.white,
-        alignItems: 'center',
-        justifyContent: 'center',
+        borderRadius: 8,
     },
     logoText: {
         letterSpacing: 2,
