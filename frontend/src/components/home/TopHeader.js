@@ -32,7 +32,7 @@ const TopHeader = ({ onSettingsPress, onProfilePress, isAuthenticated }) => {
             {/* Left: Logo */}
             <View style={styles.logoRow}>
                 <Image 
-                    source={require('../../assets/icon.png')} 
+                    source={require('../../../assets/icon.png')} 
                     style={styles.logoImage} 
                     resizeMode="contain"
                 />
