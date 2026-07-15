@@ -49,7 +49,7 @@ const OnlineRealTalkScreen = ({ route, navigation }) => {
         };
 
         const handleGameEnded = () => {
-            navigation.navigate('GameLobby', { room });
+            navigation.navigate('Lobby', { room, isHost: false, playerName: room.players.find(p => p.userId === SocketService.userId || p.uid === SocketService.userId)?.name, selectedGame: room.gameType, fromGame: true });
         };
 
         SocketService.on('real-talk-state-update', handleStateUpdate);
