@@ -309,6 +309,25 @@ class GameRouter {
         return null;
     }
 
+    /**
+     * Safely retrieves the game state formatted for public broadcast to a specific client.
+     * Prevents internal secrets/targets from leaking during reconnection syncs.
+     */
+    async getPublicGameState(roomId, userId = null) {
+        const room = await roomManager.getRoom(roomId);
+        if (!room) return null;
+        
+        const state = await this.getGameState(roomId, room.gameType);
+        if (!state) return null;
+
+        const engine = engineRegistry[room.gameType];
+        if (engine && typeof engine._publicState === 'function') {
+            return engine._publicState(state, userId);
+        }
+        
+        return state;
+    }
+
     getMinPlayers(gameType) {
         const minimums = {
             'scrabble':            1,

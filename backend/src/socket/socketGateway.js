@@ -47,7 +47,7 @@ module.exports = function configureSocketGateway(io) {
 
             const room = await roomManager.getRoom(roomId);
             if (room && (room.gameState === 'PLAYING' || room.gameState === 'GAMEOVER')) {
-                const gameState = gameRouter.getGameState(roomId);
+                const gameState = await gameRouter.getPublicGameState(roomId, userId);
                 if (gameState) {
                     socket.emit("game-state-sync", {
                         gameState,
@@ -89,7 +89,7 @@ module.exports = function configureSocketGateway(io) {
             io.to(roomId).emit("room-updated", snapshot);
 
             if (room.gameState === 'PLAYING' || room.gameState === 'GAMEOVER') {
-                const gameState = gameRouter.getGameState(roomId);
+                const gameState = await gameRouter.getPublicGameState(roomId, userId);
                 if (gameState) {
                     if (room.gameType === 'confession-roulette' && room.confessionTimeLeft !== undefined) {
                         gameState.currentTimer = room.confessionTimeLeft;
