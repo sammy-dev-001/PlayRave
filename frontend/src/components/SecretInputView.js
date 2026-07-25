@@ -177,15 +177,18 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
         <View style={[styles.root, style]}>
 
             {/* ── Header ──────────────────────────────────────────────────── */}
-            <NeonText
-                variant="display"
-                size={22}
-                color={COLORS.neonCyan}
-                glow
-                style={styles.headerText}
-            >
-                🔒 Set the Secret Number
-            </NeonText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+                <Ionicons name="lock-closed" size={24} color={COLORS.neonCyan} style={{ marginRight: 8 }} />
+                <NeonText
+                    variant="display"
+                    size={22}
+                    color={COLORS.neonCyan}
+                    glow
+                    style={[styles.headerText, { marginBottom: 0 }]}
+                >
+                    Set the Secret Number
+                </NeonText>
+            </View>
             <NeonText size={13} color={COLORS.textMuted} style={styles.rangeLabel}>
                 Choose any 4-digit number
             </NeonText>
@@ -450,7 +453,7 @@ const WaitingView = ({ style }) => {
 
                     {/* Lock icon centred in the ring */}
                     <View style={styles.iconWrapper} pointerEvents="none">
-                        <NeonText size={34}>🔒</NeonText>
+                        <Ionicons name="lock-closed" size={34} color={COLORS.electricPurple} />
                     </View>
                 </View>
 
