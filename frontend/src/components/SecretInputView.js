@@ -66,18 +66,19 @@ const MAX_DIGITS = 4; // cap display width; engine validates actual range
  * Drop this component into any Guess-the-Number game screen.
  * It self-gates on `gamePhase` and renders the appropriate sub-view.
  *
- * @param {{ gamePhase, currentUserId, secretSetterId, rangeMin, rangeMax, onSubmit, style }} props
+ * @param {{ gamePhase, currentUserId, secretSetterId, onSubmit, style }} props
  */
 const SecretInputView = ({
     gameState,
     currentUserId,
-    rangeMin = 1,
-    rangeMax = 100,
     onSecretSubmit,
     style,
 }) => {
     // ── Hard gate: render nothing outside AWAITING_SECRET ───────────────────
     if (gameState?.gamePhase !== 'AWAITING_SECRET') return null;
+
+    const rangeMin = gameState?.rangeMin ?? 1000;
+    const rangeMax = gameState?.rangeMax ?? 9999;
 
     const hasSetSecret = gameState.secretsSetBy?.includes(currentUserId);
 
