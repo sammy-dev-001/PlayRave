@@ -168,6 +168,10 @@ export function navigateToGame(navigation, room, gameState, playerName, isHost, 
             navigation.navigate('OnlineRealTalk', navParams);
             break;
 
+        case 'guess-number':
+            navigation.navigate('GuessNumber', navParams);
+            break;
+
         default:
             console.warn(`[gameNavigation] No screen registered for gameType: "${gameType}"`);
             // If a game is in progress and we have no screen for it, dropping the player

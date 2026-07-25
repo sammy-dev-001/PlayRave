@@ -48,6 +48,7 @@ import SpillTheTeaScreen from '../../screens/SpillTheTeaScreen';
 import HotSeatScreen from '../../screens/HotSeatScreen';
 import HotSeatCategoryScreen from '../../screens/HotSeatCategoryScreen';
 import HotSeatMCScreen from '../../screens/HotSeatMCScreen';
+import GuessNumberScreen from '../../screens/GuessNumberScreen';
 import ButtonMashScreen from '../../screens/ButtonMashScreen';
 import TypeRaceScreen from '../../screens/TypeRaceScreen';
 import MathBlitzScreen from '../../screens/MathBlitzScreen';
@@ -123,5 +124,6 @@ export const OnlinePlayGroup = (Stack) => (
         <Stack.Screen name="RealTalk" component={RealTalkScreen} />
         <Stack.Screen name="OnlineRealTalkCategory" component={OnlineRealTalkCategoryScreen} />
         <Stack.Screen name="OnlineRealTalk" component={OnlineRealTalkScreen} />
+        <Stack.Screen name="GuessNumber" component={GuessNumberScreen} />
     </Stack.Group>
 );

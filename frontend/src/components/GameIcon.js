@@ -5,43 +5,40 @@ import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
 
 const gameIcons = {
-    // Original Set
     'scrabble': require('../../assets/images/game_scrabble.png'),
-    'whot': require('../../assets/images/game_whot.png'),
-    'truth-or-dare': require('../../assets/images/game_truth_dare.png'),
-    'trivia': require('../../assets/images/game_trivia.png'),
-    'charades': require('../../assets/images/game_charades.png'),
-    'never-have-i-ever': require('../../assets/images/game_never_have_i_ever.png'),
-
-    // Expanded Set
-    'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),
-    'whos-most-likely': require('../../assets/images/game_whos_most_likely.png'),
     'neon-tap': require('../../assets/images/game_neon_tap.png'),
     'word-rush': require('../../assets/images/game_word_rush.png'),
-    'confession-roulette': require('../../assets/images/game_confession_roulette.png'),
-    'imposter': require('../../assets/images/game_imposter.png'),
-    'hot-seat': require('../../assets/images/game_hot_seat.png'),
-    'math-blitz': require('../../assets/images/game_math_blitz.png'),
-    'tic-tac-toe': require('../../assets/images/game_tic_tac_toe.png'),
+    'color-rush': require('../../assets/images/game_color_rush.png'),
     'draw-battle': require('../../assets/images/game_art.png'),
+    'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),
     'kings-cup': require('../../assets/images/game_kings_cup.png'),
-    'unpopular-opinions': require('../../assets/images/game_unpopular_opinions.png'),
-    'spill-the-tea': require('../../assets/images/game_spill_the_tea.png'),
-    'memory-chain': require('../../assets/images/game_memory_chain.png'),
+    'hot-seat': require('../../assets/images/game_hot_seat.png'),
+    'guess-number': require('../../assets/images/game_guess_number.png'),
+    'tic-tac-toe': require('../../assets/images/game_tic_tac_toe.png'),
     'memory-match': require('../../assets/images/game_memory_match.png'),
+    'memory-chain': require('../../assets/images/game_memory_chain.png'),
+    'truth-or-dare': require('../../assets/images/game_truth_dare.png'),
+    'never-have-i-ever': require('../../assets/images/game_never_have_i_ever.png'),
+    'whos-most-likely': require('../../assets/images/game_whos_most_likely.png'),
+    'whot': require('../../assets/images/game_whot.png'),
+    'imposter': require('../../assets/images/game_imposter.png'),
+    'lie-detector': require('../../assets/images/game_lie_detector.png'),
     'real-talk': require('../../assets/images/game_real_talk.png'),
+    'unpopular-opinions': require('../../assets/images/game_unpopular_opinions.png'),
+    'confession-roulette': require('../../assets/images/game_confession_roulette.png'),
+    'spill-the-tea': require('../../assets/images/game_spill_the_tea.png'),
+    'math-blitz': require('../../assets/images/game_math_blitz.png'),
+    'charades': require('../../assets/images/game_charades.png'),
+    'trivia': require('../../assets/images/game_trivia.png'),
+    'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
 };
 
-// Aliases for reuse
 const ALIASES = {
-    'never-have-i': 'never-have-i-ever',
-    'never-have-i-local': 'never-have-i-ever',
     'button-mash': 'neon-tap',
     'type-race': 'word-rush',
-    'color-rush': 'neon-tap',
     'caption-this': 'draw-battle',
-    'would-you-rather': 'myth-or-fact', // Reuse Scales
-    'auction-bluff': 'kings-cup', // Reuse Cards/Chips vibe
+    'would-you-rather': 'myth-or-fact', 
+    'auction-bluff': 'kings-cup', 
     'speed-categories': 'word-rush',
     'hot-seat-mc': 'hot-seat',
 };
@@ -65,10 +62,10 @@ const GameIcon = ({ gameId, size = 60, style, fallbackIcon }) => {
     if (fallbackIcon) {
         return (
             <View style={[{ width: size, height: size, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }, style]}>
-                <Ionicons 
-                    name={fallbackIcon} 
-                    size={size * 0.6} 
-                    color={COLORS.neonCyan} 
+                <Ionicons
+                    name={fallbackIcon}
+                    size={size * 0.6}
+                    color={COLORS.neonCyan}
                 />
             </View>
         );

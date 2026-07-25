@@ -442,6 +442,11 @@ class SocketService {
     getSocketUrl() {
         return SOCKET_URL;
     }
+
+    // Alias for old cached bundles calling getUserId()
+    getUserId() {
+        return this.userId;
+    }
 }
 
 // Export connection states for consumers

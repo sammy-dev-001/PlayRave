@@ -37,7 +37,8 @@ const GAME_IMAGES = {
     'memory-match': require('../../assets/images/game_memory_match.png'),
     'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),
     'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
-    'real-talk': require('../../assets/images/game_real_talk.png')
+    'real-talk': require('../../assets/images/game_real_talk.png'),
+    'guess-number': require('../../assets/images/game_guess_number.png')
 };
 
 const getGameCategories = (COLORS) => ({
@@ -70,7 +71,8 @@ const getAvailableGames = (COLORS) => [
     { id: 'caption-this', name: 'Caption This', description: 'Funny image captions.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
     { id: 'auction-bluff', name: 'Auction Bluff', description: 'Bid and bluff.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 3, maxPlayers: 6, vibes: ['brain'] },
     { id: 'speed-categories', name: 'Speed Categories', description: 'Category word race.', color: COLORS.electricPurple, category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'] },
-    { id: 'memory-match', name: 'Memory Match', description: 'Flip and find pairs.', color: COLORS.limeGlow, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] }
+    { id: 'memory-match', name: 'Memory Match', description: 'Flip and find pairs.', color: COLORS.limeGlow, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
+    { id: 'guess-number', name: 'Guess the Number', description: 'High-tension number guessing.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 8, vibes: ['brain'] }
 ];
 
 const GameSelectionScreen = ({ route, navigation }) => {

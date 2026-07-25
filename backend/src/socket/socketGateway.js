@@ -12,6 +12,8 @@ module.exports = function configureSocketGateway(io) {
 
     io.on("connection", (socket) => {
         console.log("[Gateway] Socket connected:", socket.id);
+        
+        // Register standalone handlers
 
         socket.on("create-room", ({ playerName, avatar, avatarColor, userId }) => {
             console.log("[Gateway] create-room:", playerName, userId);

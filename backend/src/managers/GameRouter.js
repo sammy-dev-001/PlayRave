@@ -47,6 +47,9 @@ const engineRegistry = {
     'caption-this':         require('../games/CaptionThisEngine'),
     'auction-bluff':        require('../games/AuctionBluffEngine'),
     'speed-categories':     require('../games/SpeedCategoriesEngine'),
+
+    // ── Word & Number Games (Phase 3) ────────────────────────────────────
+    'guess-number':         require('../games/GuessNumberEngine'),
 };
 
 class GameRouter {
