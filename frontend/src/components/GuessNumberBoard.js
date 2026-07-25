@@ -72,9 +72,9 @@ const GuessNumberBoard = ({
         const history = [];
 
         // In 2-player mode, players are guessing DIFFERENT targets. We only want
-        // to show the history and bounds for the player whose turn it currently is.
+        // to show the history and bounds for OURSELVES to track our own progress.
         // In multiplayer, everyone guesses the SAME target, so we aggregate all.
-        const relevantPlayers = isMultiplayer ? players : (activePlayer ? [activePlayer] : []);
+        const relevantPlayers = isMultiplayer ? players : (myPlayer ? [myPlayer] : []);
 
         relevantPlayers.forEach(player => {
             player.guesses.forEach(guess => {
@@ -91,7 +91,7 @@ const GuessNumberBoard = ({
         history.reverse();
 
         return { currentMin: min, currentMax: max, combinedHistory: history };
-    }, [players, rangeMin, rangeMax, isMultiplayer, activePlayer]);
+    }, [players, rangeMin, rangeMax, isMultiplayer, myPlayer]);
 
     // ── Local Input State ──────────────────────────────────────────────────
     const [digits, setDigits] = useState('');
@@ -210,8 +210,10 @@ const GuessNumberBoard = ({
                 </View>
             </GlassView>
 
-            {/* ── History List (compact & scrollable) ────────────────────── */}
-            <View style={styles.historyContainer}>
+            {/* ── Main Content Row ───────────────────────────────────────── */}
+            <View style={styles.mainContentRow}>
+                {/* ── History List (compact & scrollable) ────────────────────── */}
+                <View style={styles.historyContainer}>
                 {combinedHistory.length > 0 ? (
                     <ScrollView
                         style={styles.historyScroll}
@@ -245,10 +247,11 @@ const GuessNumberBoard = ({
                         <NeonText size={13} color={COLORS.textMuted}>No guesses yet.</NeonText>
                     </View>
                 )}
-            </View>
+                </View>
 
-            {/* ── Input Section ──────────────────────────────────────────── */}
-            {isMyTurn ? (
+                {/* ── Input Section ──────────────────────────────────────────── */}
+                <View style={styles.inputContainer}>
+                    {isMyTurn ? (
                 <View style={styles.inputSection}>
                     <Animated.View style={[styles.displayWrapper, { transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }]}>
                         <GlassView style={[styles.inputDisplay, { borderColor: COLORS.borderDefault }]}>
@@ -298,8 +301,10 @@ const GuessNumberBoard = ({
                             {activePlayer?.name} is thinking...
                         </NeonText>
                     </GlassView>
+                        </View>
+                    )}
                 </View>
-            )}
+            </View>
         </View>
     );
 };
@@ -376,9 +381,14 @@ const getStyles = (COLORS) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    historyContainer: {
-        flex: 1, // takes up remaining space above input
+    mainContentRow: {
+        flex: 1,
+        flexDirection: 'row',
         width: '100%',
+    },
+    historyContainer: {
+        flex: 1,
+        marginRight: 12,
         marginBottom: 16,
         borderRadius: 16,
         overflow: 'hidden',
@@ -416,7 +426,12 @@ const getStyles = (COLORS) => StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 24,
+        padding: 12,
+    },
+    inputContainer: {
+        flex: 1.2,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
     },
     inputSection: {
         width: '100%',
