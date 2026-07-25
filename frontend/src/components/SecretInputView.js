@@ -170,8 +170,8 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
         ]).start();
     };
 
-    // Masked display — bullets not digits
-    const maskedDisplay = digits ? '●'.repeat(digits.length) : null;
+    // Display actual digits instead of masking
+    const displayDigits = digits || null;
 
     return (
         <View style={[styles.root, style]}>
@@ -187,7 +187,7 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
                 🔒 Set the Secret Number
             </NeonText>
             <NeonText size={13} color={COLORS.textMuted} style={styles.rangeLabel}>
-                Choose any number from {rangeMin} to {rangeMax}
+                Choose any 4-digit number
             </NeonText>
 
             {/* ── Masked display card ──────────────────────────────────────── */}
@@ -205,7 +205,7 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
                         !isGlass && SHADOWS.neonGlow,
                     ]}
                 >
-                    {maskedDisplay ? (
+                    {displayDigits ? (
                         <NeonText
                             variant="arcade"
                             size={38}
@@ -213,7 +213,7 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
                             glow
                             style={styles.maskedText}
                         >
-                            {maskedDisplay}
+                            {displayDigits}
                         </NeonText>
                     ) : (
                         <NeonText size={14} color={COLORS.textMuted} style={styles.placeholder}>

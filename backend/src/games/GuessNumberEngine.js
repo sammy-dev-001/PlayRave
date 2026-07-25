@@ -27,8 +27,8 @@
 //  `targets` is ONLY revealed in the GAME_OVER event payload.
 // ============================================================================
 
-const SECRET_MIN = 1;
-const SECRET_MAX = 100;
+const SECRET_MIN = 1000;
+const SECRET_MAX = 9999;
 const MAX_GUESSES = 10;
 
 class GuessNumberEngine {
