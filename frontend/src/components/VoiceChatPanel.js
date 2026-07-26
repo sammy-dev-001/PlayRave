@@ -7,12 +7,17 @@ import VoiceService from '../services/VoiceService';
 const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     const { COLORS, theme } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
-    const [isAvailable, setIsAvailable] = useState(false);
-    const [isConnected, setIsConnected] = useState(false);
-    const [isMuted, setIsMuted] = useState(true);
+
+    // ── Sync with VoiceService singleton on mount ─────────────────────────
+    // VoiceService persists across screens (lobby → game). We read its actual
+    // current state instead of blindly defaulting to false/true, so the button
+    // always reflects the real mic state.
+    const [isAvailable, setIsAvailable] = useState(() => VoiceService.isInitialized);
+    const [isConnected, setIsConnected] = useState(() => VoiceService.isJoined);
+    const [isMuted, setIsMuted] = useState(() => VoiceService.isMuted);
     const [isRecovering, setIsRecovering] = useState(false);
     const pulseAnim = useRef(new Animated.Value(1)).current;
-    const isConnectedRef = useRef(false);
+    const isConnectedRef = useRef(VoiceService.isJoined);
 
     // Keep ref in sync with state for use in event listeners
     useEffect(() => {
@@ -21,9 +26,9 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
 
     useEffect(() => {
         initVoice();
-        return () => {
-            VoiceService.leaveChannel();
-        };
+        // NOTE: Do NOT call leaveChannel on unmount here.
+        // VoiceService is a singleton — leaving on unmount would kill the
+        // mic when navigating between screens. The lobby manages the lifecycle.
     }, []);
 
     // ── Audio interruption recovery ────────────────────────────────────────
@@ -72,6 +77,11 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     }, [isConnected, isMuted, isRecovering]);
 
     const initVoice = async () => {
+        // If already initialised (e.g. from lobby), just sync state — don't re-init
+        if (VoiceService.isInitialized) {
+            setIsAvailable(true);
+            return;
+        }
         const available = await VoiceService.init();
         setIsAvailable(available);
     };
@@ -81,7 +91,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
             if (!roomId) return;
             const success = await VoiceService.joinChannel(`playrave-${roomId}`);
             setIsConnected(success);
-            setIsMuted(false);
+            if (success) setIsMuted(false);
         } else {
             const muted = VoiceService.toggleMute();
             setIsMuted(muted);
