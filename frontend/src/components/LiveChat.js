@@ -5,8 +5,6 @@ import {
     TextInput,
     FlatList,
     TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
     Animated
 } from 'react-native';
 import NeonText from './NeonText';
@@ -152,10 +150,7 @@ const LiveChat = ({
     }
 
     return (
-        <KeyboardAvoidingView
-            style={styles.keyboardContainer}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <View style={styles.keyboardContainer}>
             <GlassView style={styles.container}>
                 {/* Header */}
             <View style={styles.header}>
@@ -206,6 +201,8 @@ const LiveChat = ({
                     placeholderTextColor={COLORS.textMuted}
                     maxLength={100}
                     onSubmitEditing={handleSend}
+                    returnKeyType="send"
+                    blurOnSubmit={false}
                 />
                 <TouchableOpacity
                     style={styles.sendBtn}
@@ -218,7 +215,7 @@ const LiveChat = ({
                 </TouchableOpacity>
                 </View>
             </GlassView>
-        </KeyboardAvoidingView>
+        </View>
     );
 };
 
