@@ -18,6 +18,7 @@ import {
     Animated,
     Platform,
     ScrollView,
+    useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GlassView from './GlassView';
@@ -57,6 +58,9 @@ const GuessNumberBoard = ({
         rangeMax = 100,
         currentTurnId = null
     } = gameState || {};
+
+    const { width: windowWidth } = useWindowDimensions();
+    const isMobile = windowWidth < 768;
 
     const isMultiplayer = players.length > 2;
     // In multiplayer, it's always everyone's turn simultaneously.
@@ -211,9 +215,9 @@ const GuessNumberBoard = ({
             </GlassView>
 
             {/* ── Main Content Row ───────────────────────────────────────── */}
-            <View style={styles.mainContentRow}>
+            <View style={[styles.mainContentRow, isMobile && { flexDirection: 'column' }]}>
                 {/* ── History List (compact & scrollable) ────────────────────── */}
-                <View style={styles.historyContainer}>
+                <View style={[styles.historyContainer, isMobile && { marginRight: 0, minHeight: 150 }]}>
                 {combinedHistory.length > 0 ? (
                     <ScrollView
                         style={styles.historyScroll}
@@ -250,7 +254,7 @@ const GuessNumberBoard = ({
                 </View>
 
                 {/* ── Input Section ──────────────────────────────────────────── */}
-                <View style={styles.inputContainer}>
+                <View style={[styles.inputContainer, isMobile && { flex: 0 }]}>
                     {isMyTurn ? (
                 <View style={styles.inputSection}>
                     <Animated.View style={[styles.displayWrapper, { transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }]}>

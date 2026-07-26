@@ -13,6 +13,7 @@ import GlassHeader from '../components/GlassHeader';
 import SecretInputView from '../components/SecretInputView';
 import GuessNumberBoard from '../components/GuessNumberBoard';
 import GuessNumberResults from '../components/GuessNumberResults';
+import InGameOverlay from '../components/InGameOverlay';
 
 const GUESS_NUMBER_EVENTS = {
     SET_SECRET: 'guess-number-set-secret',
@@ -152,6 +153,9 @@ const GuessNumberScreen = () => {
                     />
                 )}
             </View>
+
+            {/* In-Game Voice and Chat Overlay */}
+            <InGameOverlay />
         </NeonContainer>
     );
 };
