@@ -7,6 +7,11 @@ import { Platform } from 'react-native';
 // Agora App ID - Get this from https://console.agora.io/
 const AGORA_APP_ID = 'f258296bc0cd4d729d2a1f2f8b8df5b2';
 
+// Backend base URL for token generation
+const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL
+    || (typeof window !== 'undefined' && window.__BACKEND_URL__)
+    || 'https://playrave-backend.onrender.com';
+
 class VoiceService {
     constructor() {
         this.client = null; // Web client
@@ -122,8 +127,25 @@ class VoiceService {
         try {
             const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
-            // Join the channel
-            await this.client.join(AGORA_APP_ID, channelName, null, uid || null);
+            // Fetch a short-lived RTC token from our backend
+            let token = null;
+            try {
+                const resp = await fetch(
+                    `${BACKEND_URL}/api/agora/token?channel=${encodeURIComponent(channelName)}&uid=${uid || 0}`
+                );
+                if (resp.ok) {
+                    const data = await resp.json();
+                    token = data.token; // null is valid in Agora test mode
+                    console.log('VoiceService: Fetched Agora token, secured:', !!token);
+                } else {
+                    console.warn('VoiceService: Token fetch failed, proceeding with null token');
+                }
+            } catch (tokenErr) {
+                console.warn('VoiceService: Could not reach token server, proceeding with null token:', tokenErr.message);
+            }
+
+            // Join the channel with the token (null = Agora test mode)
+            await this.client.join(AGORA_APP_ID, channelName, token, uid || null);
 
             // Create and publish local audio track
             this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();

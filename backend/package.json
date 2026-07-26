@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "PlayRave game server backend",
   "dependencies": {
+    "agora-token": "^2.0.5",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",

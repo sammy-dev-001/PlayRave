@@ -54,11 +54,13 @@ process.on('unhandledRejection', (reason, promise) => {
 const authRoutes = require('./routes/authRoutes');
 const packRoutes = require('./routes/packRoutes');
 const challengeRoutes = require('./routes/challengeRoutes');
+const agoraRoutes = require('./routes/agoraRoutes');
 const configureSocketGateway = require('./socket/socketGateway');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/packs', packRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/agora', agoraRoutes);
 
 configureSocketGateway(io);
 
