@@ -219,7 +219,7 @@ const GuessNumberBoard = ({
                 {isMobile ? (
                     <>
                         {/* On mobile, input/keypad goes TOP, history goes BOTTOM */}
-                        <View style={[styles.inputContainer, { flex: 0, marginBottom: 16 }]}>
+                        <View style={[styles.inputContainer, { flex: undefined, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', marginBottom: 16 }]}>
                             {renderInputSection()}
                         </View>
                         <View style={[styles.historyContainer, { marginRight: 0, flex: 1 }]}>
@@ -374,7 +374,7 @@ const NumpadKey = React.memo(({ label, onPress, isAction, isConfirm, COLORS, isG
 });
 
 // ── Styles ───────────────────────────────────────────────────────────────────
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = () => StyleSheet.create({
     root: {
         flex: 1,
         alignItems: 'center',
