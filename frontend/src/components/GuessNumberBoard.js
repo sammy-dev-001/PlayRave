@@ -213,104 +213,125 @@ const GuessNumberBoard = ({
                     </NeonText>
                 </View>
             </GlassView>
+            </GlassView>
 
             {/* ── Main Content Row ───────────────────────────────────────── */}
             <View style={[styles.mainContentRow, isMobile && { flexDirection: 'column' }]}>
-                {/* ── History List (compact & scrollable) ────────────────────── */}
-                <View style={[styles.historyContainer, isMobile && { marginRight: 0, minHeight: 150 }]}>
-                {combinedHistory.length > 0 ? (
-                    <ScrollView
-                        style={styles.historyScroll}
-                        contentContainerStyle={styles.historyContent}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {combinedHistory.map((guess, index) => {
-                            const isHigh = guess.hint === 'TOO_HIGH';
-                            const icon = isHigh ? 'arrow-down' : 'arrow-up';
-                            const color = isHigh ? COLORS.hotPink : COLORS.neonCyan;
-                            const text = isHigh ? 'LOWER' : 'HIGHER';
-
-                            return (
-                                <View key={index} style={[styles.historyRow, { borderBottomColor: COLORS.borderLight }]}>
-                                    <View style={styles.historyLeft}>
-                                        <NeonText size={12} color={COLORS.textMuted}>{guess.playerName} guessed</NeonText>
-                                        <NeonText variant="arcade" size={16} color={COLORS.white} style={styles.historyValue}>
-                                            {guess.value}
-                                        </NeonText>
-                                    </View>
-                                    <View style={styles.historyRight}>
-                                        <Ionicons name={icon} size={16} color={color} style={{ marginRight: 4 }} />
-                                        <NeonText size={12} color={color} weight="bold">{text}</NeonText>
-                                    </View>
-                                </View>
-                            );
-                        })}
-                    </ScrollView>
-                ) : (
-                    <View style={styles.emptyHistory}>
-                        <NeonText size={13} color={COLORS.textMuted}>No guesses yet.</NeonText>
-                    </View>
-                )}
-                </View>
-
-                {/* ── Input Section ──────────────────────────────────────────── */}
-                <View style={[styles.inputContainer, isMobile && { flex: 0 }]}>
-                    {isMyTurn ? (
-                <View style={styles.inputSection}>
-                    <Animated.View style={[styles.displayWrapper, { transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }]}>
-                        <GlassView style={[styles.inputDisplay, { borderColor: COLORS.borderDefault }]}>
-                            {digits ? (
-                                <NeonText variant="arcade" size={32} color={COLORS.white} glow>
-                                    {digits}
-                                </NeonText>
-                            ) : (
-                                <NeonText size={14} color={COLORS.textMuted}>
-                                    tap to guess
-                                </NeonText>
-                            )}
-                        </GlassView>
-                    </Animated.View>
-
-                    {!!validationMsg && (
-                        <NeonText size={12} color={COLORS.danger} style={styles.validationText}>
-                            ⚠ {validationMsg}
-                        </NeonText>
-                    )}
-
-                    <GlassView style={[styles.numpadContainer, { borderColor: COLORS.borderDefault }]}>
-                        {NUMPAD_KEYS.map((row, rowIdx) => (
-                            <View key={rowIdx} style={styles.numpadRow}>
-                                {row.map(key => (
-                                    <NumpadKey
-                                        key={key}
-                                        label={key}
-                                        onPress={() => handleKey(key)}
-                                        isAction={key === 'DEL' || key === 'OK'}
-                                        isConfirm={key === 'OK'}
-                                        COLORS={COLORS}
-                                        isGlass={isGlass}
-                                    />
-                                ))}
-                            </View>
-                        ))}
-                    </GlassView>
-                </View>
-            ) : (
-                <View style={styles.waitingSection}>
-                    <GlassView style={[styles.waitingCard, { borderColor: COLORS.electricPurple }]}>
-                        <NeonText variant="display" size={18} color={COLORS.electricPurple} glow style={styles.waitingText}>
-                            Wait for your turn!
-                        </NeonText>
-                        <NeonText size={13} color={COLORS.textMuted} style={styles.waitingSub}>
-                            {activePlayer?.name} is thinking...
-                        </NeonText>
-                    </GlassView>
+                {isMobile ? (
+                    <>
+                        {/* On mobile, input/keypad goes TOP, history goes BOTTOM */}
+                        <View style={[styles.inputContainer, { flex: 0, marginBottom: 16 }]}>
+                            {renderInputSection()}
                         </View>
-                    )}
-                </View>
+                        <View style={[styles.historyContainer, { marginRight: 0, flex: 1 }]}>
+                            {renderHistorySection()}
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        {/* On desktop, history goes LEFT, input/keypad goes RIGHT */}
+                        <View style={styles.historyContainer}>
+                            {renderHistorySection()}
+                        </View>
+                        <View style={styles.inputContainer}>
+                            {renderInputSection()}
+                        </View>
+                    </>
+                )}
             </View>
         </View>
     );
+
+    function renderHistorySection() {
+        return combinedHistory.length > 0 ? (
+            <ScrollView
+                style={styles.historyScroll}
+                contentContainerStyle={styles.historyContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {combinedHistory.map((guess, index) => {
+                    const isHigh = guess.hint === 'TOO_HIGH';
+                    const icon = isHigh ? 'arrow-down' : 'arrow-up';
+                    const color = isHigh ? COLORS.hotPink : COLORS.neonCyan;
+                    const text = isHigh ? 'LOWER' : 'HIGHER';
+
+                    return (
+                        <View key={index} style={[styles.historyRow, { borderBottomColor: COLORS.borderLight }]}>
+                            <View style={styles.historyLeft}>
+                                <NeonText size={12} color={COLORS.textMuted}>{guess.playerName} guessed</NeonText>
+                                <NeonText variant="arcade" size={16} color={COLORS.white} style={styles.historyValue}>
+                                    {guess.value}
+                                </NeonText>
+                            </View>
+                            <View style={styles.historyRight}>
+                                <Ionicons name={icon} size={16} color={color} style={{ marginRight: 4 }} />
+                                <NeonText size={12} color={color} weight="bold">{text}</NeonText>
+                            </View>
+                        </View>
+                    );
+                })}
+            </ScrollView>
+        ) : (
+            <View style={styles.emptyHistory}>
+                <NeonText size={13} color={COLORS.textMuted}>No guesses yet.</NeonText>
+            </View>
+        );
+    }
+
+    function renderInputSection() {
+        return isMyTurn ? (
+            <View style={styles.inputSection}>
+                <Animated.View style={[styles.displayWrapper, { transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }]}>
+                    <GlassView style={[styles.inputDisplay, { borderColor: COLORS.borderDefault }]}>
+                        {digits ? (
+                            <NeonText variant="arcade" size={32} color={COLORS.white} glow>
+                                {digits}
+                            </NeonText>
+                        ) : (
+                            <NeonText size={14} color={COLORS.textMuted}>
+                                tap to guess
+                            </NeonText>
+                        )}
+                    </GlassView>
+                </Animated.View>
+
+                {!!validationMsg && (
+                    <NeonText size={12} color={COLORS.danger} style={styles.validationText}>
+                        ⚠ {validationMsg}
+                    </NeonText>
+                )}
+
+                <GlassView style={[styles.numpadContainer, { borderColor: COLORS.borderDefault }]}>
+                    {NUMPAD_KEYS.map((row, rowIdx) => (
+                        <View key={rowIdx} style={styles.numpadRow}>
+                            {row.map(key => (
+                                <NumpadKey
+                                    key={key}
+                                    label={key}
+                                    onPress={() => handleKey(key)}
+                                    isAction={key === 'DEL' || key === 'OK'}
+                                    isConfirm={key === 'OK'}
+                                    COLORS={COLORS}
+                                    isGlass={isGlass}
+                                />
+                            ))}
+                        </View>
+                    ))}
+                </GlassView>
+            </View>
+        ) : (
+            <View style={styles.waitingSection}>
+                <GlassView style={[styles.waitingCard, { borderColor: COLORS.electricPurple }]}>
+                    <NeonText variant="display" size={18} color={COLORS.electricPurple} glow style={styles.waitingText}>
+                        Wait for your turn!
+                    </NeonText>
+                    <NeonText size={13} color={COLORS.textMuted} style={styles.waitingSub}>
+                        {activePlayer?.name} is thinking...
+                    </NeonText>
+                </GlassView>
+            </View>
+        );
+    }
 };
 
 // ── NumpadKey Component ───────────────────────────────────────────────────────
