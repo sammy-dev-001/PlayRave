@@ -175,6 +175,37 @@ class VoiceService {
         return this.isMuted;
     }
 
+    /**
+     * Restart the microphone track after an audio interruption (e.g. phone call).
+     * Safely tears down the old dead track and creates a fresh one.
+     */
+    async restartMicTrack() {
+        if (!this.isJoined || !this.isWeb || !this.client) {
+            return;
+        }
+        try {
+            const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
+
+            // Tear down the old (potentially dead) track
+            if (this.localAudioTrack) {
+                await this.client.unpublish([this.localAudioTrack]);
+                this.localAudioTrack.stop();
+                this.localAudioTrack.close();
+                this.localAudioTrack = null;
+            }
+
+            // Create a brand new mic track and publish it
+            this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+            if (this.isMuted) {
+                await this.localAudioTrack.setMuted(true);
+            }
+            await this.client.publish([this.localAudioTrack]);
+            console.log('VoiceService: Mic track restarted after interruption.');
+        } catch (error) {
+            console.error('VoiceService: Failed to restart mic track:', error);
+        }
+    }
+
     setMuted(muted) {
         this.isMuted = muted;
 

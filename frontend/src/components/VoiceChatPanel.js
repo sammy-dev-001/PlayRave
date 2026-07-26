@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Animated, Platform, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import VoiceService from '../services/VoiceService';
@@ -9,8 +9,15 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     const styles = React.useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
     const [isAvailable, setIsAvailable] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
-    const [isMuted, setIsMuted] = useState(true); 
+    const [isMuted, setIsMuted] = useState(true);
+    const [isRecovering, setIsRecovering] = useState(false);
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const isConnectedRef = useRef(false);
+
+    // Keep ref in sync with state for use in event listeners
+    useEffect(() => {
+        isConnectedRef.current = isConnected;
+    }, [isConnected]);
 
     useEffect(() => {
         initVoice();
@@ -19,8 +26,40 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
         };
     }, []);
 
+    // ── Audio interruption recovery ────────────────────────────────────────
+    // When the user returns to the app/tab after a phone call, the OS will have
+    // seized the microphone. We detect this and restart the mic track automatically.
     useEffect(() => {
-        if (isConnected && !isMuted) {
+        if (Platform.OS === 'web') {
+            // Browser tab visibility change (covers phone call interruption on mobile browsers)
+            const handleVisibilityChange = async () => {
+                if (document.visibilityState === 'visible' && isConnectedRef.current) {
+                    console.log('VoiceChatPanel: Tab regained focus — restarting mic track...');
+                    setIsRecovering(true);
+                    await VoiceService.restartMicTrack();
+                    setIsRecovering(false);
+                }
+            };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            return () => {
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+            };
+        } else {
+            // Native: AppState active/background transitions
+            const subscription = AppState.addEventListener('change', async (nextState) => {
+                if (nextState === 'active' && isConnectedRef.current) {
+                    console.log('VoiceChatPanel: App foregrounded — restarting mic track...');
+                    setIsRecovering(true);
+                    await VoiceService.restartMicTrack();
+                    setIsRecovering(false);
+                }
+            });
+            return () => subscription.remove();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isConnected && !isMuted && !isRecovering) {
             Animated.loop(
                 Animated.sequence([
                     Animated.timing(pulseAnim, { toValue: 1.2, duration: 1000, useNativeDriver: Platform.OS !== 'web' }),
@@ -30,7 +69,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
         } else {
             pulseAnim.setValue(1);
         }
-    }, [isConnected, isMuted]);
+    }, [isConnected, isMuted, isRecovering]);
 
     const initVoice = async () => {
         const available = await VoiceService.init();
@@ -42,7 +81,7 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
             if (!roomId) return;
             const success = await VoiceService.joinChannel(`playrave-${roomId}`);
             setIsConnected(success);
-            setIsMuted(false); 
+            setIsMuted(false);
         } else {
             const muted = VoiceService.toggleMute();
             setIsMuted(muted);
@@ -58,19 +97,33 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
 
     if (!visible || !isAvailable) return null;
 
+    // Choose the icon: recovering shows a spinner-like 'sync' icon
+    const iconName = isRecovering
+        ? 'sync-outline'
+        : !isConnected
+            ? 'mic-outline'
+            : isMuted
+                ? 'mic-off'
+                : 'mic';
+
+    const iconColor = isRecovering
+        ? COLORS.electricPurple
+        : !isConnected
+            ? COLORS.textDarkMuted
+            : isMuted
+                ? '#ff4444'
+                : COLORS.neonCyan;
+
     return (
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <TouchableOpacity
-                style={styles.button}
+                style={[styles.button, isRecovering && { borderColor: COLORS.electricPurple }]}
                 onPress={handlePress}
                 onLongPress={handleLongPress}
+                disabled={isRecovering}
                 activeOpacity={0.7}
             >
-                <Ionicons
-                    name={!isConnected ? 'mic-outline' : (isMuted ? 'mic-off' : 'mic')}
-                    size={20}
-                    color={!isConnected ? COLORS.textDarkMuted : (isMuted ? '#ff4444' : COLORS.neonCyan)}
-                />
+                <Ionicons name={iconName} size={20} color={iconColor} />
             </TouchableOpacity>
         </Animated.View>
     );
