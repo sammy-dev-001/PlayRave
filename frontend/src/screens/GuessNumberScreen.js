@@ -15,13 +15,6 @@ import GuessNumberBoard from '../components/GuessNumberBoard';
 import GuessNumberResults from '../components/GuessNumberResults';
 import InGameOverlay from '../components/InGameOverlay';
 
-const GUESS_NUMBER_EVENTS = {
-    SET_SECRET: 'guess-number-set-secret',
-    SUBMIT_GUESS: 'guess-number-guess',
-    STATE_UPDATE: 'game-state-sync',
-    ERROR: 'guess-number-error',
-};
-
 const GuessNumberScreen = () => {
     const route = useRoute();
     const navigation = useNavigation();
@@ -53,27 +46,27 @@ const GuessNumberScreen = () => {
             // Optionally show toast/alert
         };
 
-        SocketService.on('game-state-sync', handleStateUpdate);
-        SocketService.on('guess-number-secret-set', handleEngineUpdate);
-        SocketService.on('guess-number-guess-result', handleEngineUpdate);
-        SocketService.on('error', handleError);
-
-        // Fallback catchall for game-over if not caught by state sync
-        SocketService.on('guess-number-game-over', (payload) => {
+        const handleGameOver = (payload) => {
             if (payload.gameState) {
                 setGameState({
                     ...payload.gameState,
                     targets: payload.targets,
                 });
             }
-        });
+        };
+
+        SocketService.on('game-state-sync', handleStateUpdate);
+        SocketService.on('guess-number-secret-set', handleEngineUpdate);
+        SocketService.on('guess-number-guess-result', handleEngineUpdate);
+        SocketService.on('guess-number-game-over', handleGameOver);
+        SocketService.on('error', handleError);
 
         return () => {
             SocketService.off('game-state-sync', handleStateUpdate);
             SocketService.off('guess-number-secret-set', handleEngineUpdate);
             SocketService.off('guess-number-guess-result', handleEngineUpdate);
+            SocketService.off('guess-number-game-over', handleGameOver);
             SocketService.off('error', handleError);
-            SocketService.off('guess-number-game-over');
         };
     }, [room?.id]);
 
