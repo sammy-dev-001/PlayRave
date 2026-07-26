@@ -213,7 +213,6 @@ const GuessNumberBoard = ({
                     </NeonText>
                 </View>
             </GlassView>
-            </GlassView>
 
             {/* ── Main Content Row ───────────────────────────────────────── */}
             <View style={[styles.mainContentRow, isMobile && { flexDirection: 'column' }]}>
