@@ -84,6 +84,17 @@ class WhosMostLikelyEngine {
 
     // ── Public Engine Contract (called by GameRouter) ──────────────────────
 
+    get intercepts() {
+        return ['_wml-begin-round'];
+    }
+
+    handleIntercept(eventName, payload, roomId, userId) {
+        if (eventName === '_wml-begin-round') {
+            return this._beginRound(roomId);
+        }
+        return null;
+    }
+
     handleEvent(eventName, payload, userId, roomId) {
         switch (eventName) {
             // All three legacy event names accepted for backwards compatibility

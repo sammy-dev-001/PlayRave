@@ -51,6 +51,15 @@ const LobbyScreen = ({ route, navigation }) => {
     const [hostParticipates, setHostParticipates] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
     const [myReadyStatus, setMyReadyStatus] = useState(false);
+    // Guess-the-number range preset (host only)
+    const [guessNumberDifficulty, setGuessNumberDifficulty] = useState('normal');
+
+    const GUESS_NUMBER_RANGES = {
+        easy:    { label: 'Easy',    min: 1, max: 50   },
+        normal:  { label: 'Normal',  min: 1, max: 100  },
+        hard:    { label: 'Hard',    min: 1, max: 500  },
+        extreme: { label: 'Extreme', min: 1, max: 1000 },
+    };
 
     // Dynamically determine if the current player is host.
     // useMemo: only re-runs find() when room.players changes, not on every render.
@@ -180,6 +189,11 @@ const LobbyScreen = ({ route, navigation }) => {
             gameType: selectedGame,
             hostParticipates,
             category: selectedGame === 'trivia' ? 'All' : undefined,
+            // Pass range for guess-number
+            ...(selectedGame === 'guess-number' && {
+                minNumber: GUESS_NUMBER_RANGES[guessNumberDifficulty].min,
+                maxNumber: GUESS_NUMBER_RANGES[guessNumberDifficulty].max,
+            }),
         });
     };
 
@@ -278,6 +292,42 @@ const LobbyScreen = ({ route, navigation }) => {
                             label="Host Participates"
                             subtitle="Allow host to be part of the game turns"
                         />
+                    )}
+
+                    {/* ── Guess-the-Number range selector (host only) ── */}
+                    {isHost && selectedGame === 'guess-number' && (
+                        <View style={styles.rangeSection}>
+                            <NeonText size={13} color={COLORS.textMuted} style={styles.rangeLabel}>
+                                Number Range
+                            </NeonText>
+                            <View style={styles.rangePills}>
+                                {Object.entries(GUESS_NUMBER_RANGES).map(([key, { label, max }]) => {
+                                    const active = guessNumberDifficulty === key;
+                                    return (
+                                        <TouchableOpacity
+                                            key={key}
+                                            style={[
+                                                styles.rangePill,
+                                                active && styles.rangePillActive,
+                                            ]}
+                                            onPress={() => setGuessNumberDifficulty(key)}
+                                        >
+                                            <NeonText
+                                                size={11}
+                                                weight={active ? 'bold' : 'regular'}
+                                                color={active ? COLORS.neonCyan : COLORS.textMuted}
+                                                glow={active}
+                                            >
+                                                {label}
+                                            </NeonText>
+                                            <NeonText size={10} color={active ? COLORS.neonCyan : COLORS.textSecondary}>
+                                                1–{max}
+                                            </NeonText>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </View>
                     )}
 
                     <View style={{ height: 20 }} />
@@ -381,6 +431,33 @@ const getStyles = (COLORS) => StyleSheet.create({
     qrImage: { width: 200, height: 200, marginBottom: 15 },
     qrSubtitle: { marginBottom: 20 },
     qrShareBtn: { marginBottom: 15 },
+    // ── Guess-number range selector ────────────────────────────────────────
+    rangeSection: {
+        marginHorizontal: 16,
+        marginBottom: 12,
+        marginTop: 4,
+    },
+    rangeLabel: {
+        marginBottom: 8,
+    },
+    rangePills: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    rangePill: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.12)',
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        gap: 2,
+    },
+    rangePillActive: {
+        borderColor: 'rgba(0,248,255,0.6)',
+        backgroundColor: 'rgba(0,248,255,0.08)',
+    },
 });
 
 export default LobbyScreen;

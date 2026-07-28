@@ -163,6 +163,36 @@ class VoiceService {
         }
     }
 
+    /**
+     * Checks if the client disconnected silently and attempts to rejoin.
+     * Useful when the app reconnects to the game server.
+     */
+    async rejoinChannel() {
+        if (!this.isJoined || !this.channelName || !this.isWeb) {
+            return false;
+        }
+        
+        // If the Agora client actually disconnected while we thought we were joined
+        if (this.client && this.client.connectionState === 'DISCONNECTED') {
+            console.log('VoiceService: Client is DISCONNECTED but isJoined is true. Reconnecting...');
+            
+            // Need to reset internal state and re-join
+            this.isJoined = false;
+            
+            // Clear out dead tracks before re-joining to avoid errors
+            if (this.localAudioTrack) {
+                this.localAudioTrack.stop();
+                this.localAudioTrack.close();
+                this.localAudioTrack = null;
+            }
+            
+            // The uid might be stored in the client if we had one
+            return await this.joinChannelWeb(this.channelName, this.client.uid || 0);
+        }
+        
+        return true;
+    }
+
     async leaveChannel() {
         if (!this.isJoined) {
             return;

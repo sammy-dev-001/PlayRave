@@ -27,6 +27,9 @@ const GuessNumberResults = ({
     currentUserId,
     winner,
     message,
+    isBetweenRounds,
+    roundScores,
+    maxRounds,
     onPlayAgain,
     onReturnToArcade,
     style,
@@ -98,7 +101,7 @@ const GuessNumberResults = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [winner]);
 
-    if (!gameState || gameState.gamePhase !== 'GAME_OVER') return null;
+    if (!gameState || (gameState.gamePhase !== 'GAME_OVER' && gameState.gamePhase !== 'BETWEEN_ROUNDS')) return null;
 
     const hasWinner = !!winner;
     const revealText = hasWinner ? "The Secret Number they guessed was" : "The Secret Number you were trying to guess was";
@@ -109,7 +112,23 @@ const GuessNumberResults = ({
             
             {/* ── Header & Winner Announcement ─────────────────────────────── */}
             <View style={styles.headerContainer}>
-                {hasWinner ? (
+                {isBetweenRounds ? (
+                    <View style={styles.winnerWrapper}>
+                        <NeonText variant="display" size={24} color={COLORS.electricPurple} glow style={styles.winnerText}>
+                            {message}
+                        </NeonText>
+                        <NeonText size={16} color={COLORS.textMuted} style={styles.subtitle}>
+                            {hasWinner ? `${winner.name} won that round!` : 'No one guessed it!'}
+                        </NeonText>
+                        {roundScores && (
+                            <View style={styles.scorePill}>
+                                <NeonText size={14} weight="bold" color={COLORS.neonCyan}>
+                                    SCORE: {Object.values(roundScores).join(' - ')}
+                                </NeonText>
+                            </View>
+                        )}
+                    </View>
+                ) : hasWinner ? (
                     <View style={styles.winnerWrapper}>
                         <NeonText variant="display" size={28} color={COLORS.accent} glow style={styles.winnerText}>
                             🎉 {winner.name} WINS! 🎉
@@ -158,27 +177,29 @@ const GuessNumberResults = ({
                 </GlassView>
             </Animated.View>
 
-            {/* ── Action Buttons ─────────────────────────────────────────── */}
-            <View style={styles.actionsContainer}>
-                <NeonButton
-                    title="PLAY AGAIN"
-                    variant="primary"
-                    color={COLORS.neonCyan}
-                    size="large"
-                    icon="refresh-outline"
-                    onPress={onPlayAgain}
-                    style={styles.actionBtn}
-                />
-                <NeonButton
-                    title="RETURN TO ARCADE"
-                    variant="ghost"
-                    color={COLORS.textMuted}
-                    size="medium"
-                    icon="home-outline"
-                    onPress={onReturnToArcade}
-                    style={styles.actionBtn}
-                />
-            </View>
+            {/* ── Action Buttons (Hidden between rounds) ─────────────────── */}
+            {!isBetweenRounds && (
+                <View style={styles.actionsContainer}>
+                    <NeonButton
+                        title="PLAY AGAIN"
+                        variant="primary"
+                        color={COLORS.neonCyan}
+                        size="large"
+                        icon="refresh-outline"
+                        onPress={onPlayAgain}
+                        style={styles.actionBtn}
+                    />
+                    <NeonButton
+                        title="RETURN TO ARCADE"
+                        variant="ghost"
+                        color={COLORS.textMuted}
+                        size="medium"
+                        icon="home-outline"
+                        onPress={onReturnToArcade}
+                        style={styles.actionBtn}
+                    />
+                </View>
+            )}
         </Animated.View>
     );
 };
@@ -206,6 +227,15 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     subtitle: {
         textAlign: 'center',
+    },
+    scorePill: {
+        marginTop: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 240, 255, 0.3)',
     },
     numberContainer: {
         width: '100%',

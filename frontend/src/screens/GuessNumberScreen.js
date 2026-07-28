@@ -2,7 +2,7 @@
 // GuessNumberScreen.js — Main Game Screen
 // ============================================================================
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import SocketService from '../services/socket';
 import { useTheme } from '../context/ThemeContext';
@@ -22,6 +22,13 @@ const GuessNumberScreen = () => {
 
     const { room, playerName, isHost } = route.params || {};
     const [gameState, setGameState] = useState(null);
+    // The number THIS player set as the secret (2-player mode only)
+    const [mySecretNumber, setMySecretNumber] = useState(null);
+    const [opponentLastGuess, setOpponentLastGuess] = useState(null);
+    // Transitory state to hold round-over data before the next round begins
+    const [roundOverData, setRoundOverData] = useState(null);
+    // Server-side turn duration so the board can render a live countdown
+    const TURN_TIMEOUT_MS = 30_000;
 
     useEffect(() => {
         // Initial setup/sync if we need to request room sync
@@ -32,6 +39,12 @@ const GuessNumberScreen = () => {
         const handleStateUpdate = (payload) => {
             if (payload.gameType === 'guess-number' && payload.gameState) {
                 setGameState(payload.gameState);
+                // If returning to AWAITING_SECRET, clear round-over overlay & local secrets
+                if (payload.gameState.gamePhase === 'AWAITING_SECRET') {
+                    setMySecretNumber(null);
+                    setOpponentLastGuess(null);
+                    setRoundOverData(null);
+                }
             }
         };
 
@@ -39,11 +52,21 @@ const GuessNumberScreen = () => {
             if (payload.gameState) {
                 setGameState(payload.gameState);
             }
+            // Capture opponent's last guess to show when it's our turn
+            if (payload.opponentLastGuess && payload.opponentLastGuess.playerId !== SocketService.userId) {
+                setOpponentLastGuess(payload.opponentLastGuess);
+            }
         };
 
         const handleError = (err) => {
             console.error('[GuessNumber] Error:', err.message);
-            // Optionally show toast/alert
+        };
+
+        const handleRoundOver = (payload) => {
+            if (payload.gameState) {
+                setGameState(payload.gameState);
+            }
+            setRoundOverData(payload);
         };
 
         const handleGameOver = (payload) => {
@@ -55,22 +78,34 @@ const GuessNumberScreen = () => {
             }
         };
 
+        const handleTurnTimeout = (payload) => {
+            // Update game state from the timeout event
+            if (payload.gameState) setGameState(payload.gameState);
+            // Clear the stale opponent guess when a timeout fires
+            setOpponentLastGuess(null);
+        };
+
         SocketService.on('game-state-sync', handleStateUpdate);
         SocketService.on('guess-number-secret-set', handleEngineUpdate);
         SocketService.on('guess-number-guess-result', handleEngineUpdate);
+        SocketService.on('guess-number-round-over', handleRoundOver);
         SocketService.on('guess-number-game-over', handleGameOver);
+        SocketService.on('guess-number-turn-timeout', handleTurnTimeout);
         SocketService.on('error', handleError);
 
         return () => {
             SocketService.off('game-state-sync', handleStateUpdate);
             SocketService.off('guess-number-secret-set', handleEngineUpdate);
             SocketService.off('guess-number-guess-result', handleEngineUpdate);
+            SocketService.off('guess-number-round-over', handleRoundOver);
             SocketService.off('guess-number-game-over', handleGameOver);
+            SocketService.off('guess-number-turn-timeout', handleTurnTimeout);
             SocketService.off('error', handleError);
         };
     }, [room?.id]);
 
     const handleSetSecret = (secretNumber) => {
+        setMySecretNumber(secretNumber);
         SocketService.emit('game-action', {
             roomId: room?.id,
             eventName: 'set-secret',
@@ -117,7 +152,7 @@ const GuessNumberScreen = () => {
                 onBack={() => handleReturnToArcade()} 
             />
             
-            <View style={styles.content}>
+            <ScrollView style={styles.content} contentContainerStyle={{flexGrow: 1}} showsVerticalScrollIndicator={false}>
                 {gameState.gamePhase === 'AWAITING_SECRET' && (
                     <SecretInputView
                         gameState={gameState}
@@ -131,6 +166,22 @@ const GuessNumberScreen = () => {
                         gameState={gameState}
                         currentUserId={currentUserId}
                         onGuess={handleGuess}
+                        mySecretNumber={mySecretNumber}
+                        opponentLastGuess={opponentLastGuess}
+                        turnTimeoutMs={TURN_TIMEOUT_MS}
+                    />
+                )}
+
+                {gameState.gamePhase === 'BETWEEN_ROUNDS' && (
+                    <GuessNumberResults
+                        gameState={gameState}
+                        targets={gameState.targets} // might be undefined, that's okay
+                        currentUserId={currentUserId}
+                        winner={roundOverData?.roundWinner} // Passed from handleRoundOver
+                        message={roundOverData ? `Round ${gameState.roundNumber - 1} Complete!` : 'Round Complete!'}
+                        isBetweenRounds={true}
+                        roundScores={gameState.roundScores}
+                        maxRounds={gameState.maxRounds}
                     />
                 )}
 
@@ -140,12 +191,15 @@ const GuessNumberScreen = () => {
                         targets={gameState.targets}
                         currentUserId={currentUserId}
                         winner={gameState.players?.find(p => p.isWinner) || null}
-                        message="Game Over"
+                        message="Final Results"
+                        isBetweenRounds={false}
+                        roundScores={gameState.roundScores}
+                        maxRounds={gameState.maxRounds}
                         onPlayAgain={handlePlayAgain}
                         onReturnToArcade={handleReturnToArcade}
                     />
                 )}
-            </View>
+            </ScrollView>
 
             {/* In-Game Voice and Chat Overlay */}
             <InGameOverlay />

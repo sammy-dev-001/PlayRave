@@ -4,11 +4,13 @@ import LiveChat from './LiveChat';
 import VoiceChatPanel from './VoiceChatPanel';
 import SocketService from '../services/socket';
 import { useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const InGameOverlay = () => {
     const route = useRoute();
     const room = route.params?.room;
     const playerName = route.params?.playerName;
+    const insets = useSafeAreaInsets();
     
     const currentUser = { 
         id: SocketService.userId || SocketService.socket?.id || 'unknown', 
@@ -59,7 +61,13 @@ const InGameOverlay = () => {
                     <VoiceChatPanel roomId={room.id} playerName={currentUser?.name} visible={true} />
                 </View>
 
-            <View style={styles.chatContainer} pointerEvents="box-none">
+            <View 
+                style={[
+                    styles.chatContainer, 
+                    { bottom: Math.max(20, insets.bottom + 8) }
+                ]} 
+                pointerEvents="box-none"
+            >
                 <LiveChat
                     messages={chatMessages}
                     onSendMessage={handleSendChatMessage}
@@ -93,7 +101,6 @@ const styles = StyleSheet.create({
     },
     chatContainer: {
         position: 'absolute',
-        bottom: 20,
         left: 10,
         right: 10,
     }

@@ -80,6 +80,14 @@ const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
         // If already initialised (e.g. from lobby), just sync state — don't re-init
         if (VoiceService.isInitialized) {
             setIsAvailable(true);
+            
+            // Check if we silently disconnected (e.g., from backgrounding/reconnecting)
+            if (VoiceService.isJoined) {
+                setIsRecovering(true);
+                const recovered = await VoiceService.rejoinChannel();
+                setIsConnected(recovered);
+                setIsRecovering(false);
+            }
             return;
         }
         const available = await VoiceService.init();

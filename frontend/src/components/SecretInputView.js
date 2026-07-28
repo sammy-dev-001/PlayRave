@@ -56,7 +56,7 @@ const NUMPAD_KEYS = [
     ['DEL', '0', 'OK'],
 ];
 
-const MAX_DIGITS = 4; // cap display width; engine validates actual range
+const MAX_DIGITS = 3; // cap display width; engine validates actual range
 
 // ── Root Component ───────────────────────────────────────────────────────────
 
@@ -191,7 +191,7 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
                 </NeonText>
             </View>
             <NeonText size={13} color={COLORS.textMuted} style={styles.rangeLabel}>
-                Choose any 4-digit number
+                Pick a number between {rangeMin} and {rangeMax}
             </NeonText>
 
             {/* ── Masked display card ──────────────────────────────────────── */}
