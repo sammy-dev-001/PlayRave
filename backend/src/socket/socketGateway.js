@@ -11,7 +11,7 @@
 //      know whether their action was received and processed.
 // ============================================================================
 
-const sessionManager = require('../managers/SessionManager');
+const sessionManager = require('../managers/sessionManager');
 const roomManager    = require('../managers/roomManager');
 const gameRouter     = require('../managers/GameRouter');
 const authManager    = require('../managers/authManager');

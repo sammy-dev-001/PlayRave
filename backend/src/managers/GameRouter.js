@@ -6,7 +6,7 @@
 // and acts as the Instruction Executor for returned payloads.
 // ============================================================================
 
-const sessionManager = require('./SessionManager');
+const sessionManager = require('./sessionManager');
 const roomManager = require('./roomManager');
 const gamePersistence = require('./GamePersistenceManager');
 const deltaSyncManager = require('./DeltaSyncManager');
