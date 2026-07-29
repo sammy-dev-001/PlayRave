@@ -7,7 +7,7 @@
 
 const { validateNumber } = require('../managers/inputValidator');
 
-
+class MathBlitzEngine {
     constructor() {
         this.activeGames = new Map();
     }

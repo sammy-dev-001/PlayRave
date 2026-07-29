@@ -138,8 +138,7 @@ class SessionManager {
         console.log(`[SessionManager] Socket swapped for ${userId}: ${oldSocketId} → ${newSocketId}`);
         return { session, oldSocketId };
     }
-
-
+    /**
      * Handle a socket disconnect event.
      * Flags the user as "away", starts the grace-period countdown.
      *

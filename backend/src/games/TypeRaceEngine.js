@@ -5,7 +5,7 @@
 const { getRandomSentences } = require('../data/typeRaceSentences');
 const { validateTypeRaceFinish, validateNumber } = require('../managers/inputValidator');
 
-
+class TypeRaceEngine {
     constructor() {
         this.activeGames = new Map();
     }

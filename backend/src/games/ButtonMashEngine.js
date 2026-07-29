@@ -4,7 +4,7 @@
 
 const { validateTapRate } = require('../managers/inputValidator');
 
-
+class ButtonMashEngine {
     constructor() {
         this.activeGames = new Map();
     }

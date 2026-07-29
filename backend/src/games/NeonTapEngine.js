@@ -7,7 +7,7 @@
 
 const { validateReactionTime } = require('../managers/inputValidator');
 
-
+class NeonTapEngine {
     constructor() {
         this.activeGames = new Map();
     }

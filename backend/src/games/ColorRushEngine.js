@@ -7,7 +7,7 @@
 
 const { validateColorName } = require('../managers/inputValidator');
 
-
+class ColorRushEngine {
     constructor() {
         this.activeGames = new Map();
     }
