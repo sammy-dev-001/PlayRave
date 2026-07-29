@@ -13,7 +13,9 @@
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css}\"",
     "typecheck": "tsc --noEmit",
-    "clean": "expo start --clear"
+    "clean": "expo start --clear",
+    "update:preview": "APP_ENV=preview eas update --branch preview --message",
+    "update:production": "APP_ENV=production eas update --branch production --message"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
