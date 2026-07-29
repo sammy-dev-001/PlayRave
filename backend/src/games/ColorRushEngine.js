@@ -5,7 +5,9 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-class ColorRushEngine {
+const { validateColorName } = require('../managers/inputValidator');
+
+
     constructor() {
         this.activeGames = new Map();
     }
@@ -153,8 +155,15 @@ class ColorRushEngine {
         const player = game.players.find(p => p.userId === userId);
         if (!player || player.answered) return { action: 'error', message: 'Invalid submission' };
 
+        // ── Server-side validation: colorName must be a known valid color ──
+        const colorCheck = validateColorName(colorName);
+        if (!colorCheck.valid) {
+            console.warn(`[ColorRush] Rejected invalid colorName from ${userId}: ${colorCheck.reason}`);
+            return { action: 'emit', targetId: userId, event: 'color-rush-answer-result', data: { correct: false, isWinner: false } };
+        }
+
         player.answered = true;
-        const isCorrect = colorName === game.currentChallenge.targetColorName;
+        const isCorrect = colorCheck.value === game.currentChallenge.targetColorName;
         player.correct = isCorrect;
 
         const instructions = [];

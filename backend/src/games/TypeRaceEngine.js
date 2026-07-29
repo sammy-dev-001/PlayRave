@@ -3,8 +3,9 @@
 // ============================================================================
 
 const { getRandomSentences } = require('../data/typeRaceSentences');
+const { validateTypeRaceFinish, validateNumber } = require('../managers/inputValidator');
 
-class TypeRaceEngine {
+
     constructor() {
         this.activeGames = new Map();
     }
@@ -161,13 +162,18 @@ class TypeRaceEngine {
         const player = game.players.find(p => p.userId === userId);
         if (!player) return null;
 
-        player.currentProgress = progress;
-        player.accuracy = accuracy;
+        // ── Validate progress and accuracy are within expected bounds ──
+        const pCheck = validateNumber(progress, 0, 100);
+        const aCheck = validateNumber(accuracy, 0, 100);
+        if (!pCheck.valid || !aCheck.valid) return null;
+
+        player.currentProgress = pCheck.value;
+        player.accuracy = aCheck.value;
 
         return { 
             action: 'broadcast', 
             event: 'type-race-progress-update', 
-            data: { playerId: userId, playerName: player.name, progress } 
+            data: { playerId: userId, playerName: player.name, progress: pCheck.value } 
         };
     }
 
@@ -177,6 +183,13 @@ class TypeRaceEngine {
 
         const player = game.players.find(p => p.userId === userId);
         if (!player || player.finished) return null;
+
+        // ── Server-side validation ───────────────────────────────────────────
+        const validation = validateTypeRaceFinish(typed, timeTaken, game.roundStartTime, game.currentSentence);
+        if (!validation.valid) {
+            console.warn(`[TypeRace] Rejected invalid finish from ${userId}: ${validation.reason}`);
+            return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Invalid finish submission' } };
+        }
 
         player.finished = true;
         player.finishTime = timeTaken;

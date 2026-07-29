@@ -5,7 +5,9 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-class NeonTapEngine {
+const { validateReactionTime } = require('../managers/inputValidator');
+
+
     constructor() {
         this.activeGames = new Map();
     }
@@ -136,10 +138,17 @@ class NeonTapEngine {
             return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Player not participating' } };
         }
 
+        // ── Server-side validation: reject impossible reaction times ──────
+        const validation = validateReactionTime(reactionTime, game.roundStartTime);
+        if (!validation.valid) {
+            console.warn(`[NeonTap] Rejected invalid reactionTime from ${userId}: ${validation.reason}`);
+            return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Invalid reaction time' } };
+        }
+
         const currentRound = game.currentRound;
         if (game.playerTaps[userId][currentRound] === undefined) {
-            game.playerTaps[userId][currentRound] = reactionTime;
-            game.totalReactionTimes[userId] += reactionTime;
+            game.playerTaps[userId][currentRound] = validation.value;
+            game.totalReactionTimes[userId] += validation.value;
             return { action: 'emit', targetId: userId, event: 'tap-registered', data: { success: true } };
         }
 

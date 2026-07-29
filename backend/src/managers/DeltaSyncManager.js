@@ -11,6 +11,10 @@
 
 const SPEED_GAMES = new Set([
     'neon-tap',
+    'button-mash',
+    'type-race',
+    'math-blitz',
+    'color-rush'
 ]);
 
 // Threshold: only send delta if it saves at least 30% of payload size.
@@ -152,7 +156,11 @@ class DeltaSyncManager {
      * @param {string} roomId
      */
     clearRoom(roomId) {
-        this.stateCache.delete(roomId);
+        for (const key of this.stateCache.keys()) {
+            if (key.startsWith(`${roomId}_`)) {
+                this.stateCache.delete(key);
+            }
+        }
     }
 }
 

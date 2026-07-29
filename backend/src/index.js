@@ -16,13 +16,49 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
+// Allowed origins: Vercel production deploy + local development
+const ALLOWED_ORIGINS = [
+    'https://playrave.vercel.app',
+    'https://www.playrave.vercel.app',
+    /\.vercel\.app$/,          // any Vercel preview deploy
+    /\.playrave\./,            // any playrave subdomain
+    'http://localhost:3000',
+    'http://localhost:4000',
+    'http://localhost:19006',   // Expo web
+    'http://localhost:8081',    // Metro bundler
+    'http://localhost:8082',
+];
+
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow server-to-server requests (no origin header) and matching origins
+        if (!origin) return callback(null, true);
+        const allowed = ALLOWED_ORIGINS.some(o =>
+            typeof o === 'string' ? o === origin : o.test(origin)
+        );
+        if (allowed) return callback(null, true);
+        // In development, allow all origins
+        if (process.env.NODE_ENV !== 'production') return callback(null, true);
+        callback(new Error(`CORS policy: origin ${origin} not allowed`));
+    },
+    credentials: true,
+}));
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: "*" },
+    cors: {
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            const allowed = ALLOWED_ORIGINS.some(o =>
+                typeof o === 'string' ? o === origin : o.test(origin)
+            );
+            if (allowed || process.env.NODE_ENV !== 'production') return callback(null, true);
+            callback(new Error(`CORS policy: origin ${origin} not allowed`));
+        },
+        credentials: true,
+    },
     pingTimeout: 60000,
     pingInterval: 30000,
 });

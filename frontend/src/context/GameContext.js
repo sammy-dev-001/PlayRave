@@ -181,13 +181,27 @@ export function GameProvider({ children }) {
         if (!isAuthLoading) {
             console.log('[BOOT] Auth hydration complete. Connecting socket...');
             if (user?.id) {
-                SocketService.userId = user.id;
-                dispatch({
-                    type: ActionTypes.UPDATE_PLAYER,
-                    payload: { uid: user.id }
-                });
+                // Set auth credentials BEFORE connecting so they go in the handshake.
+                // For registered users, read the JWT from AsyncStorage.
+                // For guests, the userId (guest_xxx) is sufficient.
+                const connectWithAuth = async () => {
+                    let token = null;
+                    if (!user.isGuest) {
+                        try {
+                            token = await AsyncStorage.getItem('authToken');
+                        } catch (_) {}
+                    }
+                    SocketService.setAuth(user.id, token);
+                    dispatch({
+                        type: ActionTypes.UPDATE_PLAYER,
+                        payload: { uid: user.id }
+                    });
+                    SocketService.connect();
+                };
+                connectWithAuth();
+            } else {
+                SocketService.connect();
             }
-            SocketService.connect();
         }
     }, [isAuthLoading, user?.id]);
 

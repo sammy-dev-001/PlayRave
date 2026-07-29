@@ -81,8 +81,9 @@ class SocketService {
     latency = null;
     latencyListeners = [];
 
-    // Identity
+    // Identity — set by GameContext before calling connect()
     userId = null;
+    authToken = null;    // JWT for registered users (null for guests)
     lastRoomId = null;
     lastPlayerData = null;
 
@@ -98,6 +99,14 @@ class SocketService {
         this.setConnectionState(ConnectionState.CONNECTING);
 
         this.intentionalDisconnect = false;
+
+        // Build auth payload — server requires either a JWT (registered users)
+        // or a guest_ prefixed userId (guests). Always send both so the server
+        // can pick the strongest credential available.
+        const authPayload = {};
+        if (this.authToken) authPayload.token = this.authToken;
+        if (this.userId)    authPayload.userId = this.userId;
+
         this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
             timeout: 45000,
@@ -105,8 +114,8 @@ class SocketService {
             reconnectionAttempts: this.maxReconnectAttempts,
             reconnectionDelay: this.baseReconnectDelay,
             reconnectionDelayMax: this.maxReconnectDelay,
-            // Keep the connection alive even when the tab is backgrounded
             forceNew: false,
+            auth: authPayload,
         });
 
         this.socket.on('connect', () => {
@@ -378,13 +387,41 @@ class SocketService {
      * Emit with error handling
      */
     emit(event, data) {
-        console.log('SocketService.emit called:', event, data);
         if (this.socket) {
             this.socket.emit(event, data);
-            console.log('Event emitted successfully');
         } else {
-            console.error('Socket is null, cannot emit event');
+            console.error('Socket is null, cannot emit event:', event);
         }
+    }
+
+    /**
+     * Emit with acknowledgement — resolves when the server confirms receipt.
+     * Rejects if the server returns an error or if the timeout expires.
+     *
+     * @param {string} event
+     * @param {object} data
+     * @param {number} timeout — ms to wait for ack before rejecting (default 5000)
+     * @returns {Promise<object>} — the ack payload from the server
+     */
+    emitWithAck(event, data, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            if (!this.socket?.connected) {
+                return reject(new Error('Socket not connected'));
+            }
+
+            const timer = setTimeout(() => {
+                reject(new Error(`Ack timeout for event: ${event}`));
+            }, timeout);
+
+            this.socket.emit(event, data, (response) => {
+                clearTimeout(timer);
+                if (response?.success === false) {
+                    reject(new Error(response.error || 'Server rejected action'));
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
 
     /**
@@ -414,9 +451,7 @@ class SocketService {
     on(event, cb) {
         if (this.socket && this.socket.connected) {
             this.socket.on(event, cb);
-            console.log('Listener registered immediately for:', event);
         } else {
-            console.log('Socket not ready, queueing listener for:', event);
             this.pendingListeners.push({ event, cb });
         }
     }
@@ -441,6 +476,25 @@ class SocketService {
 
     getSocketUrl() {
         return SOCKET_URL;
+    }
+
+    /**
+     * Set authentication credentials before calling connect().
+     * Called by GameContext once auth is resolved.
+     *
+     * @param {string} userId    — Persistent user ID (registered or guest_xxx)
+     * @param {string|null} token — JWT for registered users; null for guests
+     */
+    setAuth(userId, token = null) {
+        this.userId = userId;
+        this.authToken = token;
+
+        // If already connected, update the auth for the next reconnection cycle.
+        // Socket.io doesn't support changing auth mid-connection, so we store it
+        // for the next connect() call.
+        if (this.socket) {
+            this.socket.auth = { token, userId };
+        }
     }
 
     // Alias for old cached bundles calling getUserId()

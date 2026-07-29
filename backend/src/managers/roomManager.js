@@ -310,19 +310,6 @@ class RoomManager {
         return { room };
     }
 
-    kickPlayer(roomId, hostUserId, targetUserId) {
-        const room = this.rooms.get(roomId);
-        if (!room) return { error: 'Room not found' };
-        if (room.hostUserId !== hostUserId) return { error: 'Only host can kick players' };
-        if (hostUserId === targetUserId) return { error: 'Host cannot kick themselves' };
-
-        const index = room.players.findIndex(p => p.userId === targetUserId);
-        if (index === -1) return { error: 'Player not found' };
-
-        const kicked = room.players.splice(index, 1)[0];
-        this._saveToDb(room);
-        return { room, kickedPlayer: kicked };
-    }
 
     setGameState(roomId, state) {
         const room = this.rooms.get(roomId);
@@ -331,6 +318,7 @@ class RoomManager {
         this._saveToDb(room);
         return room;
     }
+
 
     /**
      * Backwards-compatible snapshot for the frontend.

@@ -54,7 +54,15 @@ const engineRegistry = {
 
 class GameRouter {
     constructor() {
-        // Monolith successfully eradicated!
+        /**
+         * Resilient timer store: Map<roomId, TimerEntry[]>
+         * TimerEntry = { id, deadline: number (ms epoch), handle: TimeoutHandle, eventName, io }
+         *
+         * Storing the deadline (absolute epoch ms) instead of a raw setTimeout handle
+         * means we can rehydrate timers after a server restart by checking
+         * `remaining = deadline - Date.now()` and scheduling the remainder.
+         */
+        this._timers = new Map();
     }
 
     // ── Primary Routing Entry Point ─────────────────────────────────────
@@ -161,19 +169,38 @@ class GameRouter {
                 }
                 break;
 
-            case 'schedule':
-                // Execute engine event after a specified delay without locking up the engine
-                console.log(`[GameRouter] Scheduling ${instruction.eventToTrigger} for room ${roomId} in ${instruction.delay}ms`);
-                setTimeout(() => {
-                    // Route back through handleEvent using a 'system' generic userId
+            case 'schedule': {
+                // Resilient timer: store the absolute deadline so timers survive
+                // server restarts. On rehydration, remaining = deadline - Date.now().
+                const deadline = Date.now() + instruction.delay;
+                const timerId = `${roomId}_${instruction.eventToTrigger}_${deadline}`;
+
+                const handle = setTimeout(() => {
+                    this._removeTimer(roomId, timerId);
                     this.handleEvent(instruction.eventToTrigger, instruction.data || {}, 'system', roomId, io);
                 }, instruction.delay);
-                break;
 
-            case 'schedule-ai':
+                // Store timer entry for this room
+                if (!this._timers.has(roomId)) this._timers.set(roomId, []);
+                this._timers.get(roomId).push({
+                    id: timerId,
+                    deadline,
+                    handle,
+                    eventName: instruction.eventToTrigger,
+                    io,
+                });
+
+                console.log(`[GameRouter] Scheduled '${instruction.eventToTrigger}' for room ${roomId} in ${instruction.delay}ms (deadline: ${new Date(deadline).toISOString()})`);
+                break;
+            }
+
+            case 'schedule-ai': {
                 // Execute AI turn after a specified delay without locking up the engine
-                console.log(`[GameRouter] Scheduling AI turn for room ${roomId} in ${instruction.delay}ms`);
-                setTimeout(async () => {
+                const aiDeadline = Date.now() + (instruction.delay || 2500);
+                const aiTimerId = `${roomId}_ai_${aiDeadline}`;
+
+                const aiHandle = setTimeout(async () => {
+                    this._removeTimer(roomId, aiTimerId);
                     const room = await roomManager.getRoom(roomId);
                     if (!room) return;
                     const engine = engineRegistry[room.gameType]; 
@@ -182,13 +209,15 @@ class GameRouter {
                         return;
                     }
                     const aiInstructionPayload = engine.executeAITurn(roomId);
-                    
-                    // Recursively execute the AI's chosen instruction
                     if (aiInstructionPayload) {
                         this.executeInstruction(aiInstructionPayload, io, roomId);
                     }
                 }, instruction.delay || 2500);
+
+                if (!this._timers.has(roomId)) this._timers.set(roomId, []);
+                this._timers.get(roomId).push({ id: aiTimerId, deadline: aiDeadline, handle: aiHandle, eventName: 'ai-turn', io });
                 break;
+            }
 
             case 'multiple':
                 // Execute an array of instructions sequentially
@@ -360,8 +389,51 @@ class GameRouter {
         return 2; // Default fallback
     }
 
+    /**
+     * Clear all pending timers for a room.
+     * Call this on game end or when a room is destroyed.
+     */
     clearTimer(roomId) {
-        // No-op for now. Specific engines can handle their own timers if needed.
+        const timers = this._timers.get(roomId);
+        if (!timers) return;
+        for (const entry of timers) {
+            clearTimeout(entry.handle);
+        }
+        this._timers.delete(roomId);
+        console.log(`[GameRouter] Cleared all timers for room ${roomId}`);
+    }
+
+    /**
+     * Remove a single timer entry (called after it fires successfully).
+     */
+    _removeTimer(roomId, timerId) {
+        const timers = this._timers.get(roomId);
+        if (!timers) return;
+        const filtered = timers.filter(t => t.id !== timerId);
+        if (filtered.length === 0) {
+            this._timers.delete(roomId);
+        } else {
+            this._timers.set(roomId, filtered);
+        }
+    }
+
+    /**
+     * Rehydrate timers for a room from stored deadlines.
+     * Called during server boot when we restore game state from MongoDB.
+     * Timers that already expired are fired immediately (next tick).
+     */
+    rehydrateTimers(roomId, timerEntries, io) {
+        for (const entry of timerEntries) {
+            const remaining = Math.max(0, entry.deadline - Date.now());
+            console.log(`[GameRouter] Rehydrating timer '${entry.eventName}' for room ${roomId}, fires in ${remaining}ms`);
+            const handle = setTimeout(() => {
+                this._removeTimer(roomId, entry.id);
+                this.handleEvent(entry.eventName, {}, 'system', roomId, io);
+            }, remaining);
+
+            if (!this._timers.has(roomId)) this._timers.set(roomId, []);
+            this._timers.get(roomId).push({ ...entry, handle, io });
+        }
     }
 
     async endGame(roomId) {

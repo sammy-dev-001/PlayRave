@@ -2,7 +2,9 @@
 // ButtonMashEngine.js — Pure Game Logic Engine
 // ============================================================================
 
-class ButtonMashEngine {
+const { validateTapRate } = require('../managers/inputValidator');
+
+
     constructor() {
         this.activeGames = new Map();
     }
@@ -133,6 +135,15 @@ class ButtonMashEngine {
 
         const player = game.players.find(p => p.userId === userId);
         if (!player || player.finished) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Invalid tap' } };
+
+        // ── Server-side validation: reject superhuman tap rates ──────────────
+        if (game.startTime) {
+            const rateCheck = validateTapRate(player.tapCount + 1, game.startTime);
+            if (!rateCheck.valid) {
+                console.warn(`[ButtonMash] Rejected superhuman tap from ${userId}: ${rateCheck.reason}`);
+                return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Tap rate exceeds human limit' } };
+            }
+        }
 
         player.tapCount++;
 

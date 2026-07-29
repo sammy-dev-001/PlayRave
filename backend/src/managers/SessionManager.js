@@ -139,21 +139,7 @@ class SessionManager {
         return { session, oldSocketId };
     }
 
-    /**
-     * Retrieve a client session by userId.
-     */
-    getClient(userId) {
-        return this.sessions.get(userId) || null;
-    }
 
-    /**
-     * Retrieve the userId for a given socketId (reverse lookup).
-     */
-    getUserIdBySocket(socketId) {
-        return this.socketToUser.get(socketId) || null;
-    }
-
-    /**
      * Handle a socket disconnect event.
      * Flags the user as "away", starts the grace-period countdown.
      *

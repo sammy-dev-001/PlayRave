@@ -5,7 +5,9 @@
 // Player identity uses persistent 'userId' rather than 'socketId'.
 // ============================================================================
 
-class MathBlitzEngine {
+const { validateNumber } = require('../managers/inputValidator');
+
+
     constructor() {
         this.activeGames = new Map();
     }
@@ -152,8 +154,14 @@ class MathBlitzEngine {
         const player = game.players.find(p => p.userId === userId);
         if (!player || player.answered) return { action: 'error', message: 'Invalid submission' };
 
+        // ── Server-side validation: answer must be a finite number ────────
+        const answerCheck = validateNumber(answer, -99999, 99999);
+        if (!answerCheck.valid) {
+            return { action: 'emit', targetId: userId, event: 'math-blitz-answer-result', data: { correct: false, isWinner: false } };
+        }
+
         player.answered = true;
-        const isCorrect = parseInt(answer) === game.currentProblem.answer;
+        const isCorrect = answerCheck.value === game.currentProblem.answer;
         player.correct = isCorrect;
 
         const instructions = [];
