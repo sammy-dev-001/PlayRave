@@ -6,7 +6,7 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import SocketService from '../services/socket';
 import { useTheme } from '../context/ThemeContext';
-
+import { OnlineGamesRegistry } from '../data/GameRegistry';
 import SmartGameRecommendations from '../components/SmartRecommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -48,33 +48,6 @@ const getGameCategories = (COLORS) => ({
     speed: { name: 'Speed', icon: 'flash', color: COLORS.electricPurple },
 });
 
-const getAvailableGames = (COLORS) => [
-    { id: 'trivia', name: 'Trivia Hub', description: 'Quick Trivia, Myth or Fact, and more.', color: COLORS.neonCyan, category: 'trivia', minPlayers: 1, maxPlayers: 10, vibes: ['brain'] },
-    { id: 'whos-most-likely', name: "Who's Most Likely To", description: 'Vote for your friends', color: COLORS.electricPurple, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'] },
-    { id: 'scrabble', name: 'Scrabble', description: 'Classic word game.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
-    { id: 'neon-tap', name: 'Neon Tap', description: 'Fast reflexes only!', color: COLORS.limeGlow, category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'] },
-    { id: 'word-rush', name: 'Word Rush', description: 'Type words fast.', color: COLORS.hotPink, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
-    { id: 'whot', name: 'Naija Whot', description: 'Classic card game.', color: COLORS.electricPurple, category: 'competitive', minPlayers: 1, maxPlayers: 8, vibes: ['chill'] },
-    { id: 'truth-or-dare', name: 'Truth or Dare', description: 'Party classic.', color: COLORS.hotPink, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'] },
-    { id: 'real-talk', name: 'Real Talk', description: 'Deep questions.', color: COLORS.neonCyan, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['chill'] },
-    { id: 'never-have-i-ever', name: 'Never Have I Ever', description: 'Confess your secrets.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
-    { id: 'whispers', name: 'Whispers Hub', description: 'Spill the tea.', color: COLORS.hotPink, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['chill'] },
-    { id: 'imposter', name: 'Imposter', description: 'Find the traitor.', color: COLORS.electricPurple, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
-    { id: 'unpopular-opinions', name: 'Hot Takes', description: 'Agree or disagree?', color: COLORS.limeGlow, category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['chill'] },
-    { id: 'hot-seat', name: 'The Hot Seat', description: 'Challenges & Questions.', color: '#FF6B35', category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['chill'] },
-    { id: 'button-mash', name: 'Button Mash', description: 'Tap as fast as you can.', color: COLORS.limeGlow, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
-    { id: 'type-race', name: 'Type Race', description: 'Sentence typing race.', color: COLORS.neonCyan, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['brain'] },
-    { id: 'math-blitz', name: 'Math Blitz', description: 'Rapid math challenges.', color: COLORS.hotPink, category: 'trivia', minPlayers: 2, maxPlayers: 8, vibes: ['brain'] },
-    { id: 'color-rush', name: 'Color Rush', description: 'Match the colors fast.', color: COLORS.electricPurple, category: 'speed', minPlayers: 2, maxPlayers: 6, vibes: ['hype'] },
-    { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', description: 'Bracket tournament.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 8, vibes: ['brain'] },
-    { id: 'draw-battle', name: 'Draw Battle', description: 'Sketch and vote.', color: COLORS.hotPink, category: 'party', minPlayers: 3, maxPlayers: 8, vibes: ['hype'] },
-    { id: 'caption-this', name: 'Caption This', description: 'Funny image captions.', color: COLORS.limeGlow, category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'] },
-    { id: 'auction-bluff', name: 'Auction Bluff', description: 'Bid and bluff.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 3, maxPlayers: 6, vibes: ['brain'] },
-    { id: 'speed-categories', name: 'Speed Categories', description: 'Category word race.', color: COLORS.electricPurple, category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'] },
-    { id: 'memory-match', name: 'Memory Match', description: 'Flip and find pairs.', color: COLORS.limeGlow, category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'] },
-    { id: 'guess-number', name: 'Guess the Number', description: 'High-tension number guessing.', color: COLORS.neonCyan, category: 'competitive', minPlayers: 2, maxPlayers: 8, vibes: ['brain'] }
-];
-
 const GameSelectionScreen = ({ route, navigation }) => {
     const { room, playerName } = route.params;
     const { COLORS } = useTheme();
@@ -82,27 +55,31 @@ const GameSelectionScreen = ({ route, navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [waitingForNavigation, setWaitingForNavigation] = useState(false);
 
-    const filteredGames = getAvailableGames(COLORS).filter(game => {
-        const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
-        const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            game.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-    });
+    const filteredGames = React.useMemo(() => {
+        let available = OnlineGamesRegistry;
+
+        if (selectedCategory !== 'all') {
+            available = available.filter(game => game.category === selectedCategory);
+        }
+        
+        return available.filter(game => {
+            const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                game.description.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesSearch;
+        });
+    }, [selectedCategory, searchQuery]);
 
     const handleGameSelect = (game) => {
         if (waitingForNavigation) return;
+        
         setWaitingForNavigation(true);
+        setTimeout(() => setWaitingForNavigation(false), 2000);
 
-        if (game.id === 'hot-seat') {
-            SocketService.emit('game-selected', { roomId: room.id, gameType: 'hot-seat-mc' });
-            navigation.navigate('Lobby', { room: { ...room, gameType: 'hot-seat-mc' }, playerName });
-        } else if (game.id === 'whispers') {
-            navigation.navigate('WhispersHub', { room, playerName, isHost: true });
-        } else if (game.id === 'trivia') {
-            navigation.navigate('TriviaHub', { room, playerName, isHost: true });
+        if (game.isHub) {
+            navigation.navigate(game.routeComponent, { room, playerName, isHost: true });
         } else {
             SocketService.emit('game-selected', { roomId: room.id, gameType: game.id });
-            navigation.navigate('Lobby', { room: { ...room, gameType: game.id }, playerName });
+            navigation.navigate(game.routeComponent, { room: { ...room, gameType: game.id }, playerName });
         }
     };
 
@@ -114,7 +91,7 @@ const GameSelectionScreen = ({ route, navigation }) => {
             disabled={waitingForNavigation}
         >
             <Image
-                source={GAME_IMAGES[game.id] || GAME_IMAGES['trivia']}
+                source={GAME_IMAGES[game.imageId || game.id] || GAME_IMAGES['trivia']}
                 style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]}
                 resizeMode="contain"
             />

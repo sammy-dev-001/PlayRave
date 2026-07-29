@@ -6,153 +6,16 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { useTheme } from '../context/ThemeContext';
 import GameIcon from '../components/GameIcon';
+import { LocalGamesRegistry } from '../data/GameRegistry';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Game categories for organization (Sync with GameSelectionScreen)
 const getGameCategories = (COLORS) => ({
     party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
     competitive: { name: 'Competitive', icon: 'trophy', color: COLORS.neonCyan },
     trivia: { name: 'Trivia & Knowledge', icon: 'bulb', color: COLORS.limeGlow },
     speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
 });
-
-const getLocalGames = (COLORS) => [
-    {
-        id: 'trivia',
-        name: 'Quick Trivia',
-        description: 'Test your knowledge offline! Solo Sprint or Buzzer Battle.',
-        icon: '🧠',
-        color: COLORS.neonCyan,
-        category: 'trivia',
-        minPlayers: 1,
-        maxPlayers: 4,
-        vibes: ['brain']
-    },
-    {
-        id: 'truth-or-dare',
-        name: 'Truth or Dare',
-        description: 'Classic party game - choose truth or dare!',
-        icon: '🎭',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'real-talk',
-        name: 'Real Talk',
-        description: 'Deep questions and icebreakers',
-        icon: '💬',
-        color: COLORS.neonCyan,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['chill']
-    },
-
-    {
-        id: 'never-have-i-local',
-        name: 'Never Have I Ever',
-        description: 'Put fingers down if you have done it',
-        icon: '🤫',
-        color: COLORS.limeGlow,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'kings-cup',
-        name: "King's Cup",
-        description: 'Classic drinking game with cards',
-        icon: '👑',
-        color: COLORS.electricPurple,
-        category: 'party',
-        minPlayers: 3,
-        maxPlayers: 10,
-        comingSoon: true,
-        vibes: ['chill']
-    },
-    {
-        id: 'would-you-rather',
-        name: 'Would You Rather',
-        description: 'Choose between two impossible choices',
-        icon: '🤔',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['chill']
-    },
-    {
-        id: 'scrabble',
-        name: 'Scrabble',
-        description: 'Create words from letter tiles!',
-        icon: '📝',
-        color: COLORS.neonCyan,
-        category: 'competitive',
-        minPlayers: 2,
-        maxPlayers: 4,
-        vibes: ['brain']
-    },
-    {
-        id: 'speed-categories',
-        name: 'Speed Categories',
-        description: 'Name 5 things in 10 seconds!',
-        icon: '🏃',
-        color: COLORS.hotPink,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['hype']
-    },
-    {
-        id: 'memory-chain',
-        name: 'Memory Chain',
-        description: 'Remember the growing sequence!',
-        icon: '🧠',
-        color: COLORS.limeGlow,
-        category: 'speed',
-        minPlayers: 2,
-        maxPlayers: 8,
-        vibes: ['brain']
-    },
-    {
-        id: 'memory-match',
-        name: 'Memory Match',
-        description: 'Find matching pairs - test your memory!',
-        icon: '🧩',
-        color: COLORS.electricPurple,
-        category: 'speed',
-        minPlayers: 1,
-        maxPlayers: 4,
-        vibes: ['brain']
-    },
-    {
-        id: 'charades',
-        name: 'Charades',
-        description: 'Act it out — no words allowed! Pass the phone.',
-        icon: '🎭',
-        color: COLORS.hotPink,
-        category: 'party',
-        minPlayers: 2,
-        maxPlayers: 10,
-        vibes: ['hype']
-    },
-    {
-        id: 'tic-tac-toe',
-        name: 'Tic-Tac-Toe',
-        description: 'Classic strategy game vs AI',
-        icon: '⭕',
-        color: COLORS.electricPurple,
-        category: 'competitive',
-        minPlayers: 1,
-        maxPlayers: 2,
-        vibes: ['brain']
-    }
-];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -166,8 +29,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 
     const filteredGames = React.useMemo(() => {
         let available = isSinglePlayer
-            ? getLocalGames(COLORS).filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-            : getLocalGames(COLORS).filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
+            ? LocalGamesRegistry.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
+            : LocalGamesRegistry.filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
 
         if (selectedCategory !== 'all') {
             available = available.filter(game => game.category === selectedCategory);
@@ -184,39 +47,11 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         return available;
     }, [isSinglePlayer, searchQuery, selectedCategory, COLORS]);
 
-    const handleSelectGame = (gameId) => {
-        if (gameId === 'real-talk') {
-            navigation.navigate('RealTalkCategory', { players, isSinglePlayer });
-        } else if (gameId === 'truth-or-dare') {
-            navigation.navigate('TruthOrDareCategorySelection', { players, isSinglePlayer });
-        } else if (gameId === 'would-you-rather') {
-            navigation.navigate('WouldYouRather', { players, isSinglePlayer });
-        } else if (gameId === 'never-have-i-local') {
-            navigation.navigate('NeverHaveIEverCategory', { players, isSinglePlayer });
-        } else if (gameId === 'rapid-fire') {
-            navigation.navigate('RapidFireCategory', { players, isSinglePlayer });
-        } else if (gameId === 'scrabble') {
-            if (isSinglePlayer) {
-                navigation.navigate('ScrabbleDifficulty', { players, isSinglePlayer });
-            } else {
-                navigation.navigate('Scrabble', { players, isSinglePlayer });
-            }
-        } else if (gameId === 'speed-categories') {
-            navigation.navigate('SpeedCategories', { players, isSinglePlayer });
-        } else if (gameId === 'memory-chain') {
-            navigation.navigate('MemoryChain', { players, isSinglePlayer });
-        } else if (gameId === 'memory-match') {
-            navigation.navigate('MemoryMatch', { players, isSinglePlayer });
-        } else if (gameId === 'charades') {
-            navigation.navigate('LocalCharades', { players, isSinglePlayer });
-        } else if (gameId === 'tic-tac-toe') {
-            if (isSinglePlayer) {
-                navigation.navigate('TicTacToeDifficulty', { players, isSinglePlayer });
-            } else {
-                navigation.navigate('TicTacToe', { players, isSinglePlayer });
-            }
-        } else if (gameId === 'trivia') {
-            navigation.navigate('LocalTrivia', { players, isSinglePlayer });
+    const handleSelectGame = (game) => {
+        if (isSinglePlayer && game.singlePlayerRouteComponent) {
+            navigation.navigate(game.singlePlayerRouteComponent, { players, isSinglePlayer });
+        } else {
+            navigation.navigate(game.routeComponent, { players, isSinglePlayer });
         }
     };
 
@@ -240,7 +75,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         <TouchableOpacity
             key={game.id}
             style={styles.gameCard}
-            onPress={() => handleSelectGame(game.id)}
+            onPress={() => handleSelectGame(game)}
             disabled={game.comingSoon}
         >
             <GameIcon gameId={game.id} fallbackIcon={game.icon} size={null} style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%', borderRadius: 12 }]} />
