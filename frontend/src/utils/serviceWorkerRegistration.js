@@ -27,8 +27,9 @@ export const register = async () => {
                 
                 sessionStorage.setItem('sw-reload-timestamp', now.toString());
                 refreshing = true;
-                console.log('[SW] Controller changed, reloading page...');
-                window.location.reload();
+                console.log('[SW] Controller changed. A new version is active.');
+                // Removing aggressive auto-reload to prevent Vercel reload loops
+                // window.location.reload();
             });
 
             // When a new SW is found, force it to activate immediately
