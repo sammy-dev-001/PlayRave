@@ -10,6 +10,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import HapticService from './src/services/HapticService';
 import SoundService from './src/services/SoundService';
 import { register as registerServiceWorker } from './src/utils/serviceWorkerRegistration';
+import { OTAUpdateManager } from './src/components/OTAUpdateManager';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -31,10 +32,12 @@ const AppContent = () => {
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <AppNavigator />
-      <ErrorToast />
-      <OfflineIndicator />
-      <StatusBar style="light" />
+      <OTAUpdateManager>
+        <AppNavigator />
+        <ErrorToast />
+        <OfflineIndicator />
+        <StatusBar style="light" />
+      </OTAUpdateManager>
     </View>
   );
 };
