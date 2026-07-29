@@ -305,8 +305,18 @@ module.exports = function configureSocketGateway(io) {
                 }
             });
         });
+        // ── Game Selection & Start Events ────────────────────────────────
+        socket.on('start-game', async ({ roomId, gameType, ...options }) => {
+            if (!checkRateLimit(socket, 'lobby')) return;
+            const userId = socket.userId;
+            if (!userId) return;
 
-        // ── Game Selection Events ────────────────────────────────────────
+            const room = await roomManager.getRoom(roomId);
+            if (!room) return socket.emit('error', { message: 'Room not found' });
+
+            gameRouter.startGame(gameType, room, options, io);
+            await emitRoomUpdate(roomId);
+        });
         socket.on('game-selected', async ({ roomId, gameId, gameType }) => {
             if (!checkRateLimit(socket, 'lobby')) return;
             const idToSet = gameId || gameType;
@@ -393,6 +403,28 @@ module.exports = function configureSocketGateway(io) {
 
             // Acknowledge receipt to the client
             if (typeof ack === 'function') ack({ success: true });
+        });
+
+        // ── Catch-All for Legacy Game Engine Events ─────────────────────
+        // Since many screens emit raw events (e.g., 'type-race-finish') instead of 'game-action'
+        socket.onAny((eventName, ...args) => {
+            const ignoredEvents = [
+                'disconnect', 'connect', 'create-room', 'join-room', 'check-room',
+                'request-room-sync', 'leave-room', 'game-selected', 'set-game-type',
+                'set-custom-questions', 'get-room', 'player-ready', 'kick-player',
+                'send-reaction', 'chat-message', 'play-sound', 'update-player-profile',
+                'start-game', 'game-action'
+            ];
+            if (ignoredEvents.includes(eventName)) return;
+
+            const userId = socket.userId;
+            if (!userId) return;
+
+            const payload = args[0] || {};
+            const roomId = payload.roomId;
+            if (!roomId) return;
+
+            gameRouter.handleEvent(eventName, payload, userId, roomId, io);
         });
 
         // ── Chat Events ──────────────────────────────────────────────────

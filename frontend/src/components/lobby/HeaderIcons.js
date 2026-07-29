@@ -49,7 +49,7 @@ const HeaderIcons = ({ onBackPress, roomId }) => {
                     <Ionicons name={isSoundMuted ? "volume-mute" : "volume-high"} size={20} color={isSoundMuted ? "#8B8FA3" : COLORS.limeGlow} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn} onPress={handleToggleMusic}>
-                    <Ionicons name={isMusicMuted ? "musical-outline" : "musical-notes"} size={20} color={isMusicMuted ? "#8B8FA3" : COLORS.neonCyan} />
+                    <Ionicons name={isMusicMuted ? "musical-notes-outline" : "musical-notes"} size={20} color={isMusicMuted ? "#8B8FA3" : COLORS.neonCyan} />
                 </TouchableOpacity>
                 <VoiceToggle roomId={roomId} />
             </View>
