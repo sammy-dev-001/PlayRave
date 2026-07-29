@@ -27,9 +27,11 @@ module.exports = () => {
         backgroundColor: "#0a0a1a"
       },
       ios: {
-        supportsTablet: true
+        supportsTablet: true,
+        bundleIdentifier: "com.sammydev.playrave"
       },
       android: {
+        package: "com.sammydev.playrave",
         adaptiveIcon: {
           foregroundImage: "./assets/adaptive-icon.png",
           backgroundColor: "#0a0a1a"
@@ -55,6 +57,9 @@ module.exports = () => {
         fallbackToCacheTimeout: 0,
         checkAutomatically: "ON_LOAD"
       },
+      plugins: [
+        "expo-font"
+      ],
       extra: {
         APP_ENV,
         apiUrl,
