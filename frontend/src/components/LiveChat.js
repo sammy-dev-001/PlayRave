@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
 import GlassView from './GlassView';
 import { useTheme } from '../context/ThemeContext';
@@ -140,10 +141,17 @@ const LiveChat = ({
                 <TouchableOpacity
                     onPress={onToggleMinimize}
                     activeOpacity={0.8}
+                    style={{ alignItems: 'center' }}
                 >
                     <GlassView style={styles.minimizedChat} variant="primary">
-                        <NeonText size={14}>💬 {messages.length}</NeonText>
+                        <Ionicons name="chatbubble-outline" size={28} color={COLORS.white} />
+                        {messages.length > 0 && (
+                            <View style={styles.badge}>
+                                <NeonText size={10} color="#fff">{messages.length}</NeonText>
+                            </View>
+                        )}
                     </GlassView>
+                    <NeonText size={10} color={COLORS.textMuted} style={{ marginTop: 4 }}>Tap to chat</NeonText>
                 </TouchableOpacity>
             </View>
         );
@@ -242,12 +250,24 @@ const getStyles = (COLORS) => StyleSheet.create({
         maxWidth: 200,
     },
     minimizedChat: {
-        borderRadius: 24,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        flexDirection: 'row',
+        borderRadius: 30,
+        width: 55,
+        height: 55,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    badge: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: COLORS.hotPink,
+        borderRadius: 12,
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: COLORS.deepNightBlack,
     },
     header: {
         flexDirection: 'row',

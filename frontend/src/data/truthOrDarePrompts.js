@@ -100,11 +100,11 @@ const truthOrDarePrompts = {
             "Have you ever waved at someone who wasn't waving at you?",
             "What is the most embarrassing thing your siblings have done to you?",
             "What is a secret you have never told anyone?",
-        "What is the most embarrassing thing you have done in public?",
-        "If you could switch lives with someone for a day, who would it be?",
-        "What is a habit you wish you could break?",
-        "What is the weirdest thing you collect?",
-    ],
+            "What is the most embarrassing thing you have done in public?",
+            "If you could switch lives with someone for a day, who would it be?",
+            "What is a habit you wish you could break?",
+            "What is the weirdest thing you collect?",
+        ],
         dares: [
             "Do 20 pushups right now",
             "Do your best impression of someone in the room",
@@ -214,6 +214,11 @@ const truthOrDarePrompts = {
     spicy: {
         truths: [
             "What's the most attractive thing about someone in this room?",
+            "What is the most daring place you've ever kissed someone?",
+            "Describe your most unforgettable romantic gesture.",
+            "What is a secret turn-on you haven't told anyone?",
+            "What is the most spontaneous romantic act you've done?",
+            "What is the most embarrassing thing you've said during a date?",
             "Have you ever had a crush on someone here?",
             "What's the sexiest thing someone has done to you?",
             "Have you ever skinny dipped?",
@@ -320,6 +325,10 @@ const truthOrDarePrompts = {
         ],
         dares: [
             "Slow dance with someone for 1 minute",
+            "Give a passionate kiss to a chosen person",
+            "Write a love note and read it aloud",
+            "Perform a romantic poem for the group",
+            "Share a heartfelt compliment with someone",
             "Give someone a passionate hug for 10 seconds",
             "Whisper your biggest secret in someone's ear",
             "Let someone feed you a piece of food sensually",
@@ -416,6 +425,11 @@ const truthOrDarePrompts = {
         truths: [
             "What's your biggest sexual fantasy?",
             "Have you ever had a one-night stand?",
+            "What is the most adventurous place you've had sex?",
+            "Describe your most intense sexual fantasy.",
+            "What is a taboo you secretly enjoy?",
+            "Have you ever experimented with role-play?",
+            "What is the most surprising thing you've done in the bedroom?",
             "What's the wildest place you've ever had sex?",
             "Have you ever sent nudes to someone?",
             "What's your body count?",
@@ -514,14 +528,19 @@ const truthOrDarePrompts = {
             "Have you ever had sex on a boat?",
             "What is the most creative place you've hidden a sex toy?",
             "What is your favorite position?",
-        "Have you ever used a sex toy?",
-        "What is the most public place you've been intimate?",
-        "What is a taboo you are curious about?",
-        "What is the longest you've gone without sex?"
-    ],
+            "Have you ever used a sex toy?",
+            "What is the most public place you've been intimate?",
+            "What is a taboo you are curious about?",
+            "What is the longest you've gone without sex?"
+        ],
         dares: [
             "Give someone here a lap dance for 30 seconds",
             "Kiss the person to your left",
+            "Give a seductive lap dance for 30 seconds",
+            "Whisper a dirty secret into someone's ear",
+            "Perform a blindfolded tease",
+            "Let someone draw a seductive doodle on your skin",
+            "Share your most erotic fantasy with the group",
             "Send a flirty text to your crush right now",
             "Do a sexy dance for 1 minute",
             "Let someone give you a hickey or give them one",
@@ -626,7 +645,7 @@ export const getRandomTruth = (category = 'normal', usedTruths = []) => {
     }
 
     const categoryTruths = truthOrDarePrompts[effectiveCategory]?.truths || truthOrDarePrompts.normal?.truths || [];
-    
+
     // Ensure usedTruths is an array
     const safeUsedTruths = Array.isArray(usedTruths) ? usedTruths : [];
 
@@ -649,12 +668,12 @@ export const getRandomDare = (category = 'normal', usedDares = []) => {
     }
 
     const categoryDares = truthOrDarePrompts[effectiveCategory]?.dares || truthOrDarePrompts.normal?.dares || [];
-    
+
     // Ensure usedDares is an array
     const safeUsedDares = Array.isArray(usedDares) ? usedDares : [];
 
     const availableDares = categoryDares.filter(dare => !safeUsedDares.includes(dare));
-    
+
     if (availableDares.length === 0) {
         // Reset if all used
         return categoryDares[Math.floor(Math.random() * categoryDares.length)];

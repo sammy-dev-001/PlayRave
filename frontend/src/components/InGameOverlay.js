@@ -61,11 +61,12 @@ const InGameOverlay = () => {
                     <VoiceChatPanel roomId={room.id} playerName={currentUser?.name} visible={true} />
                 </View>
 
-            <View 
-                style={[
-                    styles.chatContainer, 
-                    { bottom: Math.max(20, insets.bottom + 8) }
-                ]} 
+            <View style={[
+                styles.chatContainer, 
+                isChatMinimized 
+                    ? { top: Math.max(70, insets.top + 60), left: 10 }
+                    : { bottom: Math.max(20, insets.bottom + 8), left: 10, right: 10 }
+            ]} 
                 pointerEvents="box-none"
             >
                 <LiveChat
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     voiceContainer: {
         position: 'absolute',
         top: 10,
-        right: 110, // Places it right next to the MuteButton icons
+        left: 20,
         zIndex: 1000,
     },
     chatContainer: {
