@@ -51,8 +51,7 @@ module.exports = () => {
       },
       updates: {
         enabled: true,
-        // The URL will be injected properly when running \`eas update:configure\`
-        // or we can leave it blank and let EAS CLI populate it when the user runs it.
+        url: "https://u.expo.dev/44ace18c-b235-4d04-a21a-1e73289de69f",
         fallbackToCacheTimeout: 0,
         checkAutomatically: "ON_LOAD"
       },
@@ -61,8 +60,7 @@ module.exports = () => {
         apiUrl,
         socketUrl,
         eas: {
-          // This will be auto-populated by \`eas init\` when the user runs it
-          projectId: ""
+          projectId: "44ace18c-b235-4d04-a21a-1e73289de69f"
         }
       }
     }
