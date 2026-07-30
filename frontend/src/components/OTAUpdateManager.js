@@ -7,18 +7,26 @@ import NeonButton from './NeonButton';
 import GlassView from './GlassView';
 
 export const OTAUpdateManager = ({ children }) => {
-    // We check if useUpdates is available (fallback for web or Expo Go)
-    let updates;
-    try {
-        updates = useUpdates();
-    } catch (e) {
-        // Fallback if not running in an EAS environment
-        updates = { isUpdatePending: false };
-    }
-
-    const { isUpdatePending } = updates;
+    const [isUpdatePending, setIsUpdatePending] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
     const [isReloading, setIsReloading] = useState(false);
+
+    useEffect(() => {
+        const checkUpdates = async () => {
+            try {
+                const update = await Updates.checkForUpdateAsync();
+                if (update.isAvailable) {
+                    setIsUpdatePending(true);
+                }
+            } catch (e) {
+                // Ignore in development or if unsupported
+            }
+        };
+        // Only run check if not in development
+        if (!__DEV__) {
+            checkUpdates();
+        }
+    }, []);
 
     useEffect(() => {
         if (isUpdatePending) {

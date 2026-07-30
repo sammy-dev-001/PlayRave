@@ -32,10 +32,6 @@ const LobbyScreen = ({ route, navigation }) => {
     const [room, setRoom] = useState(route.params?.room);
     const playerName = route.params?.playerName;
 
-    if (!room) {
-        return null; // Wait for the useEffect to redirect
-    }
-
     // Session persistence and reconnection handling
     useGameDisconnectHandler({
         navigation,
@@ -84,7 +80,7 @@ const LobbyScreen = ({ route, navigation }) => {
         useCallback(() => {
             // Request a fresh room snapshot on focus in case we missed updates
             // while the screen was backgrounded.
-            if (SocketService.socket?.connected) {
+            if (SocketService.socket?.connected && room?.id) {
                 SocketService.emit('get-room', { roomId: room.id });
             }
 
@@ -164,8 +160,12 @@ const LobbyScreen = ({ route, navigation }) => {
         // IMPORTANT: isHost MUST stay in this dep array. It controls the host UI
         // visible to the player entering the game. If removed, onGameStarted captures
         // a stale isHost value and a migrated host sees the wrong UI on game start.
-        }, [navigation, room.id, playerName, isHost])
+        }, [navigation, room?.id, playerName, isHost])
     );
+
+    if (!room) {
+        return null; // Wait for the useEffect to redirect
+    }
 
     const handleStartGame = () => {
         if (selectedGame === 'truth-or-dare') {
