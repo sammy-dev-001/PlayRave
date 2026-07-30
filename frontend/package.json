@@ -51,6 +51,7 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
+    "@babel/plugin-transform-private-methods": "^8.0.1",
     "@types/react": "~19.1.10",
     "babel-preset-expo": "^57.0.5",
     "eslint": "^8.57.0",
