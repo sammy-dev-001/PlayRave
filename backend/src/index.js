@@ -71,7 +71,7 @@ const roomManager    = require("./managers/roomManager");
     const ScrabbleAIEngine = require('./ai/ScrabbleAIEngine');
 
 // Health check
-app.get(["/health", "/api/health"], (req, res) => {
+app.get(["/", "/health", "/api/health"], (req, res) => {
     // console.log("[Health] Ping received at", new Date().toISOString());
     res.json({ status: "ok", mode: "playrave-server", timestamp: Date.now() });
 });
