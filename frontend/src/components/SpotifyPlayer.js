@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Linking,
     Platform
@@ -24,7 +24,7 @@ const PARTY_PLAYLISTS = [
 // Spotify Player Component
 const SpotifyPlayer = ({ visible = true }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [isConnected, setIsConnected] = useState(false);
     const [currentTrack, setCurrentTrack] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -124,7 +124,7 @@ const SpotifyPlayer = ({ visible = true }) => {
 // Mini player for game screens
 const MiniMusicPlayer = ({ visible = true }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     if (!visible) return null;
 
     return (

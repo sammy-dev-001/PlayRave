@@ -1,45 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Modal, ActivityIndicator } from 'react-native';
-import { useUpdates } from 'expo-updates';
+import { View, StyleSheet, Modal, Platform } from 'react-native';
 import * as Updates from 'expo-updates';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
 import GlassView from './GlassView';
 
 export const OTAUpdateManager = ({ children }) => {
-    const [isUpdatePending, setIsUpdatePending] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
     const [isReloading, setIsReloading] = useState(false);
 
     useEffect(() => {
-        const checkUpdates = async () => {
+        // Skip on web and in Expo Go / dev builds — Updates APIs are no-ops there
+        if (Platform.OS === 'web' || __DEV__) return;
+
+        const checkAndFetch = async () => {
             try {
-                const update = await Updates.checkForUpdateAsync();
-                if (update.isAvailable) {
-                    setIsUpdatePending(true);
-                }
+                const check = await Updates.checkForUpdateAsync();
+                if (!check.isAvailable) return;
+
+                // Download the update, then show the modal
+                await Updates.fetchUpdateAsync();
+                setShowPrompt(true);
             } catch (e) {
-                // Ignore in development or if unsupported
+                // Silently ignore — expected in bare dev or first install
             }
         };
-        // Only run check if not in development
-        if (!__DEV__) {
-            checkUpdates();
-        }
-    }, []);
 
-    useEffect(() => {
-        if (isUpdatePending) {
-            setShowPrompt(true);
-        }
-    }, [isUpdatePending]);
+        checkAndFetch();
+    }, []);
 
     const handleRestart = async () => {
         try {
             setIsReloading(true);
             await Updates.reloadAsync();
         } catch (e) {
-            console.error("Failed to reload app", e);
+            console.error('Failed to reload app', e);
             setIsReloading(false);
         }
     };
@@ -47,7 +42,7 @@ export const OTAUpdateManager = ({ children }) => {
     return (
         <View style={{ flex: 1 }}>
             {children}
-            
+
             <Modal
                 transparent
                 visible={showPrompt}
@@ -58,14 +53,14 @@ export const OTAUpdateManager = ({ children }) => {
                         <NeonText size={22} color="#00ffff" weight="bold" style={styles.title}>
                             SYSTEM UPDATE
                         </NeonText>
-                        
+
                         <NeonText size={16} color="#ffffff" style={styles.message}>
                             A new party module has been downloaded in the background and is ready to install!
                         </NeonText>
 
                         <View style={styles.buttonContainer}>
                             <NeonButton
-                                title={isReloading ? "RELAUNCHING..." : "RELAUNCH NOW"}
+                                title={isReloading ? 'RELAUNCHING...' : 'RELAUNCH NOW'}
                                 onPress={handleRestart}
                                 variant="primary"
                             />

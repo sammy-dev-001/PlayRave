@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const WordRushWinnerScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, winner } = route.params;
     const currentUserId = SocketService.userId;
     const isWinner = winner && winner === currentUserId;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const CustomQuestionsScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName } = route.params;
     const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState({

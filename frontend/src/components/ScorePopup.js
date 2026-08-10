@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
     Animated, StyleSheet, View,
     Platform
@@ -14,7 +14,7 @@ const ScorePopup = ({
     position = 'center' // 'center', 'top', 'bottom'
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.5)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -30,7 +30,7 @@ const TABS = [
 
 const CommunityPacksScreen = ({ navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { isAuthenticated } = useAuth();
     const [packs, setPacks] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, StyleSheet, TextInput, Animated, Platform, Vibration, Keyboard, ScrollView, TouchableOpacity } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const TypeRaceScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
 
     useGameDisconnectHandler({

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo, memo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated,
     Platform
@@ -11,7 +11,7 @@ import GlassView from '../GlassView';
 
 const ModeCard = ({ title, subtitle, onPress }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -61,7 +61,7 @@ const ModeCard = ({ title, subtitle, onPress }) => {
 
 const SecondaryModes = ({ onLocalPress, onLANPress }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
             <NeonText
@@ -121,4 +121,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(SecondaryModes);
+export default memo(SecondaryModes);

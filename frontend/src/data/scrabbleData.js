@@ -62,8 +62,8 @@ export const BONUS_SQUARES = {
     '14,3': 'DL', '14,11': 'DL'
 };
 
-// Valid Words Dictionary - Comprehensive TWL06 Scrabble Dictionary (178,691 words)
-import { SCRABBLE_WORDS } from './scrabbleWords';
+import { SCRABBLE_WORDS, loadDictionary, isDictionaryLoaded } from './scrabbleWords';
+export { loadDictionary, isDictionaryLoaded };
 
 // Word validation helper
 export const isValidWord = (word) => {

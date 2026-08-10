@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, TextInput, Alert, ScrollView,
     Platform, StatusBar, Modal, TouchableOpacity
@@ -73,7 +73,7 @@ function checkRoomExists(roomId) {
 
 const HomeScreen = ({ navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { user, isAuthenticated, isGuest, updateUsername, isLoading: isAuthLoading } = useAuth();
     const { setPlayer } = useGame();
     const [name, setName] = useState('');
@@ -86,6 +86,9 @@ const HomeScreen = ({ navigation }) => {
     // CoD-style rejoin modal state
     const [rejoinSession, setRejoinSession] = useState(null);
     const [showRejoinModal, setShowRejoinModal] = useState(false);
+    
+    // Name error modal state
+    const [showNameError, setShowNameError] = useState(false);
 
     // Reactive Sync for name input (autofill on hydration)
     useEffect(() => {
@@ -123,7 +126,7 @@ const HomeScreen = ({ navigation }) => {
 
     const handleCreate = async () => {
         if (!name) {
-            Alert.alert('Enter Name', 'Please enter a name to host.');
+            setShowNameError(true);
             return;
         }
         await startMusicOnInteraction();
@@ -390,6 +393,35 @@ const HomeScreen = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+            
+            {/* Name Error Modal */}
+            <Modal
+                visible={showNameError}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowNameError(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <NeonText size={20} weight="bold" color={COLORS.hotPink} glow>
+                            ENTER NAME
+                        </NeonText>
+                        <NeonText size={14} color={COLORS.text} style={styles.modalBody}>
+                            Please enter a name to host a session.
+                        </NeonText>
+                        <TouchableOpacity
+                            style={styles.modalBtn}
+                            onPress={() => setShowNameError(false)}
+                            activeOpacity={0.7}
+                        >
+                            <NeonText size={16} color={COLORS.neonCyan} glow>
+                                OK
+                            </NeonText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+            
             {/* ──────────────────────────────────────────────────────────── */}
 
             {/* Avatar Picker Modal */}

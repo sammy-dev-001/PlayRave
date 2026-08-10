@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -48,9 +48,9 @@ const getRank = (score, total, COLORS) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const LocalCharadesScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const CATEGORIES = React.useMemo(() => getCategories(COLORS), [COLORS]);
-    const DIFFICULTY_OPTIONS = React.useMemo(() => getDifficultyOptions(COLORS), [COLORS]);
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const CATEGORIES = useMemo(() => getCategories(COLORS), [COLORS]);
+    const DIFFICULTY_OPTIONS = useMemo(() => getDifficultyOptions(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const routePlayers = route?.params?.players || null;
 
     // ── State ──
@@ -512,36 +512,6 @@ const LocalCharadesScreen = ({ route, navigation }) => {
             {/* Top bar */}
             <View style={styles.topBar}>
                 {/* Header Controls */}
-                <View style={styles.headerControls}>
-                    <TouchableOpacity 
-                        onPress={() => {
-                            const muted = SoundService.toggleMute();
-                            setIsMuted(muted);
-                            HapticService.selection();
-                        }}
-                        style={styles.controlIcon}
-                    >
-                        <Ionicons 
-                            name={isMuted ? "volume-mute" : "volume-high"} 
-                            size={18} 
-                            color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        onPress={() => {
-                            HapticService.setEnabled(!isHapticsEnabled);
-                            setIsHapticsEnabled(!isHapticsEnabled);
-                            if (!isHapticsEnabled) HapticService.selection();
-                        }}
-                        style={styles.controlIcon}
-                    >
-                        <Ionicons 
-                            name={isHapticsEnabled ? "notifications" : "notifications-off"} 
-                            size={18} 
-                            color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
-                        />
-                    </TouchableOpacity>
-                </View>
 
                 {/* Timer */}
                 <View style={styles.timerContainer}>

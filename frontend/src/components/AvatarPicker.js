@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Modal,
@@ -21,7 +21,7 @@ import { AVATARS, AVATAR_COLORS } from '../data/avatars';
 
 const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar || AVATARS[0]);
     const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
     const [customPhoto, setCustomPhoto] = useState(null);
@@ -241,7 +241,7 @@ const AvatarPicker = ({ visible, onClose, onSelect, currentAvatar }) => {
 // Compact avatar display component for use in lists
 export const AvatarDisplay = ({ avatar, color, size = 40, onPress, isCustomPhoto }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const Component = onPress ? TouchableOpacity : View;
     const isBase64Image = avatar && typeof avatar === 'string' && avatar.startsWith('data:image');
 

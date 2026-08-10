@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -11,7 +11,7 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 
 const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, category = 'normal', players = [], playerName } = route.params;
     
     // Session persistence and reconnection handling

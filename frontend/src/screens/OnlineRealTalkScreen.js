@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -14,7 +14,7 @@ const { width } = Dimensions.get('window');
 
 const OnlineRealTalkScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, gameState: initialGameState } = route.params;
 
     const [gameState, setGameState] = useState(initialGameState || null);

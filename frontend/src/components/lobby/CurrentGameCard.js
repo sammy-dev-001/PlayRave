@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from '../NeonText';
 import GameIcon from '../GameIcon';
@@ -64,7 +64,7 @@ const GAME_DESCRIPTIONS = {
 
 const CurrentGameCard = ({ gameId, isHost, onChangeGame }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const gameName = GAME_NAMES[gameId] || gameId || 'No Game Selected';
     const gameDesc = GAME_DESCRIPTIONS[gameId] || 'Get ready to play!';
 
@@ -129,4 +129,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(CurrentGameCard);
+export default memo(CurrentGameCard);

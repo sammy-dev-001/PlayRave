@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, cloneElement, forwardRef, useImperativeHandle } from 'react';
 import {
     Animated, View, StyleSheet,
     Platform
@@ -16,7 +16,7 @@ export const AnimatedContainer = ({
     ...props
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(direction === 'up' ? 30 : -30)).current;
 
@@ -57,7 +57,7 @@ export const AnimatedCard = ({
     ...props
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const scale = useRef(new Animated.Value(0.9)).current;
     const pressScale = useRef(new Animated.Value(1)).current;
@@ -109,7 +109,7 @@ export const AnimatedCard = ({
             ]}
             {...props}
         >
-            {React.cloneElement(children, {
+            {cloneElement(children, {
                 onPressIn: handlePressIn,
                 onPressOut: handlePressOut,
             })}
@@ -126,7 +126,7 @@ export const AnimatedListItem = ({
     ...props
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateX = useRef(new Animated.Value(-20)).current;
 
@@ -161,7 +161,7 @@ export const AnimatedListItem = ({
 // Pulsing Element - For highlighting
 export const PulsingElement = ({ children, active = true, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -199,7 +199,7 @@ export const PulsingElement = ({ children, active = true, style }) => {
 // Floating Element - Subtle hover effect
 export const FloatingElement = ({ children, intensity = 10, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const translateY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -230,10 +230,10 @@ export const FloatingElement = ({ children, intensity = 10, style }) => {
 };
 
 // Shake Element - For errors/attention
-export const ShakeElement = React.forwardRef(({ children, style }, ref) => {
+export const ShakeElement = forwardRef(({ children, style }, ref) => {
     const translateX = useRef(new Animated.Value(0)).current;
 
-    React.useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({
         shake: () => {
             Animated.sequence([
                 Animated.timing(translateX, { toValue: 10, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
@@ -255,7 +255,7 @@ export const ShakeElement = React.forwardRef(({ children, style }, ref) => {
 // Glow Element - Neon glow effect
 export const GlowElement = ({ children, color = '#00F8FF', style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const glowOpacity = useRef(new Animated.Value(0.5)).current;
 
     useEffect(() => {
@@ -304,7 +304,7 @@ export const AnimatedProgressBar = ({
     style
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const width = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -346,7 +346,7 @@ export const AnimatedCountdown = ({
     warningColor = '#FF3FA4'
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(1)).current;
     const prevValue = useRef(value);
 

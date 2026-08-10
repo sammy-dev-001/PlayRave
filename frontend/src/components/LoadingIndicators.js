@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, Animated, Easing,
     Platform
@@ -14,7 +14,7 @@ export const NeonLoader = ({
     showText = true
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const rotation = useRef(new Animated.Value(0)).current;
     const pulseScale = useRef(new Animated.Value(1)).current;
 
@@ -99,7 +99,7 @@ export const NeonLoader = ({
 // Dots loader
 export const DotsLoader = ({ size = 10, color = '#00F8FF', count = 3 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const animations = useRef(
         Array.from({ length: count }, () => new Animated.Value(0))
     ).current;
@@ -170,7 +170,7 @@ export const SkeletonLoader = ({
     style
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const shimmer = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -217,7 +217,7 @@ export const LoadingOverlay = ({
     color = '#00F8FF' // COLORS.neonCyan — hardcoded to avoid module-load crash
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -246,7 +246,7 @@ export const StatusIndicator = ({
     animated = true
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(animated ? 0 : 1)).current;
 
     const colors = {

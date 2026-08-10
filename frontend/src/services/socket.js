@@ -11,6 +11,21 @@ const getServerUrl = () => {
         return LANService.lanServerUrl;
     }
 
+    // EXPO_PUBLIC_BACKEND_URL is baked in by Metro from .env at bundle time.
+    // Check this FIRST — it always has the correct value regardless of APP_ENV.
+    try {
+        if (process.env.EXPO_PUBLIC_BACKEND_URL) {
+            console.log('Using backend URL from .env:', process.env.EXPO_PUBLIC_BACKEND_URL);
+            return process.env.EXPO_PUBLIC_BACKEND_URL;
+        }
+    } catch (e) {}
+
+    // Check for explicit Expo config socket URL (preview/production)
+    if (Constants.expoConfig?.extra?.socketUrl && !Constants.expoConfig.extra.socketUrl.includes('localhost')) {
+        console.log('Using socket URL from Expo config:', Constants.expoConfig.extra.socketUrl);
+        return Constants.expoConfig.extra.socketUrl;
+    }
+
     // For web deployment (Vercel), use the production backend URL
     if (typeof window !== 'undefined' && window.location) {
         const hostname = window.location.hostname;
@@ -20,19 +35,20 @@ const getServerUrl = () => {
         }
     }
 
-    // Check for production backend URL from environment variable
-    if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_BACKEND_URL) {
-        console.log('Using production backend URL:', process.env.EXPO_PUBLIC_BACKEND_URL);
-        return process.env.EXPO_PUBLIC_BACKEND_URL;
+    // For development: extract IP from Expo's debugger host
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
+        if (debuggerHost) {
+            const ip = debuggerHost.split(':')[0];
+            console.log('Auto-detected server IP:', ip)
+            return `http://${ip}:4000`;
+        }
     }
 
-    // For development: extract IP from Expo's debugger host
-    const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
-
-    if (debuggerHost) {
-        const ip = debuggerHost.split(':')[0];
-        console.log('Auto-detected server IP:', ip)
-        return `http://${ip}:4000`;
+    // Fallback for mobile production (if process.env is somehow stripped)
+    if (typeof __DEV__ !== 'undefined' && !__DEV__) {
+        console.log('Using hardcoded production backend URL');
+        return 'https://playrave-59ud.onrender.com';
     }
 
     // Fallback for web or if detection fails
@@ -222,9 +238,8 @@ class SocketService {
         // Immediately call with current state
         callback(this.connectionState);
 
-        // Return unsubscribe function
         return () => {
-            this.connectionStateListeners = this.connectionStateListeners.filter(cb => cb !== callback);
+            this.connectionStateListeners = (this.connectionStateListeners || []).filter(cb => cb !== callback);
         };
     }
 
@@ -238,7 +253,7 @@ class SocketService {
         }
 
         return () => {
-            this.latencyListeners = this.latencyListeners.filter(cb => cb !== callback);
+            this.latencyListeners = (this.latencyListeners || []).filter(cb => cb !== callback);
         };
     }
 
@@ -460,7 +475,7 @@ class SocketService {
         if (this.socket) {
             this.socket.off(event, cb);
         }
-        this.pendingListeners = this.pendingListeners.filter(
+        this.pendingListeners = (this.pendingListeners || []).filter(
             listener => !(listener.event === event && listener.cb === cb)
         );
     }

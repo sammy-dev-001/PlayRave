@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const WhotCard = ({ card, onPress, disabled, small, isTopCard }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     // Determine card background and content color
     const isWhot = card.shape === 'whot';
     const cardBgColor = COLORS.white;

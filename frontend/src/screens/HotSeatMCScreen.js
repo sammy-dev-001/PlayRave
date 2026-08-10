@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -21,7 +21,7 @@ const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 // ─── Disconnected player avatar chip ────────────────────────────────────────
 const PlayerChip = ({ player, guessed }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -113,7 +113,7 @@ const chipStyles = StyleSheet.create({
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 const HotSeatMCScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room: initialRoom, playerName, isHost, players: initialPlayers, gameState: initialGameState } = route.params;
 
     const [gameState, setGameState] = useState(initialGameState || null);

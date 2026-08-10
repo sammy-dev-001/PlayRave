@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
@@ -16,7 +16,7 @@ import { useTheme } from '../context/ThemeContext';
  */
 const WhotToast = ({ message, icon = '', color = '#00F8FF', visible, duration = 2200, onDone }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-20)).current;
     // Keep the component mounted until the exit animation completes

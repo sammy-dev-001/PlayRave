@@ -1,10 +1,10 @@
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, Component } from 'react';
 
 /**
  * Higher-order component for consistent memoization with custom comparison.
  * Useful for wrapping screen components to prevent unnecessary re-renders.
  * 
- * @param {React.Component} Component - The component to memoize
+ * @param {Component} Component - The component to memoize
  * @param {Function} areEqual - Optional custom comparison function
  * @returns {React.MemoExoticComponent} Memoized component
  * 
@@ -80,7 +80,7 @@ export function useGameCallback(handler, deps) {
  * Creates a shallow comparison function for specific prop keys.
  * 
  * @param {string[]} keysToCompare - Array of prop keys to compare
- * @returns {Function} Comparison function for React.memo
+ * @returns {Function} Comparison function for memo
  * 
  * @example
  * const MyComponent = memo(Component, createPropsComparer(['id', 'name']));

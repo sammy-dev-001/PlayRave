@@ -48,7 +48,7 @@ const InstallAppModal = () => {
         };
 
         // Listen for beforeinstallprompt
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window.addEventListener) {
             window.addEventListener('beforeinstallprompt', handleBeforeInstall);
             return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
         }
@@ -61,7 +61,7 @@ const InstallAppModal = () => {
         if (isDismissed) return;
 
         // Check if already installed (standalone mode)
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window.navigator && window.matchMedia) {
             const standalone = window.navigator.standalone ||
                 window.matchMedia('(display-mode: standalone)').matches;
             setIsStandalone(standalone);

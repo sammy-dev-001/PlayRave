@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, StyleSheet, PanResponder, Animated } from 'react-native';
 import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
@@ -14,7 +14,7 @@ const DraggableRack = ({
     onTileDrop,
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     // Local visual order — values are indices into the `hand` array
     const [order, setOrder] = useState([]);
 

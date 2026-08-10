@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo, memo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated,
     Platform
@@ -10,7 +10,7 @@ import SoundService from '../../services/SoundService';
 
 const AnimatedButton = ({ title, icon, onPress, style, textColor, disabled, children }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -68,7 +68,7 @@ const ActionFooter = ({
     disabled,
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     if (isHost) {
         return (
             <View style={styles.footer}>
@@ -175,4 +175,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(ActionFooter);
+export default memo(ActionFooter);

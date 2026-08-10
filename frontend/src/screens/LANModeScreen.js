@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -10,7 +10,7 @@ import SocketService from '../services/socket';
 
 const LANModeScreen = ({ navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [mode, setMode] = useState('menu'); // menu, host, join
     const [serverIP, setServerIP] = useState('');
     const [localIP, setLocalIP] = useState(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated, Dimensions,
     Platform, Alert
@@ -15,7 +15,7 @@ const { width, height } = Dimensions.get('window');
 
 const NeonTapGameScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, hostParticipates, isHost, playerName } = route.params;
 
     useGameDisconnectHandler({
@@ -57,7 +57,7 @@ const NeonTapGameScreen = ({ route, navigation }) => {
     // This makes them safe to list as deps in useEffect without causing
     // infinite re-runs, and eliminates the fragile pattern where a future
     // state close-over would silently produce stale values.
-    const startPulseAnimation = React.useCallback(() => {
+    const startPulseAnimation = useCallback(() => {
         if (pulseLoopRef.current) pulseLoopRef.current.stop();
         pulseAnim.setValue(1);
         pulseLoopRef.current = Animated.loop(
@@ -69,7 +69,7 @@ const NeonTapGameScreen = ({ route, navigation }) => {
         pulseLoopRef.current.start();
     }, []); // Only refs — no state deps
 
-    const stopPulseAnimation = React.useCallback(() => {
+    const stopPulseAnimation = useCallback(() => {
         if (pulseLoopRef.current) {
             pulseLoopRef.current.stop();
             pulseLoopRef.current = null;

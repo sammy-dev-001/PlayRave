@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -102,8 +102,8 @@ const getAIMove = (board, difficulty, aiSym, playerSym) => {
 // ─── Component ────────────────────────────────────────────────────────────────
 const LocalTicTacToeScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
-    const { players, difficulty = 'medium' } = route.params;
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+    const { players, difficulty = 'medium', isSinglePlayer = true } = route.params;
     const playerName = players[0]?.name || 'You';
 
     // aiStartsNext: if true the AI goes first next round (plays as X)
@@ -215,7 +215,7 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
     };
 
     const handleQuit = () => {
-        navigation.navigate('LocalGameSelection', { players });
+        navigation.navigate('LocalGameSelection', { players, isSinglePlayer });
     };
 
     const difficultyLabel = { easy: '😊 Easy', medium: '💪 Medium', hard: '💀 Hard' }[difficulty];

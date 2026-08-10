@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import ErrorService, { ErrorSeverity } from '../services/ErrorService';
@@ -10,7 +10,7 @@ import ErrorService, { ErrorSeverity } from '../services/ErrorService';
  * NOTE: Class components cannot use hooks, so COLORS are passed in via the
  * `colors` prop by the ErrorBoundaryWrapper functional component below.
  */
-class ErrorBoundaryInner extends React.Component {
+class ErrorBoundaryInner extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -74,7 +74,7 @@ class ErrorBoundaryInner extends React.Component {
                             {this.props.errorMessage || "We're sorry, but something unexpected happened."}
                         </Text>
 
-                        {__DEV__ && this.state.error && (
+                        {this.state.error && (
                             <View style={styles.errorDetails}>
                                 <Text style={styles.errorText}>
                                     {this.state.error.toString()}

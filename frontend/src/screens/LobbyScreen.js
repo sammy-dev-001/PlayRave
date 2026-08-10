@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
     View, StyleSheet, ScrollView, Modal, TouchableOpacity,
-    Image, Share, Alert, StatusBar, Platform, SafeAreaView
+    Image, Share, Alert, StatusBar, Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import ThemeBackground from '../components/ThemeBackground';
 import NeonText from '../components/NeonText';
@@ -20,7 +21,7 @@ import { navigateToGame } from '../utils/gameNavigation';
 
 const LobbyScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     
     // Guard against undefined room (e.g. if navigated here from an error boundary without params)
     useEffect(() => {
@@ -61,7 +62,7 @@ const LobbyScreen = ({ route, navigation }) => {
     // useMemo: only re-runs find() when room.players changes, not on every render.
     // isHost is a dep of useFocusEffect — this keeps it stable and prevents
     // unnecessary effect re-runs when unrelated state changes.
-    const isHost = React.useMemo(() => {
+    const isHost = useMemo(() => {
         const myUid = SocketService.userId;
         if (!myUid || !room) return false;
         if (room.hostUserId === myUid) return true;
@@ -73,7 +74,7 @@ const LobbyScreen = ({ route, navigation }) => {
     // the current room without needing `room` (an object) in the dep array.
     // Putting an object in a dep array causes the effect to re-run on every
     // room-updated event, which re-emits get-room, creating a feedback loop.
-    const roomRef = React.useRef(room);
+    const roomRef = useRef(room);
     roomRef.current = room;
 
     useFocusEffect(

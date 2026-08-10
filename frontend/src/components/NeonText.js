@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import {
     Text, StyleSheet,
     Platform
@@ -19,10 +19,11 @@ const NeonText = ({
     color, 
     size = 16, 
     weight = 'regular',
-    variant = 'regular' // default, display, arcade
+    variant = 'regular', // default, display, arcade
+    ...props
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     
     // Default color to theme white if not provided
     const finalColor = color || COLORS.white;
@@ -53,7 +54,7 @@ const NeonText = ({
         style,
     ];
 
-    return <Text style={textStyles}>{children}</Text>;
+    return <Text style={textStyles} {...props}>{children}</Text>;
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
@@ -67,4 +68,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(NeonText);
+export default memo(NeonText);

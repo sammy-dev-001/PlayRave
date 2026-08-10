@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -20,7 +20,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     
     // Card content - Ionicons for matching with specific colors
-    const CARD_PAIRS = React.useMemo(() => [
+    const CARD_PAIRS = useMemo(() => [
         { name: 'game-controller', color: COLORS.neonCyan },
         { name: 'flash', color: COLORS.limeGlow },
         { name: 'headset', color: COLORS.hotPink },
@@ -41,7 +41,7 @@ const MemoryMatchScreen = ({ route, navigation }) => {
         { name: 'snow', color: '#B3E5FC' }
     ], [COLORS]);
 
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [] } = route.params || {};
 
     const [gamePhase, setGamePhase] = useState('setup'); // setup, playing, finished
@@ -197,36 +197,6 @@ const MemoryMatchScreen = ({ route, navigation }) => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.container}>
                     <View style={styles.header}>
-                        <View style={styles.headerControls}>
-                            <TouchableOpacity 
-                                onPress={() => {
-                                    const muted = SoundService.toggleMute();
-                                    setIsMuted(muted);
-                                    HapticService.selection();
-                                }}
-                                style={styles.controlIcon}
-                            >
-                                <Ionicons 
-                                    name={isMuted ? "volume-mute" : "volume-high"} 
-                                    size={20} 
-                                    color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
-                                />
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                onPress={() => {
-                                    HapticService.setEnabled(!isHapticsEnabled);
-                                    setIsHapticsEnabled(!isHapticsEnabled);
-                                    if (!isHapticsEnabled) HapticService.selection();
-                                }}
-                                style={styles.controlIcon}
-                            >
-                                <Ionicons 
-                                    name={isHapticsEnabled ? "notifications" : "notifications-off"} 
-                                    size={20} 
-                                    color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
-                                />
-                            </TouchableOpacity>
-                        </View>
 
                         <NeonText size={24} weight="bold" glow color={COLORS.neonCyan}>
                             MEMORY MATCH

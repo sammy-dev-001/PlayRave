@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View, StyleSheet, Image, TouchableOpacity, Alert,
     Platform
@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const ProfilePictureSelector = ({ selectedAvatar, onAvatarChange }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Default avatars (emoji options)

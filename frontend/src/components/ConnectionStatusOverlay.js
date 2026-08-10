@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, Animated,
     Platform
@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const ConnectionStatusOverlay = () => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [state, setState] = useState(SocketService.connectionState);
     const [visible, setVisible] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
@@ -84,18 +84,18 @@ const ConnectionStatusOverlay = () => {
     if (!config) return null;
 
     return (
-        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="none">
             <View style={styles.container}>
                 <View style={[styles.banner, { borderColor: config.color }]}>
                     <NeonText 
-                        size={18} 
+                        size={14} 
                         weight="bold" 
                         color={config.color} 
                         glow
                     >
                         {config.text}
                     </NeonText>
-                    <NeonText size={12} color="#AAA" style={styles.subtitle}>
+                    <NeonText size={10} color="#AAA" style={styles.subtitle}>
                         {config.subtitle}
                     </NeonText>
                 </View>
@@ -107,34 +107,32 @@ const ConnectionStatusOverlay = () => {
 const getStyles = (COLORS) => StyleSheet.create({
     overlay: {
         position: Platform.OS === 'web' ? 'fixed' : 'absolute',
-        top: 0,
+        top: Platform.OS === 'ios' ? 50 : 30,
         left: 0,
         right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(5, 5, 10, 0.85)',
         zIndex: 9999,
-        justifyContent: 'center',
         alignItems: 'center',
     },
     container: {
-        width: '100%',
+        width: '90%',
+        maxWidth: 400,
         alignItems: 'center',
     },
     banner: {
-        backgroundColor: '#1a1a2e',
-        paddingVertical: 20,
-        paddingHorizontal: 40,
-        borderRadius: 15,
+        backgroundColor: 'rgba(26, 26, 46, 0.95)',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 20,
         borderWidth: 2,
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
+        shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.5,
-        shadowRadius: 15,
+        shadowRadius: 10,
         elevation: 10,
     },
     subtitle: {
-        marginTop: 8,
+        marginTop: 4,
         textAlign: 'center',
     }
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
     View,
     Modal,
@@ -28,7 +28,7 @@ const ConfirmModal = ({
     icon = null, // custom icon name (Ionicons)
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
 
     const isDanger = variant === 'danger' || confirmVariant === 'danger';
 

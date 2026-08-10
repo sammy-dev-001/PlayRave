@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import {
     View, StyleSheet, Animated,
     Platform
@@ -7,10 +7,10 @@ import { useTheme } from '../context/ThemeContext';
 
 const SkeletonLoader = ({ width = '100%', height = 40, borderRadius = 8, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
-    const shimmerAnim = React.useRef(new Animated.Value(0)).current;
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-    React.useEffect(() => {
+    useEffect(() => {
         Animated.loop(
             Animated.sequence([
                 Animated.timing(shimmerAnim, {

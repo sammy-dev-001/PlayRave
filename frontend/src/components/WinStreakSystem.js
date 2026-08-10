@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, Animated,
     Platform
@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 // Win streak badge that shows next to player names
 const StreakBadge = ({ streak, size = 'small' }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     if (!streak || streak < 2) return null;
 
     const fireCount = streak >= 10 ? 3 : streak >= 5 ? 2 : 1;
@@ -34,7 +34,7 @@ const StreakBadge = ({ streak, size = 'small' }) => {
 // Streak milestone popup animation
 const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -80,7 +80,7 @@ const StreakMilestonePopup = ({ streak, playerName, visible, onComplete }) => {
 // Streak breaker notification
 const StreakBreakerPopup = ({ breakerName, oldStreak, visible, onComplete }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const slideAnim = useRef(new Animated.Value(-100)).current;
 
     useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -14,15 +14,17 @@ import { useTheme } from '../context/ThemeContext';
 
 const ScoreboardScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, finalScores } = route.params;
     // Optional extra player list (used by Whot to include bots)
     const extraPlayers = route.params.players || [];
 
     useGameDisconnectHandler({
         navigation,
-        exitScreen: 'Lobby',
-        exitParams: { room, isHost: room.players.find(p => p.uid === SocketService.userId || p.userId === SocketService.userId || p.id === SocketService.userId)?.isHost }
+        exitScreen: room?.id === 'local' ? 'LocalGameSelection' : 'Lobby',
+        exitParams: room?.id === 'local' 
+            ? { isSinglePlayer: true, players: room.players || extraPlayers }
+            : { room, isHost: room.players.find(p => p.uid === SocketService.userId || p.userId === SocketService.userId || p.id === SocketService.userId)?.isHost }
     });
 
     const [isRematchLoading, setIsRematchLoading] = useState(false);
@@ -167,6 +169,13 @@ const ScoreboardScreen = ({ route, navigation }) => {
 
     const handleBackToLobby = () => {
         try {
+            if (room?.id === 'local') {
+                navigation.navigate('LocalGameSelection', {
+                    isSinglePlayer: true,
+                    players: room.players || extraPlayers
+                });
+                return;
+            }
             if (isHost) {
                 // Host goes back to game selection
                 navigation.navigate('GameSelection', {

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated, Dimensions,
     Platform
@@ -25,7 +25,7 @@ const GameCard = ({
     const { theme, COLORS } = useTheme();
     const cardBorderColor = theme?.isGlass ? theme.colors.borderDefault : color;
     const cardBgColor = theme?.isGlass ? 'transparent' : 'rgba(0, 0, 0, 0.4)';
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     // Staggered entrance animation
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(30)).current;
@@ -167,7 +167,7 @@ export const GameCardGrid = ({
     };
 
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
 
     return (
         <View style={[

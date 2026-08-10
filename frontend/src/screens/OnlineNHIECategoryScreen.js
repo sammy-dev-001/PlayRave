@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const OnlineNHIECategoryScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedCategory, setSelectedCategory] = useState('normal');
     const [isStarting, setIsStarting] = useState(false);
@@ -37,7 +37,7 @@ const OnlineNHIECategoryScreen = ({ route, navigation }) => {
             icon: 'warning'
         }
     ];
-    React.useEffect(() => {
+    useEffect(() => {
         const onGameStarted = (data) => {
             if (data.gameType === 'never-have-i-ever') {
                 navigation.replace('OnlineNeverHaveIEver', {

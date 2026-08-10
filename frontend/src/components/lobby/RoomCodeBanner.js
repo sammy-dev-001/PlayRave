@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
 
 const RoomCodeBanner = ({ roomCode, onSharePress, onQRPress }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
 
@@ -67,4 +67,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(RoomCodeBanner);
+export default memo(RoomCodeBanner);

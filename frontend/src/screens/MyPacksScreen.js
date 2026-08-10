@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -25,7 +25,7 @@ const TYPE_ICONS = {
 
 const MyPacksScreen = ({ navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { isGuest } = useAuth();
     const [packs, setPacks] = useState([]);
     const [loading, setLoading] = useState(true);

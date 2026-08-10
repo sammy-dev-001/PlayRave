@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -13,24 +13,27 @@ import {
     isValidWord,
     BOARD_SIZE,
     CENTER_SQUARE,
-    BONUS_SQUARES
+    BONUS_SQUARES,
+    loadDictionary,
+    isDictionaryLoaded
 } from '../data/scrabbleData';
 import { useTheme } from '../context/ThemeContext';
 import PlayerStatsService from '../services/PlayerStatsService';
+import { findBestMove, warmUp } from '../ai/ScrabbleAIEngine';
 
 const HAND_SIZE = 7;
 
 const ScrabbleScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
-    const { players = [], difficulty = 'medium' } = route.params || {};
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+    const { players = [], difficulty = 'medium', isSinglePlayer = false } = route.params || {};
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Debug logging
     console.log('[ScrabbleScreen] Params:', { players, difficulty, paramsExist: !!route.params });
 
     // Early validation - if no players, show error and go back
-    React.useEffect(() => {
+    useEffect(() => {
         if (!players || players.length === 0) {
             console.error('[ScrabbleScreen] No players provided - navigating back');
             Alert.alert('Error', 'No players specified', [
@@ -38,32 +41,47 @@ const ScrabbleScreen = ({ route, navigation }) => {
             ]);
         }
     }, []);
-    const gamePlayers = players || [];
-
+    const gamePlayers = [...(players || [])];
+    // Inject AI player if it's single player and AI is missing
+    if (isSinglePlayer && gamePlayers.length === 1) {
+        gamePlayers.push({
+            id: 'ai-player',
+            uid: 'ai-player',
+            name: 'Rave AI',
+            isAI: true,
+            avatar: 'https://api.dicebear.com/7.x/bottts/png?seed=RaveAI&backgroundColor=b6e3f4'
+        });
+    }
     // Calculate tile size dynamically based on screen dimensions
     const isDesktop = screenWidth > 768;
-    const availableSize = Math.min(screenWidth * 0.9, screenHeight - 300);
-    const minTileSize = isDesktop ? 28 : 18;
-    const maxTileSize = isDesktop ? 40 : 30;
-    const tileSize = Math.min(maxTileSize, Math.max(Math.floor(availableSize / BOARD_SIZE), minTileSize));
+    const availableWidth = screenWidth * 0.96;
+    // For mobile, leave space for header and controls (approx 250-300px)
+    const availableHeight = Math.max(screenHeight - (isDesktop ? 300 : 320), 150);
+    const availableSize = Math.min(availableWidth, availableHeight);
+    
+    // Simply take the available size divided by 15, keeping a sensible minimum
+    const tileSize = Math.max(Math.floor(availableSize / BOARD_SIZE), 18);
     const rackTileSize = Math.min(Math.max(tileSize * 1.3, 40), 55);
 
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-    const [tileBag, setTileBag] = useState(() => createTileBag());
+    // Initialize bag and hands together without triggering state updates during render
+    const initialGameState = useMemo(() => {
+        const bag = createTileBag();
+        const hands = {};
+        gamePlayers.forEach(player => {
+            hands[player.id] = drawTiles(bag, HAND_SIZE);
+        });
+        return { bag, hands };
+    }, [gamePlayers]);
+
+    const [tileBag, setTileBag] = useState(initialGameState.bag);
+    const [dictionaryLoaded, setDictionaryLoaded] = useState(isDictionaryLoaded);
     const scrollViewRef = useRef(null);
     const boardGridRef = useRef(null); // FIX: Track board grid for absolute measurement
 
     // Game State
     const [board, setBoard] = useState({}); // { "x,y": { letter: 'A', value: 1, isLocked: true } }
-    const [playerHands, setPlayerHands] = useState(() => {
-        const hands = {};
-        const bag = createTileBag();
-        gamePlayers.forEach(player => {
-            hands[player.id] = drawTiles(bag, HAND_SIZE);
-        });
-        setTileBag(bag);
-        return hands;
-    });
+    const [playerHands, setPlayerHands] = useState(initialGameState.hands);
 
     const [playerScores, setPlayerScores] = useState(() => {
         const scores = {};
@@ -101,6 +119,120 @@ const ScrabbleScreen = ({ route, navigation }) => {
         setErrorModalContent({ title, message });
         setErrorModalVisible(true);
     };
+
+    // Load dictionary on mount
+    useEffect(() => {
+        if (!isDictionaryLoaded) {
+            loadDictionary().then(() => {
+                setDictionaryLoaded(true);
+                if (isSinglePlayer) {
+                    warmUp();
+                }
+            });
+        } else if (isSinglePlayer) {
+            warmUp();
+        }
+    }, [isSinglePlayer]);
+
+    // AI Turn logic
+    useEffect(() => {
+        if (!isSinglePlayer || !dictionaryLoaded || currentPlayerIndex !== 1 || endGameModalVisible || errorModalVisible) {
+            return;
+        }
+
+        const aiId = currentPlayer.id;
+        if (!aiId || !aiId.startsWith('ai-')) return; 
+
+        console.log(`[ScrabbleScreen] AI Turn Starting (${difficulty})`);
+
+        const timerId = setTimeout(() => {
+            const aiMove = findBestMove(board, currentHand, tileBag, difficulty);
+            
+            if (!aiMove || aiMove.type === 'pass') {
+                console.log('[ScrabbleScreen] AI decided to pass');
+                handlePass();
+                return;
+            }
+
+            if (aiMove.type === 'exchange') {
+                console.log('[ScrabbleScreen] AI decided to exchange', aiMove.tileIndices);
+                
+                const keptTiles = currentHand.filter((_, i) => !aiMove.tileIndices.includes(i));
+                const exchangedTiles = currentHand.filter((_, i) => aiMove.tileIndices.includes(i));
+
+                // Work from a copy so mutations from drawTiles don't corrupt the original ref.
+                // Shuffle returned tiles into the bag before drawing, matching the human exchange path.
+                const bagCopy = [...tileBag, ...exchangedTiles];
+                for (let i = bagCopy.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [bagCopy[i], bagCopy[j]] = [bagCopy[j], bagCopy[i]];
+                }
+                const newTiles = bagCopy.splice(0, exchangedTiles.length);
+
+                setTileBag(bagCopy); // bagCopy now has the drawn tiles removed
+                setPlayerHands(prev => ({
+                    ...prev,
+                    [aiId]: [...keptTiles, ...newTiles]
+                }));
+                
+                setConsecutivePasses(0); 
+                const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
+                if (nextIndex === 0) setTurnNumber(prev => prev + 1);
+                setCurrentPlayerIndex(nextIndex);
+                
+                setLastScore(0);
+                setLastWords(['(Exchanged Tiles)']);
+                setShowScorePopup(true);
+                return;
+
+            }
+
+            if (aiMove.type === 'move') {
+                console.log('[ScrabbleScreen] AI decided to play word for', aiMove.score);
+                
+                const newBoard = { ...board };
+                aiMove.tiles.forEach(t => {
+                    newBoard[`${t.x},${t.y}`] = { letter: t.letter, value: t.value, isLocked: true };
+                });
+                
+                setBoard(newBoard);
+                
+                setPlayerScores(prev => ({
+                    ...prev,
+                    [aiId]: prev[aiId] + aiMove.score
+                }));
+                
+                setLastScore(aiMove.score);
+                const playedLetters = aiMove.tiles.map(t => t.letter).join('');
+                setLastWords([playedLetters]);
+                setShowScorePopup(true);
+                
+                const newHand = [...currentHand];
+                aiMove.tiles.forEach(pt => {
+                    const searchLetter = pt.isBlank ? '_' : pt.letter;
+                    const idx = newHand.findIndex(t => t.letter === searchLetter);
+                    if (idx !== -1) {
+                        newHand.splice(idx, 1);
+                    }
+                });
+                
+                const drawn = drawTiles(tileBag, aiMove.tiles.length);
+                
+                setPlayerHands(prev => ({
+                    ...prev,
+                    [aiId]: [...newHand, ...drawn]
+                }));
+                
+                setConsecutivePasses(0);
+                const nextIndex = (currentPlayerIndex + 1) % gamePlayers.length;
+                if (nextIndex === 0) setTurnNumber(prev => prev + 1);
+                setCurrentPlayerIndex(nextIndex);
+            }
+
+        }, 1500); 
+
+        return () => clearTimeout(timerId);
+    }, [currentPlayerIndex, isSinglePlayer, dictionaryLoaded, endGameModalVisible, errorModalVisible]);
 
     // --- Interaction Handlers ---
 
@@ -281,7 +413,8 @@ const ScrabbleScreen = ({ route, navigation }) => {
         setExchangeMode(false);
         setSelectedTilesForExchange([]);
 
-        // Advance turn
+        // Advance turn — exchange counts as a non-pass action, so reset the counter
+        setConsecutivePasses(0);
         const nextPlayerIndex = (currentPlayerIndex + 1) % gamePlayers.length;
         setCurrentPlayerIndex(nextPlayerIndex);
         if (nextPlayerIndex === 0) {
@@ -409,32 +542,45 @@ const ScrabbleScreen = ({ route, navigation }) => {
         return words;
     };
 
-    const calculateTurnScore = (placements) => {
-        // Calculate score with proper bonus squares
-        let score = 0;
-        let wordMultiplier = 1;
+    /**
+     * Calculate the total score for a turn given the list of formed words and
+     * the set of newly placed tiles. Each word is scored in full (all tiles in
+     * the word), but bonus squares (DL/TL/DW/TW) only apply to freshly placed
+     * tiles — existing board tiles are counted at face value.
+     */
+    const calculateTurnScore = (formedWordsList, placements) => {
+        const placedKeys = new Set(placements.map(t => `${t.x},${t.y}`));
+        let totalScore = 0;
 
-        placements.forEach(t => {
-            let letterScore = t.value;
-            const key = `${t.x},${t.y}`;
-            const bonus = BONUS_SQUARES[key];
+        formedWordsList.forEach(({ tiles }) => {
+            let wordScore = 0;
+            let wordMultiplier = 1;
 
-            if (bonus === 'DL') letterScore *= 2;
-            if (bonus === 'TL') letterScore *= 3;
-            if (bonus === 'DW') wordMultiplier *= 2;
-            if (bonus === 'TW') wordMultiplier *= 3;
+            tiles.forEach(t => {
+                let letterScore = t.value || 0;
+                const key = `${t.x},${t.y}`;
 
-            score += letterScore;
+                // Bonus squares only activate for newly placed tiles
+                if (placedKeys.has(key)) {
+                    const bonus = BONUS_SQUARES[key];
+                    if (bonus === 'DL') letterScore *= 2;
+                    if (bonus === 'TL') letterScore *= 3;
+                    if (bonus === 'DW') wordMultiplier *= 2;
+                    if (bonus === 'TW') wordMultiplier *= 3;
+                }
+
+                wordScore += letterScore;
+            });
+
+            totalScore += wordScore * wordMultiplier;
         });
-
-        let finalScore = score * wordMultiplier;
 
         // BINGO BONUS: 50 extra points for using all 7 tiles
         if (placements.length === 7) {
-            finalScore += 50;
+            totalScore += 50;
         }
 
-        return finalScore;
+        return totalScore;
     };
 
     const handleSubmitMove = () => {
@@ -549,8 +695,9 @@ const ScrabbleScreen = ({ route, navigation }) => {
         // Clear undo history after successful move
         setPlacementHistory([]);
 
-        // Calculate and update score
-        const turnScore = calculateTurnScore(placedTiles);
+        // Calculate and update score — pass all formed words so that existing
+        // board tiles in the word (e.g. ATE in FATE) are included in the total.
+        const turnScore = calculateTurnScore(formedWords, placedTiles);
         setPlayerScores(prev => ({
             ...prev,
             [currentPlayer.id]: prev[currentPlayer.id] + turnScore
@@ -584,8 +731,9 @@ const ScrabbleScreen = ({ route, navigation }) => {
         const newPassCount = consecutivePasses + 1;
         setConsecutivePasses(newPassCount);
 
-        // Game ends after all players pass consecutively (2 for 2 players, numPlayers for more)
-        const passThreshold = gamePlayers.length;
+        // Standard Scrabble: game ends after 6 consecutive passes (3 full rounds for 2 players).
+        // Use numPlayers * 3 so it scales correctly for more players.
+        const passThreshold = gamePlayers.length * 3;
         if (newPassCount >= passThreshold) {
             // Auto-end game due to consecutive passes
             handleAutoEndGame();
@@ -630,7 +778,14 @@ const ScrabbleScreen = ({ route, navigation }) => {
             }
         }
 
+        const roomData = {
+            id: 'local',
+            gameType: 'scrabble',
+            players: gamePlayers
+        };
+
         navigation.navigate('Scoreboard', {
+            room: roomData,
             finalScores: finalScoresWithDeduction,
             players: gamePlayers,
             gameEnded: 'passes'
@@ -640,9 +795,10 @@ const ScrabbleScreen = ({ route, navigation }) => {
     const handleEndGameConfirm = async () => {
         setEndGameModalVisible(false);
 
-        // Calculate final scores list
+        // Calculate final scores list — include name so ScoreboardScreen can display it
         const finalScores = gamePlayers.map(p => ({
             playerId: p.id,
+            name: p.name,
             score: playerScores[p.id]
         })).sort((a, b) => b.score - a.score);
 
@@ -744,7 +900,14 @@ const ScrabbleScreen = ({ route, navigation }) => {
                             <NeonText size={Math.max(tileSize * 0.5, 8)} color={bonusTextColor}>★</NeonText>
                         )}
                         {bonus && (
-                            <NeonText size={Math.max(tileSize * 0.35, 6)} weight="bold" color={bonusTextColor}>
+                            <NeonText 
+                                size={Math.max(tileSize * 0.35, 6)} 
+                                weight="bold" 
+                                color={bonusTextColor}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit={true}
+                                style={{ textAlign: 'center', width: '100%' }}
+                            >
                                 {bonus}
                             </NeonText>
                         )}
@@ -836,8 +999,18 @@ const ScrabbleScreen = ({ route, navigation }) => {
         </View>
     );
 
+    if (!dictionaryLoaded) {
+        return (
+            <NeonContainer showMuteButton={!isSinglePlayer}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <NeonText size={24} weight="bold" glow>Loading Dictionary...</NeonText>
+                </View>
+            </NeonContainer>
+        );
+    }
+
     return (
-        <NeonContainer>
+        <NeonContainer showMuteButton={!isSinglePlayer}>
             <View style={[styles.mainLayout, isDesktop && styles.desktopLayout]}>
                 
                 {isDesktop ? (
@@ -1106,11 +1279,13 @@ const getStyles = (COLORS) => StyleSheet.create({
     boardContainer: {
         flex: 1,
     },
+    boardWrapper: {
+        flex: 1,
+    },
     mainLayout: {
         flex: 1,
         flexDirection: 'column',
     },
-    desktopLayout: {},
     boardContent: {
         flexGrow: 1,
         justifyContent: 'center',
@@ -1136,11 +1311,14 @@ const getStyles = (COLORS) => StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         userSelect: 'none',
+        aspectRatio: 1,
+        flexShrink: 0,
     },
     bonusContent: {
         justifyContent: 'center',
         alignItems: 'center',
         userSelect: 'none',
+        aspectRatio: 1,
     },
     tileContent: {
         width: '90%',
@@ -1150,6 +1328,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         alignItems: 'center',
         borderRadius: 2,
         userSelect: 'none',
+        aspectRatio: 1,
     },
 
     controlsArea: {

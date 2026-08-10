@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -32,7 +32,7 @@ const DEFAULT_TEAM_NAMES = [
 
 const TeamSetupScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName } = route.params;
     const [teams, setTeams] = useState([
         { id: 1, name: DEFAULT_TEAM_NAMES[0], color: TEAM_COLORS[0], players: [] },

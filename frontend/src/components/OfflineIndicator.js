@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
 
 const OfflineIndicator = () => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [isOnline, setIsOnline] = useState(true);
     const [showIndicator, setShowIndicator] = useState(false);
 
+
     useEffect(() => {
+        if (Platform.OS !== 'web') return;
+
         const handleOnline = () => {
             setIsOnline(true);
             setShowIndicator(true);
@@ -23,18 +26,22 @@ const OfflineIndicator = () => {
         };
 
         // Check initial status
-        setIsOnline(navigator.onLine);
-        if (!navigator.onLine) {
-            setShowIndicator(true);
+        if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
+            setIsOnline(navigator.onLine);
+            if (!navigator.onLine) {
+                setShowIndicator(true);
+            }
         }
 
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
 
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
+            return () => {
+                window.removeEventListener('online', handleOnline);
+                window.removeEventListener('offline', handleOffline);
+            };
+        }
     }, []);
 
     if (!showIndicator) return null;

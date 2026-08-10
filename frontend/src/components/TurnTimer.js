@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import {
     View, StyleSheet, Animated,
     Platform
@@ -26,7 +26,7 @@ const TurnTimer = memo(({
     style
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [timeLeft, setTimeLeft] = useState(duration);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const progressAnim = useRef(new Animated.Value(1)).current;

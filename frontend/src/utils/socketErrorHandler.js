@@ -162,7 +162,7 @@ class SocketErrorHandler {
     onError(listener) {
         this.errorListeners.push(listener);
         return () => {
-            this.errorListeners = this.errorListeners.filter(l => l !== listener);
+            this.errorListeners = (this.errorListeners || []).filter(l => l !== listener);
         };
     }
 

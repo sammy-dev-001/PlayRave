@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, Component } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NeonContainer from './NeonContainer';
 import NeonText from './NeonText';
@@ -6,7 +6,7 @@ import NeonButton from './NeonButton';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
-class GameErrorBoundary extends React.Component {
+class GameErrorBoundary extends Component {
     constructor(props) {
         super(props);
         this.state = { hasError: false, error: null };
@@ -60,7 +60,7 @@ class GameErrorBoundary extends React.Component {
                             color={COLORS.neonCyan}
                         />
                         {/* Optionally display error details in dev */}
-                        {__DEV__ && this.state.error && (
+                        {this.state.error && (
                             <NeonText size={12} color={this.props.COLORS.textMuted} style={this.props.styles.errorText}>
                                 {this.state.error.toString()}
                             </NeonText>
@@ -102,6 +102,6 @@ const getStyles = (COLORS) => StyleSheet.create({
 
 export default function GameErrorBoundaryWrapper(props) {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return <GameErrorBoundary {...props} COLORS={COLORS} styles={styles} />;
 }

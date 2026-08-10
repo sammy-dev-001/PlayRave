@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, createContext } from 'react';
 import {
     View, StyleSheet, Animated, Text,
     Platform
@@ -13,7 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 // Player Left Notification Component
 const PlayerLeftNotification = ({ playerName, visible, onComplete }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const slideAnim = useRef(new Animated.Value(-100)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -60,7 +60,7 @@ const GameOverlay = ({
     showReactions = true,
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [playerLeft, setPlayerLeft] = useState(null);
     const [isConnected, setIsConnected] = useState(true);
 
@@ -179,7 +179,7 @@ const GameOverlay = ({
 };
 
 // Context to pass overlay functions to children
-export const GameOverlayContext = React.createContext({
+export const GameOverlayContext = createContext({
     reportWin: () => { },
     unlockAchievement: () => { },
     streaks: {},

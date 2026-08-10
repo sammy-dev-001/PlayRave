@@ -31,7 +31,7 @@
 // The actual numeric value lives in component state only.
 // ============================================================================
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import {
     View,
     StyleSheet,
@@ -101,7 +101,7 @@ const SecretInputView = ({
 
 const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getSetterStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getSetterStyles(COLORS), [COLORS]);
     const isGlass = theme?.isGlass;
 
     const [digits, setDigits] = useState('');
@@ -264,7 +264,7 @@ const SetterView = ({ rangeMin, rangeMax, onSubmit, style }) => {
 // ── NumpadKey ─────────────────────────────────────────────────────────────────
 // Individual key cell. Uses spring press-in/out animation for tactile feel.
 
-const NumpadKey = React.memo(({ label, onPress, isAction, isConfirm, COLORS, isGlass }) => {
+const NumpadKey = memo(({ label, onPress, isAction, isConfirm, COLORS, isGlass }) => {
     const pressAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -341,7 +341,7 @@ const NumpadKey = React.memo(({ label, onPress, isAction, isConfirm, COLORS, isG
 
 const WaitingView = ({ style }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getWaitingStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getWaitingStyles(COLORS), [COLORS]);
 
     const glowAnim  = useRef(new Animated.Value(0.4)).current;
     const orbitAnim = useRef(new Animated.Value(0)).current;
@@ -482,7 +482,7 @@ const WaitingView = ({ style }) => {
 // ── PulsingDots ───────────────────────────────────────────────────────────────
 // Three staggered neon dots bouncing vertically.
 
-const PulsingDots = React.memo(({ color }) => {
+const PulsingDots = memo(({ color }) => {
     // Initialise all three Animated.Values inside a single stable ref
     const dotsRef = useRef([
         new Animated.Value(0),
@@ -677,4 +677,4 @@ const dotStyles = StyleSheet.create({
     },
 });
 
-export default React.memo(SecretInputView);
+export default memo(SecretInputView);

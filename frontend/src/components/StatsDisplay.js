@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
@@ -8,7 +8,7 @@ import { responsive } from '../utils/responsive';
 
 const StatsDisplay = ({ refreshKey = 0 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
 

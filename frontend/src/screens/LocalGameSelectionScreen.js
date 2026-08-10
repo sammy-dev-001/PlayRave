@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import GameIcon from '../components/GameIcon';
 import { LocalGamesRegistry } from '../data/GameRegistry';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Dimensions imported inside component to handle dynamic updates
 
 const getGameCategories = (COLORS) => ({
     party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
@@ -17,9 +17,12 @@ const getGameCategories = (COLORS) => ({
     speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
 });
 
+import { useWindowDimensions } from 'react-native';
+
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const { width: SCREEN_WIDTH } = useWindowDimensions();
+    const styles = useMemo(() => getStyles(COLORS, SCREEN_WIDTH), [COLORS, SCREEN_WIDTH]);
     const { players, isSinglePlayer = false } = route.params;
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -27,7 +30,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     // AI-compatible games (only these show in single-player mode)
     const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories'];
 
-    const filteredGames = React.useMemo(() => {
+    const filteredGames = useMemo(() => {
         let available = isSinglePlayer
             ? LocalGamesRegistry.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
             : LocalGamesRegistry.filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
@@ -138,12 +141,13 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 {filteredGames.map(renderGameCard)}
             </View>
             
-            <View style={{ height: 60 }} />
+            <View style={{ height: 120 }} />
         </NeonContainer >
     );
 };
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, SCREEN_WIDTH) => StyleSheet.create({
+    header: { marginTop: 20, marginBottom: 20, paddingHorizontal: 20 },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -181,7 +185,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     gameCard: {
         width: SCREEN_WIDTH > 768 ? '23%' : '47%',
-        aspectRatio: 1,
+        height: SCREEN_WIDTH > 768 ? (SCREEN_WIDTH * 0.23) : (SCREEN_WIDTH * 0.47),
         marginBottom: 12,
         borderRadius: 12,
         overflow: 'hidden',

@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 
 const BackButton = ({ onPress }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const insets = useSafeAreaInsets();
+    const styles = useMemo(() => getStyles(COLORS, insets), [COLORS, insets]);
     const navigation = useNavigation();
 
     // Only show if we can go back
@@ -33,10 +35,10 @@ const BackButton = ({ onPress }) => {
     );
 };
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, insets) => StyleSheet.create({
     backButton: {
         position: 'absolute',
-        top: 10,
+        top: Math.max(10, insets.top + 10),
         left: 10,
         zIndex: 100,
         padding: 8,

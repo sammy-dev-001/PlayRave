@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Modal, TouchableOpacity, Alert, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -30,7 +30,7 @@ const getShapeSymbol = (shape) => {
 // ─── Component ────────────────────────────────────────────────────────────────
 const WhotGameScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, gameState: initialGameState } = route.params;
     const gamePlayers = route.params.players || room.players;
 

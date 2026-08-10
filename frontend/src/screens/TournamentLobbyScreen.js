@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -32,7 +32,7 @@ const GAME_SCREENS = {
 
 const TournamentLobbyScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, tournament: initialTournament } = route.params;
     const [tournament, setTournament] = useState(initialTournament);
     const [currentStandings, setCurrentStandings] = useState([]);

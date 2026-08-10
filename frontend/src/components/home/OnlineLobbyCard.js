@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo, memo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated,
     Platform
@@ -12,7 +12,7 @@ import GlassView from '../GlassView';
 
 const GradientButton = ({ title, subtitle, onPress, disabled }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -67,7 +67,7 @@ const GradientButton = ({ title, subtitle, onPress, disabled }) => {
 
 const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -115,7 +115,7 @@ const OutlineButton = ({ title, subtitle, onPress, disabled }) => {
 
 const OnlineLobbyCard = ({ onHostPress, onJoinPress, disabled }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <GlassView style={[styles.card, theme?.isGlass && { backgroundColor: 'transparent', borderWidth: 0 }]}>
             {/* Header */}
@@ -203,4 +203,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(OnlineLobbyCard);
+export default memo(OnlineLobbyCard);

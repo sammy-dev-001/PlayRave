@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, Animated, Easing, Text,
     Platform
@@ -16,7 +16,7 @@ const LoadingScreen = ({
     fullScreen = true
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const spinAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0.5)).current;
@@ -144,7 +144,7 @@ const LoadingScreen = ({
  */
 export const InlineLoader = ({ size = 'small', color }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     // Resolve color inside the component so COLORS is available from the hook
     const resolvedColor = color ?? COLORS.neonCyan;
     const spinAnim = useRef(new Animated.Value(0)).current;

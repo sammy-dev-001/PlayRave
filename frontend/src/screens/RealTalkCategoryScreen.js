@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -9,7 +9,7 @@ import { REAL_TALK_CATEGORIES } from '../data/realTalkData';
 
 const RealTalkCategoryScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players, isSinglePlayer } = route.params;
     const [selectedCategory, setSelectedCategory] = useState(REAL_TALK_CATEGORIES[0].id);
 

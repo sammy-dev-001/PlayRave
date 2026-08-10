@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TouchableOpacity, StyleSheet, Animated, Platform, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -6,7 +6,7 @@ import VoiceService from '../services/VoiceService';
 
 const VoiceChatPanel = ({ roomId, playerName, visible = true }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
+    const styles = useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
 
     // ── Sync with VoiceService singleton on mount ─────────────────────────
     // VoiceService persists across screens (lobby → game). We read its actual

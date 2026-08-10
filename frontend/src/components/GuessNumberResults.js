@@ -1,7 +1,7 @@
 // ============================================================================
 // GuessNumberResults.js — GAME_OVER Phase UI
 // ============================================================================
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -35,7 +35,7 @@ const GuessNumberResults = ({
     style,
 }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const isGlass = theme?.isGlass;
 
     // Determine which target number to display

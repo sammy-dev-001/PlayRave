@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const API_BASE = __DEV__
-    ? 'http://localhost:4000/api'
-    : 'https://playrave-59ud.onrender.com/api';
+const API_BASE = Constants.expoConfig?.extra?.apiUrl 
+    ? `${Constants.expoConfig.extra.apiUrl}/api` 
+    : (__DEV__ ? 'http://localhost:4000/api' : 'https://playrave-59ud.onrender.com/api');
 
 class ApiService {
     token = null;

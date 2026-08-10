@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
     Animated, Easing, StyleSheet, View,
     Platform
@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 // Fade In animation
 export const FadeIn = ({ children, delay = 0, duration = 500, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(20)).current;
 
@@ -39,7 +39,7 @@ export const FadeIn = ({ children, delay = 0, duration = 500, style }) => {
 // Scale In animation
 export const ScaleIn = ({ children, delay = 0, duration = 400, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -62,7 +62,7 @@ export const ScaleIn = ({ children, delay = 0, duration = 400, style }) => {
 // Pulse animation (continuous)
 export const Pulse = ({ children, minScale = 0.95, maxScale = 1.05, duration = 1000, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -86,7 +86,7 @@ export const Pulse = ({ children, minScale = 0.95, maxScale = 1.05, duration = 1
 // Shake animation (for errors/wrong answers)
 export const Shake = ({ children, trigger, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const translateX = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -111,7 +111,7 @@ export const Shake = ({ children, trigger, style }) => {
 // Bounce In animation
 export const BounceIn = ({ children, delay = 0, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scale = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -136,7 +136,7 @@ export const BounceIn = ({ children, delay = 0, style }) => {
 // Slide In from side
 export const SlideIn = ({ children, from = 'left', delay = 0, duration = 400, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const translateX = useRef(new Animated.Value(from === 'left' ? -100 : 100)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -157,7 +157,7 @@ export const SlideIn = ({ children, from = 'left', delay = 0, duration = 400, st
 // Glow effect for neon elements
 export const GlowPulse = ({ children, color = '#00F8FF', style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const opacity = useRef(new Animated.Value(0.5)).current;
 
     useEffect(() => {
@@ -188,7 +188,7 @@ export const staggeredAnimation = (items, delay = 100) => {
 // Confetti burst (for wins)
 export const ConfettiBurst = ({ active, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const particles = useRef([...Array(20)].map(() => ({
         x: new Animated.Value(0),
         y: new Animated.Value(0),

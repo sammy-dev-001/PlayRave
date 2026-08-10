@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -10,7 +10,7 @@ import { REAL_TALK_CATEGORIES } from '../data/realTalkData';
 
 const OnlineRealTalkCategoryScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost } = route.params;
     const [selectedCategory, setSelectedCategory] = useState(REAL_TALK_CATEGORIES[0].id);
 
@@ -23,7 +23,7 @@ const OnlineRealTalkCategoryScreen = ({ route, navigation }) => {
         });
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         const onGameStarted = (payload) => {
             if (payload.gameType === 'real-talk') {
                 navigation.navigate('OnlineRealTalk', {

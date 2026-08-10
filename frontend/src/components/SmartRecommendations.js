@@ -172,7 +172,7 @@ const SmartGameRecommendations = ({
     visible = true
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const recommendations = useMemo(() => {
         return getRecommendations(playerCount, null, previousGames);
     }, [playerCount, previousGames]);

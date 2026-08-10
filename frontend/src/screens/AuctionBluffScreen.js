@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -27,7 +27,7 @@ const formatMoney = (amount) => {
 
 const AuctionBluffScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [items] = useState(() => getRandomAuctionItems(5));
     const [currentItemIndex, setCurrentItemIndex] = useState(0);

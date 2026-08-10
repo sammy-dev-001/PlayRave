@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Modal,
@@ -18,7 +18,7 @@ import { SHADOWS } from '../constants/themes';
 // For production, consider using react-native-qrcode-svg or similar
 const QRCodeDisplay = ({ value, size = 200 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     // Calculate the join URL
     const joinUrl = value;
 
@@ -42,7 +42,7 @@ const QRCodeDisplay = ({ value, size = 200 }) => {
 
 const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [copied, setCopied] = useState(false);
 
     // Generate the join URL

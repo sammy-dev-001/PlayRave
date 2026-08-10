@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, SafeAreaView, Platform, StatusBar, ScrollView, Dimensions } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, Platform, StatusBar, ScrollView, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import ThemeBackground from './ThemeBackground';
 import MuteButton from './MuteButton';
@@ -18,7 +19,8 @@ const NeonContainer = ({
     hideBackground = false,
 }) => {
     const { theme, COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS, theme), [COLORS, theme]);
+    const insets = useSafeAreaInsets();
+    const styles = useMemo(() => getStyles(COLORS, theme, insets), [COLORS, theme, insets]);
 
     // Responsive padding
     const getPadding = () => {
@@ -50,14 +52,14 @@ const NeonContainer = ({
             {!hideBackground && <ThemeBackground />}
             {showBackButton && <BackButton onPress={onBackPress} />}
             {showMuteButton && <MuteButton />}
-            <SafeAreaView style={styles.safeArea}>
+            <View style={styles.safeArea}>
                 {content}
-            </SafeAreaView>
+            </View>
         </View>
     );
 };
 
-const getStyles = (COLORS, theme) => StyleSheet.create({
+const getStyles = (COLORS, theme, insets) => StyleSheet.create({
     rootContainer: {
         flex: 1,
         ...Platform.select({
@@ -67,10 +69,13 @@ const getStyles = (COLORS, theme) => StyleSheet.create({
         // Glass themes: ThemeBackground renders the full-bleed image, so keep this transparent.
         // All other themes: fill with the deep background colour.
         backgroundColor: theme?.isGlass ? 'transparent' : COLORS.deepNightBlack,
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     safeArea: {
         flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
     },
     scrollView: {
         flex: 1,

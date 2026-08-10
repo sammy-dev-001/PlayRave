@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedCategory, setSelectedCategory] = useState('normal');
 
@@ -44,7 +44,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
         }
     ];
 
-    React.useEffect(() => {
+    useEffect(() => {
         const onGameStarted = ({ gameType, gameState, players }) => {
             if (gameType === 'truth-or-dare') {
                 console.log('Truth or Dare game started:', gameState);

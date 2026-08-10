@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, ScrollView,
     Platform
@@ -23,7 +23,7 @@ const SOUNDS = {
 // Soundboard button component
 const SoundButton = ({ sound, onPress, disabled }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <TouchableOpacity
         style={[styles.soundButton, disabled && styles.disabled]}
@@ -39,7 +39,7 @@ const SoundButton = ({ sound, onPress, disabled }) => {
 // Main Soundboard component
 const Soundboard = ({ roomId, playerName, visible = true }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [expanded, setExpanded] = useState(false);
     const [cooldown, setCooldown] = useState(false);
     const [lastPlayed, setLastPlayed] = useState(null);
@@ -97,7 +97,7 @@ const Soundboard = ({ roomId, playerName, visible = true }) => {
 // Sound notification popup when someone plays a sound
 const SoundNotification = ({ soundId, playerName, visible, onComplete }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     useEffect(() => {
         if (visible) {
             const timer = setTimeout(onComplete, 2000);

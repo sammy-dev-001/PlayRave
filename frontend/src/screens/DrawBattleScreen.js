@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -22,8 +22,8 @@ const CANVAS_SIZE = Math.min(SCREEN_WIDTH - 40, 320);
 
 const DrawBattleScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const BRUSH_COLORS = React.useMemo(() => [COLORS.white, COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlow, COLORS.electricPurple, '#ff9900'], [COLORS]);
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const BRUSH_COLORS = useMemo(() => [COLORS.white, COLORS.neonCyan, COLORS.hotPink, COLORS.limeGlow, COLORS.electricPurple, '#ff9900'], [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
 
     useGameDisconnectHandler({

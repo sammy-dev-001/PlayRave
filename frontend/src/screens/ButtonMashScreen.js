@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated, Vibration,
     Platform
@@ -14,7 +14,7 @@ const GAME_DURATION = 10000;
 
 const ButtonMashScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
 
     useGameDisconnectHandler({

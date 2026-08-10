@@ -1,5 +1,5 @@
 // VoiceToggle.js - Mute/unmute button for voice chat
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { TouchableOpacity, StyleSheet, View} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from './NeonText';
@@ -8,7 +8,7 @@ import VoiceService from '../services/VoiceService';
 
 const VoiceToggle = ({ roomId, style }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [isMuted, setIsMuted] = useState(false);
     const [isAvailable, setIsAvailable] = useState(false);
     const [isJoining, setIsJoining] = useState(true);

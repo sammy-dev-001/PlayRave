@@ -3,14 +3,7 @@ module.exports = function(api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      'react-native-reanimated/plugin',
-      ['module-resolver', {
-        alias: {
-          'agora-rtc-sdk-ng': process.env.EXPO_PUBLIC_WEB_BUILD === 'true' 
-            ? 'agora-rtc-sdk-ng' 
-            : './src/mocks/agora-rtc-sdk-ng.mock.js'
-        }
-      }]
+      'react-native-reanimated/plugin'
     ]
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -27,8 +27,8 @@ const getAvailableGames = (COLORS) => [
 
 const PlaylistSetupScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
-    const AVAILABLE_GAMES = React.useMemo(() => getAvailableGames(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+    const AVAILABLE_GAMES = useMemo(() => getAvailableGames(COLORS), [COLORS]);
     const { room, playerName } = route.params;
     const [playlist, setPlaylist] = useState([]);
     const [showGamePicker, setShowGamePicker] = useState(false);

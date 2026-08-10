@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -22,11 +22,11 @@ const MEMORY_ITEMS = [
 
 const MemoryChainScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players = [] } = route.params || {};
 
     // Early validation
-    React.useEffect(() => {
+    useEffect(() => {
         if (!players || players.length === 0) {
             console.error('[MemoryChain] No players provided');
             navigation.goBack();

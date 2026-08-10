@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -30,7 +30,7 @@ const GAME_PHASES = {
 
 const ImposterScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState, players: initialPlayers, myWord: initialMyWord, isImposter: initialIsImposter } = route.params;
 
     // FIX 4: Disconnect handler — if server drops, navigate back to lobby

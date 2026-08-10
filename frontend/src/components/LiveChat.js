@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -24,7 +24,7 @@ const LiveChat = ({
     onToggleMinimize
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [inputText, setInputText] = useState('');
     const flatListRef = useRef(null);
     const [showReactions, setShowReactions] = useState(false);
@@ -229,7 +229,7 @@ const LiveChat = ({
 
 const getStyles = (COLORS) => StyleSheet.create({
     keyboardContainer: {
-        maxHeight: 320,
+        height: 320,
     },
     container: {
         flex: 1,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated, ScrollView,
     Platform
@@ -39,7 +39,7 @@ const getTriviaModes = (COLORS) => [
 
 const TriviaHubScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, isHost, playerName } = route.params;
     const [selectedMode, setSelectedMode] = useState(null);
     const [starting, setStarting] = useState(false);

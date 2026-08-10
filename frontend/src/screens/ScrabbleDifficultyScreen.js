@@ -1,48 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { useTheme } from '../context/ThemeContext';
-import SocketService from '../services/socket';
 
 const ScrabbleDifficultyScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
     const [isStarting, setIsStarting] = useState(false);
-
-    useEffect(() => {
-        const handleGameStarted = (data) => {
-            if (data.gameType === 'scrabble' && data.isSinglePlayer) {
-                console.log('Single player game started from server', data.roomId);
-                setIsStarting(false);
-                
-                const roomId = data.roomId || ("local-" + (SocketService.userId || SocketService.socket?.id));
-                navigation.navigate('OnlineScrabble', {
-                    room: { id: roomId, players: data.gameState?.players || data.players },
-                    playerName: players[0].name,
-                    isHost: true,
-                    gameState: data.gameState
-                });
-            }
-        };
-
-        const handleError = (err) => {
-            console.error('Socket error starting game:', err);
-            setIsStarting(false);
-        };
-
-        SocketService.on('game-started', handleGameStarted);
-        SocketService.on('error', handleError);
-
-        return () => {
-            SocketService.off('game-started', handleGameStarted);
-            SocketService.off('error', handleError);
-        };
-    }, [navigation, players]);
 
     const difficulties = [
         {
@@ -71,10 +40,13 @@ const ScrabbleDifficultyScreen = ({ route, navigation }) => {
     const handleStartGame = () => {
         if (isStarting) return;
         setIsStarting(true);
-        SocketService.emit('scrabble-single-player-start', {
-            difficulty: selectedDifficulty,
-            playerName: players[0].name
+        // Start the offline AI game
+        navigation.navigate('Scrabble', {
+            players,
+            isSinglePlayer: true,
+            difficulty: selectedDifficulty
         });
+        setIsStarting(false);
     };
 
     return (

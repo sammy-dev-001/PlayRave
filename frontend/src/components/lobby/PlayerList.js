@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
 
 const PlayerRow = ({ player, isMe, isHost, canKick, onKick }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const isBase64Image =
         player.avatar &&
         typeof player.avatar === 'string' &&
@@ -66,7 +66,7 @@ const PlayerRow = ({ player, isMe, isHost, canKick, onKick }) => {
 
 const PlayerList = ({ players, currentPlayerId, isHost, maxPlayers = 8, onKick }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const count = players?.length || 0;
 
     return (
@@ -201,4 +201,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(PlayerList);
+export default memo(PlayerList);

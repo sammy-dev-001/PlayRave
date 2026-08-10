@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 const SettingsScreen = ({ navigation }) => {
     const { user, isGuest, updateUsername, logout } = useAuth();
-    const [tempName, setTempName] = React.useState('');
+    const [tempName, setTempName] = useState('');
 
     const {
         theme,

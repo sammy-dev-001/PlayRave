@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { user, isGuest, logout, updateProfilePicture } = useAuth();
     const progressAnim = useRef(new Animated.Value(0)).current;
     const [isUploadingImage, setIsUploadingImage] = useState(false);

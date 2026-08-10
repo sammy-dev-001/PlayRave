@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const QuestionScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, question: initialQuestion, questionIndex: initialQuestionIndex, hostParticipates, isHost, isTournamentMode } = route.params;
 
     useGameDisconnectHandler({

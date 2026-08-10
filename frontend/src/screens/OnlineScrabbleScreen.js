@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, Platform, TouchableWithoutFeedback } from 'react-native';
 import RoomCodeBanner from '../components/lobby/RoomCodeBanner';
 import DraggableRack from '../components/DraggableRack';
@@ -15,7 +15,7 @@ import InGameOverlay from '../components/InGameOverlay';
 
 const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, gameState: initialGameState } = route.params;
 
     // Identity persistence and reconnection handling
@@ -524,7 +524,17 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 ) : (
                     <View style={styles.bonusContent}>
                         {x === CENTER_SQUARE && y === CENTER_SQUARE && <NeonText size={Math.max(tileSize * 0.5, 8)}>★</NeonText>}
-                        {bonus && <NeonText size={Math.max(tileSize * 0.35, 6)} weight="bold">{bonus}</NeonText>}
+                        {bonus && (
+                            <NeonText 
+                                size={Math.max(tileSize * 0.35, 6)} 
+                                weight="bold"
+                                numberOfLines={1}
+                                adjustsFontSizeToFit={true}
+                                style={{ textAlign: 'center', width: '100%' }}
+                            >
+                                {bonus}
+                            </NeonText>
+                        )}
                     </View>
                 )}
             </TouchableOpacity>
@@ -972,10 +982,13 @@ const getStyles = (COLORS) => StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         userSelect: 'none',
+        aspectRatio: 1,
+        flexShrink: 0,
     },
     bonusContent: {
         justifyContent: 'center',
         alignItems: 'center',
+        aspectRatio: 1,
     },
     tileContent: {
         width: '90%',
@@ -985,6 +998,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         alignItems: 'center',
         borderRadius: 2,
         userSelect: 'none',
+        aspectRatio: 1,
     },
     controlsArea: {
         padding: 10,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, Animated, Easing,
     Platform
@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const SpinTheBottleScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [isSpinning, setIsSpinning] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState(null);

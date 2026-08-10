@@ -8,11 +8,11 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     StatusBar,
     ScrollView,
     Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ThemeBackground from '../components/ThemeBackground';
 import MuteButton from '../components/MuteButton';

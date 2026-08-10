@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     View, StyleSheet, Animated,
     Platform
@@ -9,10 +9,10 @@ import { useTheme } from '../context/ThemeContext';
 
 const ConnectionStatus = ({ showLabel = true, size = 'small' }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [status, setStatus] = useState('connecting'); // connecting, connected, disconnected, reconnecting
     const [reconnectAttempt, setReconnectAttempt] = useState(0);
-    const pulseAnim = React.useRef(new Animated.Value(1)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         // Start pulse animation for connecting/reconnecting states

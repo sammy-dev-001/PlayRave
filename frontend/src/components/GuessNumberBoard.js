@@ -10,7 +10,7 @@
 //
 // ============================================================================
 
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import {
     View,
     StyleSheet,
@@ -66,7 +66,7 @@ const GuessNumberBoard = ({
     style,
 }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const isGlass = theme?.isGlass;
 
     const {
@@ -520,7 +520,7 @@ const GuessNumberBoard = ({
 };
 
 // ── NumpadKey Component ───────────────────────────────────────────────────────
-const NumpadKey = React.memo(({ label, onPress, isAction, isConfirm, COLORS, isGlass }) => {
+const NumpadKey = memo(({ label, onPress, isAction, isConfirm, COLORS, isGlass }) => {
     const pressAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -814,4 +814,4 @@ const keyStyles = StyleSheet.create({
     },
 });
 
-export default React.memo(GuessNumberBoard);
+export default memo(GuessNumberBoard);

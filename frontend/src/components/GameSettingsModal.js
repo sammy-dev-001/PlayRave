@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Modal,
@@ -53,7 +53,7 @@ const GameSettingsModal = ({
     initialSettings = {}
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const defaults = DEFAULT_SETTINGS[gameType] || {};
     const [settings, setSettings] = useState({ ...defaults, ...initialSettings });
 

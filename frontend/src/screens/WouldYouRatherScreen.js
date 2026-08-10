@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, Animated, TouchableOpacity, Dimensions,
     Platform
@@ -14,7 +14,7 @@ const { width } = Dimensions.get('window');
 
 const WouldYouRatherScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [currentQuestion, setCurrentQuestion] = useState(getRandomQuestion());
     const [usedQuestions, setUsedQuestions] = useState([currentQuestion.id]);

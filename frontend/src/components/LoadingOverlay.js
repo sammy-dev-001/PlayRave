@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
 
 const LoadingOverlay = ({ visible = false, message = 'Loading...' }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     if (!visible) return null;
 
     return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -29,7 +29,7 @@ const TOURNAMENT_GAMES = [
 
 const TournamentSetupScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost } = route.params;
     const [selectedGames, setSelectedGames] = useState([]);
     const [tournamentName, setTournamentName] = useState('Party Tournament');

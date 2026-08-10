@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated,
     Platform
@@ -12,7 +12,7 @@ import ErrorService from '../services/ErrorService';
  */
 const ErrorToast = () => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState('');
     const [canRetry, setCanRetry] = useState(false);

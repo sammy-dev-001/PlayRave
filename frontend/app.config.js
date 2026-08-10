@@ -5,8 +5,8 @@ module.exports = () => {
   let socketUrl = 'http://localhost:4000';
 
   if (APP_ENV === 'preview') {
-    apiUrl = 'https://playrave-preview.onrender.com';
-    socketUrl = 'https://playrave-preview.onrender.com';
+    apiUrl = 'https://playrave-59ud.onrender.com';
+    socketUrl = 'https://playrave-59ud.onrender.com';
   } else if (APP_ENV === 'production') {
     apiUrl = 'https://playrave-59ud.onrender.com';
     socketUrl = 'https://playrave-59ud.onrender.com';
@@ -28,7 +28,10 @@ module.exports = () => {
       },
       ios: {
         supportsTablet: true,
-        bundleIdentifier: "com.sammydev.playrave"
+        bundleIdentifier: "com.sammydev.playrave",
+        config: {
+          usesNonExemptEncryption: false
+        }
       },
       android: {
         package: "com.sammydev.playrave",
@@ -36,7 +39,8 @@ module.exports = () => {
           foregroundImage: "./assets/adaptive-icon.png",
           backgroundColor: "#0a0a1a"
         },
-        edgeToEdgeEnabled: true
+        edgeToEdgeEnabled: true,
+        jsEngine: "hermes"
       },
       web: {
         favicon: "./assets/favicon.png",
@@ -58,7 +62,42 @@ module.exports = () => {
         checkAutomatically: "ON_LOAD"
       },
       plugins: [
-        "expo-font"
+        "expo-asset",
+        "expo-file-system",
+        "expo-font",
+        "expo-splash-screen",
+        [
+          "expo-image-picker",
+          {
+            "photosPermission": "Allow PlayRave to access your photos for profile pictures."
+          }
+        ],
+        [
+          "expo-camera",
+          {
+            "cameraPermission": "Allow PlayRave to access your camera."
+          }
+        ],
+        [
+          "expo-sensors",
+          {
+            "motionPermission": "Allow PlayRave to access motion sensors for games."
+          }
+        ],
+        [
+          "expo-av",
+          {
+            "microphonePermission": "Allow PlayRave to access the microphone for voice chat."
+          }
+        ],
+        [
+          "expo-build-properties",
+          {
+            "ios": {
+              "deploymentTarget": "15.1"
+            }
+          }
+        ]
       ],
       extra: {
         APP_ENV,

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -15,7 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const TournamentResultsScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, tournament, champion, standings } = route.params;
 
     const trophyAnim = useRef(new Animated.Value(0)).current;

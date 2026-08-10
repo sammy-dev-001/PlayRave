@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from './NeonText';
 import { useTheme } from '../context/ThemeContext';
@@ -13,7 +13,7 @@ const EmptyState = ({
     style
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={[styles.container, style]}>
             <View style={styles.iconContainer}>

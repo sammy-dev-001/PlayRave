@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -7,10 +7,10 @@ import {
     KeyboardAvoidingView,
     Platform,
     TouchableOpacity,
-    SafeAreaView,
     StatusBar,
     Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import ThemeBackground from '../components/ThemeBackground';
@@ -27,7 +27,7 @@ import GlassView from '../components/GlassView';
 
 const JoinScreen = ({ navigation, route }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { user } = useAuth();
     const [name, setName] = useState(route.params?.playerName || '');
     const [code, setCode] = useState(route.params?.roomCode || '');
@@ -301,7 +301,6 @@ const getStyles = (COLORS) => StyleSheet.create({
             default: { flex: 1 },
         }),
         backgroundColor: '#05050A',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     safeArea: {
         flex: 1,

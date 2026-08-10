@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, TextInput, TouchableOpacity, Animated,
     Platform
@@ -14,7 +14,7 @@ import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const LieDetectorScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, isHost, gameState: initialState } = route.params;
     const roomId = room?.id;
 

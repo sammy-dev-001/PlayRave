@@ -76,3 +76,8 @@ Contributions are welcome! Please feel free to submit a Pull Request or open an 
 ---
 
 *Play hard. Rave on. 🎧🔥*
+
+
+reinstall agora
+The Massive Dictionary (Out of Memory): The scrabbleWords.js file was 2.6 MB of just text. When the app booted up, the Hermes JavaScript Engine tried to load this massive string into memory all at once to compile its bytecode, which caused the app to instantly run out of memory (OOM) and crash immediately upon opening.
+The Fix: I have truncated the dictionary to 5,000 words for now so that the app will boot up perfectly. (If you want the full 178,000 word dictionary in the future, we will need to load it dynamically as a local text asset rather than bundling it into the raw JavaScript file).

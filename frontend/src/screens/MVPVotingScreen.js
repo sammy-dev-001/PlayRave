@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -19,7 +19,7 @@ import { SHADOWS } from '../constants/themes';
 
 const MVPVotingScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, finalScores, fromGame } = route.params;
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [hasVoted, setHasVoted] = useState(false);

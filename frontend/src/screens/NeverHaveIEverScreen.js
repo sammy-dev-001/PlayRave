@@ -70,36 +70,6 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
     return (
         <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
-                <View style={styles.headerControls}>
-                    <TouchableOpacity 
-                        onPress={() => {
-                            const muted = SoundService.toggleMute();
-                            setIsMuted(muted);
-                            HapticService.selection();
-                        }}
-                        style={styles.controlIcon}
-                    >
-                        <Ionicons 
-                            name={isMuted ? "volume-mute" : "volume-high"} 
-                            size={18} 
-                            color={isMuted ? COLORS.hotPink : COLORS.neonCyan} 
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        onPress={() => {
-                            HapticService.setEnabled(!isHapticsEnabled);
-                            setIsHapticsEnabled(!isHapticsEnabled);
-                            if (!isHapticsEnabled) HapticService.selection();
-                        }}
-                        style={styles.controlIcon}
-                    >
-                        <Ionicons 
-                            name={isHapticsEnabled ? "notifications" : "notifications-off"} 
-                            size={18} 
-                            color={isHapticsEnabled ? COLORS.neonCyan : COLORS.hotPink} 
-                        />
-                    </TouchableOpacity>
-                </View>
                 <NeonText size={28} weight="bold" glow>
                     NEVER HAVE I EVER
                 </NeonText>

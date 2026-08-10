@@ -136,12 +136,12 @@ const ResponsiveUtils = {
 
 // Hook for dimension changes
 export const useDimensions = () => {
-    const [dimensions, setDimensions] = React.useState({
+    const [dimensions, setDimensions] = useState({
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT,
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         const subscription = Dimensions.addEventListener('change', ({ window }) => {
             setDimensions({
                 width: window.width,
@@ -155,6 +155,6 @@ export const useDimensions = () => {
     return dimensions;
 };
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default ResponsiveUtils;

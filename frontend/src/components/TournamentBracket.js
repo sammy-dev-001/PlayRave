@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, Animated, ScrollView, Dimensions,
     Platform
@@ -10,7 +10,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TournamentBracket = ({ rounds = [], currentMatch = null, allPlayers = [] }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const glowAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {

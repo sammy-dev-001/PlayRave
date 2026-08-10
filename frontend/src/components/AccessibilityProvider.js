@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
     AccessibilityInfo, Appearance, Dimensions,
     Platform
@@ -34,7 +34,7 @@ export const useAccessibility = () => useContext(AccessibilityContext);
 // Accessibility Provider Component
 export const AccessibilityProvider = ({ children }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [settings, setSettings] = useState(defaultSettings);
     const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
 
@@ -172,7 +172,7 @@ export const AccessibilityProvider = ({ children }) => {
 // Accessibility Settings UI Component
 export const AccessibilitySettings = ({ onClose }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const {
         settings,
         updateSetting,

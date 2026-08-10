@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import NeonText from '../NeonText';
@@ -14,7 +14,7 @@ const ProfileSection = ({
     onEditPress,
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const isCustomPhoto =
         avatar && typeof avatar === 'string' && avatar.startsWith('data:image');
 
@@ -166,4 +166,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(ProfileSection);
+export default memo(ProfileSection);

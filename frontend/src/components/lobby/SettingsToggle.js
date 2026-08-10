@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, StyleSheet, Switch } from 'react-native';
 import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
 
 const SettingsToggle = ({ value, onValueChange, label, subtitle }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.container}>
             <View style={styles.textBlock}>
@@ -52,4 +52,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(SettingsToggle);
+export default memo(SettingsToggle);

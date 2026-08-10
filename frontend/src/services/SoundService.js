@@ -110,6 +110,11 @@ class SoundService {
 
         try {
             const source = SOUNDS[soundName];
+            // Skip if no source or empty URI
+            if (!source || (typeof source === 'object' && !source.uri)) {
+                return;
+            }
+            
             const { sound } = await Audio.Sound.createAsync(
                 source,
                 { shouldPlay: false, volume: this.soundVolume }

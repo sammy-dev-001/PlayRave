@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, StyleSheet, Animated, ScrollView, TouchableOpacity,
     Platform
@@ -34,7 +34,7 @@ const ACHIEVEMENTS = {
 // Achievement popup component
 const AchievementPopup = ({ achievement, visible, onComplete }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -89,7 +89,7 @@ const AchievementPopup = ({ achievement, visible, onComplete }) => {
 // Badge display for profile
 const AchievementBadge = ({ achievementId, size = 'medium' }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const achievement = ACHIEVEMENTS[achievementId];
     if (!achievement) return null;
 
@@ -111,7 +111,7 @@ const AchievementBadge = ({ achievementId, size = 'medium' }) => {
 // Achievement grid for profile
 const AchievementGrid = ({ unlockedAchievements = [] }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <View style={styles.grid}>
             <NeonText size={16} weight="bold" style={styles.gridTitle}>

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo, memo } from 'react';
 import {
     TouchableOpacity, StyleSheet, View, Animated,
     Platform
@@ -27,17 +27,57 @@ const NeonButton = ({
     sound = true, // New prop to control sound
 }) => {
     const { theme, COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const isPrimary = variant === 'primary';
+    const isSuccess = variant === 'success';
+    const isDanger = variant === 'danger';
     const isGlass = theme?.isGlass;
 
-    // Glass mode: cyan border for primary, white border for secondary
-    // Non-glass: neon glow colours
-    const borderColor = isGlass
-        ? (isPrimary ? 'rgba(0,194,255,0.85)' : 'rgba(255,255,255,0.50)')
-        : (isPrimary ? COLORS.neonCyan : COLORS.hotPink);
-    const glowStyle = isGlass ? undefined : (isPrimary ? SHADOWS.neonGlow : SHADOWS.purpleGlow);
-    const glassVariant = isGlass ? (isPrimary ? 'primary' : 'default') : undefined;
+    // Determine colors and glow based on variant
+    let borderColor;
+    let glowStyle;
+    let glassVariant = 'default';
+
+    if (isGlass) {
+        if (isPrimary) {
+            borderColor = 'rgba(0,194,255,0.85)';
+            glassVariant = 'primary';
+        } else if (isSuccess) {
+            borderColor = 'rgba(76, 175, 80, 0.85)'; // Green
+            glassVariant = 'success';
+        } else if (isDanger) {
+            borderColor = 'rgba(255, 82, 82, 0.85)'; // Red
+            glassVariant = 'danger';
+        } else {
+            borderColor = 'rgba(255,255,255,0.50)';
+        }
+    } else {
+        if (isPrimary) {
+            borderColor = COLORS.neonCyan;
+            glowStyle = SHADOWS.neonGlow;
+        } else if (isSuccess) {
+            borderColor = COLORS.success || '#4CAF50';
+            glowStyle = {
+                shadowColor: COLORS.success || '#4CAF50',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 10,
+                elevation: 5,
+            };
+        } else if (isDanger) {
+            borderColor = COLORS.error || '#FF5252';
+            glowStyle = {
+                shadowColor: COLORS.error || '#FF5252',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 10,
+                elevation: 5,
+            };
+        } else {
+            borderColor = COLORS.hotPink;
+            glowStyle = SHADOWS.purpleGlow;
+        }
+    }
 
     // Animation refs
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -195,4 +235,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     }
 });
 
-export default React.memo(NeonButton);
+export default memo(NeonButton);

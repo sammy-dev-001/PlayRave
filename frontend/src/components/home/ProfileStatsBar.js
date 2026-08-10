@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import NeonText from '../NeonText';
 import { useTheme } from '../../context/ThemeContext';
@@ -6,7 +6,7 @@ import GlassView from '../GlassView';
 
 const ProfileStatsBar = ({ onPress }) => {
     const { COLORS, theme } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     return (
         <TouchableOpacity style={styles.touchableWrapper} onPress={onPress} activeOpacity={0.7}>
             <GlassView style={[styles.container, theme?.isGlass && { backgroundColor: 'transparent', borderWidth: 0 }]}>
@@ -65,4 +65,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(ProfileStatsBar);
+export default memo(ProfileStatsBar);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -16,7 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const SpectatorScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, spectatorName } = route.params;
     const [gameState, setGameState] = useState(null);
     const [players, setPlayers] = useState(room?.players || []);

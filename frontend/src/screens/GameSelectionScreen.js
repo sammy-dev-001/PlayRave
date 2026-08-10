@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform, TextInput, ImageBackground, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -9,8 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { OnlineGamesRegistry } from '../data/GameRegistry';
 import SmartGameRecommendations from '../components/SmartRecommendations';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const isDesktop = SCREEN_WIDTH > 768;
+// Dimensions imported inside component to handle dynamic updates
 
 const GAME_IMAGES = {
     'trivia': require('../../assets/images/game_trivia.png'),
@@ -48,14 +47,19 @@ const getGameCategories = (COLORS) => ({
     speed: { name: 'Speed', icon: 'flash', color: COLORS.electricPurple },
 });
 
+import { useWindowDimensions } from 'react-native';
+
 const GameSelectionScreen = ({ route, navigation }) => {
     const { room, playerName } = route.params;
     const { COLORS } = useTheme();
+    const { width: SCREEN_WIDTH } = useWindowDimensions();
+    const isDesktop = SCREEN_WIDTH > 768;
+    const styles = useMemo(() => getStyles(SCREEN_WIDTH, isDesktop), [SCREEN_WIDTH, isDesktop]);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [waitingForNavigation, setWaitingForNavigation] = useState(false);
 
-    const filteredGames = React.useMemo(() => {
+    const filteredGames = useMemo(() => {
         let available = OnlineGamesRegistry;
 
         if (selectedCategory !== 'all') {
@@ -149,7 +153,13 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 />
             </View>
 
-            <SmartGameRecommendations room={room} onSelect={handleGameSelect} />
+            <SmartGameRecommendations 
+                playerCount={room?.players ? Object.keys(room.players).length : 1}
+                onSelectGame={(gameId) => {
+                    const gameObj = OnlineGamesRegistry.find(g => g.id === gameId);
+                    if (gameObj) handleGameSelect(gameObj);
+                }} 
+            />
 
             <ScrollView
                 horizontal
@@ -167,12 +177,12 @@ const GameSelectionScreen = ({ route, navigation }) => {
                 {filteredGames.map(renderGameCard)}
             </View>
 
-            <View style={{ height: 60 }} />
+            <View style={{ height: 120 }} />
         </NeonContainer>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (SCREEN_WIDTH, isDesktop) => StyleSheet.create({
     header: { marginTop: 20, marginBottom: 20, paddingHorizontal: 20 },
     searchContainer: {
         flexDirection: 'row',
@@ -206,7 +216,7 @@ const styles = StyleSheet.create({
     },
     gameCard: {
         width: isDesktop ? '23%' : '47%',
-        aspectRatio: 1,
+        height: isDesktop ? (SCREEN_WIDTH * 0.23) : (SCREEN_WIDTH * 0.47),
         marginBottom: 12,
         borderRadius: 12,
         overflow: 'hidden',

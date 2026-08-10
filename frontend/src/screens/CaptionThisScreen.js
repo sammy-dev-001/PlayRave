@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -18,7 +18,7 @@ import { getRandomCaptionPrompts } from '../data/captionPrompts';
 
 const CaptionThisScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
     const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
     const [prompts] = useState(() => getRandomCaptionPrompts(5));

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -17,7 +17,7 @@ import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const LeaderboardScreen = () => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { user } = useAuth();
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);

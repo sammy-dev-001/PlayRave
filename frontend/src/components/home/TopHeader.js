@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonText from '../NeonText';
@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TopHeader = ({ onSettingsPress, onProfilePress, isAuthenticated }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [isSoundMuted, setIsSoundMuted] = useState(SoundService.getMuted());
     const [isMusicMuted, setIsMusicMuted] = useState(SoundService.getMusicMuted());
 
@@ -101,4 +101,4 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
 });
 
-export default React.memo(TopHeader);
+export default memo(TopHeader);

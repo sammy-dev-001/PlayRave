@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     StyleSheet,
@@ -25,7 +25,7 @@ const GameRecommendations = ({
     compact = false
 }) => {
     const { COLORS } = useTheme();
-    const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [recommendations, setRecommendations] = useState([]);
     const [selectedMood, setSelectedMood] = useState(null);
     const [loading, setLoading] = useState(true);
