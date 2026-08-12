@@ -28,7 +28,8 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories'];
+    const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories', 'whot-ai', 'connect-four', 'checkers', 'ludo'];
+
 
     const filteredGames = useMemo(() => {
         let available = isSinglePlayer

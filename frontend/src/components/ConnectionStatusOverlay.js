@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, Animated,
-    Platform
+    Platform, TouchableOpacity
 } from 'react-native';
 import NeonText from './NeonText';
 import SocketService, { ConnectionState } from '../services/socket';
@@ -12,11 +12,13 @@ const ConnectionStatusOverlay = () => {
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [state, setState] = useState(SocketService.connectionState);
     const [visible, setVisible] = useState(false);
+    const [dismissedForCurrentState, setDismissedForCurrentState] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
 
     useEffect(() => {
         const unsubscribe = SocketService.onConnectionStateChange((newState) => {
             setState(newState);
+            setDismissedForCurrentState(false);
             
             // Only show for non-connected states, or briefly show 'connected' then hide
             if (newState === ConnectionState.CONNECTED) {
@@ -51,7 +53,12 @@ const ConnectionStatusOverlay = () => {
         }).start(() => setVisible(false));
     };
 
-    if (!visible) return null;
+    const handleDismiss = () => {
+        setDismissedForCurrentState(true);
+        hide();
+    };
+
+    if (!visible || dismissedForCurrentState) return null;
 
     const getStatusConfig = () => {
         switch (state) {
@@ -84,8 +91,12 @@ const ConnectionStatusOverlay = () => {
     if (!config) return null;
 
     return (
-        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="none">
-            <View style={styles.container}>
+        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+            <TouchableOpacity 
+                style={styles.container} 
+                activeOpacity={0.8}
+                onPress={handleDismiss}
+            >
                 <View style={[styles.banner, { borderColor: config.color }]}>
                     <NeonText 
                         size={14} 
@@ -96,10 +107,10 @@ const ConnectionStatusOverlay = () => {
                         {config.text}
                     </NeonText>
                     <NeonText size={10} color="#AAA" style={styles.subtitle}>
-                        {config.subtitle}
+                        {config.subtitle} (Tap to dismiss)
                     </NeonText>
                 </View>
-            </View>
+            </TouchableOpacity>
         </Animated.View>
     );
 };

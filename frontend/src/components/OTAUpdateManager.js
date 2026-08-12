@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Modal, Platform } from 'react-native';
+import { View, StyleSheet, Modal, Platform, AppState } from 'react-native';
 import * as Updates from 'expo-updates';
 import NeonText from './NeonText';
 import NeonButton from './NeonButton';
@@ -18,7 +18,7 @@ export const OTAUpdateManager = ({ children }) => {
                 const check = await Updates.checkForUpdateAsync();
                 if (!check.isAvailable) return;
 
-                // Download the update, then show the modal
+                // Download the update in the background, then show the prompt
                 await Updates.fetchUpdateAsync();
                 setShowPrompt(true);
             } catch (e) {
@@ -27,11 +27,20 @@ export const OTAUpdateManager = ({ children }) => {
         };
 
         checkAndFetch();
+
+        // Also check when app comes back to foreground
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state === 'active') checkAndFetch();
+        });
+        return () => sub.remove();
     }, []);
 
     const handleRestart = async () => {
         try {
             setIsReloading(true);
+            setShowPrompt(false);
+            // Small delay so the modal closes cleanly before the JS reload fires
+            await new Promise(resolve => setTimeout(resolve, 300));
             await Updates.reloadAsync();
         } catch (e) {
             console.error('Failed to reload app', e);
@@ -46,29 +55,34 @@ export const OTAUpdateManager = ({ children }) => {
             <Modal
                 transparent
                 visible={showPrompt}
-                animationType="fade"
+                animationType="slide"
+                statusBarTranslucent
             >
                 <View style={styles.overlay}>
                     <GlassView style={styles.modalContainer}>
-                        <NeonText size={22} color="#00ffff" weight="bold" style={styles.title}>
-                            SYSTEM UPDATE
+                        <NeonText size={28} style={styles.icon}>🚀</NeonText>
+
+                        <NeonText size={20} color="#00ffff" weight="bold" style={styles.title}>
+                            UPDATE READY
                         </NeonText>
 
-                        <NeonText size={16} color="#ffffff" style={styles.message}>
-                            A new party module has been downloaded in the background and is ready to install!
+                        <NeonText size={14} color="rgba(255,255,255,0.8)" style={styles.message}>
+                            A fresh drop of content is downloaded and ready.{'\n'}Tap Relaunch to apply it now — the app will restart automatically.
                         </NeonText>
 
                         <View style={styles.buttonContainer}>
                             <NeonButton
-                                title={isReloading ? 'RELAUNCHING...' : 'RELAUNCH NOW'}
+                                title={isReloading ? 'RESTARTING...' : '⚡  RELAUNCH NOW'}
                                 onPress={handleRestart}
                                 variant="primary"
+                                disabled={isReloading}
                             />
                             <View style={{ height: 12 }} />
                             <NeonButton
                                 title="LATER"
                                 onPress={() => setShowPrompt(false)}
                                 variant="secondary"
+                                disabled={isReloading}
                             />
                         </View>
                     </GlassView>
@@ -81,32 +95,38 @@ export const OTAUpdateManager = ({ children }) => {
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        justifyContent: 'flex-end',
+        padding: 20,
+        paddingBottom: 40,
     },
     modalContainer: {
-        padding: 24,
-        borderRadius: 20,
+        padding: 28,
+        borderRadius: 24,
         width: '100%',
-        maxWidth: 400,
         alignItems: 'center',
-        backgroundColor: 'rgba(20, 20, 40, 0.85)',
-        borderWidth: 1,
-        borderColor: 'rgba(0, 255, 255, 0.3)',
+        backgroundColor: 'rgba(10, 10, 30, 0.97)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(0, 255, 255, 0.4)',
+        shadowColor: '#00ffff',
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
+        elevation: 20,
+    },
+    icon: {
+        marginBottom: 10,
     },
     title: {
-        marginBottom: 16,
+        marginBottom: 12,
         textAlign: 'center',
         textShadowColor: '#00ffff',
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 10,
     },
     message: {
-        marginBottom: 32,
+        marginBottom: 28,
         textAlign: 'center',
-        opacity: 0.9,
+        lineHeight: 22,
     },
     buttonContainer: {
         width: '100%',

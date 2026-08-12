@@ -144,6 +144,14 @@ export function navigateToGame(navigation, room, gameState, playerName, isHost, 
             navigation.navigate('TicTacToe', navParams);
             break;
 
+        case 'checkers':
+            navigation.navigate('OnlineCheckers', navParams);
+            break;
+            
+        case 'connect-four':
+            navigation.navigate('OnlineConnectFour', navParams);
+            break;
+
         case 'draw-battle':
             navigation.navigate('DrawBattle', navParams);
             break;

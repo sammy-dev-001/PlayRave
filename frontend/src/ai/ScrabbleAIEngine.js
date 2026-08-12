@@ -199,7 +199,7 @@ function generateAllMoves(board, hand) {
                 const cA = isRow ? anchorPos : line;
 
                 if (leftTilePos >= 0 && getCell(board, isRow ? line : leftTilePos, isRow ? leftTilePos : line)) {
-                    let prefixTiles = [];
+                    const prefixTiles = [];
                     let p = leftTilePos;
                     while (p >= 0) {
                         const pr = isRow ? line : p;

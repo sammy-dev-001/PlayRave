@@ -37,7 +37,9 @@ const GAME_IMAGES = {
     'myth-or-fact': require('../../assets/images/game_myth_or_fact.png'),
     'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
     'real-talk': require('../../assets/images/game_real_talk.png'),
-    'guess-number': require('../../assets/images/game_guess_number.png')
+    'guess-number': require('../../assets/images/game_guess_number.png'),
+    'ludo': require('../../assets/images/game_ludo.png'),
+    'checkers': require('../../assets/images/game_checkers.png')
 };
 
 const getGameCategories = (COLORS) => ({

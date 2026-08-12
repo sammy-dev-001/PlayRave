@@ -111,7 +111,7 @@ const getRecommendations = (playerCount = 4, timeOfDay = null, previousGames = [
     const isLateNight = hour >= 22 || hour < 5;
     const isEvening = hour >= 18 || hour < 22;
 
-    let recommendations = [];
+    const recommendations = [];
 
     Object.entries(GAME_DATA).forEach(([gameId, data]) => {
         // Filter by player count

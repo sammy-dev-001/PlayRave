@@ -427,7 +427,7 @@ const ScrabbleScreen = ({ route, navigation }) => {
     // Helper function to extract word from board at position in direction
     const extractWord = (tempBoard, x, y, isHorizontal) => {
         let word = '';
-        let tiles = [];
+        const tiles = [];
 
         if (isHorizontal) {
             // Find start of word

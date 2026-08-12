@@ -58,6 +58,14 @@ export const AuthProvider = ({ children }) => {
                 const guestData = await AsyncStorage.getItem(STORAGE_KEY);
                 if (guestData) {
                     const profile = JSON.parse(guestData);
+                    
+                    // Legacy migration: ensure ID starts with 'guest_'
+                    if (profile.id && !profile.id.startsWith('guest_')) {
+                        console.log('[AUTH] Migrating legacy guest ID');
+                        profile.id = 'guest_' + profile.id;
+                        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+                    }
+                    
                     console.log('[AUTH] Found existing profile:', profile);
                     setUser(profile);
                     setIsGuest(true);

@@ -207,7 +207,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
 
     const handleCardPress = (card) => {
-        if (!isMyTurn || winner || (gameState && gameState.generalMarketTurns > 0)) return;
+        if (!isMyTurn || winner) return;
         if (card.shape === 'whot') {
             setSelectedCardId(card.id);
             setShowShapeSelector(true);

@@ -15,6 +15,7 @@ const gameIcons = {
     'hot-seat': require('../../assets/images/game_hot_seat.png'),
     'guess-number': require('../../assets/images/game_guess_number.png'),
     'tic-tac-toe': require('../../assets/images/game_tic_tac_toe.png'),
+    'connect-four': require('../../assets/images/game_connect_four.png'),
     'memory-match': require('../../assets/images/game_memory_match.png'),
     'memory-chain': require('../../assets/images/game_memory_chain.png'),
     'truth-or-dare': require('../../assets/images/game_truth_dare.png'),
@@ -31,6 +32,8 @@ const gameIcons = {
     'charades': require('../../assets/images/game_charades.png'),
     'trivia': require('../../assets/images/game_trivia.png'),
     'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
+    'ludo': require('../../assets/images/game_ludo.png'),
+    'checkers': require('../../assets/images/game_checkers.png'),
 };
 
 const ALIASES = {
@@ -41,6 +44,7 @@ const ALIASES = {
     'auction-bluff': 'kings-cup', 
     'speed-categories': 'word-rush',
     'hot-seat-mc': 'hot-seat',
+    'whot-ai': 'whot',
 };
 
 const GameIcon = ({ gameId, size = 60, style, fallbackIcon }) => {
@@ -60,13 +64,20 @@ const GameIcon = ({ gameId, size = 60, style, fallbackIcon }) => {
     }
 
     if (fallbackIcon) {
+        const isIconName = /^[a-z0-9-]+$/.test(fallbackIcon);
+        const iconSize = (size || 50) * 0.6;
+        
         return (
-            <View style={[{ width: size, height: size, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }, style]}>
-                <Ionicons
-                    name={fallbackIcon}
-                    size={size * 0.6}
-                    color={COLORS.neonCyan}
-                />
+            <View style={[{ width: size || '100%', height: size || '100%', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }, style]}>
+                {isIconName ? (
+                    <Ionicons
+                        name={fallbackIcon}
+                        size={iconSize}
+                        color={COLORS.neonCyan}
+                    />
+                ) : (
+                    <NeonText size={iconSize}>{fallbackIcon}</NeonText>
+                )}
             </View>
         );
     }

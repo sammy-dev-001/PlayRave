@@ -160,10 +160,6 @@ class WhotEngine {
     canPlayCard(game, card) {
         const topCard = game.topCard;
 
-        if (game.generalMarketTurns > 0) {
-            return { valid: false, reason: 'General Market! You must go to market (draw a card)' };
-        }
-
         if (game.attackStack > 0) {
             const attackCardNumber = topCard.number;
             if (card.shape === 'whot') return { valid: true }; // Whot cancels attacks
@@ -312,7 +308,25 @@ class WhotEngine {
                 return 'pick3';
 
             case 'general-market':
-                game.generalMarketTurns = game.playerOrder.length - 1;
+                // Auto-deal 1 card to EVERYONE except the person who just played it
+                const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+                game.playerOrder.forEach(pid => {
+                    if (pid !== currentPlayerId) {
+                        if (game.deck.length === 0) {
+                            const top = game.discardPile.pop();
+                            // If discardPile was empty, deck is empty, stop drawing
+                            if (game.discardPile.length === 0) {
+                                game.discardPile = [top];
+                            } else {
+                                game.deck = [...game.discardPile].sort(() => Math.random() - 0.5);
+                                game.discardPile = [top];
+                            }
+                        }
+                        if (game.deck.length > 0) {
+                            game.playerHands[pid].push(game.deck.pop());
+                        }
+                    }
+                });
                 return 'general-market';
 
             case 'hold-on':
@@ -335,9 +349,7 @@ class WhotEngine {
         const playerHand = game.playerHands[userId];
         
         let cardsToDraw = count;
-        if (game.generalMarketTurns > 0) {
-            cardsToDraw = 1;
-        } else if (game.attackStack > 0) {
+        if (game.attackStack > 0) {
             cardsToDraw = game.attackStack;
         }
 
@@ -353,9 +365,7 @@ class WhotEngine {
             }
         }
 
-        if (game.generalMarketTurns > 0) {
-            game.generalMarketTurns -= 1;
-        } else if (game.attackStack > 0) {
+        if (game.attackStack > 0) {
             game.attackStack = 0;
         }
 

@@ -18,7 +18,9 @@ const getServerUrl = () => {
             console.log('Using backend URL from .env:', process.env.EXPO_PUBLIC_BACKEND_URL);
             return process.env.EXPO_PUBLIC_BACKEND_URL;
         }
-    } catch (e) {}
+    } catch (e) {
+        // Ignore env var extraction error
+    }
 
     // Check for explicit Expo config socket URL (preview/production)
     if (Constants.expoConfig?.extra?.socketUrl && !Constants.expoConfig.extra.socketUrl.includes('localhost')) {
@@ -63,7 +65,7 @@ const getServerUrl = () => {
     return 'http://localhost:4000';
 };
 
-let SOCKET_URL = getServerUrl();
+const SOCKET_URL = getServerUrl();
 console.log('Socket connecting to:', SOCKET_URL);
 
 // Connection states
@@ -116,12 +118,17 @@ class SocketService {
 
         this.intentionalDisconnect = false;
 
-        // Build auth payload — server requires either a JWT (registered users)
-        // or a guest_ prefixed userId (guests). Always send both so the server
-        // can pick the strongest credential available.
         const authPayload = {};
         if (this.authToken) authPayload.token = this.authToken;
-        if (this.userId)    authPayload.userId = this.userId;
+        if (this.userId) authPayload.userId = this.userId;
+
+        // Completely tear down any existing disconnected socket to force a fresh connection with new auth
+        if (this.socket) {
+            console.log('Tearing down previous socket instance...');
+            this.socket.removeAllListeners();
+            this.socket.disconnect();
+            this.socket = null;
+        }
 
         this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
@@ -130,7 +137,7 @@ class SocketService {
             reconnectionAttempts: this.maxReconnectAttempts,
             reconnectionDelay: this.baseReconnectDelay,
             reconnectionDelayMax: this.maxReconnectDelay,
-            forceNew: false,
+            forceNew: true, // Force a brand new connection Manager
             auth: authPayload,
         });
 
@@ -293,7 +300,7 @@ class SocketService {
      */
     startHealthCheckMonitoring() {
         this.stopHealthCheckMonitoring();
-        
+
         // Pinging every 4 minutes (Render spins down at 15 mins)
         this.healthCheckInterval = setInterval(async () => {
             try {

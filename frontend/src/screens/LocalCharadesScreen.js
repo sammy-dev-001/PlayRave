@@ -76,11 +76,8 @@ const LocalCharadesScreen = ({ route, navigation }) => {
     const [wordsList, setWordsList] = useState([]);
     const [countdown, setCountdown] = useState(3);
 
-    // Streak / combo
     const [streak, setStreak] = useState(0);
     const [maxStreak, setMaxStreak] = useState(0);
-    const [isMuted, setIsMuted] = useState(SoundService.getMuted());
-    const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
 
     // Flash feedback
     const [feedback, setFeedback] = useState(null); // 'correct' | 'pass' | null
@@ -142,7 +139,6 @@ const LocalCharadesScreen = ({ route, navigation }) => {
     useEffect(() => {
         if (gameState !== 'playing') return;
 
-        let interval;
         if (timeLeft <= 10 || streak >= STREAK_BONUS_THRESHOLD) {
             const intensity = streak >= STREAK_BONUS_THRESHOLD ? 1.25 : 1.18;
             Animated.loop(
@@ -653,12 +649,12 @@ const LocalCharadesScreen = ({ route, navigation }) => {
             <View style={styles.centeredFlex}>
                 <Ionicons name="alarm-outline" size={60} color={COLORS.hotPink} style={{ marginBottom: 10 }} />
                 <NeonText size={36} weight="bold" glow color={COLORS.hotPink} style={{ marginBottom: 4 }}>
-                    TIME'S UP!
+                    TIME&apos;S UP!
                 </NeonText>
 
                 {players && (
                     <NeonText size={18} color={COLORS.textMuted} style={{ marginBottom: 24 }}>
-                        {currentPlayer?.name}'s round is done
+                        {currentPlayer?.name}&apos;s round is done
                     </NeonText>
                 )}
 

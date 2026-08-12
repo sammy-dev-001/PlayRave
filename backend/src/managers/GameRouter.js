@@ -50,6 +50,10 @@ const engineRegistry = {
 
     // ── Word & Number Games (Phase 3) ────────────────────────────────────
     'guess-number':         require('../games/GuessNumberEngine'),
+
+    // ── Board Games ──────────────────────────────────────────────────────
+    'checkers':             require('../games/CheckersEngine'),
+    'connect-four':         require('../games/ConnectFourEngine'),
 };
 
 class GameRouter {
@@ -96,7 +100,7 @@ class GameRouter {
             return;
         }
 
-        if (engineRegistry[gameType]) {
+        if (engine) {
 
             console.log(`[GameRouter] Routing ${eventName} → ${gameType} Engine`);
             const engine = engineRegistry[gameType];
@@ -130,7 +134,15 @@ class GameRouter {
      * Keeps engines 100% decoupled from Socket.io.
      */
     executeInstruction(instruction, io, roomId) {
-        if (!instruction || !instruction.action) return;
+        if (!instruction) return;
+        
+        // Handle array of instructions
+        if (Array.isArray(instruction)) {
+            instruction.forEach(inst => this.executeInstruction(inst, io, roomId));
+            return;
+        }
+
+        if (!instruction.action) return;
 
         switch (instruction.action) {
             case 'broadcast': {

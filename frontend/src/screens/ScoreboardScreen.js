@@ -139,6 +139,10 @@ const ScoreboardScreen = ({ route, navigation }) => {
                 navigation.replace('DrawBattle', navParams);
             } else if (gameType === 'scrabble') {
                 navigation.replace('OnlineScrabble', navParams);
+            } else if (gameType === 'checkers') {
+                navigation.replace('OnlineCheckers', navParams);
+            } else if (gameType === 'connect-four') {
+                navigation.replace('OnlineConnectFour', navParams);
             }
         };
 
