@@ -72,7 +72,7 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
     });
 
     const [gameState, setGameState] = useState(initialGameState);
-    const myUserId = useMemo(() => room.players?.find(p => p.name === playerName)?.id, [room, playerName]);
+    const myUserId = SocketService.userId;
     
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [validMoves, setValidMoves] = useState([]);

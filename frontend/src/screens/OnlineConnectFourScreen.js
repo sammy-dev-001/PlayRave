@@ -64,7 +64,7 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
     });
 
     const [gameState, setGameState] = useState(initialGameState);
-    const myUserId = useMemo(() => room.players?.find(p => p.name === playerName)?.id, [room, playerName]);
+    const myUserId = SocketService.userId;
     
     const [hoverCol, setHoverCol] = useState(null);
     const winScaleAnim = useRef(new Animated.Value(0)).current;

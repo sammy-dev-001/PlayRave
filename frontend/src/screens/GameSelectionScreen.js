@@ -39,7 +39,8 @@ const GAME_IMAGES = {
     'real-talk': require('../../assets/images/game_real_talk.png'),
     'guess-number': require('../../assets/images/game_guess_number.png'),
     'ludo': require('../../assets/images/game_ludo.png'),
-    'checkers': require('../../assets/images/game_checkers.png')
+    'checkers': require('../../assets/images/game_checkers.png'),
+    'connect-four': require('../../assets/images/game_connect_four.png')
 };
 
 const getGameCategories = (COLORS) => ({
