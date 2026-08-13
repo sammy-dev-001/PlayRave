@@ -86,7 +86,7 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
     const opponentId = myRole === P1 ? myMatch?.p2 : myMatch?.p1;
     let opponentName = 'AI';
     if (opponentId !== 'ai') {
-        const oppPlayer = room.players?.find(p => p.id === opponentId);
+        const oppPlayer = room.players?.find(p => p.userId === opponentId || p.uid === opponentId || p.id === opponentId);
         if (oppPlayer) opponentName = oppPlayer.name;
     }
 
@@ -129,7 +129,7 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
         if (!isMyTurn || myMatch.winner || myMatch.isDraw) return;
         const lowestRow = getLowestEmpty(myMatch.board, col);
         if (lowestRow === -1) return; // Column full
-        SocketService.emit('connect-four-move', { matchId: myMatch.matchId, col });
+        SocketService.emit('connect-four-move', { roomId: room.id, matchId: myMatch.matchId, col });
     };
 
     if (!gameState || !myMatch) {

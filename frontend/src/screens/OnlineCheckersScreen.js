@@ -98,7 +98,7 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
     const opponentId = myRole === P1 ? myMatch?.p2 : myMatch?.p1;
     let opponentName = 'AI';
     if (opponentId !== 'ai') {
-        const oppPlayer = room.players?.find(p => p.id === opponentId);
+        const oppPlayer = room.players?.find(p => p.userId === opponentId || p.uid === opponentId || p.id === opponentId);
         if (oppPlayer) opponentName = oppPlayer.name;
     }
 
@@ -164,7 +164,7 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
         }).start(() => {
             setAnimatingMove(null);
             // Send move to server
-            SocketService.emit('checkers-move', { matchId: myMatch.matchId, move });
+            SocketService.emit('checkers-move', { roomId: room.id, matchId: myMatch.matchId, move });
         });
     };
 
