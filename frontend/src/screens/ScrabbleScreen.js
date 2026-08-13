@@ -713,10 +713,16 @@ const ScrabbleScreen = ({ route, navigation }) => {
         const keptTiles = currentHand.filter((_, i) => !usedIndices.includes(i));
         const newTiles = drawTiles(tileBag, usedIndices.length);
 
+        const finalHand = [...keptTiles, ...newTiles];
         setPlayerHands(prev => ({
             ...prev,
-            [currentPlayer.id]: [...keptTiles, ...newTiles]
+            [currentPlayer.id]: finalHand
         }));
+
+        if (finalHand.length === 0 && tileBag.length === 0) {
+            handleAutoEndGame();
+            return;
+        }
 
         // Next Turn - reset consecutive passes on successful move
         setPlacedTiles([]);
