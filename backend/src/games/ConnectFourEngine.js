@@ -144,7 +144,7 @@ const getAIMove = (board) => {
 class ConnectFourEngine {
     constructor() {
         this.activeGames = new Map();
-        this.intercepts = ['start-game', 'connect-four-ai-turn'];
+        this.intercepts = ['connect-four-ai-turn'];
     }
 
     createPairs(players) {
@@ -179,23 +179,39 @@ class ConnectFourEngine {
         return matches;
     }
 
-    handleIntercept(eventName, payload, roomId, userId) {
-        if (eventName === 'start-game') {
-            const roomData = payload.room;
-            const players = roomData.players.map(p => p.id);
-            
-            const gameState = {
-                phase: 'playing', // playing | finished
-                round: 1,
-                matches: this.createPairs(players),
-                tournamentWinner: null
-            };
-            
-            this.activeGames.set(roomId, gameState);
-            
-            return this.checkRoundProgression(roomId, gameState);
-        }
+    startGame(room, options = {}) {
+        const roomId = room.id;
+        const hostParticipates = options.hostParticipates !== false;
         
+        const players = (hostParticipates ? room.players : room.players.filter(p => !p.isHost))
+            .map(p => p.userId);
+            
+        const gameState = {
+            phase: 'playing', // playing | finished
+            round: 1,
+            matches: this.createPairs(players),
+            tournamentWinner: null
+        };
+        
+        this.activeGames.set(roomId, gameState);
+        
+        const progression = this.checkRoundProgression(roomId, gameState);
+        
+        const gameStartedInstruction = {
+            action: 'broadcast',
+            event: 'game-started',
+            data: {
+                gameType: 'connect-four',
+                gameState: gameState,
+                players: room.players.map(pl => ({ uid: pl.userId, userId: pl.userId, id: pl.socketId, name: pl.name, avatar: pl.avatar })),
+                hostParticipates
+            }
+        };
+        
+        return [gameStartedInstruction, ...progression];
+    }
+
+    handleIntercept(eventName, payload, roomId, userId) {
         if (eventName === 'connect-four-ai-turn') {
             const gameState = this.activeGames.get(roomId);
             if (!gameState) return null;
