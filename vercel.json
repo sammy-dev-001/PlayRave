@@ -2,7 +2,7 @@
     "rootDirectory": "frontend",
     "buildCommand": "EXPO_PUBLIC_BACKEND_URL=$EXPO_PUBLIC_BACKEND_URL npx expo export",
     "outputDirectory": "dist",
-    "framework": null,
+    "framework": "expo",
     "build": {
         "env": {
             "EXPO_PUBLIC_BACKEND_URL": "@expo_public_backend_url"
@@ -10,7 +10,7 @@
     },
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/((?!_expo|assets|.*\\..*).*)",
             "destination": "/index.html"
         }
     ],
