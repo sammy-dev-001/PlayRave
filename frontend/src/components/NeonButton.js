@@ -107,13 +107,13 @@ const NeonButton = ({
         Animated.parallel([
             Animated.spring(scaleAnim, {
                 toValue: 0.96,
-                useNativeDriver: Platform.OS !== 'web',
+                useNativeDriver: false,
                 friction: 8,
             }),
             Animated.timing(glowAnim, {
                 toValue: 1.5,
                 duration: 100,
-                useNativeDriver: Platform.OS !== 'web',
+                useNativeDriver: false,
             }),
         ]).start();
     };
@@ -122,14 +122,14 @@ const NeonButton = ({
         Animated.parallel([
             Animated.spring(scaleAnim, {
                 toValue: 1,
-                useNativeDriver: Platform.OS !== 'web',
+                useNativeDriver: false,
                 friction: 5,
                 tension: 100,
             }),
             Animated.timing(glowAnim, {
                 toValue: 1,
                 duration: 200,
-                useNativeDriver: Platform.OS !== 'web',
+                useNativeDriver: false,
             }),
         ]).start();
     };

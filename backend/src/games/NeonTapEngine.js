@@ -115,7 +115,9 @@ class NeonTapEngine {
             y: 0.15 + Math.random() * 0.7
         };
         game.circlePosition = circlePosition;
-        game.roundStartTime = Date.now();
+        // The client has a 3 second countdown before showing the circle.
+        // We add 3000ms to the start time so server-validation correctly measures reaction time.
+        game.roundStartTime = Date.now() + 3000;
         game.status = 'PLAYING';
 
         return {

@@ -16,7 +16,7 @@ const AnimatedButton = ({ title, icon, onPress, style, textColor, disabled, chil
     const handlePressIn = () => {
         Animated.spring(scaleAnim, {
             toValue: 0.97,
-            useNativeDriver: Platform.OS !== 'web',
+            useNativeDriver: false,
             friction: 8,
         }).start();
     };
@@ -24,7 +24,7 @@ const AnimatedButton = ({ title, icon, onPress, style, textColor, disabled, chil
     const handlePressOut = () => {
         Animated.spring(scaleAnim, {
             toValue: 1,
-            useNativeDriver: Platform.OS !== 'web',
+            useNativeDriver: false,
             friction: 5,
             tension: 100,
         }).start();

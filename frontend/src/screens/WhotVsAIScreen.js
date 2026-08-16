@@ -87,7 +87,7 @@ const scoreCard = (card, handSize) => {
     return card.number >= 10 ? 35 : 25;
 };
 
-const aiPickCard = (playable, hand, difficulty) => {
+const aiPickCard = (playable, hand, difficulty, playerHandSize = 5) => {
     if (!playable.length) return null;
     if (difficulty === 'easy') return playable[Math.floor(Math.random() * playable.length)];
     if (difficulty === 'medium') {
@@ -96,7 +96,34 @@ const aiPickCard = (playable, hand, difficulty) => {
         const nonWhot = playable.filter(c => !isWhotCard(c));
         return nonWhot.length ? nonWhot[0] : playable[0];
     }
-    return [...playable].sort((a, b) => scoreCard(b, hand.length) - scoreCard(a, hand.length))[0];
+    
+    // HARD difficulty heuristics
+    if (playerHandSize <= 2) {
+        // Player is about to win, desperately try to skip or attack
+        const defense = playable.filter(c => isPickTwo(c) || isPickThree(c) || isHoldOn(c) || isSuspension(c) || isGenMarket(c));
+        if (defense.length) {
+            return defense.sort((a, b) => scoreCard(b, hand.length) - scoreCard(a, hand.length))[0];
+        }
+    }
+
+    return [...playable].sort((a, b) => {
+        let scoreA = scoreCard(a, hand.length);
+        let scoreB = scoreCard(b, hand.length);
+        
+        // Bonus for playing a shape we have more of (shape control)
+        const aShapeCount = hand.filter(c => c.shape === a.shape && c.id !== a.id).length;
+        const bShapeCount = hand.filter(c => c.shape === b.shape && c.id !== b.id).length;
+        scoreA += aShapeCount * 5;
+        scoreB += bShapeCount * 5;
+
+        // If player has few cards (<= 2), heavily prioritize attacks
+        if (playerHandSize <= 2) {
+            if (isPickTwo(a) || isPickThree(a) || isGenMarket(a) || isHoldOn(a) || isSuspension(a)) scoreA += 50;
+            if (isPickTwo(b) || isPickThree(b) || isGenMarket(b) || isHoldOn(b) || isSuspension(b)) scoreB += 50;
+        }
+
+        return scoreB - scoreA;
+    })[0];
 };
 
 const aiPickShape = (hand) => {
@@ -282,7 +309,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
     }, [currentTurn, winner, skipNext, attackStack, drawCards, COLORS, showToast]);
 
     // ── AI turn (always-fresh via ref) ────────────────────────────────────────
-    const performAITurn = useCallback((tc, cs, as, diff) => {
+    const performAITurn = useCallback((tc, cs, as, diff, playerHandSize) => {
         setIsThinking(false);
         const aHand = aiHandRef.current;
 
@@ -306,7 +333,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
             return;
         }
 
-        const card = aiPickCard(playable, aHand, diff);
+        const card = aiPickCard(playable, aHand, diff, playerHandSize);
         aiHandRef.current = aHand.filter(c => c.id !== card.id);
         setAiHandCount(aiHandRef.current.length);
 
@@ -358,7 +385,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
     // Keep latest params in a ref so the setTimeout always reads fresh values
     const latestRef = useRef({});
     useEffect(() => {
-        latestRef.current = { topCard, calledShape, attackStack, difficulty };
+        latestRef.current = { topCard, calledShape, attackStack, difficulty, playerHandSize: playerHand.length };
     });
 
     // ── Turn effect ───────────────────────────────────────────────────────────
@@ -391,8 +418,8 @@ const WhotVsAIScreen = ({ route, navigation }) => {
             const delay = min + Math.random() * (max - min);
 
             const t = setTimeout(() => {
-                const { topCard: tc, calledShape: cs, attackStack: as, difficulty: diff } = latestRef.current;
-                performAITurn(tc, cs, as, diff);
+                const { topCard: tc, calledShape: cs, attackStack: as, difficulty: diff, playerHandSize } = latestRef.current;
+                performAITurn(tc, cs, as, diff, playerHandSize);
             }, delay);
             return () => clearTimeout(t);
         }

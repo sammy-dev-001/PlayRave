@@ -309,7 +309,7 @@ const WhotGameScreen = ({ route, navigation }) => {
                 {/* Other Players — with Feature 1: Last Card badge */}
                 <View style={styles.otherPlayersContainer}>
                     {gameState.otherPlayers
-                        .filter(p => p.id !== myId)
+                        ?.filter(p => p.id !== myId)
                         .map(player => {
                             const isLastCard = player.cardCount === 1;
                             return (

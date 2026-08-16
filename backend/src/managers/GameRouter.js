@@ -84,7 +84,7 @@ class GameRouter {
         const room = await roomManager.getRoom(roomId);
         if (!room) return;
 
-        const gameType = room.gameType;
+        const gameType = payload.gameType || room.gameType;
         
         // INTERCEPTOR: Special case for starting a new game session
         if (eventName === 'start-game') {

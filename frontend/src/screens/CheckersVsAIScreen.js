@@ -101,10 +101,35 @@ const evaluateBoard = (board) => {
         for (let c = 0; c < BOARD_SIZE; c++) {
             const p = board[r][c];
             if (p) {
-                const val = p.isKing ? 3 : 1;
-                // Add minor positional advantage for advancing
-                const posBonus = p.isKing ? 0 : (p.owner === AI ? r * 0.1 : (7 - r) * 0.1);
-                score += p.owner === AI ? (val + posBonus) : -(val + posBonus);
+                let val = p.isKing ? 5 : 1; // kings are much stronger
+                
+                // Advanced positional bonuses
+                if (!p.isKing) {
+                    val += (p.owner === AI ? r : (7 - r)) * 0.15; // advance bonus
+                    
+                    // Back row defense bonus (AI on row 0, P1 on row 7)
+                    if (p.owner === AI && r === 0) val += 0.4;
+                    if (p.owner === P1 && r === 7) val += 0.4;
+                }
+                
+                // Central positioning bonus (c=3,4 are best)
+                const centerDist = Math.abs(c - 3.5);
+                val += (3.5 - centerDist) * 0.1;
+                
+                // Piece protection (adjacent friends)
+                let protection = 0;
+                const drs = [1, 1, -1, -1];
+                const dcs = [-1, 1, -1, 1];
+                for(let i=0; i<4; i++) {
+                    const nr = r + drs[i], nc = c + dcs[i];
+                    if (nr>=0 && nr<BOARD_SIZE && nc>=0 && nc<BOARD_SIZE) {
+                        const adj = board[nr][nc];
+                        if (adj && adj.owner === p.owner) protection += 0.05;
+                    }
+                }
+                val += protection;
+
+                score += p.owner === AI ? val : -val;
             }
         }
     }

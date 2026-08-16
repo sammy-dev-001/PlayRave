@@ -93,7 +93,7 @@ const NeonTapGameScreen = ({ route, navigation }) => {
             stopPulseAnimation();
 
             setCirclePosition(pos);
-            setRoundStartTime(startTime);
+            // We set local roundStartTime when the countdown finishes, not here.
             setCurrentRound(round);
             setTotalRounds(total);
             setGameState('countdown');
@@ -108,6 +108,7 @@ const NeonTapGameScreen = ({ route, navigation }) => {
                     clearInterval(countdownRef.current);
                     countdownRef.current = null;
                     setGameState('playing');
+                    setRoundStartTime(Date.now());
                     startPulseAnimation();
                 }
             }, 1000);

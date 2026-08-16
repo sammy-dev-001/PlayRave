@@ -150,7 +150,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
         }
 
         if (text.trim() === targetSentence.trim()) {
-            const timeTaken = (Date.now() - startTime) / 1000;
+            const timeTaken = Date.now() - startTime;
             Keyboard.dismiss();
             SocketService.emit('type-race-finish', { roomId: room.id, typed: text, timeTaken });
         }
@@ -243,7 +243,7 @@ const TypeRaceScreen = ({ route, navigation }) => {
                                     <NeonText size={18} weight="bold">#{index + 1}</NeonText>
                                     <View style={styles.resultInfo}>
                                         <NeonText size={16}>{player.name}</NeonText>
-                                        <NeonText size={12} color={COLORS.textMuted}>{player.finished ? `${player.time?.toFixed(2)}s • ${player.accuracy}%` : 'Did not finish'}</NeonText>
+                                        <NeonText size={12} color={COLORS.textMuted}>{player.finished ? `${(player.time / 1000).toFixed(2)}s • ${player.accuracy}%` : 'Did not finish'}</NeonText>
                                     </View>
                                     <NeonText size={18} weight="bold" color={COLORS.neonCyan}>+{player.points}</NeonText>
                                 </View>

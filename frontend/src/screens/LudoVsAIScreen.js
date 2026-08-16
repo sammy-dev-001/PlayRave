@@ -31,8 +31,8 @@ const CELL = Math.floor(BOARD_PX / GRID);
 const HUMAN_PLAYERS = [0, 3]; // Cyan (bottom-right) + Purple (bottom-left)
 const AI_PLAYERS = [1, 2]; // Lime (top-left)     + Pink (top-right)
 
-const PLAYER_COLOR = ['#00FFFF', '#39FF14', '#FF007F', '#B026FF'];
-const PLAYER_DARK = ['#003333', '#0e2200', '#330015', '#200033'];
+const PLAYER_COLOR = ['#FF007F', '#00FFFF', '#FFD700', '#39FF14']; // P0(Pink), P1(Cyan), P2(Yellow), P3(Green)
+const PLAYER_DARK = ['#330015', '#003333', '#332b00', '#0e2200'];
 
 const getOwner = (playerIdx) =>
   HUMAN_PLAYERS.includes(playerIdx) ? 'human' : 'ai';
@@ -50,11 +50,11 @@ const MAIN_TRACK = [
   [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
   // 25-26: top turn
   [0, 7], [0, 8],
-  // 27-31: col 8, rows 1→5 (P2/Pink entry at [0,8]=26)
+  // 27-31: col 8, rows 0→5 (P2/Yellow entry)
   [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
-  // 32-38: row 6 going right + corner (P2 actually at index 26=[0,8])
+  // 32-38: row 6 going right + corner
   [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14], [7, 14],
-  // 39-44: row 8 going left (P3/Purple entry at [8,14]=39)
+  // 39-44: row 8 going left (P3/Green entry at [8,14]=39)
   [8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
   // 45-51: col 8, rows 9→14 + close
   [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [14, 7],
@@ -83,8 +83,8 @@ const HOME_CORNERS = [
   { r: 9, c: 9 }, // P3 Purple bottom-right
 ];
 const TOKEN_OFFSETS = [
-  { r: 1, c: 1 }, { r: 1, c: 3 },
-  { r: 3, c: 1 }, { r: 3, c: 3 },
+  { r: 1, c: 1 }, { r: 1, c: 4 },
+  { r: 4, c: 1 }, { r: 4, c: 4 },
 ];
 
 // ─── Token Factory ────────────────────────────────────────────────────────────
@@ -232,8 +232,30 @@ const resolveCapture = (movedToken, allTokens) => {
 };
 
 // ─── AI Heuristics ────────────────────────────────────────────────────────────
+const isSquareInDanger = (absIdx, owner, allTokens, bdSet) => {
+  if (absIdx < 0 || SAFE_INDICES.has(absIdx)) return false;
+  if (isBlockadedFor(absIdx, owner, bdSet)) return false; // protected by own blockade
+  for (let s = 1; s <= 6; s++) {
+    const checkIdx = (absIdx - s + 52) % 52;
+    const oppHere = allTokens.filter(t => getOwner(t.player) !== owner && getAbsIdx(t) === checkIdx);
+    if (oppHere.length > 0) {
+      let pathClear = true;
+      for (let step = 1; step <= s; step++) {
+        const pathIdx = (checkIdx + step) % 52;
+        if (isBlockadedFor(pathIdx, getOwner(oppHere[0].player), bdSet)) {
+          pathClear = false;
+          break;
+        }
+      }
+      if (pathClear) return true;
+    }
+  }
+  return false;
+};
+
 const scoreAIMove = (token, dv, allTokens, difficulty) => {
   const moved = applyMove(token, dv);
+  const bdSet = blockadeSet(allTokens);
   let score = 0;
 
   // Top: finish a token
@@ -249,22 +271,38 @@ const scoreAIMove = (token, dv, allTokens, difficulty) => {
   if (difficulty !== 'easy') {
     const ai = getAbsIdx(moved);
     if (ai >= 0 && !SAFE_INDICES.has(ai)) {
-      const oppHere = allTokens.filter(t => {
-        if (getOwner(t.player) === 'ai') return false;
-        return getAbsIdx(t) === ai;
-      });
-      if (oppHere.length === 1) score += 250; // single opponent = can capture
+      const oppHere = allTokens.filter(t => getOwner(t.player) !== 'ai' && getAbsIdx(t) === ai);
+      if (oppHere.length === 1) score += 400; // Increased capture priority
     }
   }
 
-  // Medium: form a blockade
+  // Hard heuristics
   if (difficulty === 'hard') {
     const ai = getAbsIdx(moved);
+    const startIdx = getAbsIdx(token);
+    
+    // Blockade forming
     if (ai >= 0) {
-      const friendsHere = allTokens.filter(t =>
-        getOwner(t.player) === 'ai' && t.player !== moved.player && getAbsIdx(t) === ai
-      ).length;
-      if (friendsHere >= 1) score += 80; // forming blockade
+      const friendsHere = allTokens.filter(t => getOwner(t.player) === 'ai' && t.player !== moved.player && getAbsIdx(t) === ai).length;
+      if (friendsHere >= 1) score += 150; 
+    }
+
+    // Fleeing danger
+    if (startIdx >= 0 && isSquareInDanger(startIdx, 'ai', allTokens, bdSet)) {
+        score += 200;
+    }
+
+    // Avoiding moving INTO danger
+    if (ai >= 0 && isSquareInDanger(ai, 'ai', allTokens, bdSet)) {
+        score -= 250;
+    }
+
+    // Penalize breaking our own blockade
+    if (startIdx >= 0) {
+        const friendsAtStart = allTokens.filter(t => getOwner(t.player) === 'ai' && getAbsIdx(t) === startIdx).length;
+        if (friendsAtStart >= 2) {
+            score -= 100;
+        }
     }
   }
 
@@ -326,6 +364,62 @@ const Die = ({ value, size, color, selected, used, style }) => (
         shadowColor: color, shadowOpacity: 1, shadowRadius: 5, elevation: 6,
       }} />
     ))}
+  </View>
+);
+
+const TokenSpot = ({ color, size, top, left }) => (
+  <View style={{
+    position: 'absolute', top, left,
+    width: size, height: size, borderRadius: size / 2,
+    backgroundColor: '#111',
+    borderWidth: 2, borderColor: color,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: color, shadowOpacity: 1, shadowRadius: 6,
+    marginLeft: -size / 2, marginTop: -size / 2
+  }}>
+    <View style={{
+      width: '60%', height: '60%', borderRadius: size,
+      backgroundColor: color,
+      opacity: 0.6,
+      shadowColor: color, shadowOpacity: 1, shadowRadius: 10
+    }} />
+  </View>
+);
+
+const HomeBase = ({ color, size, top, left }) => (
+  <View style={{
+    position: 'absolute', top, left, width: size, height: size,
+    backgroundColor: '#0a0a1a', padding: size * 0.05, zIndex: 0
+  }}>
+    <View style={{
+      flex: 1, borderRadius: size * 0.1, borderWidth: 3, borderColor: color,
+      shadowColor: color, shadowOpacity: 0.8, shadowRadius: 10, padding: size * 0.08
+    }}>
+      <View style={{
+        flex: 1, borderRadius: size * 0.08, borderWidth: 2, borderColor: color,
+        shadowColor: color, shadowOpacity: 0.5, shadowRadius: 5
+      }} />
+    </View>
+    <View style={{ position: 'absolute', top: 0, left: 0, width: size, height: size, zIndex: 1 }} pointerEvents="none">
+      <TokenSpot color={color} size={size * 0.16} top="25%" left="25%" />
+      <TokenSpot color={color} size={size * 0.16} top="25%" left="75%" />
+      <TokenSpot color={color} size={size * 0.16} top="75%" left="25%" />
+      <TokenSpot color={color} size={size * 0.16} top="75%" left="75%" />
+    </View>
+  </View>
+);
+
+const CenterArea = ({ size, top, left }) => (
+  <View style={{
+    position: 'absolute', top, left, width: size, height: size,
+    backgroundColor: '#0a0a1a', zIndex: 0,
+    borderWidth: 2, borderColor: '#00FFFF', overflow: 'hidden',
+    justifyContent: 'center', alignItems: 'center'
+  }}>
+    <View style={{ position: 'absolute', width: size*1.5, height: size*1.5, backgroundColor: '#FF007F', opacity: 0.3, transform: [{rotate: '45deg'}] }} />
+    <View style={{ position: 'absolute', width: size*1.2, height: size*1.2, backgroundColor: '#00FFFF', opacity: 0.3, transform: [{rotate: '-45deg'}] }} />
+    <View style={{ position: 'absolute', width: size*0.8, height: size*0.8, backgroundColor: '#39FF14', opacity: 0.4, borderRadius: size, shadowColor: '#39FF14', shadowRadius: 20, shadowOpacity: 1 }} />
+    <Ionicons name="infinite" size={size * 0.6} color="#fff" style={{ opacity: 0.9, shadowColor: '#fff', shadowRadius: 10, shadowOpacity: 1 }} />
   </View>
 );
 
@@ -695,53 +789,60 @@ const LudoVsAIScreen = ({ route, navigation }) => {
   const renderCell = (row, col) => {
     let bg = '#111128';
 
-    // Home base quadrants
     const inBase = [
-      row >= 9 && row <= 14 && col >= 0 && col <= 5,  // P0 Cyan   (bottom-left)
-      row >= 0 && row <= 5 && col >= 0 && col <= 5,  // P1 Lime   (top-left)
-      row >= 0 && row <= 5 && col >= 9 && col <= 14, // P2 Pink   (top-right)
-      row >= 9 && row <= 14 && col >= 9 && col <= 14, // P3 Purple (bottom-right)
+      row >= 9 && row <= 14 && col >= 0 && col <= 5,  // P0 Pink   (bottom-left)
+      row >= 0 && row <= 5 && col >= 0 && col <= 5,  // P1 Cyan   (top-left)
+      row >= 0 && row <= 5 && col >= 9 && col <= 14, // P2 Yellow (top-right)
+      row >= 9 && row <= 14 && col >= 9 && col <= 14, // P3 Green (bottom-right)
     ];
-    for (let p = 0; p < 4; p++) {
-      if (inBase[p]) bg = PLAYER_DARK[p];
+    const isBaseCell = inBase.some(Boolean);
+    const isCenterArea = row >= 6 && row <= 8 && col >= 6 && col <= 8;
+
+    if (isBaseCell || isCenterArea) {
+      bg = 'transparent';
+    } else {
+      // Home column colorings (Solid glow)
+      if (col === 7 && row >= 9 && row <= 13) bg = PLAYER_COLOR[0];
+      if (row === 7 && col >= 1 && col <= 5) bg = PLAYER_COLOR[1];
+      if (col === 7 && row >= 1 && row <= 5) bg = PLAYER_COLOR[2];
+      if (row === 7 && col >= 9 && col <= 13) bg = PLAYER_COLOR[3];
+
+      // Start square highlights
+      const startCells = PLAYER_START.map(i => MAIN_TRACK[i]);
+      const startIdx = startCells.findIndex(([r, c]) => r === row && c === col);
+      if (startIdx >= 0) bg = PLAYER_COLOR[startIdx];
     }
 
-    // Home column colorings (center cross arms)
-    if (col === 7 && row >= 9 && row <= 13) bg = PLAYER_COLOR[0] + '25';
-    if (row === 7 && col >= 1 && col <= 5) bg = PLAYER_COLOR[1] + '25';
-    if (col === 7 && row >= 1 && row <= 5) bg = PLAYER_COLOR[2] + '25';
-    if (row === 7 && col >= 9 && col <= 13) bg = PLAYER_COLOR[3] + '25';
-
-    // Center
-    const isCenter = row === 7 && col === 7;
-    if (isCenter) bg = '#1e1e44';
-
-    // Start square highlights
-    const startCells = PLAYER_START.map(i => MAIN_TRACK[i]);
-    const startIdx = startCells.findIndex(([r, c]) => r === row && c === col);
-    if (startIdx >= 0) bg = PLAYER_COLOR[startIdx] + '44';
-
-    // Safe star squares
     const tIdx = MAIN_TRACK.findIndex(([r, c]) => r === row && c === col);
     const isSafe = tIdx >= 0 && SAFE_INDICES.has(tIdx);
 
-    // Tokens here
     const here = tokens.filter(t => {
       const [r, c] = tokenCell(t);
       return r === row && c === col;
+    }).sort((a, b) => {
+      const aMovable = movable.some(m => m.player === a.player && m.id === a.id);
+      const bMovable = movable.some(m => m.player === b.player && m.id === b.id);
+      return (aMovable === bMovable) ? 0 : aMovable ? 1 : -1;
     });
 
     return (
       <View key={`${row}_${col}`} style={[
         styles.cell,
-        { backgroundColor: bg, borderColor: isCenter ? '#3a3a8a' : 'rgba(255,255,255,0.2)' }
+        { 
+          backgroundColor: bg, 
+          borderColor: (isBaseCell || isCenterArea) ? 'transparent' : '#00FFFF',
+          borderWidth: (isBaseCell || isCenterArea) ? 0 : 1,
+          shadowColor: bg !== 'transparent' && bg !== '#111128' ? bg : 'transparent',
+          shadowOpacity: 0.8, shadowRadius: 5
+        }
       ]}>
-        {isSafe && !isCenter && (
-          <Ionicons name="star" size={CELL * 0.38} color="#FFD700" style={{ opacity: 0.65 }} />
+        {isSafe && !isCenterArea && !isBaseCell && (
+          <Ionicons name="star-outline" size={CELL * 0.65} color="#FFD700" style={{ position: 'absolute' }} />
         )}
-        {isCenter && (
-          <Text style={{ fontSize: CELL * 0.42, lineHeight: CELL * 0.48 }}>🏆</Text>
-        )}
+        {(row === 14 && col === 7) && <Ionicons name="arrow-up" size={CELL * 0.7} color={PLAYER_COLOR[0]} style={{position:'absolute'}} />}
+        {(row === 7 && col === 0) && <Ionicons name="arrow-forward" size={CELL * 0.7} color={PLAYER_COLOR[1]} style={{position:'absolute'}} />}
+        {(row === 0 && col === 7) && <Ionicons name="arrow-down" size={CELL * 0.7} color={PLAYER_COLOR[2]} style={{position:'absolute'}} />}
+        {(row === 7 && col === 14) && <Ionicons name="arrow-back" size={CELL * 0.7} color={PLAYER_COLOR[3]} style={{position:'absolute'}} />}
         {here.length > 0 && (
           <View style={styles.stack}>
             {here.slice(0, 3).map((t, idx) => {
@@ -763,7 +864,8 @@ const LudoVsAIScreen = ({ route, navigation }) => {
                   }]}
                 >
                   <Animated.View style={[styles.token, {
-                    backgroundColor: PLAYER_COLOR[t.player],
+                    backgroundColor: '#111',
+                    borderWidth: 3,
                     borderColor: PLAYER_COLOR[t.player],
                     shadowColor: PLAYER_COLOR[t.player],
                     shadowOpacity: isMovable ? gOp : 0.4,
@@ -771,9 +873,9 @@ const LudoVsAIScreen = ({ route, navigation }) => {
                     elevation: isMovable ? 16 : 4,
                     transform: [{ scale: isMovable ? 1.14 : 0.85 }],
                   }]}>
-                    {t.finished && <Ionicons name="star" size={CELL * 0.26} color="#fff" />}
+                    <View style={{ width: '50%', height: '50%', backgroundColor: PLAYER_COLOR[t.player], borderRadius: 10, opacity: 0.8 }} />
                   </Animated.View>
-                  {here.length > 1 && idx === 0 && (
+                  {here.length > 1 && idx === here.length - 1 && (
                     <View style={styles.badge}>
                       <Text style={{ fontSize: 7, color: '#000', fontWeight: 'bold' }}>{here.length}</Text>
                     </View>
@@ -788,8 +890,8 @@ const LudoVsAIScreen = ({ route, navigation }) => {
   };
 
   // ── Score pips (4 pips per house, 2 houses per player = 8 total) ──────────
-  const finishedCount = (owner) =>
-    tokens.filter(t => getOwner(t.player) === owner && t.finished).length;
+  const getFinishedColors = (owner) =>
+    tokens.filter(t => getOwner(t.player) === owner && t.finished).map(t => PLAYER_COLOR[t.player]);
 
   const activeOwner = winner ? null : turn;
 
@@ -807,10 +909,9 @@ const LudoVsAIScreen = ({ route, navigation }) => {
       {/* Score bar */}
       <View style={styles.scoreBar}>
         {['human', 'ai'].map(owner => {
-          const fin = finishedCount(owner);
+          const finishedColors = getFinishedColors(owner);
           const isActive = activeOwner === owner;
           const c1 = PLAYER_COLOR[owner === 'human' ? 0 : 1];
-          const c2 = PLAYER_COLOR[owner === 'human' ? 3 : 2];
           return (
             <View key={owner} style={[styles.scoreBadge, {
               borderColor: c1,
@@ -820,12 +921,20 @@ const LudoVsAIScreen = ({ route, navigation }) => {
             }]}>
               <NeonText size={10} color={c1} weight="bold">{owner === 'human' ? 'YOU' : 'AI'}</NeonText>
               <View style={styles.pipRow}>
-                {[...Array(8)].map((_, i) => (
-                  <View key={i} style={[styles.pip, {
-                    backgroundColor: i < fin ? (i < 4 ? c1 : c2) : '#222',
-                    shadowColor: i < 4 ? c1 : c2,
-                    shadowOpacity: i < fin ? 1 : 0,
-                    shadowRadius: 4, elevation: i < fin ? 4 : 0,
+                {finishedColors.map((color, i) => (
+                  <View key={`lit_${i}`} style={[styles.pip, {
+                    backgroundColor: color,
+                    shadowColor: color,
+                    shadowOpacity: 1,
+                    shadowRadius: 4, elevation: 4,
+                  }]} />
+                ))}
+                {[...Array(8 - finishedColors.length)].map((_, i) => (
+                  <View key={`unlit_${i}`} style={[styles.pip, {
+                    backgroundColor: '#222',
+                    shadowColor: 'transparent',
+                    shadowOpacity: 0,
+                    shadowRadius: 0, elevation: 0,
                   }]} />
                 ))}
               </View>
@@ -846,11 +955,19 @@ const LudoVsAIScreen = ({ route, navigation }) => {
       {/* Board */}
       <View style={styles.boardWrap}>
         <View style={[styles.board, { width: CELL * GRID, height: CELL * GRID }]}>
-          {Array.from({ length: GRID }, (_, row) => (
-            <View key={row} style={{ flexDirection: 'row', height: CELL }}>
-              {Array.from({ length: GRID }, (_, col) => renderCell(row, col))}
-            </View>
-          ))}
+          <HomeBase player={0} color={PLAYER_COLOR[0]} top={9 * CELL} left={0} size={6 * CELL} />
+          <HomeBase player={1} color={PLAYER_COLOR[1]} top={0} left={0} size={6 * CELL} />
+          <HomeBase player={2} color={PLAYER_COLOR[2]} top={0} left={9 * CELL} size={6 * CELL} />
+          <HomeBase player={3} color={PLAYER_COLOR[3]} top={9 * CELL} left={9 * CELL} size={6 * CELL} />
+          <CenterArea size={3 * CELL} top={6 * CELL} left={6 * CELL} />
+          
+          <View style={{ flex: 1, zIndex: 10 }}>
+            {Array.from({ length: GRID }, (_, row) => (
+              <View key={row} style={{ flexDirection: 'row', height: CELL }}>
+                {Array.from({ length: GRID }, (_, col) => renderCell(row, col))}
+              </View>
+            ))}
+          </View>
         </View>
       </View>
 

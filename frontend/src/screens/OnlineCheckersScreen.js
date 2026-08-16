@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import InGameOverlay from '../components/InGameOverlay';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
@@ -113,7 +114,7 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
     useEffect(() => {
         if (gameState?.tournamentWinner) {
             winScaleAnim.setValue(0);
-            Animated.spring(winScaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+            Animated.spring(winScaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: false }).start();
             Animated.loop(
                 Animated.sequence([
                     Animated.timing(winGlowAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -216,11 +217,32 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
         else matchResultText = 'You Lost this match!';
     }
 
+    // Piece counts
+    let myPieceCount = 0;
+    let oppPieceCount = 0;
+    myMatch.board.forEach(row => row.forEach(p => {
+        if (!p) return;
+        if (p.owner === myRole) myPieceCount++;
+        else oppPieceCount++;
+    }));
+
     return (
         <NeonContainer showBackButton>
             <View style={styles.header}>
                 <NeonText type="h3">Tournament: Round {gameState.round}</NeonText>
-                <NeonText type="body">You vs {opponentName}</NeonText>
+
+                {/* Piece count badges */}
+                <View style={styles.scoreboardRow}>
+                    <View style={[styles.scoreBadge, { borderColor: COLORS.neonCyan, shadowColor: COLORS.neonCyan }]}>
+                        <NeonText size={22} color={COLORS.neonCyan} weight="bold">{myPieceCount}</NeonText>
+                        <NeonText size={10} color={COLORS.neonCyan}>YOU</NeonText>
+                    </View>
+                    <NeonText size={14} color="rgba(255,255,255,0.4)" style={{ marginHorizontal: 12 }}>vs</NeonText>
+                    <View style={[styles.scoreBadge, { borderColor: COLORS.hotPink, shadowColor: COLORS.hotPink }]}>
+                        <NeonText size={22} color={COLORS.hotPink} weight="bold">{oppPieceCount}</NeonText>
+                        <NeonText size={10} color={COLORS.hotPink}>{opponentName.toUpperCase().slice(0, 6)}</NeonText>
+                    </View>
+                </View>
             </View>
 
             <View style={styles.statusBox}>
@@ -236,7 +258,7 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
             </View>
 
             <View style={[styles.boardContainer, { width: boardSizePx, height: boardSizePx, borderColor: boardBorderColor }]}>
-                <View style={styles.board}>
+                <View style={[styles.board, myRole === P2 && { transform: [{ rotate: '180deg' }] }]}>
                     {myMatch.board.map((row, r) => (
                         <View key={`r-${r}`} style={styles.row}>
                             {row.map((piece, c) => {
@@ -263,7 +285,10 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
                                             <View style={[
                                                 styles.piece,
                                                 piece.owner === P1 ? styles.p1Piece : styles.p2Piece,
-                                                { shadowColor: piece.owner === P1 ? COLORS.neonCyan : COLORS.hotPink }
+                                                { 
+                                                    shadowColor: piece.owner === P1 ? COLORS.neonCyan : COLORS.hotPink,
+                                                    transform: myRole === P2 ? [{ rotate: '180deg' }] : []
+                                                }
                                             ]}>
                                                 {piece.isKing && <Ionicons name="star" size={squareSize * 0.4} color="#fff" />}
                                             </View>
@@ -348,7 +373,8 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
                                                 inputRange: [0, 1],
                                                 outputRange: [0, (animatingMove.to.r - animatingMove.from.r) * squareSize]
                                             })
-                                        }
+                                        },
+                                        ...(myRole === P2 ? [{ rotate: '180deg' }] : [])
                                     ]
                                 }
                             ]}>
@@ -393,11 +419,31 @@ const OnlineCheckersScreen = ({ route, navigation }) => {
                     </Animated.View>
                 </View>
             </Modal>
+            <InGameOverlay />
         </NeonContainer>
     );
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
+    scoreboardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    scoreBadge: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 5,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        minWidth: 70,
+    },
     header: {
         alignItems: 'center',
         marginVertical: 15,

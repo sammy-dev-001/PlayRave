@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import InGameOverlay from '../components/InGameOverlay';
 import { useTheme } from '../context/ThemeContext';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
@@ -115,7 +116,7 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
     useEffect(() => {
         if (gameState?.tournamentWinner) {
             winScaleAnim.setValue(0);
-            Animated.spring(winScaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+            Animated.spring(winScaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: false }).start();
             Animated.loop(
                 Animated.sequence([
                     Animated.timing(winGlowAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -222,11 +223,29 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
         );
     };
 
+    // Piece counts from current board
+    const p1Pieces = myMatch.board.flat().filter(p => p === P1).length;
+    const p2Pieces = myMatch.board.flat().filter(p => p === P2).length;
+    const myPieces = myRole === P1 ? p1Pieces : p2Pieces;
+    const oppPieces = myRole === P1 ? p2Pieces : p1Pieces;
+
     return (
         <NeonContainer showBackButton scrollable onBackPress={() => navigation.goBack()}>
             <View style={styles.header}>
                 <NeonText type="h3">Tournament: Round {gameState.round}</NeonText>
-                <NeonText type="body">You vs {opponentName}</NeonText>
+
+                {/* Piece count badges */}
+                <View style={styles.scoreboardRow}>
+                    <View style={[styles.scoreBadge, { borderColor: COLORS.neonCyan, shadowColor: COLORS.neonCyan }]}>
+                        <NeonText size={22} color={COLORS.neonCyan} weight="bold">{myPieces}</NeonText>
+                        <NeonText size={10} color={COLORS.neonCyan}>YOU</NeonText>
+                    </View>
+                    <NeonText size={14} color="rgba(255,255,255,0.4)" style={{ marginHorizontal: 12 }}>vs</NeonText>
+                    <View style={[styles.scoreBadge, { borderColor: COLORS.hotPink, shadowColor: COLORS.hotPink }]}>
+                        <NeonText size={22} color={COLORS.hotPink} weight="bold">{oppPieces}</NeonText>
+                        <NeonText size={10} color={COLORS.hotPink}>{opponentName.toUpperCase().slice(0, 6)}</NeonText>
+                    </View>
+                </View>
             </View>
 
             <View style={styles.statusBox}>
@@ -332,11 +351,31 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
                     </Animated.View>
                 </View>
             </Modal>
+            <InGameOverlay />
         </NeonContainer>
     );
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
+    scoreboardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    scoreBadge: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 5,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        minWidth: 70,
+    },
     header: {
         alignItems: 'center',
         marginVertical: 15,

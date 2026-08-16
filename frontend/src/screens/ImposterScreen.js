@@ -71,6 +71,7 @@ const ImposterScreen = ({ route, navigation }) => {
         SocketService.on('imposter-votes-update', handleVotesUpdate);
         SocketService.on('imposter-round-results', handleRoundResults);
         SocketService.on('room-updated', handleRoomUpdate);
+        SocketService.on('game-state-sync', handleGameStateSync);
         // chat-message-received handled by InGameOverlay
 
         // Request current state on mount (recovery)
@@ -85,6 +86,7 @@ const ImposterScreen = ({ route, navigation }) => {
             SocketService.off('imposter-votes-update', handleVotesUpdate);
             SocketService.off('imposter-round-results', handleRoundResults);
             SocketService.off('room-updated', handleRoomUpdate);
+            SocketService.off('game-state-sync', handleGameStateSync);
             // chat-message-received handled by InGameOverlay
         };
     }, []);
@@ -106,6 +108,14 @@ const ImposterScreen = ({ route, navigation }) => {
         } else {
             setPhase(GAME_PHASES.WORD_REVEAL);
         }
+        if (data.myWord) setMyWord(data.myWord);
+        if (data.isImposter !== undefined) setIsImposter(data.isImposter);
+        if (data.players) setPlayers(data.players);
+    };
+
+    const handleGameStateSync = (data) => {
+        console.log("Imposter game state sync:", data);
+        if (data.phase) setPhase(data.phase);
         if (data.myWord) setMyWord(data.myWord);
         if (data.isImposter !== undefined) setIsImposter(data.isImposter);
         if (data.players) setPlayers(data.players);
