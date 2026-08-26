@@ -441,7 +441,6 @@ const LudoVsAIScreen = ({ route, navigation }) => {
   const [showWinner, setShowWinner] = useState(false);
   const [message, setMessage] = useState('Your turn! Tap a die to roll.');
   const [winScale] = useState(() => new Animated.Value(0));
-  const [comboModal, setComboModal] = useState(null); // { visible, token, options: [] }
 
   // Animation refs
   const diceShake = useRef([new Animated.Value(0), new Animated.Value(0)]).current;
@@ -527,7 +526,6 @@ const LudoVsAIScreen = ({ route, navigation }) => {
 
     setTokens(nextTokens);
     setMovable([]);
-    setComboModal(null);
 
     const newUsed = [...currentUsedDice];
     newUsed[dieIdx] = true;
@@ -641,63 +639,19 @@ const LudoVsAIScreen = ({ route, navigation }) => {
       executeHumanMove(token, selectedDie, dice, usedDice, tokenRef.current);
     } else {
       // No die selected. We figure out which options are available.
-      const can1 = !usedDice[0] && computeMovable(dice[0], tokenRef.current, 'human').some(t => t.id === token.id);
-      const can2 = !usedDice[1] && computeMovable(dice[1], tokenRef.current, 'human').some(t => t.id === token.id);
+      const can1 = !usedDice[0] && computeMovable(dice[0], tokenRef.current, 'human').some(t => t.player === token.player && t.id === token.id);
+      const can2 = !usedDice[1] && computeMovable(dice[1], tokenRef.current, 'human').some(t => t.player === token.player && t.id === token.id);
       
       const options = [];
       if (can1) options.push({ label: `Move ${dice[0]}`, onPress: () => executeHumanMove(token, 0, dice, usedDice, tokenRef.current) });
       if (can2) options.push({ label: `Move ${dice[1]}`, onPress: () => executeHumanMove(token, 1, dice, usedDice, tokenRef.current) });
       
-      // Calculate Combined Move
-      if (!usedDice[0] && !usedDice[1]) {
-        let comboValid = false;
-        if (can1) {
-          const sim1 = applyMove(token, dice[0]);
-          const simTokens1 = tokenRef.current.map(t => t.id === token.id ? sim1 : t);
-          if (computeMovable(dice[1], simTokens1, 'human').some(t => t.id === sim1.id)) comboValid = true;
-        }
-        if (can2 && !comboValid) {
-          const sim2 = applyMove(token, dice[1]);
-          const simTokens2 = tokenRef.current.map(t => t.id === token.id ? sim2 : t);
-          if (computeMovable(dice[0], simTokens2, 'human').some(t => t.id === sim2.id)) comboValid = true;
-        }
-
-        if (comboValid) {
-          options.push({
-            label: `Move ${dice[0] + dice[1]} (Combo)`, 
-            onPress: () => {
-              setComboModal(null);
-              let firstDie = can1 ? 0 : 1;
-              let secondDie = firstDie === 0 ? 1 : 0;
-              
-              const m1 = applyMove(token, dice[firstDie]);
-              let tks1 = tokenRef.current.map(t => t.id === token.id ? m1 : t);
-              tks1 = resolveCapture(m1, tks1);
-              
-              const m2 = applyMove(m1, dice[secondDie]);
-              let tks2 = tks1.map(t => t.id === m1.id ? m2 : t);
-              tks2 = resolveCapture(m2, tks2);
-              
-              setTokens(tks2);
-              setMovable([]);
-              setUsedDice([true, true]);
-              
-              if (isOwnerDone(tks2, 'human')) {
-                setWinner('human');
-                Animated.spring(winScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
-                setTimeout(() => setShowWinner(true), 600);
-              } else {
-                endHumanTurn(dice, [true, true], tks2);
-              }
-            }
-          });
-        }
-      }
-
       if (options.length === 1) {
         options[0].onPress();
       } else if (options.length > 1) {
-        setComboModal({ visible: true, token, options });
+        // If both dice are valid, force the user to pick which one to use first.
+        setMessage('Select a die at the bottom first!');
+        HapticService.notification('warning');
       }
     }
   }, [selectedDie, rolled, turn, dice, usedDice]);
@@ -845,13 +799,26 @@ const LudoVsAIScreen = ({ route, navigation }) => {
         {(row === 7 && col === 14) && <Ionicons name="arrow-back" size={CELL * 0.7} color={PLAYER_COLOR[3]} style={{position:'absolute'}} />}
         {here.length > 0 && (
           <View style={styles.stack}>
-            {here.slice(0, 3).map((t, idx) => {
+            {here.slice(0, 4).map((t, idx) => {
               const k = `${t.player}_${t.id}`;
               const isMovable = movable.some(m => m.player === t.player && m.id === t.id);
               const gAnim = glowAnims[k];
               const gOp = gAnim
                 ? gAnim.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] })
                 : 1;
+              const isStacked = here.length > 1;
+
+              let tx = 0, ty = 0;
+              if (isStacked) {
+                const gridOffsets = [
+                  { x: -0.22, y: -0.22 },
+                  { x: 0.22, y: 0.22 },
+                  { x: -0.22, y: 0.22 },
+                  { x: 0.22, y: -0.22 }
+                ];
+                tx = gridOffsets[idx % 4].x * CELL;
+                ty = gridOffsets[idx % 4].y * CELL;
+              }
 
               return (
                 <TouchableOpacity
@@ -860,22 +827,22 @@ const LudoVsAIScreen = ({ route, navigation }) => {
                   disabled={!isMovable || turn !== 'human'}
                   style={[styles.tokenWrap, {
                     zIndex: 10 + idx,
-                    transform: [{ translateX: idx * 4 }, { translateY: -idx * 4 }],
+                    transform: [{ translateX: tx }, { translateY: ty }],
                   }]}
                 >
                   <Animated.View style={[styles.token, {
                     backgroundColor: '#111',
-                    borderWidth: 3,
+                    borderWidth: isStacked ? 1.5 : 2.5,
                     borderColor: PLAYER_COLOR[t.player],
                     shadowColor: PLAYER_COLOR[t.player],
                     shadowOpacity: isMovable ? gOp : 0.4,
                     shadowRadius: isMovable ? 16 : 4,
                     elevation: isMovable ? 16 : 4,
-                    transform: [{ scale: isMovable ? 1.14 : 0.85 }],
+                    transform: [{ scale: isStacked ? (isMovable ? 0.9 : 0.65) : (isMovable ? 1.14 : 0.85) }],
                   }]}>
                     <View style={{ width: '50%', height: '50%', backgroundColor: PLAYER_COLOR[t.player], borderRadius: 10, opacity: 0.8 }} />
                   </Animated.View>
-                  {here.length > 1 && idx === here.length - 1 && (
+                  {isStacked && idx === Math.min(here.length - 1, 3) && here.length > 4 && (
                     <View style={styles.badge}>
                       <Text style={{ fontSize: 7, color: '#000', fontWeight: 'bold' }}>{here.length}</Text>
                     </View>
@@ -929,7 +896,7 @@ const LudoVsAIScreen = ({ route, navigation }) => {
                     shadowRadius: 4, elevation: 4,
                   }]} />
                 ))}
-                {[...Array(8 - finishedColors.length)].map((_, i) => (
+                {[...Array(Math.max(0, 8 - finishedColors.length))].map((_, i) => (
                   <View key={`unlit_${i}`} style={[styles.pip, {
                     backgroundColor: '#222',
                     shadowColor: 'transparent',
@@ -1055,22 +1022,6 @@ const LudoVsAIScreen = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      {/* Combo Move Modal */}
-      <Modal visible={!!comboModal} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={[styles.modalCard, { borderColor: '#00ffff' }]}>
-            <NeonText size={20} glow style={{ marginBottom: 20 }}>Select Move</NeonText>
-            {comboModal?.options.map((opt, i) => (
-              <View key={i} style={{ marginBottom: 12 }}>
-                <NeonButton title={opt.label} onPress={opt.onPress} variant={opt.label.includes('Combo') ? 'primary' : 'secondary'} />
-              </View>
-            ))}
-            <View style={{ marginTop: 10 }}>
-              <NeonButton title="Cancel" onPress={() => setComboModal(null)} variant="danger" />
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };

@@ -40,9 +40,7 @@ export const OnlineGamesRegistry: GameModule[] = [
     { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', description: 'Classic strategy game.', color: '#39FF14', category: 'competitive', minPlayers: 2, maxPlayers: 2, vibes: ['brain'], imageId: 'tic-tac-toe', routeComponent: 'Lobby', isHub: false },
     { id: 'checkers', name: 'Neon Checkers', description: 'Tournament checkers.', color: '#39FF14', category: 'competitive', minPlayers: 2, maxPlayers: 10, vibes: ['brain'], imageId: 'checkers', routeComponent: 'Lobby', isHub: false },
     { id: 'connect-four', name: 'Connect Four', description: 'Tournament connect four.', color: '#e74c3c', category: 'competitive', minPlayers: 2, maxPlayers: 10, vibes: ['brain'], imageId: 'connect-four', routeComponent: 'Lobby', isHub: false },
-    { id: 'draw-battle', name: 'Draw Battle', description: 'Draw and guess!', color: '#B026FF', category: 'party', minPlayers: 2, maxPlayers: 8, vibes: ['chill'], imageId: 'draw-battle', routeComponent: 'Lobby', isHub: false },
-    { id: 'caption-this', name: 'Caption This', description: 'Caption funny photos.', color: '#00ffff', category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'], imageId: 'caption-this', routeComponent: 'Lobby', isHub: false },
-    { id: 'auction-bluff', name: 'Auction Bluff', description: 'Bid and bluff your way to win.', color: '#FF007F', category: 'competitive', minPlayers: 3, maxPlayers: 8, vibes: ['brain'], imageId: 'auction-bluff', routeComponent: 'Lobby', isHub: false },
+
 ];
 
 export const LocalGamesRegistry: GameModule[] = [
