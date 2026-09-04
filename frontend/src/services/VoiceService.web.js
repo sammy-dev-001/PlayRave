@@ -156,7 +156,10 @@ class VoiceService {
             return true;
         } catch (error) {
             console.error('VoiceService: Web join error:', error);
-            if (this.isWeb && typeof window !== 'undefined') {
+            // Don't alert for mic permission denial — the browser already shows
+            // its own blocked-mic indicator in the address bar.
+            if (this.isWeb && typeof window !== 'undefined' &&
+                error.name !== 'NotAllowedError' && error.name !== 'PermissionDeniedError') {
                 window.alert('Failed to connect to voice chat: ' + (error.message || error));
             }
             return false;

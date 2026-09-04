@@ -177,6 +177,33 @@ class SoundService {
     async playCountdown() { await this.play('countdown'); }
 
     // === Background Music ===
+
+    /**
+     * Resumes a suspended AudioContext created by Agora or other Web Audio API
+     * consumers. Browsers suspend AudioContexts until a user gesture occurs;
+     * calling this inside a user-initiated handler unblocks both Agora audio
+     * and HTML5 Audio element playback.
+     */
+    async _resumeAudioContext() {
+        if (typeof window === 'undefined') return;
+        try {
+            // Resume any existing AudioContext (Agora creates one globally)
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            // Walk all contexts Agora might have registered on window
+            // (Agora attaches its context to window.__agoraAudioContext__ in some versions)
+            const ctx = window.__agoraAudioContext__ ||
+                        (this._sharedAudioCtx && this._sharedAudioCtx.state !== 'closed'
+                            ? this._sharedAudioCtx : null);
+            if (ctx && ctx.state === 'suspended') {
+                await ctx.resume();
+                console.log('Shared AudioContext resumed');
+            }
+        } catch (e) {
+            // Non-fatal — audio may still play fine
+        }
+    }
+
     async playMusic(trackName, loop = true) {
         console.log(`playMusic called: ${trackName}, isMusicMuted: ${this.isMusicMuted}`);
 
@@ -248,11 +275,29 @@ class SoundService {
                     console.log('Muted during load, stopping web audio');
                     audio.pause();
                     this.currentMusic = null;
+                    this.currentMusicName = null;
                     return;
                 }
 
-                await audio.play();
-                console.log('Web audio started successfully!');
+                // Resume any suspended AudioContext (e.g. from Agora SDK)
+                await this._resumeAudioContext();
+
+                try {
+                    await audio.play();
+                    console.log('Web audio started successfully!');
+                } catch (err) {
+                    // AbortError: play() was interrupted (e.g. track switched quickly)
+                    // NotAllowedError: autoplay blocked — needs user gesture
+                    if (err.name === 'AbortError') {
+                        console.log('Audio play aborted, retrying...');
+                        await new Promise(r => setTimeout(r, 150));
+                        if (this.currentMusic === audio && !this.isMusicMuted) {
+                            await audio.play().catch(e => console.log('Audio retry failed:', e));
+                        }
+                    } else {
+                        console.log('Audio play error:', err.name, err.message);
+                    }
+                }
             } else {
                 // Native playback via expo-av
                 let audioSource;
@@ -315,6 +360,8 @@ class SoundService {
             }
             this.currentMusic = null;
         }
+        // Always clear the track name so the same track can be replayed
+        this.currentMusicName = null;
     }
 
     async pauseMusic() {

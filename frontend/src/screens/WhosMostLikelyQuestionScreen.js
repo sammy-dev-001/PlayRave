@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Animated } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
+import VoiceToggle from '../components/VoiceToggle';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { useTheme } from '../context/ThemeContext';
@@ -201,6 +202,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
     if (isWaiting) {
         return (
             <NeonContainer showMuteButton>
+                <VoiceToggle roomId={room?.id} style={styles.voiceToggle} />
                 <View style={styles.loadingContainer}>
                     <NeonText size={22} color={COLORS.electricPurple} glow>
                         Getting ready...
@@ -215,6 +217,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
 
     return (
         <NeonContainer showBackButton scrollable showMuteButton>
+            <VoiceToggle roomId={room?.id} style={styles.voiceToggle} />
             {/* ── Header ──────────────────────────────────────────────── */}
             <View style={styles.header}>
                 <NeonText size={13} color={COLORS.hotPink}>
@@ -362,6 +365,12 @@ const getStyles = (COLORS) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingTop: 80,
+    },
+    voiceToggle: {
+        position: 'absolute',
+        top: 12,
+        left: 16,
+        zIndex: 100,
     },
 });
 

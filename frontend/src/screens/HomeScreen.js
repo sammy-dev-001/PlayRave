@@ -109,7 +109,9 @@ const HomeScreen = ({ navigation }) => {
 
     // Start music on user interaction (required for web audio policy)
     const startMusicOnInteraction = async () => {
-        if (musicStarted) return;
+        // If SoundService already has music playing, don't restart it
+        if (SoundService.currentMusic && !SoundService.currentMusic.paused) return;
+        if (musicStarted && SoundService.currentMusicName) return;
         try {
             await SoundService.init();
             await SoundService.playLobbyMusic();
