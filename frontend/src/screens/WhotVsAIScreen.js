@@ -60,7 +60,8 @@ const isGenMarket  = (c) => c.number === 14 && c.shape !== 'whot';
 const isHoldOn     = (c) => c.number === 1 && c.shape !== 'whot';
 const isSuspension = (c) => c.number === 8 && c.shape !== 'whot';
 
-const canPlay = (card, topCard, calledShape, attackStack) => {
+const canPlay = (card, topCard, calledShape, attackStack, isGeneralMarket = false) => {
+    if (isGeneralMarket) return false; // General Market is unblockable: must pick from market
     if (attackStack > 0) {
         if (isPickTwo(card) && isPickTwo(topCard)) return true;
         if (isPickThree(card) && isPickThree(topCard)) return true;
@@ -73,8 +74,8 @@ const canPlay = (card, topCard, calledShape, attackStack) => {
     return false;
 };
 
-const getPlayable = (hand, topCard, calledShape, attackStack) =>
-    hand.filter(c => canPlay(c, topCard, calledShape, attackStack));
+const getPlayable = (hand, topCard, calledShape, attackStack, isGeneralMarket = false) =>
+    hand.filter(c => canPlay(c, topCard, calledShape, attackStack, isGeneralMarket));
 
 // ─── AI Logic ─────────────────────────────────────────────────────────────────
 const scoreCard = (card, handSize) => {
@@ -149,6 +150,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
     const [calledShape, setCalledShape] = useState(null);
     const [currentTurn, setCurrentTurn] = useState('player');
     const [attackStack, setAttackStack] = useState(0);
+    const [isGeneralMarket, setIsGeneralMarket] = useState(false);
     const [skipNext, setSkipNext]       = useState(false);
     const [winner, setWinner]           = useState(null);
     const [isThinking, setIsThinking]   = useState(false);
@@ -212,6 +214,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
         setTopCard(top);
         setCalledShape(null);
         setAttackStack(0);
+        setIsGeneralMarket(false);
         setSkipNext(false);
         setWinner(null);
         setCurrentTurn('player');
@@ -248,10 +251,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
             nextAttack = attackStack + 3;
             showToast({ message: `AI picks ${nextAttack}!`, icon: '🔥', color: COLORS.hotPink });
         } else if (isGenMarket(card)) {
-            const aDraw = drawCards(1);
-            aiHandRef.current = [...aiHandRef.current, ...aDraw];
-            setAiHandCount(aiHandRef.current.length);
-            showToast({ message: 'General Market! AI picks 1', icon: '🛒', color: COLORS.neonCyan });
+            showToast({ message: 'General Market! AI goes to market 🛒', icon: '🛒', color: COLORS.neonCyan });
         } else if (isHoldOn(card) || isSuspension(card)) {
             nextSkip = true;
             showToast({ message: 'AI skips their turn!', icon: '✋', color: COLORS.limeGlow });
@@ -269,13 +269,13 @@ const WhotVsAIScreen = ({ route, navigation }) => {
         setAttackStack(nextAttack);
         setSkipNext(nextSkip);
         setCurrentTurn('ai');
-    }, [playerHand, attackStack, drawCards, COLORS, showToast, playerName]);
+    }, [playerHand, attackStack, COLORS, showToast, playerName]);
 
     // ── Player card tap ───────────────────────────────────────────────────────
     const handleCardPress = useCallback((card) => {
-        if (currentTurn !== 'player' || winner || skipNext) return;
-        if (!canPlay(card, topCard, calledShape, attackStack)) {
-            showToast({ message: "Can't play that card!", icon: '❌', color: COLORS.hotPink });
+        if (currentTurn !== 'player' || winner || skipNext || isGeneralMarket) return;
+        if (!canPlay(card, topCard, calledShape, attackStack, isGeneralMarket)) {
+            showToast({ message: isGeneralMarket ? "General Market! You must go to the market" : "Can't play that card!", icon: '❌', color: COLORS.hotPink });
             return;
         }
         if (isWhotCard(card)) {
@@ -284,7 +284,7 @@ const WhotVsAIScreen = ({ route, navigation }) => {
             return;
         }
         commitPlayerCard(card, null);
-    }, [currentTurn, winner, skipNext, topCard, calledShape, attackStack, commitPlayerCard, COLORS, showToast]);
+    }, [currentTurn, winner, skipNext, isGeneralMarket, topCard, calledShape, attackStack, commitPlayerCard, COLORS, showToast]);
 
     const handleShapeSelect = useCallback((shape) => {
         setShowWhotPicker(false);
@@ -295,6 +295,14 @@ const WhotVsAIScreen = ({ route, navigation }) => {
     // ── Player draws ──────────────────────────────────────────────────────────
     const handleDraw = useCallback(() => {
         if (currentTurn !== 'player' || winner || skipNext) return;
+        if (isGeneralMarket) {
+            const drawn = drawCards(1);
+            setPlayerHand(prev => [...prev, ...drawn]);
+            showToast({ message: 'Went to market 🏃', icon: '🏃', color: COLORS.textMuted });
+            setIsGeneralMarket(false);
+            setCurrentTurn('ai');
+            return;
+        }
         if (attackStack > 0) {
             const drawn = drawCards(attackStack);
             setPlayerHand(prev => [...prev, ...drawn]);
@@ -306,12 +314,22 @@ const WhotVsAIScreen = ({ route, navigation }) => {
             showToast({ message: 'Went to market 🏃', icon: '🏃', color: COLORS.textMuted });
         }
         setCurrentTurn('ai');
-    }, [currentTurn, winner, skipNext, attackStack, drawCards, COLORS, showToast]);
+    }, [currentTurn, winner, skipNext, isGeneralMarket, attackStack, drawCards, COLORS, showToast]);
 
     // ── AI turn (always-fresh via ref) ────────────────────────────────────────
     const performAITurn = useCallback((tc, cs, as, diff, playerHandSize) => {
         setIsThinking(false);
         const aHand = aiHandRef.current;
+
+        // If top card is General Market and AI hasn't drawn yet: AI compulsory draw
+        if (isGenMarket(tc) && tc.number === 14) {
+            const drawn = drawCards(1);
+            aiHandRef.current = [...aHand, ...drawn];
+            setAiHandCount(aiHandRef.current.length);
+            showToast({ message: 'AI went to market 🏃', icon: '🏃', color: COLORS.textMuted });
+            setCurrentTurn('player');
+            return;
+        }
 
         const playable = getPlayable(aHand, tc, cs, as);
 
@@ -363,9 +381,8 @@ const WhotVsAIScreen = ({ route, navigation }) => {
             nextAttack = as + 3;
             setTimeout(() => showToast({ message: `Pick ${nextAttack}! 🔥`, icon: '🔥', color: COLORS.hotPink }), 200);
         } else if (isGenMarket(card)) {
-            const pDraw = drawCards(1);
-            setPlayerHand(prev => [...prev, ...pDraw]);
-            setTimeout(() => showToast({ message: 'General Market! You pick 1 🛒', icon: '🛒', color: COLORS.neonCyan }), 200);
+            setIsGeneralMarket(true);
+            setTimeout(() => showToast({ message: 'General Market! Go to market 🛒', icon: '🛒', color: COLORS.neonCyan }), 200);
         } else if (isHoldOn(card) || isSuspension(card)) {
             nextSkip = true;
             showToast({ message: 'Your turn is skipped! ✋', icon: '✋', color: COLORS.hotPink });
@@ -428,9 +445,9 @@ const WhotVsAIScreen = ({ route, navigation }) => {
 
     // ─ Playable highlighting ──────────────────────────────────────────────────
     const playableIds = useMemo(() => {
-        if (currentTurn !== 'player' || !topCard) return new Set();
-        return new Set(getPlayable(playerHand, topCard, calledShape, attackStack).map(c => c.id));
-    }, [currentTurn, playerHand, topCard, calledShape, attackStack]);
+        if (currentTurn !== 'player' || !topCard || isGeneralMarket) return new Set();
+        return new Set(getPlayable(playerHand, topCard, calledShape, attackStack, isGeneralMarket).map(c => c.id));
+    }, [currentTurn, playerHand, topCard, calledShape, attackStack, isGeneralMarket]);
 
     // ── UI ────────────────────────────────────────────────────────────────────
     const isPlayerTurn = currentTurn === 'player' && !winner && !skipNext;
@@ -568,14 +585,16 @@ const WhotVsAIScreen = ({ route, navigation }) => {
 
                 <NeonButton
                     title={
-                        attackStack > 0
-                            ? `PICK ${attackStack} CARDS`
-                            : `DRAW CARD (${deckCount} left)`
+                        isGeneralMarket
+                            ? `GO TO MARKET (1 CARD)`
+                            : attackStack > 0
+                                ? `PICK ${attackStack} CARDS`
+                                : `DRAW CARD (${deckCount} left)`
                     }
                     onPress={handleDraw}
                     disabled={!isPlayerTurn}
-                    variant={attackStack > 0 ? 'primary' : 'secondary'}
-                    color={attackStack > 0 ? COLORS.hotPink : undefined}
+                    variant={attackStack > 0 || isGeneralMarket ? 'primary' : 'secondary'}
+                    color={attackStack > 0 ? COLORS.hotPink : (isGeneralMarket ? COLORS.neonCyan : undefined)}
                     style={styles.drawBtn}
                 />
             </View>

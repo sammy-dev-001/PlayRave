@@ -105,12 +105,11 @@ class RealTalkEngine {
         };
     }
 
-    getGameState(roomId, userId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'real-talk') return null;
 
-        const currentQuestion = game.questions[game.currentQuestionIndex];
-        const currentPlayer = game.players[game.currentPlayerIndex];
+        const currentQuestion = game.questions?.[game.currentQuestionIndex];
+        const currentPlayer = game.players?.[game.currentPlayerIndex];
 
         return {
             roomId: game.roomId,
@@ -120,6 +119,11 @@ class RealTalkEngine {
             players: game.players,
             isMyTurn: currentPlayer && currentPlayer.userId === userId
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     endGame(roomId) {

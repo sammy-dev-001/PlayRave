@@ -163,31 +163,35 @@ class ScrabbleEngine {
         };
     }
 
-    getGameState(roomId, userId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'scrabble') return null;
 
-        const player = game.players.find(p => p.userId === userId);
-        const currentPlayer = game.players[game.currentPlayerIndex];
+        const player = game.players?.find(p => p.userId === userId);
+        const currentPlayer = game.players?.[game.currentPlayerIndex];
 
         return {
             board: game.board,
             myHand: player ? player.hand : [],
-            players: game.players.map(p => ({
+            players: (game.players || []).map(p => ({
                 userId: p.userId,
                 name: p.name,
                 score: p.score,
-                handSize: p.hand.length,
+                handSize: p.hand?.length || 0,
                 isActive: p.isActive,
                 isAI: p.isAI
             })),
-            currentPlayerId: currentPlayer.userId,
-            currentPlayerName: currentPlayer.name,
-            isMyTurn: userId === currentPlayer.userId,
+            currentPlayerId: currentPlayer?.userId || null,
+            currentPlayerName: currentPlayer?.name || '',
+            isMyTurn: userId === currentPlayer?.userId,
             turnNumber: game.turnNumber,
-            tilesInBag: game.tileBag.length,
+            tilesInBag: game.tileBag?.length || 0,
             phase: game.phase
         };
+    }
+
+    getGameState(roomId, userId) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     placeTiles(roomId, userId, tiles) {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -50,8 +50,17 @@ const OnlineNHIECategoryScreen = ({ route, navigation }) => {
             }
         };
 
+        const onError = ({ message }) => {
+            setIsStarting(false);
+            Alert.alert('Unable to Start Game', message || 'Failed to start game.');
+        };
+
         SocketService.on('game-started', onGameStarted);
-        return () => SocketService.off('game-started', onGameStarted);
+        SocketService.on('error', onError);
+        return () => {
+            SocketService.off('game-started', onGameStarted);
+            SocketService.off('error', onError);
+        };
     }, [navigation, room, isHost, playerName, selectedCategory]);
 
     const handleStartGame = () => {
@@ -76,7 +85,7 @@ const OnlineNHIECategoryScreen = ({ route, navigation }) => {
                         NEVER HAVE I EVER
                     </NeonText>
                     <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                        Choose spice level
+                        Room: {room?.id} • Choose spice level
                     </NeonText>
                 </View>
 

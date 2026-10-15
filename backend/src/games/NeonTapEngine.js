@@ -82,14 +82,18 @@ class NeonTapEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game) return null;
         return {
             currentRound: game.currentRound,
             totalRounds: game.totalRounds,
             status: game.status
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     getState(roomId, userId) {

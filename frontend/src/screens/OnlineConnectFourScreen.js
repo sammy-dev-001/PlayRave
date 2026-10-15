@@ -94,8 +94,19 @@ const OnlineConnectFourScreen = ({ route, navigation }) => {
     // Server events
     useEffect(() => {
         const handleGameState = (data) => setGameState(data);
+        // RECONNECT: server sends game-state-sync after request-room-sync
+        const handleGameStateSync = (data) => {
+            const gs = data?.gameState || data;
+            if (gs && (data?.gameType === 'connect-four' || !data?.gameType)) {
+                setGameState(gs);
+            }
+        };
         SocketService.on('game-state', handleGameState);
-        return () => SocketService.off('game-state', handleGameState);
+        SocketService.on('game-state-sync', handleGameStateSync);
+        return () => {
+            SocketService.off('game-state', handleGameState);
+            SocketService.off('game-state-sync', handleGameStateSync);
+        };
     }, []);
 
     // Win Animations

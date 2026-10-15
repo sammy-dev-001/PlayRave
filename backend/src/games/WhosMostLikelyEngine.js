@@ -169,6 +169,7 @@ class WhosMostLikelyEngine {
 
         const game = {
             roomId,
+            type:               'whos-most-likely',
             phase:              PHASE.LOBBY,
             prompts,
             currentPromptIndex: 0,
@@ -496,27 +497,45 @@ class WhosMostLikelyEngine {
     // ── State Sync (for reconnects) ────────────────────────────────────────
 
     /**
+     * _publicState — returns a safe snapshot of the current game state formatted for JSON broadcast.
+     * Called by GameRouter when a player reconnects mid-game.
+     */
+    _publicState(game, userId = null) {
+        if (!game) return null;
+
+        const currentPrompt = game.prompts?.[game.currentPromptIndex];
+        const player        = userId ? game.allPlayers?.get(userId) : null;
+
+        const state = {
+            phase:            game.phase,
+            promptIndex:      game.currentPromptIndex,
+            totalPrompts:     game.prompts?.length || 0,
+            prompt:           currentPrompt?.prompt || '',
+            category:         currentPrompt?.category || '',
+            hasVoted:         player?.hasVoted || false,
+            votedCount:       game.currentVotes?.size || 0,
+            totalNeeded:      this._activePlayerCount(game),
+            players:          this._buildPlayerList(game),
+            votingDurationMs: VOTING_DURATION_MS,
+        };
+
+        if (game.phase === PHASE.REVEAL_RESULTS) {
+            state.results = this._computeResults(game);
+            state.nextRoundInMs = RESULTS_DISPLAY_MS;
+        } else if (game.phase === PHASE.FINISHED) {
+            state.finalScores = this._buildFinalScores(game);
+        }
+
+        return state;
+    }
+
+    /**
      * getGameState — returns a safe snapshot of the current game state.
      * Called by GameRouter when a player reconnects mid-game.
      */
     getGameState(roomId, userId = null) {
         const game = this.activeGames.get(roomId);
-        if (!game || game.type !== 'whos-most-likely') return null;
-
-        const currentPrompt = game.prompts[game.currentPromptIndex];
-        const player        = userId ? game.allPlayers.get(userId) : null;
-
-        return {
-            phase:           game.phase,
-            promptIndex:     game.currentPromptIndex,
-            totalPrompts:    game.prompts.length,
-            prompt:          currentPrompt?.prompt || '',
-            category:        currentPrompt?.category || '',
-            hasVoted:        player?.hasVoted || false,
-            votedCount:      game.currentVotes.size,
-            totalNeeded:     this._activePlayerCount(game),
-            players:         this._buildPlayerList(game),
-        };
+        return this._publicState(game, userId);
     }
 
     // ── Private Helpers ────────────────────────────────────────────────────

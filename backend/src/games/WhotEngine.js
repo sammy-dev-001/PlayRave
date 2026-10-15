@@ -94,7 +94,9 @@ class WhotEngine {
 
         // Apply initial card effects if it's a special card
         const initialAction = this.handleWhotSpecialCard(gameState, discardPile[0]);
-        if (initialAction !== 'skip') {
+        if (initialAction === 'general-market') {
+            gameState.generalMarketTurns = 1;
+        } else if (initialAction !== 'skip') {
             // Turn stays at player 0 because they must face the effect (e.g. draw cards)
             // But if it's a skip or suspension, handleWhotSpecialCard already moves the turn!
         }
@@ -137,6 +139,22 @@ class WhotEngine {
     getWhotGameState(roomId, userId) {
         const game = this.activeGames.get(roomId);
         if (!game || game.type !== 'whot') return null;
+        return this._publicState(game, userId);
+    }
+
+    /**
+     * Returns a per-player public view of the game state.
+     * Called by GameRouter.getPublicGameState() during reconnect syncs.
+     * The `game` argument here is the raw internal state object (not a roomId).
+     */
+    _publicState(game, userId) {
+        if (!game || game.type !== 'whot') return null;
+
+        // playerHands[userId] may be undefined if userId is not a participant
+        // (e.g. a spectator). Return [] in that case — never undefined.
+        const hand = (userId && game.playerHands && game.playerHands[userId])
+            ? game.playerHands[userId]
+            : [];
 
         return {
             topCard: game.topCard,
@@ -144,10 +162,12 @@ class WhotEngine {
             attackStack: game.attackStack || 0,
             generalMarketTurns: game.generalMarketTurns || 0,
             currentPlayerId: game.playerOrder[game.currentPlayerIndex],
-            playerHand: (userId && game.playerHands[userId]) ? game.playerHands[userId] : [],
+            // Non-empty hand = active participant. Empty = spectator or not a player.
+            playerHand: hand,
+            isParticipant: !!(userId && game.playerHands && game.playerHands[userId] !== undefined),
             otherPlayers: game.playerOrder.map(pid => ({
                 id: pid,
-                cardCount: game.playerHands[pid].length,
+                cardCount: (game.playerHands[pid] || []).length,
                 isCurrentPlayer: pid === game.playerOrder[game.currentPlayerIndex]
             })),
             deckCount: game.deck.length,
@@ -158,12 +178,17 @@ class WhotEngine {
     }
 
     canPlayCard(game, card) {
+        // General Market is active: compulsory draw, completely unblockable!
+        if (game.generalMarketTurns > 0) {
+            return { valid: false, reason: 'General Market! You must go to the market (draw 1 card).' };
+        }
+
         const topCard = game.topCard;
 
         if (game.attackStack > 0) {
             const attackCardNumber = topCard.number;
             if (card.shape === 'whot') return { valid: true }; // Whot cancels attacks
-            if (attackCardNumber === 14) return { valid: false, reason: 'Invalid attack state' };
+            if (attackCardNumber === 14) return { valid: false, reason: 'General Market cannot be blocked' };
             if (card.number === attackCardNumber) return { valid: true };
             return { valid: false, reason: `Must respond with a Pick ${attackCardNumber === 2 ? 2 : 3} or draw cards` };
         }
@@ -308,25 +333,9 @@ class WhotEngine {
                 return 'pick3';
 
             case 'general-market':
-                // Auto-deal 1 card to EVERYONE except the person who just played it
-                const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
-                game.playerOrder.forEach(pid => {
-                    if (pid !== currentPlayerId) {
-                        if (game.deck.length === 0) {
-                            const top = game.discardPile.pop();
-                            // If discardPile was empty, deck is empty, stop drawing
-                            if (game.discardPile.length === 0) {
-                                game.discardPile = [top];
-                            } else {
-                                game.deck = [...game.discardPile].sort(() => Math.random() - 0.5);
-                                game.discardPile = [top];
-                            }
-                        }
-                        if (game.deck.length > 0) {
-                            game.playerHands[pid].push(game.deck.pop());
-                        }
-                    }
-                });
+                // General Market: Every other player must take 1 card from the market.
+                // It is compulsory and UNBLOCKABLE.
+                game.generalMarketTurns = game.playerOrder.length - 1;
                 return 'general-market';
 
             case 'hold-on':
@@ -351,13 +360,19 @@ class WhotEngine {
         let cardsToDraw = count;
         if (game.attackStack > 0) {
             cardsToDraw = game.attackStack;
+        } else if (game.generalMarketTurns > 0) {
+            cardsToDraw = 1;
         }
 
         for (let i = 0; i < cardsToDraw; i++) {
             if (game.deck.length === 0) {
                 const topCard = game.discardPile.pop();
-                game.deck = shuffleDeck(game.discardPile);
-                game.discardPile = [topCard];
+                if (game.discardPile.length > 0) {
+                    game.deck = shuffleDeck(game.discardPile);
+                    game.discardPile = [topCard];
+                } else {
+                    game.discardPile = [topCard];
+                }
             }
 
             if (game.deck.length > 0) {
@@ -369,6 +384,11 @@ class WhotEngine {
             game.attackStack = 0;
         }
 
+        const wasGeneralMarket = game.generalMarketTurns > 0;
+        if (game.generalMarketTurns > 0) {
+            game.generalMarketTurns--;
+        }
+
         this.moveToNextPlayer(game);
 
         const instructions = game.playerOrder.map(pid => ({
@@ -376,7 +396,7 @@ class WhotEngine {
             targetId: pid,
             event: 'whot-state-update',
             data: {
-                actionTaken: 'went-to-market',
+                actionTaken: wasGeneralMarket ? 'went-to-market' : 'went-to-market',
                 gameState: this.getWhotGameState(roomId, pid)
             }
         }));

@@ -169,19 +169,50 @@ const LobbyScreen = ({ route, navigation }) => {
     }
 
     const handleStartGame = () => {
+        const currentPlayers = room?.players || [];
+        const playerCount = Array.isArray(currentPlayers) ? currentPlayers.length : Object.keys(currentPlayers).length;
+
         if (selectedGame === 'truth-or-dare') {
+            if (playerCount < 2) {
+                Alert.alert(
+                    'Waiting for Players',
+                    `Truth or Dare requires at least 2 players. Share your room code (${room.id}) with friends so they can join!`
+                );
+                return;
+            }
             navigation.navigate('OnlineTruthOrDareCategory', { room, isHost, playerName });
             return;
         }
         if (selectedGame === 'never-have-i-ever') {
+            if (playerCount < 2) {
+                Alert.alert(
+                    'Waiting for Players',
+                    `Never Have I Ever requires at least 2 players. Share your room code (${room.id}) with friends so they can join!`
+                );
+                return;
+            }
             navigation.navigate('OnlineNHIECategory', { room, isHost, playerName });
             return;
         }
         if (selectedGame === 'real-talk') {
+            if (playerCount < 2) {
+                Alert.alert(
+                    'Waiting for Players',
+                    `Real Talk requires at least 2 players. Share your room code (${room.id}) with friends so they can join!`
+                );
+                return;
+            }
             navigation.navigate('OnlineRealTalkCategory', { room, isHost, playerName });
             return;
         }
         if (selectedGame === 'hot-seat-mc' || selectedGame === 'hot-seat') {
+            if (playerCount < 2) {
+                Alert.alert(
+                    'Waiting for Players',
+                    `Hot Seat requires at least 2 players. Share your room code (${room.id}) with friends so they can join!`
+                );
+                return;
+            }
             navigation.navigate('HotSeatCategory', { room, isHost, playerName });
             return;
         }

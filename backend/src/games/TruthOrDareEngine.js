@@ -91,11 +91,10 @@ class TruthOrDareEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId, userId = null) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'truth-or-dare') return null;
 
-        const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+        const currentPlayerId = game.playerOrder?.[game.currentPlayerIndex];
         const isCurrentPlayer = userId === currentPlayerId;
 
         return {
@@ -108,6 +107,11 @@ class TruthOrDareEngine {
             status: game.status,
             playerOrder: game.playerOrder
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     choose(roomId, userId, choice) {

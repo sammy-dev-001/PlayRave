@@ -85,20 +85,24 @@ class MythOrFactEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId, userId = null) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'myth-or-fact') return null;
 
-        const statement = game.statements[game.currentStatementIndex];
+        const statement = game.statements?.[game.currentStatementIndex];
         return {
             status: game.status,
             statementIndex: game.currentStatementIndex,
-            totalStatements: game.statements.length,
-            statement: statement.statement,
-            category: statement.category,
+            totalStatements: game.statements?.length || 0,
+            statement: statement?.statement || '',
+            category: statement?.category || '',
             scores: game.scores,
-            hasAnswered: userId ? !!(game.playerAnswers[userId] && game.playerAnswers[userId][game.currentStatementIndex] !== undefined) : false
+            hasAnswered: userId ? !!(game.playerAnswers?.[userId] && game.playerAnswers[userId][game.currentStatementIndex] !== undefined) : false
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     submitAnswer(roomId, userId, answer) {

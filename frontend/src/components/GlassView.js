@@ -88,7 +88,7 @@ const GlassView = ({
             />
 
             {/* ⑤ Content */}
-            <View style={styles.content}>
+            <View style={[styles.content, flatStyle.flex !== undefined && { flex: flatStyle.flex }]}>
                 {children}
             </View>
         </View>

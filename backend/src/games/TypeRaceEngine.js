@@ -103,15 +103,19 @@ class TypeRaceEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game) return null;
         return {
             totalRounds: game.totalRounds,
-            currentRound: game.currentRound + 1,
+            currentRound: (game.currentRound || 0) + 1,
             phase: game.phase,
             currentSentence: game.currentSentence
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     getState(roomId, userId) {

@@ -146,6 +146,23 @@ class SocketService {
             this.reconnectAttempts = 0;
             this.setConnectionState(ConnectionState.CONNECTED);
 
+            // Web Lock keepalive: prevents browsers from freezing the tab or killing WS
+            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.locks?.request) {
+                if (!this._lockActive) {
+                    this._lockActive = true;
+                    navigator.locks.request('playrave_socket_keepalive', { mode: 'shared' }, () => {
+                        return new Promise((resolve) => {
+                            this._releaseWebLock = () => {
+                                this._lockActive = false;
+                                resolve();
+                            };
+                        });
+                    }).catch(() => {
+                        this._lockActive = false;
+                    });
+                }
+            }
+
             // Start ping monitoring
             this.startPingMonitoring();
             this.startHealthCheckMonitoring();
@@ -153,11 +170,15 @@ class SocketService {
             // Register any pending listeners
             if (this.pendingListeners.length > 0) {
                 console.log('Registering', this.pendingListeners.length, 'pending listeners');
-                this.pendingListeners.forEach(({ event, cb }) => {
+                const pending = [...this.pendingListeners];
+                this.pendingListeners = [];
+                pending.forEach(({ event, cb }) => {
                     this.socket.on(event, cb);
+                    if (event === 'connect') {
+                        try { cb(); } catch (err) { console.error('Error invoking pending connect listener:', err); }
+                    }
                     console.log('Registered pending listener for:', event);
                 });
-                this.pendingListeners = [];
             }
 
             // Auto-rejoin room if we were in one
@@ -388,6 +409,10 @@ class SocketService {
         this.intentionalDisconnect = true;
         this.stopPingMonitoring();
         this.clearRoomData();
+        if (this._releaseWebLock) {
+            this._releaseWebLock();
+            this._releaseWebLock = null;
+        }
         if (this.socket) {
             this.socket.disconnect();
         }

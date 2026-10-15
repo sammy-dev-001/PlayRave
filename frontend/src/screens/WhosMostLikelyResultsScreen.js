@@ -78,14 +78,38 @@ const WhosMostLikelyResultsScreen = ({ route, navigation }) => {
             navigation.navigate('Lobby', { room, isHost });
         };
 
+        // RECONNECT: if server advanced round or finished while client was backgrounded
+        const onGameStateSync = (data) => {
+            const gs = data?.gameState || data;
+            if (!gs || data?.gameType !== 'whos-most-likely') return;
+            if (gs.phase === 'VOTING_ACTIVE' || gs.phase === 'ROUND_START' || (gs.prompt && gs.phase !== 'REVEAL_RESULTS' && gs.phase !== 'FINISHED')) {
+                navigation.replace('WhosMostLikelyQuestion', {
+                    room,
+                    players,
+                    hostParticipates,
+                    isHost,
+                    playerName,
+                    prompt:          gs.prompt,
+                    promptIndex:     gs.promptIndex,
+                    totalPrompts:    gs.totalPrompts,
+                    category:        gs.category,
+                    votingDurationMs: gs.votingDurationMs || 20000,
+                });
+            } else if (gs.phase === 'FINISHED') {
+                navigation.navigate('Scoreboard', { room, finalScores: gs.finalScores });
+            }
+        };
+
         SocketService.on('whos-most-likely-round-start', onRoundStart);
         SocketService.on('game-finished',                onGameFinished);
         SocketService.on('whos-most-likely-ended',       onGameEnded);
+        SocketService.on('game-state-sync',              onGameStateSync);
 
         return () => {
             SocketService.off('whos-most-likely-round-start', onRoundStart);
             SocketService.off('game-finished',                onGameFinished);
             SocketService.off('whos-most-likely-ended',       onGameEnded);
+            SocketService.off('game-state-sync',              onGameStateSync);
         };
     }, [navigation, room, players, hostParticipates, isHost, playerName]);
 

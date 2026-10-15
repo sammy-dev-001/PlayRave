@@ -135,11 +135,30 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
             navigation.navigate('Lobby', { room, isHost });
         };
 
+        // RECONNECT: server sends game-state-sync after request-room-sync.
+        // Extract the current round data from the synced state so the player
+        // doesn't come back to a blank screen.
+        const onGameStateSync = (data) => {
+            const gs = data?.gameState || data;
+            if (!gs || data?.gameType !== 'whos-most-likely') return;
+            // Restore round data if available in the synced state
+            if (gs.currentPrompt || gs.prompt) {
+                const prompt = gs.currentPrompt || gs.prompt;
+                setLivePrompt(typeof prompt === 'object' ? prompt.prompt : prompt);
+                setLiveCategory(gs.category || (typeof prompt === 'object' ? prompt.category : null));
+                setLivePromptIndex(gs.promptIndex ?? gs.currentPromptIndex ?? null);
+                setLiveTotalPrompts(gs.totalPrompts ?? null);
+                setIsWaiting(false);
+                startTimer(gs.votingDurationMs || liveVotingMs || 20000);
+            }
+        };
+
         SocketService.on('whos-most-likely-round-start',   onRoundStart);
         SocketService.on('whos-most-likely-vote-progress', onVoteProgress);
         SocketService.on('whos-most-likely-results',       onResults);
         SocketService.on('game-finished',                  onGameFinished);
         SocketService.on('whos-most-likely-ended',         onGameEnded);
+        SocketService.on('game-state-sync',                onGameStateSync);
 
         return () => {
             SocketService.off('whos-most-likely-round-start',   onRoundStart);
@@ -147,6 +166,7 @@ const WhosMostLikelyQuestionScreen = ({ route, navigation }) => {
             SocketService.off('whos-most-likely-results',       onResults);
             SocketService.off('game-finished',                  onGameFinished);
             SocketService.off('whos-most-likely-ended',         onGameEnded);
+            SocketService.off('game-state-sync',                onGameStateSync);
         };
     }, [navigation, room, players, hostParticipates, isHost, playerName]); // eslint-disable-line react-hooks/exhaustive-deps
 

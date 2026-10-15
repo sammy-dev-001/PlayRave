@@ -76,14 +76,18 @@ class ButtonMashEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game) return null;
         return {
             phase: game.phase,
-            players: game.players.map(p => ({ id: p.socketId, userId: p.userId, name: p.name, tapCount: p.tapCount })),
+            players: (game.players || []).map(p => ({ id: p.socketId, userId: p.userId, name: p.name, tapCount: p.tapCount })),
             duration: game.duration
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     getState(roomId, userId) {

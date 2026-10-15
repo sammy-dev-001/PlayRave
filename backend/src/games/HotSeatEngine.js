@@ -87,16 +87,15 @@ class HotSeatEngine {
         };
     }
 
-    getGameState(roomId, userId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'hot-seat') return null;
 
         const isHotSeat = userId === game.hotSeatPlayerId;
-        const hasSubmitted = !!game.submittedQuestions[userId];
-        const totalPlayers = game.playerOrder.length - 1; // Exclude hot seat player
-        const submittedCount = Object.keys(game.submittedQuestions).length;
+        const hasSubmitted = !!game.submittedQuestions?.[userId];
+        const totalPlayers = Math.max(0, (game.playerOrder?.length || 1) - 1);
+        const submittedCount = Object.keys(game.submittedQuestions || {}).length;
 
-        const questions = Object.entries(game.submittedQuestions).map(([pid, q]) => ({
+        const questions = Object.entries(game.submittedQuestions || {}).map(([pid, q]) => ({
             fromPlayerId: null,
             fromPlayerName: 'Anonymous',
             question: q
@@ -114,6 +113,11 @@ class HotSeatEngine {
             questions: game.phase === 'answering' ? questions : [],
             currentQuestionIndex: game.currentQuestionIndex
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     submitHotSeatQuestion(roomId, userId, question) {

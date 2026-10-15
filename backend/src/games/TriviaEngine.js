@@ -99,25 +99,29 @@ class TriviaEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId, userId = null) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'trivia') return null;
 
-        const currentQuestion = game.questions[game.currentQuestionIndex];
+        const currentQuestion = game.questions?.[game.currentQuestionIndex];
         return {
             status: game.status,
             currentQuestionIndex: game.currentQuestionIndex,
-            totalQuestions: game.questions.length,
-            question: {
+            totalQuestions: game.questions?.length || 0,
+            question: currentQuestion ? {
                 question: currentQuestion.question,
                 options: currentQuestion.options,
                 category: currentQuestion.category,
                 totalQuestions: game.questions.length,
                 questionIndex: game.currentQuestionIndex
-            },
+            } : null,
             scores: game.scores,
-            hasAnswered: userId ? !!(game.playerAnswers[userId] && game.playerAnswers[userId][game.currentQuestionIndex] !== undefined) : false
+            hasAnswered: userId ? !!(game.playerAnswers?.[userId] && game.playerAnswers[userId][game.currentQuestionIndex] !== undefined) : false
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     submitAnswer(roomId, userId, answerIndex) {

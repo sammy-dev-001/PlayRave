@@ -94,6 +94,10 @@ class ConfessionRouletteEngine {
         };
     }
 
+    _publicState(game, userId = null) {
+        return this.getPublicState(game);
+    }
+
     getPublicState(game) {
         return {
             type: game.type,

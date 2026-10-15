@@ -115,14 +115,19 @@ class ColorRushEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game) return null;
         return {
             totalRounds: game.totalRounds,
-            currentRound: game.currentRound + 1,
-            phase: game.phase
+            currentRound: (game.currentRound || 0) + 1,
+            phase: game.phase,
+            challenge: game.currentChallenge || null
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     startRound(roomId) {

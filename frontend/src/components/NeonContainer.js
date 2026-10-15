@@ -31,6 +31,34 @@ const NeonContainer = ({
 
     const padding = getPadding();
 
+    // Separate overlays (like InGameOverlay) from scrollable/normal content
+    // so they are always pinned to the full-viewport root and never trapped or scrolled inside a ScrollView.
+    const contentChildren = [];
+    const overlayChildren = [];
+
+    const extractOverlays = (nodes) => {
+        React.Children.forEach(nodes, (child) => {
+            if (!React.isValidElement(child)) {
+                contentChildren.push(child);
+                return;
+            }
+            if (child.type === React.Fragment) {
+                extractOverlays(child.props.children);
+            } else if (
+                child.type?.isOverlay ||
+                child.props?.isOverlay ||
+                child.type?.displayName === 'InGameOverlay' ||
+                child.type?.name === 'InGameOverlay'
+            ) {
+                overlayChildren.push(child);
+            } else {
+                contentChildren.push(child);
+            }
+        });
+    };
+
+    extractOverlays(children);
+
     const content = scrollable ? (
         <ScrollView
             style={styles.scrollView}
@@ -38,11 +66,11 @@ const NeonContainer = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
         >
-            {children}
+            {contentChildren}
         </ScrollView>
     ) : (
         <View style={[styles.container, { padding }, style]}>
-            {children}
+            {contentChildren}
         </View>
     );
 
@@ -55,6 +83,7 @@ const NeonContainer = ({
             <View style={styles.safeArea}>
                 {content}
             </View>
+            {overlayChildren}
         </View>
     );
 };

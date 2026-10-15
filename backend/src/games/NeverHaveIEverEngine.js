@@ -82,8 +82,7 @@ class NeverHaveIEverEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game || game.type !== 'never-have-i-ever') return null;
 
         return {
@@ -95,6 +94,11 @@ class NeverHaveIEverEngine {
             playerResponses: game.playerResponses,
             status: game.status
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     respond(roomId, userId, hasDoneIt) {

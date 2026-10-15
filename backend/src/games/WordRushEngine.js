@@ -87,8 +87,7 @@ class WordRushEngine {
         return { action: 'multiple', instructions };
     }
 
-    getGameState(roomId) {
-        const game = this.activeGames.get(roomId);
+    _publicState(game, userId = null) {
         if (!game) return null;
         return {
             currentRound: game.currentRound,
@@ -96,8 +95,15 @@ class WordRushEngine {
             activePlayers: game.activePlayers,
             isDuelMode: game.isDuelMode,
             duelScores: game.duelScores,
-            totalRounds: game.totalRounds
+            totalRounds: game.totalRounds,
+            currentLetter: game.currentLetter || null,
+            timer: game.timer || 0
         };
+    }
+
+    getGameState(roomId, userId = null) {
+        const game = this.activeGames.get(roomId);
+        return this._publicState(game, userId);
     }
 
     startRound(roomId) {

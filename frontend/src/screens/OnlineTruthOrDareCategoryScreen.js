@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -53,17 +53,24 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
                     isHost,
                     category: selectedCategory,
                     gameState,
-                    players
+                    players,
+                    playerName
                 });
             }
         };
 
+        const onError = ({ message }) => {
+            Alert.alert('Unable to Start Game', message || 'Failed to start game.');
+        };
+
         SocketService.on('game-started', onGameStarted);
+        SocketService.on('error', onError);
 
         return () => {
             SocketService.off('game-started', onGameStarted);
+            SocketService.off('error', onError);
         };
-    }, [navigation, room, isHost, selectedCategory]);
+    }, [navigation, room, isHost, selectedCategory, playerName]);
 
     const handleStartGame = () => {
         SocketService.emit('start-game', {
@@ -81,7 +88,7 @@ const OnlineTruthOrDareCategoryScreen = ({ route, navigation }) => {
                     TRUTH OR DARE
                 </NeonText>
                 <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                    Choose your category
+                    Room: {room?.id} • Choose your category
                 </NeonText>
             </View>
 

@@ -152,12 +152,29 @@ const WordRushGameScreen = ({ route, navigation }) => {
             navigation.navigate('Lobby', { room, isHost, playerName });
         };
 
+        // RECONNECT: server sends game-state-sync after request-room-sync.
+        // Restore current round data so the player isn't stuck on 'waiting'.
+        const onGameStateSync = (data) => {
+            const gs = data?.gameState || data;
+            if (!gs || data?.gameType !== 'word-rush') return;
+            // If we have round data, restore it
+            if (gs.currentLetter || gs.letter) {
+                setCurrentLetter(gs.currentLetter || gs.letter);
+                setCurrentRound(gs.currentRound || gs.round || 0);
+                setGameState('playing');
+                setTimeLeft(gs.timeLeft || 7);
+                if (gs.isDuelMode !== undefined) setIsDuelMode(gs.isDuelMode);
+                if (gs.totalRounds !== undefined) setTotalRounds(gs.totalRounds);
+            }
+        };
+
         SocketService.on('word-rush-round-started', onRoundStarted);
         SocketService.on('word-submitted', onWordSubmitted);
         SocketService.on('word-rush-results', onResults);
         SocketService.on('word-rush-ready-for-next', onReadyForNext);
         SocketService.on('word-rush-winner', onWinner);
         SocketService.on('word-rush-ended', onGameEnded);
+        SocketService.on('game-state-sync', onGameStateSync);
 
         return () => {
             clearGameTimer();
@@ -167,6 +184,7 @@ const WordRushGameScreen = ({ route, navigation }) => {
             SocketService.off('word-rush-ready-for-next', onReadyForNext);
             SocketService.off('word-rush-winner', onWinner);
             SocketService.off('word-rush-ended', onGameEnded);
+            SocketService.off('game-state-sync', onGameStateSync);
         };
     }, [navigation, room, isHost, hostParticipates, canPlay]);
 

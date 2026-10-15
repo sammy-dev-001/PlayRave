@@ -77,7 +77,13 @@ const WhotGameScreen = ({ route, navigation }) => {
 
     // ── Computed ──────────────────────────────────────────────────────────────
     const isMyTurn = gameState?.currentPlayerId === myId;
-    const isSpectator = !gameState?.playerHand;
+    // isParticipant is set by _publicState on reconnect syncs.
+    // Fallback: check if myId appears in otherPlayers or has a hand.
+    // We must NOT treat an empty hand as spectator — you could just be out of cards (winner!).
+    const isSpectator = gameState
+        ? (gameState.isParticipant === false &&
+           !gameState.otherPlayers?.some(p => p.id === myId))
+        : false;
 
     // ── Stale closure refs ─────────────────────────────────────────────────────
     const winnerRef = useRef(winner);
@@ -150,8 +156,10 @@ const WhotGameScreen = ({ route, navigation }) => {
 
 
         const onGameStateSync = (data) => {
-            if (data && (data.gameType === 'whot' || data.type === 'whot')) {
-                setGameState(data.gameState || data);
+            // data structure: { gameState, gameType, timestamp }
+            const synced = data?.gameState || data;
+            if (synced && (synced.topCard !== undefined || synced.type === 'whot' || data?.gameType === 'whot')) {
+                setGameState(synced);
             }
         };
 
@@ -207,7 +215,7 @@ const WhotGameScreen = ({ route, navigation }) => {
     };
 
     const handleCardPress = (card) => {
-        if (!isMyTurn || winner) return;
+        if (!isMyTurn || winner || (gameState && gameState.generalMarketTurns > 0)) return;
         if (card.shape === 'whot') {
             setSelectedCardId(card.id);
             setShowShapeSelector(true);

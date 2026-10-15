@@ -229,14 +229,22 @@ export function GameProvider({ children }) {
             if (SocketService.isConnected()) {
                 doSync();
             } else {
-                const syncTimeout = setTimeout(doSync, 1500);
-                const onConnect = () => {
-                    clearTimeout(syncTimeout);
+                let unsub;
+                const syncTimeout = setTimeout(() => {
+                    if (unsub) unsub();
                     doSync();
-                    SocketService.off('connect', onConnect);
-                };
-                SocketService.on('connect', onConnect);
-                setTimeout(() => SocketService.off('connect', onConnect), 10000);
+                }, 3000);
+
+                unsub = SocketService.onConnectionStateChange((connState) => {
+                    if (connState === ConnectionState.CONNECTED) {
+                        clearTimeout(syncTimeout);
+                        if (unsub) {
+                            unsub();
+                            unsub = null;
+                        }
+                        doSync();
+                    }
+                });
             }
         };
 

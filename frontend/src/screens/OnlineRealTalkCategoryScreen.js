@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -11,7 +11,7 @@ import { REAL_TALK_CATEGORIES } from '../data/realTalkData';
 const OnlineRealTalkCategoryScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
-    const { room, isHost } = route.params;
+    const { room, isHost, playerName } = route.params;
     const [selectedCategory, setSelectedCategory] = useState(REAL_TALK_CATEGORIES[0].id);
 
     const handleStart = () => {
@@ -29,13 +29,25 @@ const OnlineRealTalkCategoryScreen = ({ route, navigation }) => {
                 navigation.navigate('OnlineRealTalk', {
                     room,
                     isHost,
-                    gameState: payload.gameState
+                    playerName,
+                    gameState: payload.gameState,
+                    players: payload.players
                 });
             }
         };
+
+        const onError = ({ message }) => {
+            Alert.alert('Unable to Start Game', message || 'Failed to start game.');
+        };
+
         SocketService.on('game-started', onGameStarted);
-        return () => SocketService.off('game-started', onGameStarted);
-    }, [navigation, room, isHost]);
+        SocketService.on('error', onError);
+
+        return () => {
+            SocketService.off('game-started', onGameStarted);
+            SocketService.off('error', onError);
+        };
+    }, [navigation, room, isHost, playerName]);
 
     return (
         <NeonContainer showBackButton scrollable>
@@ -44,7 +56,7 @@ const OnlineRealTalkCategoryScreen = ({ route, navigation }) => {
                     REAL TALK
                 </NeonText>
                 <NeonText size={14} color={COLORS.neonCyan} style={styles.subtitle}>
-                    {isHost ? "Select a conversation deck" : "Waiting for host to select a deck..."}
+                    Room: {room?.id} • {isHost ? "Select a conversation deck" : "Waiting for host to select a deck..."}
                 </NeonText>
             </View>
 
