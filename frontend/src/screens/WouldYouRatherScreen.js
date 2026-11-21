@@ -6,7 +6,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
-import NeonButton from '../components/NeonButton';
 import { getRandomQuestion } from '../data/wouldYouRatherQuestions';
 import { useTheme } from '../context/ThemeContext';
 
@@ -54,7 +53,6 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
     const playerBounce = useRef(new Animated.Value(0)).current;
     const resultBarA = useRef(new Animated.Value(0)).current;
     const resultBarB = useRef(new Animated.Value(0)).current;
-    const selectFlash = useRef(new Animated.Value(0)).current;
     const fadeIn = useRef(new Animated.Value(0)).current;
 
     const currentPlayer = players[currentPlayerIndex];

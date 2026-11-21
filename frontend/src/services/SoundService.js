@@ -29,6 +29,20 @@ const SOUNDS = {
     countdown: { uri: '' },
 };
 
+// Aliases for common sound names across various screens
+const SOUND_ALIASES = {
+    click: 'buttonClick',
+    button_click: 'buttonClick',
+    'game-start': 'gameStart',
+    game_start: 'gameStart',
+    victory: 'winner',
+    win: 'winner',
+    'times-up': 'wrong',
+    time_up: 'wrong',
+    error: 'wrong',
+    success: 'correct',
+};
+
 // Local audio assets
 const LOBBY_MUSIC = require('../../assets/sounds/neon-reverie-237942.mp3');
 
@@ -128,29 +142,30 @@ class SoundService {
     // === Sound Effects ===
     async play(soundName) {
         if (this.isMuted) return;
-        if (!SOUNDS[soundName]) {
+        const target = SOUND_ALIASES[soundName] || soundName;
+        if (!SOUNDS[target]) {
             console.log(`Sound ${soundName} not found`);
             return;
         }
 
         try {
             // Use preloaded sound if available and loaded
-            if (this.sounds[soundName]) {
+            if (this.sounds[target]) {
                 try {
-                    const status = await this.sounds[soundName].getStatusAsync();
+                    const status = await this.sounds[target].getStatusAsync();
                     if (status.isLoaded) {
-                        await this.sounds[soundName].setPositionAsync(0);
-                        await this.sounds[soundName].playAsync();
+                        await this.sounds[target].setPositionAsync(0);
+                        await this.sounds[target].playAsync();
                         return;
                     }
                 } catch (e) {
                     // Sound not ready, fall through to create new instance
-                    console.log(`Preloaded sound ${soundName} not ready, creating new instance`);
+                    console.log(`Preloaded sound ${target} not ready, creating new instance`);
                 }
             }
 
             // Fallback: create and play new sound instance
-            const source = SOUNDS[soundName];
+            const source = SOUNDS[target];
             const { sound } = await Audio.Sound.createAsync(
                 source,
                 { shouldPlay: true, volume: this.soundVolume }

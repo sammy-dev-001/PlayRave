@@ -314,7 +314,7 @@ const LocalImposterScreen = ({ route, navigation }) => {
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     <NeonText style={styles.subtitleText}>
-                        Pass-the-phone party deception. Find who doesn't belong!
+                        {"Pass-the-phone party deception. Find who doesn't belong!"}
                     </NeonText>
 
                     {/* PLAYER LIST */}
@@ -576,7 +576,7 @@ const LocalImposterScreen = ({ route, navigation }) => {
                                     Category: {currentPair.category}
                                 </NeonText>
                                 <NeonText style={styles.hintText}>
-                                    You have no secret word! Listen to other players' clues and bluff your way through without getting caught!
+                                    {"You have no secret word! Listen to other players' clues and bluff your way through without getting caught!"}
                                 </NeonText>
                             </View>
                         ) : (
@@ -800,9 +800,9 @@ const LocalImposterScreen = ({ route, navigation }) => {
 
                                 {/* Imposter Final Word Guess Chance */}
                                 <View style={styles.guessBox}>
-                                    <NeonText style={styles.guessTitle}>🚨 Imposter's Final Chance:</NeonText>
+                                    <NeonText style={styles.guessTitle}>{"🚨 Imposter's Final Chance:"}</NeonText>
                                     <NeonText style={styles.guessDesc}>
-                                        If {accusedPlayer.name} can correctly state the Civilians' secret word right now, the Imposter steals the victory!
+                                        {`If ${accusedPlayer.name} can correctly state the Civilians' secret word right now, the Imposter steals the victory!`}
                                     </NeonText>
                                     <View style={styles.guessActionRow}>
                                         <TouchableOpacity

@@ -290,7 +290,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
 
                 <View style={styles.playerInfo}>
                     <NeonText size={16}>
-                        {currentPlayer.name}'s turn
+                        {`${currentPlayer.name}'s turn`}
                     </NeonText>
                     <NeonText size={12} color={COLORS.textMuted}>
                         {activePlayers.length} players remaining

@@ -4,9 +4,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     Animated,
-    Alert,
-    Platform,
-    Dimensions
+    Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -79,7 +77,7 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
             Animated.spring(countdownScale, {
                 toValue: 1.2,
                 friction: 3,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }).start();
 
             SoundService.play('tick');
@@ -169,7 +167,7 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
 
         // Bounce animation
         p1Scale.setValue(0.92);
-        Animated.spring(p1Scale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+        Animated.spring(p1Scale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' }).start();
 
         setP1Taps(prev => {
             const next = prev + 1;
@@ -195,7 +193,7 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
 
         // Bounce animation
         p2Scale.setValue(0.92);
-        Animated.spring(p2Scale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+        Animated.spring(p2Scale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' }).start();
 
         setP2Taps(prev => {
             const next = prev + 1;
@@ -220,7 +218,7 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
         SoundService.play('click');
 
         soloScale.setValue(0.94);
-        Animated.spring(soloScale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+        Animated.spring(soloScale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' }).start();
 
         setSoloTaps(prev => prev + 1);
     };
@@ -415,6 +413,14 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
                             {mode === 'target_100' ? 'RACE' : `${timeLeft}s`}
                         </NeonText>
                     </View>
+
+                    <TouchableOpacity
+                        style={styles.centerQuitBtn}
+                        onPress={() => setPhase('menu')}
+                        activeOpacity={0.7}
+                    >
+                        <NeonText size={10} weight="bold" color="#9CA3AF">✕ QUIT</NeonText>
+                    </TouchableOpacity>
                 </View>
 
                 {/* PLAYER 1 ZONE (BOTTOM, NORMAL ORIENTATION) */}
@@ -707,12 +713,19 @@ const getStyles = (COLORS) => StyleSheet.create({
     // DUEL SPLIT SCREEN
     duelContainer: {
         flex: 1,
-        backgroundColor: '#0a0a14'
+        width: '100%',
+        height: Platform.OS === 'web' ? '100vh' : '100%',
+        maxHeight: Platform.OS === 'web' ? '100vh' : undefined,
+        backgroundColor: '#0a0a14',
+        overflow: 'hidden'
     },
     playerZone: {
         flex: 1,
+        width: '100%',
         paddingHorizontal: 16,
-        paddingVertical: 12
+        paddingVertical: 12,
+        overflow: 'hidden',
+        position: 'relative'
     },
     p2Zone: {
         backgroundColor: 'rgba(255, 0, 127, 0.05)'
@@ -827,6 +840,15 @@ const getStyles = (COLORS) => StyleSheet.create({
         fontSize: 13,
         fontWeight: 'bold',
         color: COLORS.textPrimary
+    },
+    centerQuitBtn: {
+        position: 'absolute',
+        right: 14,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        zIndex: 20
     },
 
     // VICTORY

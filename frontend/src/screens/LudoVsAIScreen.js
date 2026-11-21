@@ -13,7 +13,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, TouchableOpacity, StyleSheet, Animated,
-  Dimensions, Modal, SafeAreaView, Text,
+  Dimensions, Modal, SafeAreaView, Text, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';

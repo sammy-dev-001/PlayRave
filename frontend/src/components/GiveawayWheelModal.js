@@ -144,7 +144,7 @@ const GiveawayWheelModal = ({ visible, onClose, initialRoomId = null }) => {
         const targetRotation = currentAngle.current + extraRotations + (360 - (winningIndex * sliceAngle));
 
         // Ticker tick animation interval
-        let tickInterval = setInterval(() => {
+        const tickInterval = setInterval(() => {
             SoundService.playTick();
             HapticService.selection();
             Animated.sequence([
@@ -195,7 +195,7 @@ const GiveawayWheelModal = ({ visible, onClose, initialRoomId = null }) => {
     // Conic gradient background for web rendering of wheel sectors
     const conicGradientString = useMemo(() => {
         if (Platform.OS !== 'web') return null;
-        let stops = [];
+        const stops = [];
         players.forEach((p, i) => {
             const startPct = (i / count) * 100;
             const endPct = ((i + 1) / count) * 100;

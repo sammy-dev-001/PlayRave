@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -258,7 +258,7 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
                             {gameState.promptType?.toUpperCase()}
                         </NeonText>
                         <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 5 }}>
-                            {currentPlayerName}'s challenge
+                            {`${currentPlayerName}'s challenge`}
                         </NeonText>
                     </View>
 
