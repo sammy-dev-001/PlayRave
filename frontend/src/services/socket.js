@@ -133,10 +133,10 @@ class SocketService {
         }
 
         this.socket = io(SOCKET_URL, {
-            transports: ['websocket', 'polling'],
+            transports: Platform.OS !== 'web' ? ['websocket'] : ['websocket', 'polling'],
             timeout: 45000,
             reconnection: true,
-            reconnectionAttempts: this.maxReconnectAttempts,
+            reconnectionAttempts: Infinity,
             reconnectionDelay: this.baseReconnectDelay,
             reconnectionDelayMax: this.maxReconnectDelay,
             forceNew: true, // Force a brand new connection Manager
@@ -153,23 +153,6 @@ class SocketService {
             console.log('SocketService connected:', this.socket.id);
             this.reconnectAttempts = 0;
             this.setConnectionState(ConnectionState.CONNECTED);
-
-            // Web Lock keepalive: prevents browsers from freezing the tab or killing WS
-            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.locks?.request) {
-                if (!this._lockActive) {
-                    this._lockActive = true;
-                    navigator.locks.request('playrave_socket_keepalive', { mode: 'shared' }, () => {
-                        return new Promise((resolve) => {
-                            this._releaseWebLock = () => {
-                                this._lockActive = false;
-                                resolve();
-                            };
-                        });
-                    }).catch(() => {
-                        this._lockActive = false;
-                    });
-                }
-            }
 
             // Start ping monitoring
             this.startPingMonitoring();
@@ -193,6 +176,20 @@ class SocketService {
             this.attemptRoomRejoin();
         });
 
+        this.socket.on('session-superseded', (data) => {
+            console.warn('[SocketService] Session superseded by another device/tab:', data);
+            this.intentionalDisconnect = true;
+            this.socket.disconnect();
+            this.setConnectionState(ConnectionState.DISCONNECTED);
+            this.connectionStateListeners.forEach(l => {
+                try {
+                    l('superseded');
+                } catch (_) {
+                    /* ignore */
+                }
+            });
+        });
+
         this.socket.on('disconnect', (reason) => {
             console.log('SocketService disconnected:', reason);
             this.setConnectionState(ConnectionState.DISCONNECTED);
@@ -206,9 +203,13 @@ class SocketService {
             }
 
             // If server disconnected us, attempt reconnection
-            if (reason === 'io server disconnect') {
+            if (!this.intentionalDisconnect && reason === 'io server disconnect') {
                 console.log('Server disconnected us — forcing reconnect...');
-                this.socket.connect();
+                setTimeout(() => {
+                    if (!this.intentionalDisconnect && this.socket && !this.socket.connected) {
+                        this.socket.connect();
+                    }
+                }, 1000);
             }
             // For 'transport close' / 'transport error' / 'ping timeout',
             // socket.io will auto-reconnect thanks to reconnection: true
@@ -219,12 +220,27 @@ class SocketService {
             this.reconnectAttempts++;
             this.setConnectionState(ConnectionState.ERROR);
 
-            // Calculate exponential backoff delay
-            const delay = Math.min(
-                this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
-                this.maxReconnectDelay
-            );
-            console.log(`Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+            if (this.socket?.active) {
+                // Transport failure on Web (e.g. corporate firewall blocking WS): allow polling fallback
+                if (Platform.OS === 'web' && this.socket.io?.opts) {
+                    this.socket.io.opts.transports = ['polling', 'websocket'];
+                }
+                return;
+            }
+
+            // Middleware rejected handshake (socket.active === false): retry to prevent permanent halt
+            if (!this.intentionalDisconnect) {
+                const delay = Math.min(
+                    this.baseReconnectDelay * Math.pow(2, Math.min(this.reconnectAttempts, 5)),
+                    this.maxReconnectDelay
+                );
+                console.log(`[SocketService] Re-trying connection after handshake rejection in ${delay}ms...`);
+                setTimeout(() => {
+                    if (!this.intentionalDisconnect && this.socket && !this.socket.connected) {
+                        this.socket.connect();
+                    }
+                }, delay);
+            }
         });
 
         this.socket.on('reconnecting', (attemptNumber) => {
@@ -308,13 +324,30 @@ class SocketService {
      */
     startPingMonitoring() {
         this.stopPingMonitoring();
+        this.missedWatchdogPings = 0;
 
         this.pingInterval = setInterval(() => {
             if (this.socket && this.socket.connected) {
                 this.lastPingTime = Date.now();
-                this.socket.emit('ping');
+                // FIX 2: Volatile watchdog ping with 4-second ack timeout
+                this.socket.volatile.timeout(4000).emit('app-ping', Date.now(), (err) => {
+                    if (err) {
+                        this.missedWatchdogPings = (this.missedWatchdogPings || 0) + 1;
+                        console.warn(`[SocketService] app-ping timeout (missed: ${this.missedWatchdogPings})`);
+                        if (this.missedWatchdogPings >= 2) {
+                            console.warn('[SocketService] Watchdog: 2 consecutive ping ACKs missed. Closing engine to trigger reconnect.');
+                            this.missedWatchdogPings = 0;
+                            // Close Engine.IO transport, NOT this.socket.disconnect()
+                            if (this.socket.io && this.socket.io.engine) {
+                                this.socket.io.engine.close();
+                            }
+                        }
+                    } else {
+                        this.missedWatchdogPings = 0;
+                    }
+                });
             }
-        }, 10000); // Ping every 10 seconds to keep connection active through proxies and NAT firewalls
+        }, 10000); // Check every 10 seconds
     }
 
     stopPingMonitoring() {
@@ -366,8 +399,12 @@ class SocketService {
                     avatarColor: playerData.avatarColor,
                     userId: playerData.userId || this.userId,
                     savedAt: Date.now()
-                })).catch(() => {});
-            } catch (_) {}
+                })).catch(() => {
+                    /* ignore */
+                });
+            } catch (_) {
+                /* ignore */
+            }
         }
     }
 
@@ -375,8 +412,12 @@ class SocketService {
         this.lastRoomId = null;
         this.lastPlayerData = null;
         try {
-            AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION).catch(() => {});
-        } catch (_) {}
+            AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION).catch(() => {
+                /* ignore */
+            });
+        } catch (_) {
+            /* ignore */
+        }
     }
 
     /**
@@ -391,10 +432,19 @@ class SocketService {
             // over join-room (only handles lobby-level join)
             if (targetUserId) {
                 console.log('Using request-room-sync for full state recovery with user:', targetUserId);
-                this.socket.emit('request-room-sync', {
+                this.socket.timeout(4000).emit('request-room-sync', {
                     roomId: this.lastRoomId,
                     userId: targetUserId,
                     playerName: this.lastPlayerData.name,
+                }, async (err) => {
+                    if (err) {
+                        console.warn('[SocketService] request-room-sync timed out, falling back to HTTP snapshot:', err.message);
+                        try {
+                            await this.fetchRoomState(this.lastRoomId);
+                        } catch (_) {
+                            /* ignore */
+                        }
+                    }
                 });
             } else {
                 // Fallback to join-room if we don't have userId
@@ -436,10 +486,6 @@ class SocketService {
         this.intentionalDisconnect = true;
         this.stopPingMonitoring();
         this.clearRoomData();
-        if (this._releaseWebLock) {
-            this._releaseWebLock();
-            this._releaseWebLock = null;
-        }
         if (this.socket) {
             this.socket.disconnect();
         }
@@ -496,6 +542,89 @@ class SocketService {
                 }
             });
         });
+    }
+
+    /**
+     * Send game action with idempotent actionId, Socket.IO ACK, and HTTP fallback.
+     * Fixes silent freezes and dropped moves caused by carrier handoffs / packet loss.
+     */
+    async sendGameAction(roomId, eventName, payload = {}, timeout = 5000) {
+        const actionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const fullPayload = { ...payload, actionId };
+
+        // 1. Try WebSocket with ACK first
+        if (this.socket && this.socket.connected) {
+            try {
+                const ack = await this.emitWithAck('game-action', {
+                    roomId,
+                    eventName,
+                    payload: fullPayload,
+                    actionId
+                }, timeout);
+                return ack;
+            } catch (wsErr) {
+                console.warn(`[SocketService] sendGameAction WS timeout/failure for ${eventName} [Telemetry:action_ack_timeout_count], falling back to HTTP:`, wsErr.message);
+            }
+        }
+
+        // 2. HTTP Fallback to POST /api/rooms/:roomId/actions
+        try {
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            const url = `${SOCKET_URL}/api/rooms/${cleanRoomId}/actions`;
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.authToken) headers['Authorization'] = `Bearer ${this.authToken}`;
+            const effectiveUserId = this.userId || this.lastPlayerData?.userId;
+            if (effectiveUserId) headers['x-user-id'] = effectiveUserId;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    actionId,
+                    eventName,
+                    payload: fullPayload,
+                    userId: effectiveUserId
+                })
+            });
+
+            if (!response.ok) {
+                const errJson = await response.json().catch(() => ({}));
+                throw new Error(errJson.message || `HTTP action failed with status ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (httpErr) {
+            console.error(`[SocketService] sendGameAction HTTP fallback also failed:`, httpErr);
+            throw httpErr;
+        }
+    }
+
+    /**
+     * Fetch authoritative room state from HTTP snapshot endpoint.
+     * Returns { synchronized: true } if 204 No Content (already up to date).
+     * Returns full state snapshot if drifted.
+     */
+    async fetchRoomState(roomId, sinceVersion = -1) {
+        try {
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            const url = `${SOCKET_URL}/api/rooms/${cleanRoomId}/state?sinceVersion=${sinceVersion}`;
+            const headers = {};
+            if (this.authToken) headers['Authorization'] = `Bearer ${this.authToken}`;
+            const effectiveUserId = this.userId || this.lastPlayerData?.userId;
+            if (effectiveUserId) headers['x-user-id'] = effectiveUserId;
+
+            const res = await fetch(url, { headers });
+            if (res.status === 204) {
+                return { synchronized: true };
+            }
+            if (res.ok) {
+                return await res.json();
+            }
+            return null;
+        } catch (e) {
+            console.warn('[SocketService] fetchRoomState error:', e.message);
+            return null;
+        }
     }
 
     /**

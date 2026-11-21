@@ -1,15 +1,35 @@
 # PlayRave Project Tracker
 
-This document tracks current project status, upcoming features, known issues, and roadmaps so context is never lost across sessions.
+This document tracks current project status, architectural fixes, upcoming features, known issues, and roadmaps so context is never lost across sessions.
 
 ---
 
 ## 🚀 Recent Accomplishments & Deployed Updates
-- **EAS OTA Update (`preview` channel):** Successfully published OTA bundle (Update Group: `fd4bdfd5-c4e4-4c79-9ec0-5f3315586582`) on runtime `1.0.0` for Android & iOS.
-- **Git Repository:** Synced and pushed cleanly to GitHub `origin/main` (commit `4e64eae`).
-- **Live Chat & Keyboard Positioning:** Fixed mobile web visual viewport resize and native keyboard overlap across `InGameOverlay` and `LiveChat`.
-- **Game Engine Consistency:** Standardized `_publicState` and `getGameState(roomId, userId)` across all 16 backend game engines (`Whot`, `Scrabble`, `ButtonMash`, `WhosMostLikely`, etc.).
-- **Storage Optimization:** Reclaimed +7.66 GB of disk space (purged npm and pip caches, removed stale AI IDE caches).
+
+- **Socket Desync Architecture Fixes (Audit PDF Implementation):**
+  - **P0 Fix 1 — Stale-Disconnect & Superseded Socket Races:** Rewrote `SessionManager.bindSocket()` to atomically swap socket pointers first, cancel pending disconnect grace timers, mark old sockets as `superseded: true`, notify clients with `'session-superseded'`, and disconnect stale sockets cleanly. Stale disconnect events from superseded sockets are safely ignored.
+  - **P0 Fix 2 — Engine.IO Heartbeats & Volatile Watchdog:** Tuned server heartbeats (`pingInterval: 10000ms`, `pingTimeout: 10000ms`), enabled Socket.IO `connectionStateRecovery` with a 2-minute buffer, set `transports: ['websocket']` on mobile to eliminate polling churn, and converted client ping to a volatile watchdog calling `socket.io.engine?.close()` on 2 missed ACKs to trigger immediate reconnection.
+  - **P0 Fix 3 — Cross-Platform Wake Watchdog (`LifecycleWatchdog.js`):** Replaced dead Web Locks with a unified, debounced wake-up engine hooking into `AppState` (native) and `visibilitychange`, `pageshow`, `focus`, `online`, and `resume` (web). On wake, verifies socket health via 2.5s volatile ping and immediately resurrects dead/zombie connections.
+  - **P1 Fix 4 — Monotonic Versioning & Idempotent Actions:** Implemented monotonic `stateVersion` tracking in `GameRouter.js`, `ScrabbleEngine.js`, and `LudoEngine.js`. Game move submissions now include unique client `actionId`s deduplicated on the server to prevent double-moves from network retries.
+  - **P1 Fix 5 — Hybrid HTTP Snapshot & Action Fallback (The BGA Pattern):** Implemented `GET /api/rooms/:roomId/state?sinceVersion=N` (returns 204 if up-to-date; full snapshot if drifted) and `POST /api/rooms/:roomId/actions` (idempotent HTTP fallback if WebSocket move ACK times out). Integrated version gap detection and a gentle 12s foreground safety poll in `useGameDisconnectHandler.js`.
+  - **P2 Fix 6 — Graceful Drain on Render Shutdown:** Configured `io.close()` with a 25-second timeout inside `handleShutdown()` in `index.js` to beat Render's 30s SIGKILL limit, ensuring active players reconnect seamlessly without hanging until the process is abruptly killed.
+- **Scrabble Mobile Viewport Header Readjustment:**
+  - Redesigned the top score strip in `OnlineScrabbleScreen.js`. Implemented responsive flex scaling (`scoreStripContentSpread`, `playerScoreChipFlexible`, and `playerScoreChipCompact`) so that when 3 or 4 players are in a match, all player names and scores fit across mobile screens without cutting off the 3rd or 4th player.
+- **Never Have I Ever, Truth or Dare, & Would You Rather Expansions:**
+  - Expanded question libraries across all categories and ensured every session starts from a randomized index.
+- **Memory Chain Fix:**
+  - Fixed sequence generation to ensure replicated flow strictly uses board elements.
+- **Home Screen Party Utilities & Micro-Games:**
+  - Enhanced 3D Coin Flip with Best-of-3 mode and tactile haptics.
+  - Live Audience Poll and Spin & Win Giveaway Wheel.
+- **Local Play Expansions:**
+  - Built Local Math Blitz (Solo 60s Time Attack + 2-Player Split-Screen Duel).
+  - Built Local The Imposter (Pass-and-play).
+  - Built Local Button Mash (2-Player split-screen).
+- **Online Multiplayer Ludo:**
+  - Authoritative `LudoEngine.js` + `OnlineLudoScreen.js` with responsive neon board aesthetics.
+- **Full Scrabble Lexicon:**
+  - Expanded dictionary to 267,751 official tournament words across client and server.
 
 ---
 
@@ -64,6 +84,8 @@ Quick-access, low-friction party tools anchored directly at the bottom of the **
   - Synchronous lazy-loading fallback ensuring zero false rejections from unawaited dictionary promises in local and online games.
 
 ### 4. 🌐 Connection, Lobby & Social Quality of Life
+- [x] **Socket Desync Architecture Fixes:**
+  - Superseded socket protection, Engine.IO heartbeat tuning, volatile watchdog, cross-platform `LifecycleWatchdog`, monotonic `stateVersion`, and hybrid HTTP snapshot/action fallback.
 - [x] **Rejoin In-App Reminder / Banner:**
   - Persistent, non-blocking glowing neon match banner at the top of the Home Screen powered by `useFocusEffect` to catch disconnections instantly on return.
   - Automatically persisted in `SocketService.setRoomData` across both hosts and guests for instant 1-tap "RESUME ▶" match re-entry.
@@ -81,6 +103,8 @@ Quick-access, low-friction party tools anchored directly at the bottom of the **
 ---
 
 ## 🎯 Immediate Action Items
+- [x] Implement **Socket Desync Architecture Audit fixes** (P0-1, P0-2, P0-3, P1-4, P1-5, P2-6).
+- [x] Fix **Scrabble mobile header view** to clearly show 3+ players and scores.
 - [x] Build **Local Math Blitz / Math Quiz screen** (Solo 60s Time Attack + 2-Player Split-Screen Duel).
 - [x] Register Local Math Blitz in `LocalGamesRegistry`, `LocalPlayGroup.js`, and `LocalGameSelectionScreen.js`.
 - [x] Build **Local The Imposter** (Pass-and-play).

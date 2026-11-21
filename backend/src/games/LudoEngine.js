@@ -80,6 +80,7 @@ class LudoEngine {
 
         const gameState = {
             type: 'ludo',
+            stateVersion: 1,
             roomId,
             players,
             currentTurnIndex: 0,
@@ -121,6 +122,7 @@ class LudoEngine {
         if (game.phase !== 'rolling') return { action: 'error', message: 'Not in rolling phase' };
         if (game.currentTurnUserId !== userId) return { action: 'error', message: 'Not your turn' };
 
+        game.stateVersion = (game.stateVersion || 0) + 1;
         const diceValue = Math.floor(Math.random() * 6) + 1;
         game.diceValue = diceValue;
 
@@ -192,6 +194,7 @@ class LudoEngine {
         if (game.phase !== 'moving') return { action: 'error', message: 'Not in moving phase' };
         if (game.currentTurnUserId !== userId) return { action: 'error', message: 'Not your turn' };
 
+        game.stateVersion = (game.stateVersion || 0) + 1;
         const currentPlayer = game.players[game.currentTurnIndex];
         const token = currentPlayer.tokens.find(t => t.id === tokenId);
         if (!token) return { action: 'error', message: 'Token not found' };
@@ -442,6 +445,7 @@ class LudoEngine {
     _publicState(game) {
         return {
             type: 'ludo',
+            stateVersion: game.stateVersion || 1,
             roomId: game.roomId,
             players: game.players,
             currentTurnIndex: game.currentTurnIndex,

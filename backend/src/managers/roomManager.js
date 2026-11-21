@@ -48,12 +48,22 @@ class RoomManager {
         return code;
     }
 
+    async flushAllActiveRoomsToMongo() {
+        if (!this.rooms || this.rooms.size === 0) return;
+        const promises = [];
+        for (const [, room] of this.rooms) {
+            promises.push(this._saveToDb(room));
+        }
+        await Promise.allSettled(promises);
+    }
+
     // ── Room CRUD ───────────────────────────────────────────────────────
 
     createRoom(userId, socketId, playerName, avatar, avatarColor) {
         const roomId = this.generateRoomCode();
         const room = {
             id: roomId,
+            stateVersion: 1,
             hostUserId: userId,
             gameState: 'LOBBY',
             gameType: null,
@@ -74,6 +84,7 @@ class RoomManager {
     createLocalRoom(roomId, userId, socketId, playerName, avatar, avatarColor) {
         const room = {
             id: roomId,
+            stateVersion: 1,
             hostUserId: userId,
             gameState: 'LOBBY',
             gameType: null,

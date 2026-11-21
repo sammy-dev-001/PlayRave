@@ -44,6 +44,67 @@ class SessionManager {
     // ── Public API ──────────────────────────────────────────────────────
 
     /**
+     * Bind a socket to a userId immediately on raw socket connection.
+     * Prevents stale-disconnect races and notifies superseded sockets.
+     */
+    bindSocket(io, userId, newSocketId) {
+        if (!userId || !newSocketId) return null;
+
+        const session = this.sessions.get(userId);
+        const oldSocketId = session ? session.socketId : this.getSocketId(userId);
+
+        this._clearGraceTimer(userId);
+
+        // Swap pointer FIRST so any in-flight disconnect handler from the old socket sees it is stale
+        this.socketToUser.set(newSocketId, userId);
+
+        if (session) {
+            session.socketId = newSocketId;
+            session.isAway = false;
+            session.lastSeen = Date.now();
+        }
+
+        // Notify and disconnect the superseded socket if it was different
+        if (oldSocketId && oldSocketId !== newSocketId && io) {
+            this.socketToUser.delete(oldSocketId);
+            const oldSocket = io.sockets.sockets.get(oldSocketId);
+            if (oldSocket) {
+                console.log(`[SessionManager] Superseding old socket ${oldSocketId} for user ${userId} -> ${newSocketId}`);
+                oldSocket.data = oldSocket.data || {};
+                oldSocket.data.superseded = true;
+                oldSocket.emit('session-superseded');
+                oldSocket.disconnect(true);
+            }
+        }
+
+        return session || null;
+    }
+
+    /**
+     * Check if a given socket is the currently authoritative active socket for this user.
+     */
+    isCurrentSocket(userId, socketId) {
+        if (!userId || !socketId) return false;
+        const session = this.sessions.get(userId);
+        if (session && session.socketId) {
+            return session.socketId === socketId;
+        }
+        return this.socketToUser.get(socketId) === userId;
+    }
+
+    /**
+     * Get the current active socketId for a userId.
+     */
+    getSocketId(userId) {
+        const session = this.sessions.get(userId);
+        if (session) return session.socketId;
+        for (const [sId, uId] of this.socketToUser.entries()) {
+            if (uId === userId) return sId;
+        }
+        return null;
+    }
+
+    /**
      * Register a brand new client session (first join / room creation).
      * If a session already exists for this userId, it is re-bound (reconnect).
      */

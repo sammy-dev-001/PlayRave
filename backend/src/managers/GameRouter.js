@@ -68,6 +68,7 @@ class GameRouter {
          * `remaining = deadline - Date.now()` and scheduling the remainder.
          */
         this._timers = new Map();
+        this._processedActions = new Map(); // roomId -> Set<actionId>
     }
 
     // ── Primary Routing Entry Point ─────────────────────────────────────
@@ -80,10 +81,31 @@ class GameRouter {
      * @param {string}   userId    — The PERSISTENT userId of the sender
      * @param {string}   roomId    — The room this event belongs to
      * @param {Object}   io        — The Socket.IO server instance
+     * @param {string}   actionId  — Optional client-generated idempotent UUID
      */
-    async handleEvent(eventName, payload, userId, roomId, io) {
+    async handleEvent(eventName, payload = {}, userId, roomId, io, actionId = null) {
         const room = await roomManager.getRoom(roomId);
-        if (!room) return;
+        if (!room) return null;
+
+        // P1 Fix 4: Deduplicate idempotent actionId
+        const effectiveActionId = actionId || payload?.actionId;
+        if (effectiveActionId) {
+            if (!this._processedActions) this._processedActions = new Map();
+            let roomActions = this._processedActions.get(roomId);
+            if (!roomActions) {
+                roomActions = new Set();
+                this._processedActions.set(roomId, roomActions);
+            }
+            if (roomActions.has(effectiveActionId)) {
+                console.log(`[GameRouter] Duplicate actionId ignored: ${effectiveActionId} in room ${roomId}`);
+                return { success: true, duplicate: true };
+            }
+            roomActions.add(effectiveActionId);
+            if (roomActions.size > 200) {
+                const arr = Array.from(roomActions);
+                this._processedActions.set(roomId, new Set(arr.slice(arr.length - 100)));
+            }
+        }
 
         const gameType = payload.gameType || room.gameType;
         
@@ -97,8 +119,11 @@ class GameRouter {
         const engine = engineRegistry[gameType];
         if (engine && engine.intercepts && engine.intercepts.includes(eventName)) {
             const instruction = engine.handleIntercept(eventName, payload, roomId, userId);
-            if (instruction) this.executeInstruction(instruction, io, roomId);
-            return;
+            if (instruction) {
+                room.stateVersion = (room.stateVersion || 0) + 1;
+                this.executeInstruction(instruction, io, roomId);
+            }
+            return instruction;
         }
 
         if (engine) {
@@ -110,6 +135,9 @@ class GameRouter {
             const instruction = engine.handleEvent(eventName, payload, userId, roomId);
             
             // Execute the returned payload instruction
+            if (instruction && instruction.action !== 'error') {
+                room.stateVersion = (room.stateVersion || 0) + 1;
+            }
             this.executeInstruction(instruction, io, roomId);
 
             // Auto-persist state after every valid move
@@ -121,7 +149,7 @@ class GameRouter {
                     gamePersistence.saveGame(roomId, gameType, updatedState);
                 }
             }
-            return;
+            return instruction;
         }
 
         console.warn(`[GameRouter] Engine not found for ${gameType} on event ${eventName}`);
@@ -145,10 +173,20 @@ class GameRouter {
 
         if (!instruction.action) return;
 
+        const room = roomManager.rooms ? roomManager.rooms.get(roomId) : null;
+        const currentVersion = room?.stateVersion || 1;
+
+        // Stamp monotonic stateVersion on outgoing payloads if present
+        if (instruction.data && typeof instruction.data === 'object' && !instruction.data.stateVersion) {
+            instruction.data.stateVersion = currentVersion;
+            if (instruction.data.gameState && typeof instruction.data.gameState === 'object' && !instruction.data.gameState.stateVersion) {
+                instruction.data.gameState.stateVersion = currentVersion;
+            }
+        }
+
         switch (instruction.action) {
             case 'broadcast': {
                 // Determine if this is a speed-game broadcast that can be compressed
-                const room = roomManager.rooms ? roomManager.rooms.get(roomId) : null;
                 const gameType = room?.gameType || null;
 
                 if (gameType && deltaSyncManager.isSpeedGame(gameType) && instruction.data) {
@@ -310,6 +348,7 @@ class GameRouter {
             // Set room state globally
             roomManager.setGameState(room.id, 'PLAYING');
             roomManager.setGameType(room.id, gameType);
+            room.stateVersion = 1;
 
             // Persist initial game state
             const initialState = engine.activeGames.get(room.id);

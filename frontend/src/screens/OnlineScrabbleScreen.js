@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, useWindowDimensions, Platform, TouchableWithoutFeedback } from 'react-native';
 import RoomCodeBanner from '../components/lobby/RoomCodeBanner';
 import DraggableRack from '../components/DraggableRack';
@@ -17,15 +17,6 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { room, playerName, gameState: initialGameState } = route.params;
-
-    // Identity persistence and reconnection handling
-    useGameDisconnectHandler({
-        navigation,
-        room,
-        playerName,
-        exitScreen: 'Lobby',
-        exitParams: { room, isHost: room.players?.find(p => p.name === playerName)?.isHost }
-    });
 
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
@@ -88,6 +79,46 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
     // Blank tile selection modal state
     const [blankTileModalVisible, setBlankTileModalVisible] = useState(false);
     const [pendingBlankPlacement, setPendingBlankPlacement] = useState(null); // { x, y, handIndex }
+
+    const updateGameState = useCallback((state) => {
+        if (!state) return;
+
+        setGameState(state);
+        setBoard(state.board || {});
+        setMyHand(state.myHand || []);
+        setPlayers(state.players || []);
+        playersRef.current = state.players || [];
+        setIsMyTurn(state.isMyTurn || false);
+        setCurrentPlayerName(state.currentPlayerName || '');
+        setTilesInBag(state.tilesInBag ?? null);
+        setPlacedTiles([]);
+    }, []);
+
+    // Hard state sync/overwrite after reconnection or snapshot recovery
+    const handleStateSync = useCallback((data) => {
+        console.log('[OnlineScrabble] Received state sync:', data);
+        if (!data) return;
+        const stateToApply = data.gameState || (data.board !== undefined ? data : null);
+        if (stateToApply) {
+            updateGameState(stateToApply);
+            setSelectedTileIndex(null);
+            setPlacementHistory([]);
+            setExchangeMode(false);
+            setSelectedTilesForExchange([]);
+            setBlankTileModalVisible(false);
+            setPendingBlankPlacement(null);
+        }
+    }, [updateGameState]);
+
+    // Identity persistence, version gap healing, and reconnection handling
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost: room.players?.find(p => p.name === playerName)?.isHost },
+        onStateSync: handleStateSync
+    });
 
     // Initialize from route params if available
     useEffect(() => {
@@ -190,31 +221,6 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             }
         };
 
-        // Listen for game ended due to insufficient players (player left mid-game)
-        const handleInsufficientPlayers = ({ message, finalScores }) => {
-            console.log('Game ended - insufficient players:', message);
-
-            let scoreboardData = [];
-            if (finalScores) {
-                // finalScores from engine might be a map or array
-                if (Array.isArray(finalScores)) {
-                    scoreboardData = finalScores;
-                } else {
-                    scoreboardData = Object.entries(finalScores).map(([id, score]) => ({
-                        playerId: id,
-                        score
-                    }));
-                }
-            }
-
-            navigation.navigate('Scoreboard', {
-                room: room,
-                finalScores: scoreboardData,
-                gameEndedMessage: message
-            });
-        };
-
-
         // Listen for tile exchange
         const handleTilesExchanged = (data) => {
             console.log('Tiles exchanged:', data);
@@ -225,31 +231,12 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             }
         };
 
-        // Hard state sync/overwrite after reconnection
-        const handleStateSync = (data) => {
-            console.log('Received game state sync:', data);
-            // Engine sends { type: 'scrabble', ... } — check both gameType and type fields
-            if ((data.gameType === 'scrabble' || data.type === 'scrabble') && (data.gameState || data.board !== undefined)) {
-                const stateToApply = data.gameState || data;
-                updateGameState(stateToApply);
-                // Thoroughly reset UI state to prevent ghost tiles/modals
-                setSelectedTileIndex(null);
-                setPlacementHistory([]);
-                setExchangeMode(false);
-                setSelectedTilesForExchange([]);
-                setBlankTileModalVisible(false);
-                setPendingBlankPlacement(null);
-            }
-        };
-
         SocketService.on('game-started', handleGameStarted);
         SocketService.on('scrabble-move-submitted', handleMoveSubmitted);
         SocketService.on('scrabble-turn-passed', handleTurnPassed);
         SocketService.on('scrabble-game-ended', handleGameEnded);
         SocketService.on('scrabble-tiles-exchanged', handleTilesExchanged);
-        SocketService.on('game-state-sync', handleStateSync);
         SocketService.on('error', handleError);
-        SocketService.on('game-ended-insufficient-players', handleInsufficientPlayers);
 
         // Fetch state on mount
         SocketService.emit('scrabble-get-state', { roomId: room.id });
@@ -260,25 +247,9 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             SocketService.off('scrabble-turn-passed', handleTurnPassed);
             SocketService.off('scrabble-game-ended', handleGameEnded);
             SocketService.off('scrabble-tiles-exchanged', handleTilesExchanged);
-            SocketService.off('game-state-sync', handleStateSync);
             SocketService.off('error', handleError);
-            SocketService.off('game-ended-insufficient-players', handleInsufficientPlayers);
         };
-    }, [navigation, room]);
-
-    const updateGameState = (state) => {
-        if (!state) return;
-
-        setGameState(state);
-        setBoard(state.board || {});
-        setMyHand(state.myHand || []);
-        setPlayers(state.players || []);
-        playersRef.current = state.players || [];
-        setIsMyTurn(state.isMyTurn || false);
-        setCurrentPlayerName(state.currentPlayerName || '');
-        setTilesInBag(state.tilesInBag ?? null); // Bug 2: capture remaining tile count
-        setPlacedTiles([]); // Clear placed tiles when state updates
-    };
+    }, [navigation, room, updateGameState]);
 
     const handleRackTilePress = (index) => {
         if (!isMyTurn) {
@@ -394,10 +365,14 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         setPendingBlankPlacement(null);
     };
 
-    const handleRecallTiles = () => {
+    const handleRecallTiles = async () => {
         setPlacedTiles([]);
         setPlacementHistory([]);
-        SocketService.emit('scrabble-recall-tiles', { roomId: room.id });
+        try {
+            await SocketService.sendGameAction(room.id, 'scrabble-recall-tiles', {});
+        } catch (err) {
+            console.warn('[OnlineScrabble] Failed to recall tiles:', err);
+        }
     };
 
     const handleUndo = () => {
@@ -408,7 +383,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         }
     };
 
-    const handleSubmitMove = () => {
+    const handleSubmitMove = async () => {
         if (!isMyTurn) {
             showAlert('Not Your Turn', 'Please wait for your turn');
             return;
@@ -419,11 +394,15 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             return;
         }
 
-        // Submit to server
-        SocketService.emit('scrabble-submit-move', {
-            roomId: room.id,
-            tiles: placedTiles
-        });
+        try {
+            // FIX 4 & 5: Submit move using sendGameAction with actionId and HTTP fallback
+            await SocketService.sendGameAction(room.id, 'scrabble-submit-move', {
+                tiles: placedTiles
+            });
+        } catch (err) {
+            console.error('[OnlineScrabble] Failed to submit move:', err);
+            showAlert('Submission Error', err.message || 'Failed to submit move');
+        }
     };
 
     const handlePass = () => {
@@ -432,10 +411,18 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
             return;
         }
 
+        const executePass = async () => {
+            setPlacedTiles([]);
+            try {
+                await SocketService.sendGameAction(room.id, 'scrabble-pass-turn', {});
+            } catch (err) {
+                console.error('[OnlineScrabble] Failed to pass turn:', err);
+            }
+        };
+
         if (Platform.OS === 'web') {
             if (window.confirm('Are you sure you want to pass your turn?')) {
-                SocketService.emit('scrabble-pass-turn', { roomId: room.id });
-                setPlacedTiles([]);
+                executePass();
             }
         } else {
             showAlert(
@@ -445,10 +432,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     { text: 'Cancel', style: 'cancel' },
                     {
                         text: 'Pass',
-                        onPress: () => {
-                            SocketService.emit('scrabble-pass-turn', { roomId: room.id });
-                            setPlacedTiles([]);
-                        }
+                        onPress: executePass
                     }
                 ]
             );
@@ -474,21 +458,29 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
         }
     };
 
-    const handleConfirmExchange = () => {
+    const handleConfirmExchange = async () => {
         if (selectedTilesForExchange.length === 0) {
             showAlert("No Tiles Selected", "Please select tiles to exchange.");
             return;
         }
 
-        SocketService.emit('scrabble-exchange-tiles', {
-            roomId: room.id,
-            tileIndices: selectedTilesForExchange
-        });
+        try {
+            await SocketService.sendGameAction(room.id, 'scrabble-exchange-tiles', {
+                tileIndices: selectedTilesForExchange
+            });
+        } catch (err) {
+            console.error('[OnlineScrabble] Failed to exchange tiles:', err);
+            showAlert('Exchange Error', err.message || 'Failed to exchange tiles');
+        }
     };
 
-    const handleEndGameConfirm = () => {
+    const handleEndGameConfirm = async () => {
         setEndGameModalVisible(false);
-        SocketService.emit('scrabble-end-game', { roomId: room.id });
+        try {
+            await SocketService.sendGameAction(room.id, 'scrabble-end-game', {});
+        } catch (err) {
+            console.error('[OnlineScrabble] Failed to end game:', err);
+        }
     };
 
     const renderBoardSquare = (x, y) => {
@@ -525,8 +517,8 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     <View style={styles.bonusContent}>
                         {x === CENTER_SQUARE && y === CENTER_SQUARE && <NeonText size={Math.max(tileSize * 0.5, 8)}>★</NeonText>}
                         {bonus && (
-                            <NeonText 
-                                size={Math.max(tileSize * 0.35, 6)} 
+                            <NeonText
+                                size={Math.max(tileSize * 0.35, 6)}
                                 weight="bold"
                                 numberOfLines={1}
                                 adjustsFontSizeToFit={true}
@@ -761,36 +753,41 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.scoreStripContent}
+                                contentContainerStyle={[
+                                    styles.scoreStripContent,
+                                    players.length <= 4 && styles.scoreStripContentSpread
+                                ]}
                                 style={styles.scoreStrip}
                             >
                                 {players.map((p, idx) => {
                                     const isCurrent = p.name === currentPlayerName;
+                                    const isCompact = players.length >= 3;
                                     return (
                                         <View
                                             key={p.userId || p.name || p.id || idx}
                                             style={[
                                                 styles.playerScoreChip,
                                                 isCurrent && styles.activePlayerScoreChip,
-                                                players.length <= 2 && styles.playerScoreChipWide,
+                                                players.length <= 4 && styles.playerScoreChipFlexible,
+                                                isCompact && styles.playerScoreChipCompact,
                                             ]}
                                         >
                                             <View style={styles.playerChipNameRow}>
                                                 {isCurrent && (
-                                                    <NeonText size={8} color={COLORS.limeGlow} style={{ marginRight: 2 }}>▶</NeonText>
+                                                    <NeonText size={isCompact ? 7 : 8} color={COLORS.limeGlow} style={{ marginRight: 2 }}>▶</NeonText>
                                                 )}
                                                 <NeonText
-                                                    size={10}
+                                                    size={isCompact ? 9 : 10}
                                                     weight={isCurrent ? "bold" : "normal"}
                                                     color={isCurrent ? COLORS.neonCyan : COLORS.textMuted}
                                                     numberOfLines={1}
-                                                    style={styles.playerChipName}
+                                                    style={isCompact ? styles.playerChipNameCompact : styles.playerChipName}
                                                 >
                                                     {p.name}
                                                 </NeonText>
                                             </View>
                                             <NeonText
-                                                size={14}
+                                                size={isCompact ? 13 : 14}
                                                 weight="bold"
                                                 color={isCurrent ? COLORS.white : COLORS.textSecondary}
                                             >
@@ -948,7 +945,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     </TouchableWithoutFeedback>
                 </TouchableOpacity>
             </Modal>
-            
+
             <InGameOverlay />
         </NeonContainer>
     );
@@ -1023,6 +1020,12 @@ const getStyles = (COLORS) => StyleSheet.create({
         gap: 8,
         paddingRight: 10,
     },
+    scoreStripContentSpread: {
+        width: '100%',
+        justifyContent: 'space-between',
+        paddingRight: 0,
+        gap: 6,
+    },
     playerScoreChip: {
         minWidth: 74,
         paddingHorizontal: 8,
@@ -1035,6 +1038,14 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     playerScoreChipWide: {
         flex: 1,
+    },
+    playerScoreChipFlexible: {
+        flex: 1,
+        minWidth: 0,
+    },
+    playerScoreChipCompact: {
+        paddingHorizontal: 4,
+        paddingVertical: 3,
     },
     activePlayerScoreChip: {
         borderWidth: 1.5,
@@ -1053,6 +1064,9 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     playerChipName: {
         maxWidth: 75,
+    },
+    playerChipNameCompact: {
+        maxWidth: 60,
     },
     tilesBadge: {
         alignItems: 'center',

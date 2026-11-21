@@ -94,21 +94,32 @@ const OnlineLudoScreen = ({ route, navigation }) => {
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
     const myUserId = SocketService.userId;
 
-    // Disconnect & Auto-Rejoin hook
-    useGameDisconnectHandler({
-        navigation,
-        room,
-        playerName,
-        exitScreen: 'Lobby',
-        exitParams: { room, isHost }
-    });
-
     // Game state
     const [gameState, setGameState] = useState(initialGameState || null);
     const [diceDisplay, setDiceDisplay] = useState(initialGameState?.diceValue || 1);
     const [isRolling, setIsRolling] = useState(false);
     const [statusMessage, setStatusMessage] = useState('Game started! Roll the dice.');
     const [showGameOver, setShowGameOver] = useState(false);
+
+    // State sync reconciler for HTTP snapshot & reconnection recovery
+    const handleStateSync = useCallback((syncData) => {
+        if (syncData?.gameState) {
+            setGameState(syncData.gameState);
+            if (syncData.gameState.diceValue) {
+                setDiceDisplay(syncData.gameState.diceValue);
+            }
+        }
+    }, []);
+
+    // Disconnect & Auto-Rejoin hook
+    useGameDisconnectHandler({
+        navigation,
+        room,
+        playerName,
+        exitScreen: 'Lobby',
+        exitParams: { room, isHost },
+        onStateSync: handleStateSync
+    });
 
     // Animations
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -202,7 +213,8 @@ const OnlineLudoScreen = ({ route, navigation }) => {
             flickers += 1;
             if (flickers >= 8) {
                 clearInterval(interval);
-                SocketService.emit('ludo-roll-dice', { roomId: room.id });
+                SocketService.sendGameAction(room.id, 'ludo-roll-dice', { roomId: room.id })
+                    .catch((err) => console.warn('[OnlineLudo] sendGameAction ludo-roll-dice error:', err));
             }
         }, 60);
     };
@@ -210,15 +222,15 @@ const OnlineLudoScreen = ({ route, navigation }) => {
     // ── Move Token Action ──
     const handleSelectToken = (tokenId) => {
         if (!isMyTurn || !isMovingPhase) return;
-        if (!gameState.movableTokens?.includes(tokenId)) return;
+        if (!gameState?.movableTokens?.includes(tokenId)) return;
 
         HapticService.trigger('impactLight');
         SoundService.play('click');
 
-        SocketService.emit('ludo-move-token', {
+        SocketService.sendGameAction(room.id, 'ludo-move-token', {
             roomId: room.id,
             tokenId
-        });
+        }).catch((err) => console.warn('[OnlineLudo] sendGameAction ludo-move-token error:', err));
     };
 
     // Get absolute board cell for a token

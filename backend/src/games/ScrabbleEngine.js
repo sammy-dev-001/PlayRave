@@ -72,6 +72,7 @@ class ScrabbleEngine {
 
         const gameState = {
             type: 'scrabble',
+            stateVersion: 1,
             roomId,
             players,
             tileBag,
@@ -132,6 +133,7 @@ class ScrabbleEngine {
 
         const gameState = {
             type: 'scrabble',
+            stateVersion: 1,
             roomId,
             players,
             tileBag,
@@ -170,6 +172,7 @@ class ScrabbleEngine {
         const currentPlayer = game.players?.[game.currentPlayerIndex];
 
         return {
+            stateVersion: game.stateVersion || 1,
             board: game.board,
             myHand: player ? player.hand : [],
             players: (game.players || []).map(p => ({
@@ -202,11 +205,13 @@ class ScrabbleEngine {
         if (currentPlayer.userId !== userId) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Not your turn' } };
 
         game.placedTiles[userId] = tiles;
+        game.stateVersion = (game.stateVersion || 0) + 1;
 
         return {
             action: 'broadcast',
             event: 'scrabble-tiles-placed',
             data: {
+                stateVersion: game.stateVersion,
                 playerId: userId,
                 tiles
             }
@@ -221,10 +226,15 @@ class ScrabbleEngine {
         if (currentPlayer.userId !== userId) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Not your turn' } };
 
         game.placedTiles[userId] = [];
+        game.stateVersion = (game.stateVersion || 0) + 1;
+
         return {
             action: 'broadcast',
             event: 'scrabble-tiles-recalled',
-            data: { playerId: userId }
+            data: {
+                stateVersion: game.stateVersion,
+                playerId: userId
+            }
         };
     }
 
@@ -322,6 +332,7 @@ class ScrabbleEngine {
         // Clear placed tiles
         game.placedTiles[userId] = [];
         game.passCount = 0;
+        game.stateVersion = (game.stateVersion || 0) + 1;
 
         // Next turn
         game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
@@ -348,6 +359,7 @@ class ScrabbleEngine {
                     score,
                     formedWords: formedWords.map(w => w.word),
                     gameState: this.getGameState(roomId, p.userId),
+                    stateVersion: game.stateVersion,
                     gameEnded: isGameEnded,
                     finalScores
                 }
@@ -361,6 +373,7 @@ class ScrabbleEngine {
                 event: 'scrabble-game-ended',
                 data: {
                     finished: true,
+                    stateVersion: game.stateVersion,
                     finalScores,
                     winner: finalScores[0]
                 }
@@ -383,6 +396,7 @@ class ScrabbleEngine {
         if (currentPlayer.userId !== userId) return { action: 'emit', targetId: userId, event: 'error', data: { message: 'Not your turn' } };
 
         game.passCount++;
+        game.stateVersion = (game.stateVersion || 0) + 1;
 
         // Next turn
         game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
@@ -405,6 +419,7 @@ class ScrabbleEngine {
                 event: 'scrabble-turn-passed',
                 data: {
                     gameState: this.getGameState(roomId, p.userId),
+                    stateVersion: game.stateVersion,
                     gameEnded: isGameEnded,
                     finalScores
                 }
@@ -418,6 +433,7 @@ class ScrabbleEngine {
                 event: 'scrabble-game-ended',
                 data: {
                     finished: true,
+                    stateVersion: game.stateVersion,
                     finalScores,
                     winner: finalScores[0]
                 }
@@ -468,6 +484,7 @@ class ScrabbleEngine {
         currentPlayer.hand = [...newHand, ...newTiles];
 
         game.passCount = 0;
+        game.stateVersion = (game.stateVersion || 0) + 1;
 
         // Advance turn
         game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
@@ -482,6 +499,7 @@ class ScrabbleEngine {
             event: 'scrabble-tiles-exchanged',
             data: {
                 success: true,
+                stateVersion: game.stateVersion,
                 gameState: this.getGameState(roomId, userId)
             }
         });
@@ -495,6 +513,7 @@ class ScrabbleEngine {
                     event: 'scrabble-turn-passed',
                     data: {
                         gameState: this.getGameState(roomId, p.userId),
+                        stateVersion: game.stateVersion,
                         gameEnded: false,
                         finalScores: null
                     }

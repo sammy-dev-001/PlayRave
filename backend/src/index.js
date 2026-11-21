@@ -59,9 +59,15 @@ const io = new Server(server, {
         },
         credentials: true,
     },
-    pingTimeout: 20000,
+    pingTimeout: 10000,
     pingInterval: 10000,
+    maxHttpBufferSize: 1e6,
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000, // 2-minute packet & room replay window
+        skipMiddlewares: false,
+    },
 });
+app.set('io', io);
 
 // ── Manager Imports ─────────────────────────────────────────────────────
 const sessionManager = require("./managers/sessionManager");
@@ -91,12 +97,14 @@ const authRoutes = require('./routes/authRoutes');
 const packRoutes = require('./routes/packRoutes');
 const challengeRoutes = require('./routes/challengeRoutes');
 const agoraRoutes = require('./routes/agoraRoutes');
+const roomRoutes = require('./routes/roomRoutes');
 const configureSocketGateway = require('./socket/socketGateway');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/packs', packRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/agora', agoraRoutes);
+app.use('/api/rooms', roomRoutes);
 
 configureSocketGateway(io);
 
@@ -106,10 +114,11 @@ configureSocketGateway(io);
 async function handleShutdown(signal) {
     console.log(`\n[Server] Received ${signal}. Starting graceful shutdown...`);
     
-    // Stop accepting new connections
-    server.close(() => {
-        console.log('[Server] HTTP server closed.');
-    });
+    // Force exit before Render's 30s default SIGKILL deadline
+    setTimeout(() => {
+        console.error('[Server] Graceful shutdown deadline reached. Forcing exit.');
+        process.exit(1);
+    }, 25000).unref();
 
     try {
         // Save all active rooms to DB one last time
@@ -127,13 +136,16 @@ async function handleShutdown(signal) {
         if (gameRouter) {
             await gameRouter.saveAllGames();
         }
-
-        console.log('[Server] Graceful shutdown complete.');
-        process.exit(0);
     } catch (err) {
-        console.error('[Server] Error during shutdown:', err);
-        process.exit(1);
+        console.error('[Server] Error saving state during shutdown:', err);
     }
+
+    // io.close() closes both Socket.IO and the underlying HTTP server,
+    // sending a clean transport close to all connected clients so they immediately reconnect
+    io.close(() => {
+        console.log('[Server] Socket.IO and HTTP server cleanly closed.');
+        process.exit(0);
+    });
 }
 
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));

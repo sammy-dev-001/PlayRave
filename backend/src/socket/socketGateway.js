@@ -93,6 +93,11 @@ module.exports = function configureSocketGateway(io) {
     io.on('connection', (socket) => {
         console.log(`[Gateway] Socket connected: ${socket.id} | userId: ${socket.userId} | guest: ${socket.isGuest}`);
 
+        // FIX 1: Immediately bind userId -> socketId and supersede any old zombie socket
+        if (socket.userId) {
+            sessionManager.bindSocket(io, socket.userId, socket.id);
+        }
+
         // ── Lobby Events ────────────────────────────────────────────────
 
         socket.on('create-room', ({ playerName, avatar, avatarColor }) => {
@@ -161,10 +166,11 @@ module.exports = function configureSocketGateway(io) {
             socket.emit('check-room-result', { roomId, exists });
         });
 
-        socket.on('request-room-sync', async ({ roomId, userId: payloadUserId, playerName }) => {
-            if (!checkRateLimit(socket, 'request-room-sync')) return;
+        socket.on('request-room-sync', async ({ roomId, userId: payloadUserId, playerName }, cb) => {
+            if (!checkRateLimit(socket, 'request-room-sync', cb)) return;
             const userId = socket.userId || payloadUserId;
             if (!userId) {
+                if (typeof cb === 'function') cb({ success: false, error: 'MISSING_CREDENTIALS' });
                 socket.emit('error', { message: 'Missing user credentials for sync' });
                 return;
             }
@@ -173,6 +179,7 @@ module.exports = function configureSocketGateway(io) {
             console.log('[Gateway] request-room-sync:', roomId, userId, playerName);
             const room = await roomManager.getRoom(roomId);
             if (!room) {
+                if (typeof cb === 'function') cb({ success: false, error: 'ROOM_NOT_FOUND' });
                 socket.emit('error', { message: 'Room not found during sync' });
                 return;
             }
@@ -180,6 +187,7 @@ module.exports = function configureSocketGateway(io) {
             const roomResult = roomManager.updatePlayerSocket(roomId, userId, socket.id, playerName);
             if (!roomResult) {
                 console.warn(`[Gateway] sync failed — player not found in room ${roomId} for userId ${userId}`);
+                if (typeof cb === 'function') cb({ success: false, error: 'PLAYER_NOT_FOUND' });
                 socket.emit('error', { message: 'Session expired or player not found' });
                 return;
             }
@@ -219,6 +227,7 @@ module.exports = function configureSocketGateway(io) {
                     socket.emit('game-state-sync', {
                         gameState,
                         gameType: room.gameType,
+                        stateVersion: room.stateVersion || 1,
                         timestamp: Date.now()
                     });
                 }
@@ -226,10 +235,17 @@ module.exports = function configureSocketGateway(io) {
 
             io.to(roomId).emit('player-reconnected', { playerName: roomResult.player.name, userId });
             io.to(roomId).emit('player-returned', { playerName: roomResult.player.name, userId });
+
+            if (typeof cb === 'function') cb({ success: true, room: snapshot });
         });
 
         socket.on('ping', () => {
             socket.emit('pong', { timestamp: Date.now() });
+        });
+
+        // FIX 2: Volatile app-ping handler (exempt from rate limits) for connection watchdog
+        socket.on('app-ping', (ts, cb) => {
+            if (typeof cb === 'function') cb(ts);
         });
 
         socket.on('leave-room', async ({ roomId }) => {
@@ -277,12 +293,18 @@ module.exports = function configureSocketGateway(io) {
         });
 
         // ── Disconnect Handler ───────────────────────────────────────────
-        socket.on('disconnect', async () => {
-            console.log('[Gateway] Socket disconnected:', socket.id);
+        socket.on('disconnect', async (reason) => {
+            console.log(`[Gateway] Socket disconnected: ${socket.id} | reason: ${reason} [Telemetry:socket_disconnect_reason=${reason}]`);
             rateLimiter.cleanup(socket.id);
 
             const userId = socket.userId || sessionManager.getUserIdBySocket(socket.id);
             if (!userId) return;
+
+            // FIX 1 CRITICAL GUARD: Ignore delayed disconnects from dead / superseded sockets
+            if (socket.data?.superseded || !sessionManager.isCurrentSocket(userId, socket.id)) {
+                console.log(`[Gateway] Stale/superseded disconnect ignored for user ${userId} on socket ${socket.id} [Telemetry:stale_disconnect_ignored]`);
+                return;
+            }
 
             const session = sessionManager.getClient(userId);
             const roomId = session?.roomId;
@@ -521,7 +543,7 @@ module.exports = function configureSocketGateway(io) {
         //
         // The ack resolves with { success: true } or { success: false, error: '...' }
         // so clients know immediately whether the server processed their action.
-        socket.on('game-action', async ({ roomId, eventName, payload }, ack) => {
+        socket.on('game-action', async ({ roomId, eventName, payload, actionId }, ack) => {
             if (!checkRateLimit(socket, 'game-action', ack)) return;
 
             const userId = socket.userId;
@@ -536,15 +558,20 @@ module.exports = function configureSocketGateway(io) {
                 return;
             }
 
-            gameRouter.handleEvent(eventName, payload, userId, roomId, io);
+            // P1: Defensive room membership guard
+            if (socket.rooms && !socket.rooms.has(roomId)) {
+                socket.join(roomId);
+            }
+
+            const result = await gameRouter.handleEvent(eventName, payload, userId, roomId, io, actionId || payload?.actionId);
 
             // Acknowledge receipt to the client
-            if (typeof ack === 'function') ack({ success: true });
+            if (typeof ack === 'function') ack({ success: true, result });
         });
 
         // ── Catch-All for Legacy Game Engine Events ─────────────────────
         // Since many screens emit raw events (e.g., 'type-race-finish') instead of 'game-action'
-        socket.onAny((eventName, ...args) => {
+        socket.onAny(async (eventName, ...args) => {
             const ignoredEvents = [
                 'disconnect', 'connect', 'create-room', 'join-room', 'check-room',
                 'request-room-sync', 'leave-room', 'game-selected', 'set-game-type',
@@ -561,7 +588,12 @@ module.exports = function configureSocketGateway(io) {
             const roomId = payload.roomId;
             if (!roomId) return;
 
-            gameRouter.handleEvent(eventName, payload, userId, roomId, io);
+            // P1: Defensive room membership guard
+            if (socket.rooms && !socket.rooms.has(roomId)) {
+                socket.join(roomId);
+            }
+
+            gameRouter.handleEvent(eventName, payload, userId, roomId, io, payload.actionId);
         });
 
         // ── Chat Events ──────────────────────────────────────────────────

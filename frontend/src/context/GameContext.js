@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SocketService, { ConnectionState } from '../services/socket';
+import LifecycleWatchdog from '../services/LifecycleWatchdog';
 import { useAuth } from './AuthContext';
 import { getRandomAvatar, getRandomColor } from '../data/avatars';
 import { STORAGE_KEYS } from '../constants/storage';
@@ -205,73 +206,23 @@ export function GameProvider({ children }) {
         }
     }, [isAuthLoading, user?.id]);
 
-    // Handle background -> foreground transitions (State Recovery)
+    // Initialize LifecycleWatchdog for cross-platform wake resurrection
     useEffect(() => {
-        const handleForeground = () => {
-            console.log('App/Tab returned to focus. Checking connection...');
+        LifecycleWatchdog.init();
 
-            // 1. Ensure socket is connected
-            if (!SocketService.isConnected()) {
-                SocketService.reconnect();
-            }
-
-            // 2. If we were in a room, request a full sync
-            const doSync = () => {
-                if (state.room?.id && user?.id && SocketService.isConnected()) {
-                    console.log('Requesting room sync for user:', user.id);
-                    SocketService.emit('request-room-sync', {
-                        roomId: state.room.id,
-                        userId: user.id
-                    });
-                }
-            };
-
-            if (SocketService.isConnected()) {
-                doSync();
-            } else {
-                let unsub;
-                const syncTimeout = setTimeout(() => {
-                    if (unsub) unsub();
-                    doSync();
-                }, 3000);
-
-                unsub = SocketService.onConnectionStateChange((connState) => {
-                    if (connState === ConnectionState.CONNECTED) {
-                        clearTimeout(syncTimeout);
-                        if (unsub) {
-                            unsub();
-                            unsub = null;
-                        }
-                        doSync();
-                    }
+        const unsubscribeWake = LifecycleWatchdog.addWakeListener((source) => {
+            console.log(`[GameContext] Wake event received from: ${source}`);
+            if (state.room?.id && user?.id) {
+                console.log('[GameContext] Requesting room sync for user on wake:', user.id);
+                SocketService.emit('request-room-sync', {
+                    roomId: state.room.id,
+                    userId: user.id
                 });
             }
-        };
-
-        // React Native AppState listener
-        const subscription = AppState.addEventListener('change', nextAppState => {
-            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-                handleForeground();
-            }
-            appState.current = nextAppState;
         });
 
-        // Web visibilitychange listener
-        let visibilityListener;
-        if (Platform.OS === 'web') {
-            visibilityListener = () => {
-                if (document.visibilityState === 'visible') {
-                    handleForeground();
-                }
-            };
-            document.addEventListener('visibilitychange', visibilityListener);
-        }
-
         return () => {
-            subscription.remove();
-            if (visibilityListener) {
-                document.removeEventListener('visibilitychange', visibilityListener);
-            }
+            unsubscribeWake();
         };
     }, [state.room?.id, user?.id]);
 
