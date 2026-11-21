@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated,
-    Platform, Dimensions, ScrollView
+    Platform, StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -14,7 +14,6 @@ import { useTheme } from '../context/ThemeContext';
 import SoundService from '../services/SoundService';
 import HapticService from '../services/HapticService';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HIGH_SCORE_KEY = 'playrave_local_mathblitz_highscore';
 const TOTAL_GAME_TIME = 60; // 60 seconds
 const TARGET_DUEL_SCORE = 10; // First to 10 wins in split-screen duel
@@ -24,6 +23,22 @@ const DIFFICULTIES = [
     { key: 'medium', label: 'MEDIUM', multiplier: 1.5, desc: '+, - and × up to 100' },
     { key: 'hard', label: 'HARD', multiplier: 2.2, desc: 'Multiplication & division' },
 ];
+
+const safePlay = (action) => {
+    try {
+        action();
+    } catch (_) {
+        // Audio error ignored
+    }
+};
+
+const safeHaptic = (action) => {
+    try {
+        action();
+    } catch (_) {
+        // Haptic error ignored
+    }
+};
 
 const generateProblem = (difficulty = 'medium') => {
     let num1, num2, op, answer;
@@ -76,7 +91,9 @@ const generateProblem = (difficulty = 'medium') => {
 const generateChoices = (correctAnswer) => {
     const choices = new Set([correctAnswer]);
     const offsets = [-10, -5, -3, -2, -1, 1, 2, 3, 5, 10];
-    while (choices.size < 4) {
+    let attempts = 0;
+    while (choices.size < 4 && attempts < 50) {
+        attempts++;
         const offset = offsets[Math.floor(Math.random() * offsets.length)];
         const distractor = correctAnswer + offset;
         if (distractor !== correctAnswer && distractor >= 0) {
@@ -85,18 +102,26 @@ const generateChoices = (correctAnswer) => {
             choices.add(correctAnswer + Math.floor(Math.random() * 12) + 1);
         }
     }
+    while (choices.size < 4) {
+        choices.add(correctAnswer + choices.size * 2);
+    }
     return Array.from(choices).sort(() => Math.random() - 0.5);
 };
 
 const LocalMathBlitzScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
-    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+    const insets = useSafeAreaInsets();
+    const styles = useMemo(() => getStyles(COLORS, insets), [COLORS, insets]);
 
     // Navigation params
-    const { players = [{ name: 'Player 1' }, { name: 'Player 2' }] } = route?.params || {};
+    const incomingPlayers = route?.params?.players;
+    const isSinglePlayer = route?.params?.isSinglePlayer ?? (!incomingPlayers || incomingPlayers.length <= 1);
+    const players = useMemo(() => incomingPlayers || [{ name: 'Player 1' }, { name: 'Player 2' }], [incomingPlayers]);
+    const p1Name = players[0]?.name || 'Player 1';
+    const p2Name = players[1]?.name || 'Player 2';
 
     // Mode: 'menu' | 'solo' | 'duel'
-    const [gameMode, setGameMode] = useState('menu');
+    const [gameMode, setGameMode] = useState(isSinglePlayer ? 'menu' : 'duel');
     const [difficulty, setDifficulty] = useState('medium');
     const [highScore, setHighScore] = useState(0);
 
@@ -114,7 +139,8 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     const [showConfetti, setShowConfetti] = useState(false);
 
     // Duel Mode State (Split-Screen)
-    const [duelPhase, setDuelPhase] = useState('ready'); // 'ready' | 'playing' | 'gameover'
+    const [duelPhase, setDuelPhase] = useState(isSinglePlayer ? 'ready' : 'countdown'); // 'ready' | 'countdown' | 'playing' | 'gameover'
+    const [duelCountdown, setDuelCountdown] = useState(3);
     const [duelScores, setDuelScores] = useState({ p1: 0, p2: 0 });
     const [duelProblem, setDuelProblem] = useState(null);
     const [duelChoices, setDuelChoices] = useState([]);
@@ -125,6 +151,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     // Animations
     const shakeAnim = useRef(new Animated.Value(0)).current;
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const countdownAnim = useRef(new Animated.Value(1)).current;
     const timerRef = useRef(null);
 
     // Load High Score
@@ -133,7 +160,9 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
             try {
                 const saved = await AsyncStorage.getItem(HIGH_SCORE_KEY);
                 if (saved) setHighScore(parseInt(saved, 10) || 0);
-            } catch (_) {}
+            } catch (_) {
+                // High score read error ignored
+            }
         };
         loadHighScore();
     }, []);
@@ -144,6 +173,75 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, []);
+
+    const nextDuelRound = useCallback(() => {
+        const prob = generateProblem(difficulty);
+        const choices = generateChoices(prob.answer);
+        setDuelProblem(prob);
+        setDuelChoices(choices);
+    }, [difficulty]);
+
+    const startDuelGame = useCallback(() => {
+        safePlay(() => SoundService.playButtonClick?.());
+        safeHaptic(() => HapticService.trigger?.('impactMedium'));
+        setGameMode('duel');
+        setDuelPhase('countdown');
+        setDuelCountdown(3);
+        setDuelScores({ p1: 0, p2: 0 });
+        setDuelWinner(null);
+        setShowConfetti(false);
+        setP1Penalty(false);
+        setP2Penalty(false);
+
+        nextDuelRound();
+    }, [nextDuelRound]);
+
+    // Initialize first duel round on mount if starting in duel mode
+    useEffect(() => {
+        if (!isSinglePlayer && players.length >= 2) {
+            startDuelGame();
+        }
+    }, [isSinglePlayer, players.length, startDuelGame]);
+
+    // Duel Countdown Timer
+    useEffect(() => {
+        let timer = null;
+        if (gameMode === 'duel' && duelPhase === 'countdown') {
+            countdownAnim.setValue(0.5);
+            Animated.spring(countdownAnim, {
+                toValue: 1.2,
+                friction: 3,
+                useNativeDriver: Platform.OS !== 'web',
+            }).start();
+
+            safePlay(() => SoundService.playTick?.());
+            safeHaptic(() => HapticService.trigger?.('impactMedium'));
+
+            timer = setInterval(() => {
+                setDuelCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setDuelPhase('playing');
+                        safePlay(() => SoundService.playGameStart?.());
+                        safeHaptic(() => HapticService.trigger?.('notificationSuccess'));
+                        return 0;
+                    }
+                    countdownAnim.setValue(0.5);
+                    Animated.spring(countdownAnim, {
+                        toValue: 1.2,
+                        friction: 3,
+                        useNativeDriver: Platform.OS !== 'web',
+                    }).start();
+                    safePlay(() => SoundService.playTick?.());
+                    safeHaptic(() => HapticService.trigger?.('impactMedium'));
+                    return prev - 1;
+                });
+            }, 900);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [gameMode, duelPhase, countdownAnim]);
 
     // Trigger Screen Shake
     const triggerShake = () => {
@@ -168,8 +266,8 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     // ─────────────────────────────────────────────────────────────────────────────
 
     const startSoloGame = () => {
-        SoundService.playButtonClick();
-        HapticService.impact('medium');
+        safePlay(() => SoundService.playButtonClick?.());
+        safeHaptic(() => HapticService.trigger?.('impactMedium'));
         setGameMode('solo');
         setSoloPhase('playing');
         setTimeLeft(TOTAL_GAME_TIME);
@@ -194,7 +292,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                     return 0;
                 }
                 if (prev <= 6) {
-                    SoundService.playTick();
+                    safePlay(() => SoundService.playTick?.());
                 }
                 return prev - 1;
             });
@@ -203,10 +301,9 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
 
     const finishSoloGame = async () => {
         setSoloPhase('gameover');
-        SoundService.playWinner();
-        HapticService.celebration();
+        safePlay(() => SoundService.playWinner?.());
+        safeHaptic(() => HapticService.celebration?.());
 
-        // Calculate and save high score
         setScore((finalScore) => {
             if (finalScore > highScore) {
                 setHighScore(finalScore);
@@ -220,7 +317,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
 
     const handleNumpadPress = (digit) => {
         if (soloPhase !== 'playing') return;
-        HapticService.selection();
+        safeHaptic(() => HapticService.selection?.());
 
         if (digit === 'BACK') {
             setInputAnswer((prev) => prev.slice(0, -1));
@@ -235,16 +332,15 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
         const newAnswerStr = inputAnswer + digit;
         setInputAnswer(newAnswerStr);
 
-        // Check if correct immediately
         const numVal = parseInt(newAnswerStr, 10);
-        if (numVal === currentProblem.answer) {
+        if (numVal === currentProblem?.answer) {
             handleSoloCorrect();
         }
     };
 
     const handleSoloCorrect = () => {
-        SoundService.playCorrect();
-        HapticService.impact('medium');
+        safePlay(() => SoundService.playCorrect?.());
+        safeHaptic(() => HapticService.trigger?.('impactMedium'));
         triggerPulse();
 
         const diffMultiplier = DIFFICULTIES.find((d) => d.key === difficulty)?.multiplier || 1;
@@ -259,20 +355,18 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
         setTotalAnswered((prev) => prev + 1);
         setInputAnswer('');
 
-        // Generate next problem
         setCurrentProblem(generateProblem(difficulty));
     };
 
     const handleSoloSubmit = () => {
-        if (!inputAnswer || soloPhase !== 'playing') return;
+        if (!inputAnswer || soloPhase !== 'playing' || !currentProblem) return;
         const numVal = parseInt(inputAnswer, 10);
 
         if (numVal === currentProblem.answer) {
             handleSoloCorrect();
         } else {
-            // Wrong answer
-            SoundService.playWrong();
-            HapticService.notification('warning');
+            safePlay(() => SoundService.playWrong?.());
+            safeHaptic(() => HapticService.trigger?.('notificationWarning'));
             triggerShake();
             setStreak(0);
             setTotalAnswered((prev) => prev + 1);
@@ -284,36 +378,16 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     // 2-PLAYER DUEL LOGIC (Split-Screen)
     // ─────────────────────────────────────────────────────────────────────────────
 
-    const startDuelGame = () => {
-        SoundService.playButtonClick();
-        HapticService.impact('medium');
-        setGameMode('duel');
-        setDuelPhase('playing');
-        setDuelScores({ p1: 0, p2: 0 });
-        setDuelWinner(null);
-        setShowConfetti(false);
-        setP1Penalty(false);
-        setP2Penalty(false);
-
-        nextDuelRound();
-    };
-
-    const nextDuelRound = () => {
-        const prob = generateProblem(difficulty);
-        const choices = generateChoices(prob.answer);
-        setDuelProblem(prob);
-        setDuelChoices(choices);
-    };
-
     const handleDuelAnswer = (player, chosenValue) => {
         if (duelPhase !== 'playing') return;
         if (player === 'p1' && p1Penalty) return;
         if (player === 'p2' && p2Penalty) return;
+        if (!duelProblem) return;
 
         if (chosenValue === duelProblem.answer) {
             // Correct!
-            SoundService.playCorrect();
-            HapticService.impact('heavy');
+            safePlay(() => SoundService.playCorrect?.());
+            safeHaptic(() => HapticService.trigger?.('impactHeavy'));
 
             const newScores = {
                 ...duelScores,
@@ -324,26 +398,84 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
             if (newScores[player] >= TARGET_DUEL_SCORE) {
                 // Game Won!
                 setDuelPhase('gameover');
-                setDuelWinner(player === 'p1' ? (players[0]?.name || 'Player 1') : (players[1]?.name || 'Player 2'));
-                SoundService.playWinner();
-                HapticService.celebration();
+                setDuelWinner(player === 'p1' ? p1Name : p2Name);
+                safePlay(() => SoundService.playWinner?.());
+                safeHaptic(() => HapticService.celebration?.());
                 setShowConfetti(true);
             } else {
                 nextDuelRound();
             }
         } else {
             // Wrong answer penalty!
-            SoundService.playWrong();
-            HapticService.notification('error');
+            safePlay(() => SoundService.playWrong?.());
+            safeHaptic(() => HapticService.trigger?.('notificationError'));
 
             if (player === 'p1') {
                 setP1Penalty(true);
-                setTimeout(() => setP1Penalty(false), 900);
+                setTimeout(() => setP1Penalty(false), 800);
             } else {
                 setP2Penalty(true);
-                setTimeout(() => setP2Penalty(false), 900);
+                setTimeout(() => setP2Penalty(false), 800);
             }
         }
+    };
+
+    // Helper: render 2x2 grid of choices safely
+    const renderDuelChoices = (player, penalty) => {
+        if (!duelChoices || duelChoices.length < 4) return null;
+        const row1 = duelChoices.slice(0, 2);
+        const row2 = duelChoices.slice(2, 4);
+
+        return (
+            <View style={styles.duelChoicesContainer}>
+                <View style={styles.duelChoiceRow}>
+                    {row1.map((choice, i) => (
+                        <TouchableOpacity
+                            key={i}
+                            style={[
+                                styles.duelChoiceBtn,
+                                player === 'p2' ? styles.duelChoiceBtnP2 : styles.duelChoiceBtnP1,
+                                penalty && styles.penaltyBtn,
+                            ]}
+                            onPress={() => handleDuelAnswer(player, choice)}
+                            disabled={penalty || duelPhase !== 'playing'}
+                            activeOpacity={0.7}
+                        >
+                            <NeonText
+                                size={22}
+                                weight="bold"
+                                color={penalty ? '#6B7280' : '#FFFFFF'}
+                            >
+                                {choice}
+                            </NeonText>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <View style={styles.duelChoiceRow}>
+                    {row2.map((choice, i) => (
+                        <TouchableOpacity
+                            key={i + 2}
+                            style={[
+                                styles.duelChoiceBtn,
+                                player === 'p2' ? styles.duelChoiceBtnP2 : styles.duelChoiceBtnP1,
+                                penalty && styles.penaltyBtn,
+                            ]}
+                            onPress={() => handleDuelAnswer(player, choice)}
+                            disabled={penalty || duelPhase !== 'playing'}
+                            activeOpacity={0.7}
+                        >
+                            <NeonText
+                                size={22}
+                                weight="bold"
+                                color={penalty ? '#6B7280' : '#FFFFFF'}
+                            >
+                                {choice}
+                            </NeonText>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+        );
     };
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -385,8 +517,8 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                                         difficulty === d.key && styles.diffBtnActive,
                                     ]}
                                     onPress={() => {
-                                        SoundService.playButtonClick();
-                                        HapticService.selection();
+                                        safePlay(() => SoundService.playButtonClick?.());
+                                        safeHaptic(() => HapticService.selection?.());
                                         setDifficulty(d.key);
                                     }}
                                     activeOpacity={0.8}
@@ -408,7 +540,29 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
 
                     {/* Mode Cards */}
                     <View style={styles.modesContainer}>
-                        {/* Mode 1: Solo 60s Blitz */}
+                        {/* Mode 1: 2-Player Split-Screen Duel */}
+                        <TouchableOpacity
+                            style={[styles.modeCard, { borderColor: `${COLORS.hotPink}88` }]}
+                            onPress={startDuelGame}
+                            activeOpacity={0.85}
+                        >
+                            <View style={styles.modeCardHeader}>
+                                <NeonText size={28}>⚔️</NeonText>
+                                <View style={{ marginLeft: 12, flex: 1 }}>
+                                    <NeonText size={16} weight="bold" color={COLORS.hotPink} glow>
+                                        2-PLAYER SPLIT-SCREEN DUEL
+                                    </NeonText>
+                                    <NeonText size={11} color="#9CA3AF" style={{ marginTop: 2 }}>
+                                        Face opposite ends of the screen. Race to tap the answer first to 10 points!
+                                    </NeonText>
+                                </View>
+                            </View>
+                            <View style={[styles.playTag, { backgroundColor: COLORS.hotPink }]}>
+                                <NeonText size={11} weight="bold" color="#FFF">START DUEL ›</NeonText>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Mode 2: Solo 60s Blitz */}
                         <TouchableOpacity
                             style={styles.modeCard}
                             onPress={startSoloGame}
@@ -427,28 +581,6 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                             </View>
                             <View style={styles.playTag}>
                                 <NeonText size={11} weight="bold" color="#000">PLAY SOLO ›</NeonText>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Mode 2: 2-Player Split-Screen Duel */}
-                        <TouchableOpacity
-                            style={[styles.modeCard, { borderColor: `${COLORS.hotPink}66` }]}
-                            onPress={startDuelGame}
-                            activeOpacity={0.85}
-                        >
-                            <View style={styles.modeCardHeader}>
-                                <NeonText size={28}>⚔️</NeonText>
-                                <View style={{ marginLeft: 12, flex: 1 }}>
-                                    <NeonText size={16} weight="bold" color={COLORS.hotPink} glow>
-                                        2-PLAYER SPLIT-SCREEN DUEL
-                                    </NeonText>
-                                    <NeonText size={11} color="#9CA3AF" style={{ marginTop: 2 }}>
-                                        Face opposite ends of the screen. Race to tap the answer first to 10 points!
-                                    </NeonText>
-                                </View>
-                            </View>
-                            <View style={[styles.playTag, { backgroundColor: COLORS.hotPink }]}>
-                                <NeonText size={11} weight="bold" color="#FFF">START DUEL ›</NeonText>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -601,7 +733,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                             </View>
                         )}
 
-                        <NeonText size={14} color="#9CA3AF" style={{ marginTop: 8 }}>TIME'S UP!</NeonText>
+                        <NeonText size={14} color="#9CA3AF" style={{ marginTop: 8 }}>{"TIME'S UP!"}</NeonText>
                         <NeonText size={42} weight="bold" color={COLORS.neonYellow || '#FFD700'} glow>
                             {score} PTS
                         </NeonText>
@@ -646,115 +778,231 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     // RENDER: 2-PLAYER SPLIT-SCREEN DUEL
     // ─────────────────────────────────────────────────────────────────────────────
     if (gameMode === 'duel') {
-        const p1Name = players[0]?.name || 'Player 1';
-        const p2Name = players[1]?.name || 'Player 2';
-
         return (
-            <View style={styles.duelContainer}>
-                <ConfettiEffect show={showConfetti} pieceCount={40} />
+            <View style={styles.duelScreenWrapper}>
+                <StatusBar hidden={Platform.OS !== 'web'} barStyle="light-content" />
+                <ConfettiEffect show={showConfetti} pieceCount={45} />
 
                 {/* ─ TOP HALF: PLAYER 2 (ROTATED 180 DEG) ─ */}
-                <View style={[styles.duelHalf, styles.duelTopHalf]}>
-                    <View style={styles.duelPlayerBar}>
-                        <NeonText size={13} weight="bold" color={COLORS.hotPink}>
-                            {p2Name}
-                        </NeonText>
-                        <NeonText size={18} weight="bold" color={COLORS.hotPink} glow>
-                            {duelScores.p2} / {TARGET_DUEL_SCORE}
-                        </NeonText>
-                    </View>
-
-                    {duelPhase === 'playing' ? (
-                        <>
-                            <View style={styles.duelEquationWrap}>
-                                <NeonText size={30} weight="bold" color="#FFF">
-                                    {duelProblem?.display}
+                <View style={[styles.playerZone, styles.p2Zone]}>
+                    <View style={styles.rotatedContent}>
+                        {/* P2 Header */}
+                        <View style={styles.duelPlayerBar}>
+                            <View style={styles.duelPlayerInfo}>
+                                <View style={[styles.playerColorDot, { backgroundColor: COLORS.hotPink }]} />
+                                <NeonText size={15} weight="bold" color={COLORS.hotPink}>
+                                    {p2Name}
                                 </NeonText>
                             </View>
+                            <View style={styles.duelScorePillP2}>
+                                <NeonText size={16} weight="bold" color={COLORS.hotPink} glow>
+                                    {duelScores.p2} / {TARGET_DUEL_SCORE}
+                                </NeonText>
+                            </View>
+                        </View>
 
-                            <View style={styles.duelChoicesGrid}>
-                                {duelChoices.map((choice, i) => (
+                        {/* P2 Content: Countdown, Playing, or Game Over */}
+                        {duelPhase === 'countdown' ? (
+                            <View style={styles.duelCountdownWrap}>
+                                <NeonText size={13} color="#9CA3AF" weight="bold" style={{ letterSpacing: 1 }}>
+                                    GET READY
+                                </NeonText>
+                                <Animated.View style={{ transform: [{ scale: countdownAnim }], marginVertical: 8 }}>
+                                    <NeonText size={48} weight="bold" color={COLORS.hotPink} glow>
+                                        {duelCountdown > 0 ? duelCountdown : 'GO!'}
+                                    </NeonText>
+                                </Animated.View>
+                                <NeonText size={11} color="#6B7280">
+                                    FIRST TO {TARGET_DUEL_SCORE} WINS
+                                </NeonText>
+                            </View>
+                        ) : duelPhase === 'playing' ? (
+                            <>
+                                <View style={styles.duelEquationWrap}>
+                                    <NeonText size={11} color="#9CA3AF" style={styles.duelSolveLabel}>
+                                        SOLVE FIRST:
+                                    </NeonText>
+                                    <NeonText size={32} weight="bold" color="#FFFFFF" glow>
+                                        {duelProblem?.display} = ?
+                                    </NeonText>
+                                    {p2Penalty && (
+                                        <View style={styles.penaltyBanner}>
+                                            <NeonText size={10} weight="bold" color="#EF4444">
+                                                ⚠️ WRONG ANSWER – LOCKED (0.8s)
+                                            </NeonText>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {renderDuelChoices('p2', p2Penalty)}
+                            </>
+                        ) : (
+                            <View style={styles.duelWinnerBox}>
+                                <NeonText size={13} color="#9CA3AF" weight="bold">
+                                    MATCH FINISHED
+                                </NeonText>
+                                <NeonText
+                                    size={28}
+                                    weight="bold"
+                                    color={duelWinner === p2Name ? COLORS.hotPink : '#9CA3AF'}
+                                    glow={duelWinner === p2Name}
+                                    style={{ marginVertical: 6 }}
+                                >
+                                    {duelWinner === p2Name ? '🏆 YOU WIN!' : `${p1Name} WINS`}
+                                </NeonText>
+                                <NeonText size={13} color="#D1D5DB" style={{ marginBottom: 12 }}>
+                                    FINAL: {duelScores.p2} – {duelScores.p1}
+                                </NeonText>
+                                <View style={styles.duelGameOverButtons}>
                                     <TouchableOpacity
-                                        key={i}
-                                        style={[styles.duelChoiceBtn, p2Penalty && styles.penaltyBtn]}
-                                        onPress={() => handleDuelAnswer('p2', choice)}
-                                        disabled={p2Penalty}
+                                        style={[styles.duelActionBtn, { backgroundColor: COLORS.hotPink }]}
+                                        onPress={startDuelGame}
                                         activeOpacity={0.8}
                                     >
-                                        <NeonText size={18} weight="bold" color={p2Penalty ? '#6B7280' : '#FFF'}>
-                                            {choice}
+                                        <NeonText size={12} weight="bold" color="#FFFFFF">
+                                            REMATCH 🔄
                                         </NeonText>
                                     </TouchableOpacity>
-                                ))}
+                                    <TouchableOpacity
+                                        style={styles.duelActionBtnSecondary}
+                                        onPress={() => setGameMode('menu')}
+                                        activeOpacity={0.8}
+                                    >
+                                        <NeonText size={12} weight="bold" color="#9CA3AF">
+                                            EXIT
+                                        </NeonText>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </>
-                    ) : (
-                        <View style={styles.duelWinnerBox}>
-                            <NeonText size={22} weight="bold" color={COLORS.hotPink} glow>
-                                {duelWinner === p2Name ? '🏆 YOU WIN!' : 'GAME OVER'}
-                            </NeonText>
-                        </View>
-                    )}
+                        )}
+                    </View>
                 </View>
 
                 {/* ─ CENTER DIVIDER ─ */}
-                <View style={styles.duelDivider}>
-                    <TouchableOpacity
-                        style={styles.duelCloseBtn}
-                        onPress={() => setGameMode('menu')}
-                    >
-                        <NeonText size={10} weight="bold" color="#9CA3AF">✕ EXIT</NeonText>
-                    </TouchableOpacity>
-                </View>
-
-                {/* ─ BOTTOM HALF: PLAYER 1 (UPRIGHT) ─ */}
-                <View style={[styles.duelHalf, styles.duelBottomHalf]}>
-                    <View style={styles.duelPlayerBar}>
-                        <NeonText size={13} weight="bold" color={COLORS.neonCyan}>
-                            {p1Name}
-                        </NeonText>
-                        <NeonText size={18} weight="bold" color={COLORS.neonCyan} glow>
-                            {duelScores.p1} / {TARGET_DUEL_SCORE}
+                <View style={styles.centerDivider}>
+                    <View style={styles.dividerSide}>
+                        <NeonText size={12} weight="bold" color={COLORS.hotPink}>
+                            {p2Name.slice(0, 10)}: {duelScores.p2}
                         </NeonText>
                     </View>
 
-                    {duelPhase === 'playing' ? (
-                        <>
-                            <View style={styles.duelEquationWrap}>
-                                <NeonText size={30} weight="bold" color="#FFF">
-                                    {duelProblem?.display}
+                    <View style={styles.dividerCenter}>
+                        <View style={styles.targetBadge}>
+                            <NeonText size={10} weight="bold" color="#FFD700">
+                                FIRST TO {TARGET_DUEL_SCORE}
+                            </NeonText>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.duelQuitBtn}
+                            onPress={() => setGameMode('menu')}
+                            activeOpacity={0.7}
+                        >
+                            <NeonText size={10} weight="bold" color="#9CA3AF">
+                                ✕ QUIT
+                            </NeonText>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={[styles.dividerSide, { alignItems: 'flex-end' }]}>
+                        <NeonText size={12} weight="bold" color={COLORS.neonCyan}>
+                            {p1Name.slice(0, 10)}: {duelScores.p1}
+                        </NeonText>
+                    </View>
+                </View>
+
+                {/* ─ BOTTOM HALF: PLAYER 1 (UPRIGHT) ─ */}
+                <View style={[styles.playerZone, styles.p1Zone]}>
+                    <View style={styles.normalContent}>
+                        {/* P1 Header */}
+                        <View style={styles.duelPlayerBar}>
+                            <View style={styles.duelPlayerInfo}>
+                                <View style={[styles.playerColorDot, { backgroundColor: COLORS.neonCyan }]} />
+                                <NeonText size={15} weight="bold" color={COLORS.neonCyan}>
+                                    {p1Name}
                                 </NeonText>
                             </View>
+                            <View style={styles.duelScorePillP1}>
+                                <NeonText size={16} weight="bold" color={COLORS.neonCyan} glow>
+                                    {duelScores.p1} / {TARGET_DUEL_SCORE}
+                                </NeonText>
+                            </View>
+                        </View>
 
-                            <View style={styles.duelChoicesGrid}>
-                                {duelChoices.map((choice, i) => (
+                        {/* P1 Content: Countdown, Playing, or Game Over */}
+                        {duelPhase === 'countdown' ? (
+                            <View style={styles.duelCountdownWrap}>
+                                <NeonText size={13} color="#9CA3AF" weight="bold" style={{ letterSpacing: 1 }}>
+                                    GET READY
+                                </NeonText>
+                                <Animated.View style={{ transform: [{ scale: countdownAnim }], marginVertical: 8 }}>
+                                    <NeonText size={48} weight="bold" color={COLORS.neonCyan} glow>
+                                        {duelCountdown > 0 ? duelCountdown : 'GO!'}
+                                    </NeonText>
+                                </Animated.View>
+                                <NeonText size={11} color="#6B7280">
+                                    FIRST TO {TARGET_DUEL_SCORE} WINS
+                                </NeonText>
+                            </View>
+                        ) : duelPhase === 'playing' ? (
+                            <>
+                                <View style={styles.duelEquationWrap}>
+                                    <NeonText size={11} color="#9CA3AF" style={styles.duelSolveLabel}>
+                                        SOLVE FIRST:
+                                    </NeonText>
+                                    <NeonText size={32} weight="bold" color="#FFFFFF" glow>
+                                        {duelProblem?.display} = ?
+                                    </NeonText>
+                                    {p1Penalty && (
+                                        <View style={styles.penaltyBanner}>
+                                            <NeonText size={10} weight="bold" color="#EF4444">
+                                                ⚠️ WRONG ANSWER – LOCKED (0.8s)
+                                            </NeonText>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {renderDuelChoices('p1', p1Penalty)}
+                            </>
+                        ) : (
+                            <View style={styles.duelWinnerBox}>
+                                <NeonText size={13} color="#9CA3AF" weight="bold">
+                                    MATCH FINISHED
+                                </NeonText>
+                                <NeonText
+                                    size={28}
+                                    weight="bold"
+                                    color={duelWinner === p1Name ? COLORS.neonCyan : '#9CA3AF'}
+                                    glow={duelWinner === p1Name}
+                                    style={{ marginVertical: 6 }}
+                                >
+                                    {duelWinner === p1Name ? '🏆 YOU WIN!' : `${p2Name} WINS`}
+                                </NeonText>
+                                <NeonText size={13} color="#D1D5DB" style={{ marginBottom: 12 }}>
+                                    FINAL: {duelScores.p1} – {duelScores.p2}
+                                </NeonText>
+                                <View style={styles.duelGameOverButtons}>
                                     <TouchableOpacity
-                                        key={i}
-                                        style={[styles.duelChoiceBtn, p1Penalty && styles.penaltyBtn]}
-                                        onPress={() => handleDuelAnswer('p1', choice)}
-                                        disabled={p1Penalty}
+                                        style={[styles.duelActionBtn, { backgroundColor: COLORS.neonCyan }]}
+                                        onPress={startDuelGame}
                                         activeOpacity={0.8}
                                     >
-                                        <NeonText size={18} weight="bold" color={p1Penalty ? '#6B7280' : '#FFF'}>
-                                            {choice}
+                                        <NeonText size={12} weight="bold" color="#05050A">
+                                            REMATCH 🔄
                                         </NeonText>
                                     </TouchableOpacity>
-                                ))}
+                                    <TouchableOpacity
+                                        style={styles.duelActionBtnSecondary}
+                                        onPress={() => setGameMode('menu')}
+                                        activeOpacity={0.8}
+                                    >
+                                        <NeonText size={12} weight="bold" color="#9CA3AF">
+                                            EXIT
+                                        </NeonText>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </>
-                    ) : (
-                        <View style={styles.duelWinnerBox}>
-                            <NeonText size={22} weight="bold" color={COLORS.neonCyan} glow>
-                                {duelWinner === p1Name ? '🏆 YOU WIN!' : 'GAME OVER'}
-                            </NeonText>
-                            <TouchableOpacity
-                                style={styles.duelRematchBtn}
-                                onPress={startDuelGame}
-                            >
-                                <NeonText size={12} weight="bold" color="#000">REMATCH 🔄</NeonText>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                        )}
+                    </View>
                 </View>
             </View>
         );
@@ -763,7 +1011,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     return null;
 };
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, insets) => StyleSheet.create({
     menuContainer: {
         flex: 1,
         paddingHorizontal: 16,
@@ -967,81 +1215,207 @@ const getStyles = (COLORS) => StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 16,
     },
-    // Duel Split Screen Styles
-    duelContainer: {
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DUEL SPLIT SCREEN STYLES
+    // ─────────────────────────────────────────────────────────────────────────
+    duelScreenWrapper: {
         flex: 1,
-        backgroundColor: '#05070e',
+        width: '100%',
+        height: Platform.OS === 'web' ? '100vh' : '100%',
+        maxHeight: Platform.OS === 'web' ? '100vh' : undefined,
+        backgroundColor: '#050711',
+        overflow: 'hidden',
+        flexDirection: 'column',
     },
-    duelHalf: {
+    playerZone: {
         flex: 1,
-        paddingHorizontal: 16,
-        justifyContent: 'space-between',
-        paddingVertical: 14,
+        width: '100%',
+        overflow: 'hidden',
+        position: 'relative',
     },
-    duelTopHalf: {
-        transform: [{ rotate: '180deg' }],
+    p2Zone: {
         backgroundColor: 'rgba(255, 0, 127, 0.03)',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255, 0, 127, 0.15)',
     },
-    duelBottomHalf: {
+    p1Zone: {
         backgroundColor: 'rgba(0, 240, 255, 0.03)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0, 240, 255, 0.15)',
     },
-    duelDivider: {
-        height: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
+    rotatedContent: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        transform: [{ rotate: '180deg' }],
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingTop: insets?.top > 0 ? insets.top : (Platform.OS === 'ios' ? 36 : 14),
+        paddingBottom: 10,
     },
-    duelCloseBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 3,
-        borderRadius: 10,
-        backgroundColor: '#1E293B',
+    normalContent: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        paddingBottom: insets?.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 24 : 14),
     },
     duelPlayerBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        width: '100%',
+    },
+    duelPlayerInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    playerColorDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    duelScorePillP2: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 0, 127, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 0, 127, 0.35)',
+    },
+    duelScorePillP1: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0, 240, 255, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 240, 255, 0.35)',
+    },
+    duelCountdownWrap: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     duelEquationWrap: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 10,
+        paddingVertical: 6,
     },
-    duelChoicesGrid: {
+    duelSolveLabel: {
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    penaltyBanner: {
+        marginTop: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 3,
+        borderRadius: 8,
+        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+        borderWidth: 1,
+        borderColor: '#EF4444',
+    },
+    duelChoicesContainer: {
+        width: '100%',
+        gap: 8,
+    },
+    duelChoiceRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        justifyContent: 'space-between',
+        gap: 8,
+        width: '100%',
     },
     duelChoiceBtn: {
-        width: '48%',
-        height: 52,
-        borderRadius: 14,
+        flex: 1,
+        height: 50,
+        borderRadius: 12,
         backgroundColor: 'rgba(255, 255, 255, 0.08)',
         borderWidth: 1.5,
-        borderColor: 'rgba(255, 255, 255, 0.18)',
+        borderColor: 'rgba(255, 255, 255, 0.16)',
         alignItems: 'center',
         justifyContent: 'center',
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            },
+        }),
+    },
+    duelChoiceBtnP2: {
+        backgroundColor: 'rgba(255, 0, 127, 0.12)',
+        borderColor: 'rgba(255, 0, 127, 0.35)',
+    },
+    duelChoiceBtnP1: {
+        backgroundColor: 'rgba(0, 240, 255, 0.12)',
+        borderColor: 'rgba(0, 240, 255, 0.35)',
     },
     penaltyBtn: {
-        opacity: 0.3,
-        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+        opacity: 0.35,
+        backgroundColor: 'rgba(239, 68, 68, 0.12)',
         borderColor: '#EF4444',
+    },
+    centerDivider: {
+        height: 44,
+        backgroundColor: '#0a0d1e',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 14,
+        zIndex: 50,
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    dividerSide: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    dividerCenter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    targetBadge: {
+        backgroundColor: 'rgba(255, 215, 0, 0.12)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    duelQuitBtn: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
     },
     duelWinnerBox: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    duelRematchBtn: {
-        marginTop: 12,
-        backgroundColor: COLORS.neonCyan,
-        paddingHorizontal: 20,
+    duelGameOverButtons: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 6,
+    },
+    duelActionBtn: {
+        paddingHorizontal: 18,
         paddingVertical: 8,
         borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    duelActionBtnSecondary: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 
 export default LocalMathBlitzScreen;
-

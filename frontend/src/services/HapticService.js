@@ -152,6 +152,32 @@ class HapticService {
     }
 
     /**
+     * Generic trigger method for backward compatibility
+     */
+    async trigger(type = 'impactMedium') {
+        if (!this.canVibrate()) return;
+        try {
+            const lower = (type || '').toLowerCase();
+            if (lower.includes('light')) return await this.impact(HapticStyle.LIGHT);
+            if (lower.includes('medium')) return await this.impact(HapticStyle.MEDIUM);
+            if (lower.includes('heavy')) return await this.impact(HapticStyle.HEAVY);
+            if (lower.includes('success')) return await this.notification(NotificationType.SUCCESS);
+            if (lower.includes('warning')) return await this.notification(NotificationType.WARNING);
+            if (lower.includes('error')) return await this.notification(NotificationType.ERROR);
+            await this.selection();
+        } catch (_) {
+            // Gracefully ignore haptic failures
+        }
+    }
+
+    /**
+     * Celebration alias for winner
+     */
+    async celebration() {
+        await this.winner();
+    }
+
+    /**
      * Timer tick feedback (for countdown)
      */
     async timerTick() {
