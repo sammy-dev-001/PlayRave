@@ -12,12 +12,15 @@ import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import RaveLights from '../components/RaveLights';
 import { useTheme } from '../context/ThemeContext';
+import HapticService from '../services/HapticService';
+import SoundService from '../services/SoundService';
 
-// Ionicons for the memory game
-const MEMORY_ITEMS = [
-    'game-controller', 'flash', 'headset', 'musical-notes', 'planet', 'rocket',
-    'star', 'flame', 'heart', 'diamond', 'skull', 'rose',
-    'pizza', 'beer', 'ice-cream', 'moon', 'sunny', 'snow'
+// 16 distinct board items matching the 4x4 board grid exactly
+const BOARD_ITEMS = [
+    'game-controller', 'flash', 'headset', 'musical-notes',
+    'planet', 'rocket', 'star', 'flame',
+    'heart', 'diamond', 'skull', 'rose',
+    'pizza', 'beer', 'ice-cream', 'moon'
 ];
 
 const MemoryChainScreen = ({ route, navigation }) => {
@@ -37,7 +40,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
     const [playerSequences, setPlayerSequences] = useState({}); // Store sequences per player
     const [currentSequence, setCurrentSequence] = useState([]);
     const [playerInput, setPlayerInput] = useState([]);
-    const [showingIndex, setShowingIndex] = useState(0);
+    const [showingIndex, setShowingIndex] = useState(-1);
     const [scores, setScores] = useState(() =>
         players.reduce((acc, p) => ({ ...acc, [p.name]: 0 }), {})
     );
@@ -46,12 +49,21 @@ const MemoryChainScreen = ({ route, navigation }) => {
     const [showWinner, setShowWinner] = useState(false);
 
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
     const currentPlayer = players[currentPlayerIndex];
     const activePlayers = players.filter(p => !eliminated.includes(p.name));
 
     // Initialize game with first sequences for each player
     useEffect(() => {
-        generatePlayerSequence();
+        generatePlayerSequence(1, 0);
     }, []);
 
     // Show sequence animation
@@ -64,14 +76,14 @@ const MemoryChainScreen = ({ route, navigation }) => {
     const [currentLevel, setCurrentLevel] = useState(1);
     const [playersAttemptedLevel, setPlayersAttemptedLevel] = useState([]);
 
-    const generatePlayerSequence = (level = 1) => {
-        const currentPlayer = players[currentPlayerIndex];
-        const playerKey = `${currentPlayerIndex}-${currentPlayer.name}`;
+    const generatePlayerSequence = (level = 1, targetIndex = currentPlayerIndex) => {
+        const targetPlayer = players[targetIndex] || players[0];
+        const playerKey = `${targetIndex}-${targetPlayer.name}`;
 
-        // Generate a random sequence for this player
+        // Generate a random sequence strictly from items that exist on the board
         const newSequence = [];
         for (let i = 0; i < level; i++) {
-            const randomItem = MEMORY_ITEMS[Math.floor(Math.random() * MEMORY_ITEMS.length)];
+            const randomItem = BOARD_ITEMS[Math.floor(Math.random() * BOARD_ITEMS.length)];
             newSequence.push(randomItem);
         }
 
@@ -83,27 +95,41 @@ const MemoryChainScreen = ({ route, navigation }) => {
     };
 
     const showSequence = async () => {
+        setShowingIndex(-1);
+        await new Promise(resolve => setTimeout(resolve, 600));
+
         for (let i = 0; i < currentSequence.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            if (!isMountedRef.current) return;
             setShowingIndex(i);
+            HapticService.impact('light');
 
             // Animate the item
             Animated.sequence([
                 Animated.timing(scaleAnim, {
                     toValue: 1.3,
-                    duration: 200,
+                    duration: 250,
                     useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(scaleAnim, {
                     toValue: 1,
-                    duration: 200,
+                    duration: 250,
                     useNativeDriver: Platform.OS !== 'web',
                 })
             ]).start();
+
+            await new Promise(resolve => setTimeout(resolve, 700));
+
+            // Brief blank between items so consecutive identical items are clearly distinct
+            if (i < currentSequence.length - 1) {
+                if (!isMountedRef.current) return;
+                setShowingIndex(-1);
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
         }
 
         // Wait a bit then switch to input phase
         await new Promise(resolve => setTimeout(resolve, 500));
+        if (!isMountedRef.current) return;
         setShowingIndex(-1);
         setPhase('input');
     };
@@ -142,7 +168,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
         setCurrentPlayerIndex(nextIndex);
 
         // Generate new random sequence for next player
-        generatePlayerSequence(nextLevel);
+        generatePlayerSequence(nextLevel, nextIndex);
 
         setLastEliminated(null);
         setPhase('show');
@@ -153,15 +179,21 @@ const MemoryChainScreen = ({ route, navigation }) => {
     };
 
     const handleItemPress = (item) => {
+        if (phase !== 'input') return;
+        if (playerInput.length >= currentSequence.length) return;
+
         const nextInputIndex = playerInput.length;
         const expectedItem = currentSequence[nextInputIndex];
 
         if (item === expectedItem) {
+            HapticService.impact('light');
+            SoundService.play('buttonClick');
             const nextInput = [...playerInput, item];
             setPlayerInput(nextInput);
 
             // Check if sequence is complete
             if (nextInput.length === currentSequence.length) {
+                HapticService.notification('success');
                 // Award points
                 const points = currentLevel * 10;
                 setScores(prev => ({
@@ -171,11 +203,14 @@ const MemoryChainScreen = ({ route, navigation }) => {
                 
                 // Delay slightly for effect before showing success
                 setTimeout(() => {
-                    setPhase('result');
-                }, 500);
+                    if (isMountedRef.current) {
+                        setPhase('result');
+                    }
+                }, 400);
             }
         } else {
             // Wrong item - elimination!
+            HapticService.notification('error');
             setEliminated(prev => [...prev, currentPlayer.name]);
             setLastEliminated(currentPlayer.name);
             setPhase('result');
@@ -192,7 +227,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
         const winnerScore = scores[winner?.name] || 0;
 
         return (
-            <NeonContainer>
+            <NeonContainer showBackButton onBackPress={handleEndGame}>
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
                     <NeonText size={28} weight="bold" glow>
@@ -243,7 +278,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
     // Show Sequence Phase
     if (phase === 'show') {
         return (
-            <NeonContainer>
+            <NeonContainer showBackButton onBackPress={handleEndGame}>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
                         ROUND {currentSequence.length}
@@ -304,7 +339,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
     // Input Phase
     if (phase === 'input') {
         return (
-            <NeonContainer>
+            <NeonContainer showBackButton onBackPress={handleEndGame}>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.limeGlow}>
                         YOUR TURN!
@@ -332,7 +367,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.itemGrid}>
-                    {MEMORY_ITEMS.slice(0, 16).map((item, index) => (
+                    {BOARD_ITEMS.map((item, index) => (
                         <TouchableOpacity
                             key={index}
                             style={styles.itemButton}
@@ -360,7 +395,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
         const wasCorrect = !eliminated.includes(currentPlayer.name) || lastEliminated !== currentPlayer.name;
 
         return (
-            <NeonContainer>
+            <NeonContainer showBackButton onBackPress={handleEndGame}>
                 <View style={styles.resultContainer}>
                     {lastEliminated === currentPlayer.name ? (
                         <>

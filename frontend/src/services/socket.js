@@ -1,7 +1,9 @@
 import io from 'socket.io-client';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import LANService from './LANService';
+import { STORAGE_KEYS } from '../constants/storage';
 
 // Auto-detect the server IP from Expo's manifest or LAN mode
 const getServerUrl = () => {
@@ -138,7 +140,13 @@ class SocketService {
             reconnectionDelay: this.baseReconnectDelay,
             reconnectionDelayMax: this.maxReconnectDelay,
             forceNew: true, // Force a brand new connection Manager
-            auth: authPayload,
+            auth: (cb) => {
+                const payload = {};
+                if (this.authToken) payload.token = this.authToken;
+                const effectiveUserId = this.userId || this.lastPlayerData?.userId;
+                if (effectiveUserId) payload.userId = effectiveUserId;
+                cb(payload);
+            },
         });
 
         this.socket.on('connect', () => {
@@ -189,7 +197,7 @@ class SocketService {
             console.log('SocketService disconnected:', reason);
             this.setConnectionState(ConnectionState.DISCONNECTED);
             this.stopPingMonitoring();
-            this.stopHealthCheckMonitoring();
+            // Note: Keep healthCheckInterval running so Render stays awake during reconnection attempts
 
             // Don't auto-reconnect if we intentionally disconnected
             if (this.intentionalDisconnect) {
@@ -306,7 +314,7 @@ class SocketService {
                 this.lastPingTime = Date.now();
                 this.socket.emit('ping');
             }
-        }, 15000); // Ping every 15 seconds (less aggressive to avoid false disconnects)
+        }, 10000); // Ping every 10 seconds to keep connection active through proxies and NAT firewalls
     }
 
     stopPingMonitoring() {
@@ -322,7 +330,7 @@ class SocketService {
     startHealthCheckMonitoring() {
         this.stopHealthCheckMonitoring();
 
-        // Pinging every 4 minutes (Render spins down at 15 mins)
+        // Pinging every 2.5 minutes (Render spins down at 15 mins)
         this.healthCheckInterval = setInterval(async () => {
             try {
                 const healthUrl = `${SOCKET_URL}/health`;
@@ -331,7 +339,7 @@ class SocketService {
             } catch (error) {
                 // Ignore health check errors
             }
-        }, 4 * 60 * 1000);
+        }, 2.5 * 60 * 1000);
     }
 
     stopHealthCheckMonitoring() {
@@ -342,16 +350,33 @@ class SocketService {
     }
 
     /**
-     * Store room data for auto-rejoin
+     * Store room data for auto-rejoin and persistence
      */
     setRoomData(roomId, playerData) {
         this.lastRoomId = roomId;
         this.lastPlayerData = playerData;
+
+        // Persist to AsyncStorage so Home screen and app restarts can offer 1-tap rejoin
+        if (roomId && playerData) {
+            try {
+                AsyncStorage.setItem(STORAGE_KEYS.LAST_SESSION, JSON.stringify({
+                    roomId,
+                    playerName: playerData.name || playerData.playerName,
+                    avatar: playerData.avatar,
+                    avatarColor: playerData.avatarColor,
+                    userId: playerData.userId || this.userId,
+                    savedAt: Date.now()
+                })).catch(() => {});
+            } catch (_) {}
+        }
     }
 
     clearRoomData() {
         this.lastRoomId = null;
         this.lastPlayerData = null;
+        try {
+            AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION).catch(() => {});
+        } catch (_) {}
     }
 
     /**
@@ -360,14 +385,16 @@ class SocketService {
     attemptRoomRejoin() {
         if (this.lastRoomId && this.lastPlayerData && this.socket?.connected) {
             console.log('Attempting to rejoin room:', this.lastRoomId);
+            const targetUserId = this.lastPlayerData.userId || this.userId;
 
             // Prefer request-room-sync (recovers full game state including in-progress games)
             // over join-room (only handles lobby-level join)
-            if (this.lastPlayerData.userId) {
-                console.log('Using request-room-sync for full state recovery');
+            if (targetUserId) {
+                console.log('Using request-room-sync for full state recovery with user:', targetUserId);
                 this.socket.emit('request-room-sync', {
                     roomId: this.lastRoomId,
-                    userId: this.lastPlayerData.userId,
+                    userId: targetUserId,
+                    playerName: this.lastPlayerData.name,
                 });
             } else {
                 // Fallback to join-room if we don't have userId
@@ -377,7 +404,7 @@ class SocketService {
                     playerName: this.lastPlayerData.name,
                     avatar: this.lastPlayerData.avatar,
                     avatarColor: this.lastPlayerData.avatarColor,
-                    userId: this.lastPlayerData.userId,
+                    userId: targetUserId,
                     isRejoin: true,
                 });
             }

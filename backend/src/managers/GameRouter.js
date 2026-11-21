@@ -54,6 +54,7 @@ const engineRegistry = {
     // ── Board Games ──────────────────────────────────────────────────────
     'checkers':             require('../games/CheckersEngine'),
     'connect-four':         require('../games/ConnectFourEngine'),
+    'ludo':                 require('../games/LudoEngine'),
 };
 
 class GameRouter {

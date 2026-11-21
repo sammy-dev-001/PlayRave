@@ -45,7 +45,11 @@ const NeverHaveIEverCategoryScreen = ({ route, navigation }) => {
     ];
 
     const handleStartGame = () => {
-        navigation.navigate('NeverHaveIEver', { players, category: selectedCategory });
+        navigation.navigate('NeverHaveIEver', {
+            players,
+            category: selectedCategory,
+            sessionKey: Date.now()
+        });
     };
 
     return (

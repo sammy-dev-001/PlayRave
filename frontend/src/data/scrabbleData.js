@@ -62,12 +62,12 @@ export const BONUS_SQUARES = {
     '14,3': 'DL', '14,11': 'DL'
 };
 
-import { SCRABBLE_WORDS, loadDictionary, isDictionaryLoaded } from './scrabbleWords';
-export { loadDictionary, isDictionaryLoaded };
+import { SCRABBLE_WORDS, loadDictionary, isDictionaryLoaded, isValidScrabbleWord } from './scrabbleWords';
+export { loadDictionary, isDictionaryLoaded, isValidScrabbleWord };
 
 // Word validation helper
 export const isValidWord = (word) => {
-    return SCRABBLE_WORDS.has(word.toLowerCase());
+    return isValidScrabbleWord(word);
 };
 
 // Create a tile bag with all tiles

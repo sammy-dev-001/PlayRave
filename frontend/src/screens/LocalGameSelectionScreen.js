@@ -28,7 +28,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
 
     // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories', 'whot-ai', 'connect-four', 'checkers', 'ludo'];
+    const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories', 'whot-ai', 'connect-four', 'checkers', 'ludo', 'math-blitz', 'button-mash'];
 
 
     const filteredGames = useMemo(() => {
@@ -53,9 +53,9 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 
     const handleSelectGame = (game) => {
         if (isSinglePlayer && game.singlePlayerRouteComponent) {
-            navigation.navigate(game.singlePlayerRouteComponent, { players, isSinglePlayer });
+            navigation.navigate(game.singlePlayerRouteComponent, { players, isSinglePlayer, sessionKey: Date.now() });
         } else {
-            navigation.navigate(game.routeComponent, { players, isSinglePlayer });
+            navigation.navigate(game.routeComponent, { players, isSinglePlayer, sessionKey: Date.now() });
         }
     };
 

@@ -59,6 +59,7 @@ class RateLimiter {
      * @returns {{ allowed: boolean, retryAfterMs?: number }}
      */
     check(socketId, eventName) {
+        if (eventName === 'ping') return { allowed: true };
         const category = EVENT_TO_CATEGORY[eventName] || 'default';
         const config = BUCKET_CONFIG[category];
 

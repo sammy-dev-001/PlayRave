@@ -16,7 +16,28 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const { players } = route.params;
-    const [currentQuestion, setCurrentQuestion] = useState(getRandomQuestion());
+    const [currentQuestion, setCurrentQuestion] = useState(() => getRandomQuestion([]));
+    const lastSessionKeyRef = useRef(route.params?.sessionKey || null);
+
+    const startNewGame = () => {
+        const fresh = getRandomQuestion([]);
+        setCurrentQuestion(fresh);
+        setUsedQuestions([fresh.id]);
+        setVotes({ A: [], B: [] });
+        setShowResults(false);
+        setCurrentPlayerIndex(0);
+        setQuestionNumber(1);
+        setSelectedOption(null);
+        setStreaks({});
+    };
+
+    useEffect(() => {
+        const incomingSession = route.params?.sessionKey;
+        if (incomingSession && lastSessionKeyRef.current !== incomingSession) {
+            lastSessionKeyRef.current = incomingSession;
+            startNewGame();
+        }
+    }, [route.params?.sessionKey]);
     const [usedQuestions, setUsedQuestions] = useState([currentQuestion.id]);
     const [votes, setVotes] = useState({ A: [], B: [] });
     const [showResults, setShowResults] = useState(false);
@@ -186,6 +207,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
     };
 
     const handleEndGame = () => {
+        lastSessionKeyRef.current = null;
         navigation.navigate('LocalGameSelection', { players });
     };
 
@@ -325,6 +347,11 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
                     <View style={styles.actions}>
                         <TouchableOpacity style={styles.nextQuestionBtn} onPress={handleNextQuestion} activeOpacity={0.7}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="flash" size={18} color="#000" /><NeonText size={18} weight="bold" color="#000">NEXT QUESTION</NeonText></View>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.endGameBtn, { borderColor: COLORS.neonCyan, marginBottom: 8 }]} onPress={startNewGame} activeOpacity={0.7}>
+                            <NeonText size={14} color={COLORS.neonCyan} weight="bold">
+                                Restart Game
+                            </NeonText>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.endGameBtn} onPress={handleEndGame} activeOpacity={0.7}>
                             <NeonText size={14} color={COLORS.textMuted}>

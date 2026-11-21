@@ -59,8 +59,8 @@ const io = new Server(server, {
         },
         credentials: true,
     },
-    pingTimeout: 60000,
-    pingInterval: 30000,
+    pingTimeout: 20000,
+    pingInterval: 10000,
 });
 
 // ── Manager Imports ─────────────────────────────────────────────────────

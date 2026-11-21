@@ -35,7 +35,7 @@ class TruthOrDareEngine {
     startGame(room, options = {}) {
         const roomId = room.id;
         const hostParticipates = options.hostParticipates !== false;
-        const category = options.category || 'normal';
+        const category = (options.category || 'normal').toLowerCase();
         
         const playerOrder = [];
 
@@ -62,7 +62,7 @@ class TruthOrDareEngine {
             roomId,
             category,
             playerOrder,
-            currentPlayerIndex: 0,
+            currentPlayerIndex: Math.floor(Math.random() * playerOrder.length),
             currentPrompt: null,
             promptType: null, // 'truth' or 'dare'
             usedTruths: [],

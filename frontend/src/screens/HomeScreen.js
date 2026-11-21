@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     View, StyleSheet, TextInput, Alert, ScrollView,
     Platform, StatusBar, Modal, TouchableOpacity
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ThemeBackground from '../components/ThemeBackground';
 import AvatarPicker from '../components/AvatarPicker';
@@ -12,7 +14,11 @@ import TopHeader from '../components/home/TopHeader';
 import ProfileSection from '../components/home/ProfileSection';
 import OnlineLobbyCard from '../components/home/OnlineLobbyCard';
 import SecondaryModes from '../components/home/SecondaryModes';
+import PartyToolsSection from '../components/home/PartyToolsSection';
 import ProfileStatsBar from '../components/home/ProfileStatsBar';
+import CoinFlipModal from '../components/CoinFlipModal';
+import GiveawayWheelModal from '../components/GiveawayWheelModal';
+import LivePollModal from '../components/LivePollModal';
 import NeonText from '../components/NeonText';
 import SocketService from '../services/socket';
 import SoundService from '../services/SoundService';
@@ -58,12 +64,12 @@ function checkRoomExists(roomId) {
             resolve(!!exists);
         };
 
-        // Timeout: if server doesn't respond in 3s, fail-safe to false.
+        // Timeout: if server doesn't respond in 3s, fail-safe to true to avoid wiping valid session during reconnect.
         const timeoutId = setTimeout(() => {
             if (settled) return;
             settled = true;
             SocketService.off('check-room-result', onResult);
-            resolve(false);
+            resolve(true);
         }, 3000);
 
         SocketService.on('check-room-result', onResult);
@@ -89,6 +95,13 @@ const HomeScreen = ({ navigation }) => {
     
     // Name error modal state
     const [showNameError, setShowNameError] = useState(false);
+
+    // Party Micro-Games modal states
+    const [showCoinFlip, setShowCoinFlip] = useState(false);
+    const [showSpinWheel, setShowSpinWheel] = useState(false);
+    const [showLivePoll, setShowLivePoll] = useState(false);
+    const [pollRoomId, setPollRoomId] = useState(null);
+    const [wheelRoomId, setWheelRoomId] = useState(null);
 
     // Reactive Sync for name input (autofill on hydration)
     useEffect(() => {
@@ -167,38 +180,46 @@ const HomeScreen = ({ navigation }) => {
         SoundService.init();
     }, []);
 
-    // ─── CoD-Style Rejoin Session Check ───────────────────────────────────────
-    // checkRoomExists is a module-level function (above the component).
-    // On mount, check AsyncStorage for a recent session.
-    // If found AND the room still exists on the server, show the rejoin modal.
-    useEffect(() => {
-        const checkSession = async () => {
-            try {
-                const raw = await AsyncStorage.getItem(STORAGE_KEYS.LAST_SESSION);
-                if (!raw) return;
+    // ─── CoD-Style Rejoin Session Check on Screen Focus ───────────────────────
+    // Whenever HomeScreen gains focus (e.g. after navigating back from a disconnect),
+    // check AsyncStorage for a recent active session and show banner.
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+            const checkSession = async () => {
+                try {
+                    const raw = await AsyncStorage.getItem(STORAGE_KEYS.LAST_SESSION);
+                    if (!raw || !isActive) return;
 
-                const session = JSON.parse(raw);
-                const age = Date.now() - (session.savedAt || 0);
+                    const session = JSON.parse(raw);
+                    const age = Date.now() - (session.savedAt || 0);
 
-                if (age >= SESSION_MAX_AGE_MS || !session.roomId) {
-                    await AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION);
-                    return;
+                    if (age >= SESSION_MAX_AGE_MS || !session.roomId) {
+                        await AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION);
+                        if (isActive) setRejoinSession(null);
+                        return;
+                    }
+
+                    const roomStillExists = await checkRoomExists(session.roomId);
+                    if (!roomStillExists) {
+                        await AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION);
+                        if (isActive) setRejoinSession(null);
+                        return;
+                    }
+
+                    if (isActive) {
+                        setRejoinSession(session);
+                    }
+                } catch (_) {
+                    // Storage or network error — non-fatal
                 }
-
-                const roomStillExists = await checkRoomExists(session.roomId);
-                if (!roomStillExists) {
-                    await AsyncStorage.removeItem(STORAGE_KEYS.LAST_SESSION);
-                    return;
-                }
-
-                setRejoinSession(session);
-                setShowRejoinModal(true);
-            } catch (_) {
-                // Storage or network error — non-fatal, just don't show modal
-            }
-        };
-        checkSession();
-    }, []);
+            };
+            checkSession();
+            return () => {
+                isActive = false;
+            };
+        }, [])
+    );
     // ──────────────────────────────────────────────────────────────────────────────
 
     const handleRejoin = () => {
@@ -224,15 +245,25 @@ const HomeScreen = ({ navigation }) => {
         const checkDeepLink = () => {
             if (typeof window !== 'undefined' && window.location) {
                 const params = new URLSearchParams(window.location.search);
-                const joinCode = params.get('join');
+                const joinCode = params.get('join') || params.get('room');
+                const mode = params.get('mode');
                 if (joinCode) {
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    navigation.navigate('Join', {
-                        playerName: name,
-                        roomCode: joinCode,
-                        avatar: selectedAvatar,
-                        avatarColor: selectedColor,
-                    });
+                    const cleanCode = joinCode.toUpperCase();
+                    if (mode === 'poll') {
+                        setPollRoomId(cleanCode);
+                        setShowLivePoll(true);
+                    } else if (mode === 'wheel') {
+                        setWheelRoomId(cleanCode);
+                        setShowSpinWheel(true);
+                    } else {
+                        navigation.navigate('Join', {
+                            playerName: name,
+                            roomCode: cleanCode,
+                            avatar: selectedAvatar,
+                            avatarColor: selectedColor,
+                        });
+                    }
                 }
             }
         };
@@ -307,6 +338,33 @@ const HomeScreen = ({ navigation }) => {
                     </View>
                 )}
 
+                {/* ── Active Match In-App Rejoin Banner ── */}
+                {rejoinSession && (
+                    <View style={styles.rejoinBanner}>
+                        <View style={styles.rejoinBannerPulseDot} />
+                        <View style={styles.rejoinBannerInfo}>
+                            <NeonText style={styles.rejoinBannerEyebrow}>ACTIVE MATCH IN PROGRESS</NeonText>
+                            <NeonText style={styles.rejoinBannerTitle} numberOfLines={1}>
+                                Room {rejoinSession.roomId} {rejoinSession.playerName ? `(${rejoinSession.playerName})` : ''}
+                            </NeonText>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.rejoinBannerResumeBtn}
+                            onPress={handleRejoin}
+                            activeOpacity={0.8}
+                        >
+                            <NeonText style={styles.rejoinBannerResumeText}>RESUME ▶</NeonText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.rejoinBannerDismissBtn}
+                            onPress={handleDismissRejoin}
+                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        >
+                            <Ionicons name="close" size={18} color={COLORS.textMuted} />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Online Lobby Card */}
                 <OnlineLobbyCard
                     onHostPress={handleCreate}
@@ -318,6 +376,22 @@ const HomeScreen = ({ navigation }) => {
                 <SecondaryModes
                     onLocalPress={handleLocalParty}
                     onLANPress={() => navigation.navigate('LANMode')}
+                />
+
+                {/* Party Utilities & Micro-Games */}
+                <PartyToolsSection
+                    onCoinFlipPress={() => {
+                        startMusicOnInteraction();
+                        setShowCoinFlip(true);
+                    }}
+                    onSpinWheelPress={() => {
+                        startMusicOnInteraction();
+                        setShowSpinWheel(true);
+                    }}
+                    onLivePollPress={() => {
+                        startMusicOnInteraction();
+                        setShowLivePoll(true);
+                    }}
                 />
 
                 {/* Profile & Stats Bar */}
@@ -434,6 +508,22 @@ const HomeScreen = ({ navigation }) => {
                 currentAvatar={selectedAvatar}
             />
 
+            {/* Party Micro-Game Modals */}
+            <CoinFlipModal
+                visible={showCoinFlip}
+                onClose={() => setShowCoinFlip(false)}
+            />
+            <GiveawayWheelModal
+                visible={showSpinWheel}
+                onClose={() => { setShowSpinWheel(false); setWheelRoomId(null); }}
+                initialRoomId={wheelRoomId}
+            />
+            <LivePollModal
+                visible={showLivePoll}
+                onClose={() => { setShowLivePoll(false); setPollRoomId(null); }}
+                initialRoomId={pollRoomId}
+            />
+
             {/* iOS Install App Prompt */}
             <InstallAppModal />
         </View>
@@ -476,6 +566,57 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     bottomSpacer: {
         height: 30,
+    },
+
+    // ── Rejoin Banner ─────────────────────────────────────────────────────────
+    rejoinBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 255, 255, 0.08)',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: COLORS.neonCyan,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        marginBottom: 16,
+    },
+    rejoinBannerPulseDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: COLORS.limeGlow,
+        marginRight: 10,
+    },
+    rejoinBannerInfo: {
+        flex: 1,
+        marginRight: 8,
+    },
+    rejoinBannerEyebrow: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: COLORS.neonCyan,
+        letterSpacing: 1,
+    },
+    rejoinBannerTitle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: COLORS.textPrimary,
+        marginTop: 2,
+    },
+    rejoinBannerResumeBtn: {
+        backgroundColor: COLORS.neonCyan,
+        borderRadius: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        marginRight: 6,
+    },
+    rejoinBannerResumeText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: COLORS.deepNightBlack,
+    },
+    rejoinBannerDismissBtn: {
+        padding: 4,
     },
 
     // ── Rejoin Modal ──────────────────────────────────────────────────────────

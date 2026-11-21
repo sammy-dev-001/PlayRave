@@ -35,6 +35,45 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
     const [isMuted, setIsMuted] = useState(SoundService.getMuted());
     const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
 
+    const lastSessionKeyRef = React.useRef(route.params?.sessionKey || null);
+    const lastCategoryRef = React.useRef(category);
+
+    const startNewGame = (cat = category) => {
+        const freshPrompt = getRandomPrompt(cat, []);
+        setCurrentPrompt(freshPrompt);
+        setUsedPrompts([freshPrompt]);
+        setRoundNumber(1);
+        const scores = {};
+        players.forEach(player => {
+            scores[player.id] = 0;
+        });
+        setPlayerScores(scores);
+        setClickedThisRound({});
+    };
+
+    React.useEffect(() => {
+        const incomingSession = route.params?.sessionKey;
+        const categoryChanged = lastCategoryRef.current !== category;
+        const sessionChanged = incomingSession && lastSessionKeyRef.current !== incomingSession;
+
+        if (sessionChanged || categoryChanged) {
+            lastSessionKeyRef.current = incomingSession;
+            lastCategoryRef.current = category;
+            startNewGame(category);
+        }
+    }, [route.params?.sessionKey, category]);
+
+    const handleRestartGame = () => {
+        HapticService.selection();
+        startNewGame(category);
+    };
+
+    const handleEndGame = () => {
+        HapticService.selection();
+        lastSessionKeyRef.current = null;
+        navigation.navigate('LocalGameSelection', { players });
+    };
+
     const handleNextPrompt = () => {
         HapticService.impact('light');
         const newPrompt = getRandomPrompt(category, usedPrompts);
@@ -133,9 +172,14 @@ const NeverHaveIEverScreen = ({ route, navigation }) => {
                     onPress={handleNextPrompt}
                 />
                 <NeonButton
+                    title="RESTART GAME"
+                    variant="secondary"
+                    onPress={handleRestartGame}
+                />
+                <NeonButton
                     title="END GAME"
                     variant="secondary"
-                    onPress={() => navigation.navigate('LocalGameSelection', { players })}
+                    onPress={handleEndGame}
                 />
             </View>
         </NeonContainer>

@@ -1,7 +1,7 @@
-// Truth or Dare prompts organized by category
+// Truth or Dare prompts for backend
 const truthOrDarePrompts = {
-    normal: {
-        truths: [
+    "normal": {
+        "truths": [
             "What's the most embarrassing thing you've ever done?",
             "Who was your first crush?",
             "What's your biggest fear?",
@@ -106,9 +106,53 @@ const truthOrDarePrompts = {
             "What is the weirdest thing you collect?",
             "What is your most embarrassing Google search?",
             "If you had to delete one app from your phone, what would it be?",
-            "What is the worst lie you've ever told your parents?"
+            "What is the worst lie you've ever told your parents?",
+            "What is the weirdest habit you have when you are completely alone?",
+            "What is something childish you still do regularly?",
+            "Have you ever blamed a pet for something embarrassing you did?",
+            "What is the longest you've ever gone without taking a shower?",
+            "What is the most ridiculous lie you told as a kid that an adult believed?",
+            "Have you ever stalked an ex's new partner on social media?",
+            "What is the most useless talent or skill you possess?",
+            "What is your biggest pet peeve that completely ruins your mood?",
+            "Have you ever pretended to be sick to avoid a social gathering?",
+            "What is the most embarrassing nickname anyone has ever given you?",
+            "What is the cringiest thing currently saved on your phone?",
+            "Have you ever accidentally eaten pet food or something inedible?",
+            "What is the worst haircut or fashion disaster you've ever had?",
+            "What is one food you secretly love that most people think is gross?",
+            "Have you ever lied about your age or height?",
+            "What is the most awkward text you sent to the wrong person?",
+            "If you were arrested with no explanation, what would your friends assume it was for?",
+            "Have you ever practiced an award speech in front of the mirror?",
+            "What is your guiltiest pleasure reality TV show or YouTube channel?",
+            "Have you ever cheated in a game of Monopoly or Uno with your family?",
+            "What is something you pretend to understand just to fit into conversations?",
+            "What is the most awkward interaction you've ever had with a stranger?",
+            "Have you ever dropped food on the floor, picked it up, and eaten it after 10 seconds?",
+            "What is the worst advice you have ever given someone that they actually followed?",
+            "Have you ever re-gifted a birthday or holiday present?",
+            "If you could erase one memory from your brain forever, what would it be?",
+            "Have you ever secretly disliked a gift someone gave you but acted like you loved it?",
+            "What is the silliest thing you have ever cried over?",
+            "Have you ever accidentally walked into the wrong public restroom?",
+            "What is something you Googled recently that you'd be embarrassed to admit?",
+            "Have you ever pretended to be on a phone call to avoid talking to someone?",
+            "What song is your ultimate guilty pleasure that you blast when nobody's around?",
+            "Have you ever broken something at a friend's house and never told them?",
+            "What is the weirdest superstition you secretly believe in?",
+            "If your pet could speak human language for 1 minute, what secrets would they spill?",
+            "Have you ever worn your clothes inside out for an entire day?",
+            "What is the worst excuse you've ever used to get out of doing a chore?",
+            "Have you ever bought something expensive and instantly regretted it five minutes later?",
+            "What is the most awkward silence you have ever experienced?",
+            "Have you ever laughed so hard you snorted or spit out your drink?",
+            "What is the weirdest dream you remember having recently?",
+            "Have you ever tried to cut your own hair and completely ruined it?",
+            "What is the most embarrassing thing in your web browsing history right now?",
+            "If you had to be trapped on a desert island with one person in this room, who would it be?"
         ],
-        dares: [
+        "dares": [
             "Do 20 pushups right now",
             "Do your best impression of someone in the room",
             "Dance with no music for 1 minute",
@@ -211,12 +255,59 @@ const truthOrDarePrompts = {
             "Do a handstand for 10 seconds",
             "Swap an article of clothing with the person on your left",
             "Recite the alphabet backwards",
-            "Do a silly dance for 30 seconds"
+            "Do a silly dance for 30 seconds",
+            "Speak in an exaggerated British accent until your next turn",
+            "Do your best runway model walk across the room",
+            "Let another player style your hair into a crazy hairstyle",
+            "Sing the chorus of your favorite song like an opera singer",
+            "Eat a spoonful of a condiment chosen by the group (ketchup, mustard, or mayo)",
+            "Try to juggle three random items from around the room for 30 seconds",
+            "Do your best impression of a chicken laying an egg",
+            "Talk in third person until your next turn",
+            "Let the group draw a silly mustache on your face with a washable marker or pen",
+            "Do an interpretive dance representing how you feel right now",
+            "Try to touch your nose with your tongue for 15 seconds",
+            "Balance an object on your head while walking in a circle three times",
+            "Speak only in rhymes until your next turn",
+            "Do 15 squats while loudly counting in a cartoon voice",
+            "Act like a robot whose battery is running out of power",
+            "Call a friend or family member and sing 'Happy Birthday' to them, then hang up",
+            "Pretend you are a sports commentator narrating what people in this room are doing",
+            "Hold an ice cube in your hand until it completely melts",
+            "Do your best beatbox solo for 30 seconds",
+            "Give a 1-minute dramatic speech about why pineapples belong or don't belong on pizza",
+            "Let someone whisper a secret into your ear and react with pure shock",
+            "Do an impression of your favorite cartoon character",
+            "Walk backwards everywhere you go until your next turn",
+            "Try not to blink for 45 seconds while someone stares at you",
+            "Act out a dramatic death scene as if you were in a Shakespeare play",
+            "Pretend to be an alien experiencing human snacks for the very first time",
+            "Show the funniest photo in your camera roll to everyone",
+            "Do a plank for 45 seconds while reciting the alphabet backwards",
+            "Make a silly face and keep it frozen for 30 seconds while others try to make you laugh",
+            "Try to lick your elbow for 20 seconds",
+            "Pretend you are a waiter and take everyone's imaginary order with maximum flair",
+            "Post a completely random emoji as your status or story for 1 hour",
+            "Do 10 jumping jacks while clucking like a chicken",
+            "Tell a joke with a completely straight, serious face without cracking a smile",
+            "Let someone scroll through your photo gallery for 20 seconds without hiding anything",
+            "Pretend you are invisible and try to sneak around the room unnoticed",
+            "Try to whistle a tune chosen by the group with your mouth full of crackers or water",
+            "Do your best catwalk spin and pose at the end for a photo",
+            "Compliment every single person in the room with one genuine compliment",
+            "Pretend to be an aggressive fitness trainer and make the room do 5 jumping jacks",
+            "Speak like Yoda from Star Wars until your next turn",
+            "Take a selfie making the absolute ugliest face you can make and show the group"
         ]
     },
-    spicy: {
-        truths: [
+    "spicy": {
+        "truths": [
             "What's the most attractive thing about someone in this room?",
+            "What is the most daring place you've ever kissed someone?",
+            "Describe your most unforgettable romantic gesture.",
+            "What is a secret turn-on you haven't told anyone?",
+            "What is the most spontaneous romantic act you've done?",
+            "What is the most embarrassing thing you've said during a date?",
             "Have you ever had a crush on someone here?",
             "What's the sexiest thing someone has done to you?",
             "Have you ever skinny dipped?",
@@ -286,7 +377,6 @@ const truthOrDarePrompts = {
             "Have you ever been stood up?",
             "What is your favorite pickup line?",
             "Have you ever used a dating app purely for fun?",
-            "What is the most embarrassing thing you've said during a date?",
             "Have you ever fallen in love at first sight?",
             "What is your opinion on public displays of affection?",
             "Have you ever dated someone famous (or semi-famous)?",
@@ -316,13 +406,60 @@ const truthOrDarePrompts = {
             "Have you ever written a song or poem for someone?",
             "What is your favorite way to be wooed?",
             "What is your most memorable kiss?",
-            "Have you ever had a crush on a friend's sibling?",
             "What is the most daring thing you've done for love?",
             "What is a fantasy you have never shared?",
-            "What is the most romantic gesture you've ever made?"
+            "What is the most romantic gesture you've ever made?",
+            "Who in this room would you be most nervous to be left alone in an elevator with?",
+            "What is your biggest turn-on that sounds weird when said out loud?",
+            "Have you ever caught feelings for someone just because of a dream you had?",
+            "What is the sweetest or most romantic text message you've ever received?",
+            "Have you ever made out with someone and immediately regretted it?",
+            "Who was your most memorable first kiss and where did it happen?",
+            "Have you ever dated or flirted with two people at the same time without them knowing?",
+            "What is the most scandalous secret you have kept from your parents?",
+            "Have you ever had a crush on someone who was dating a friend?",
+            "What is the boldest romantic move someone has ever made on you?",
+            "Have you ever stayed the night at someone's house and sneaked out before breakfast?",
+            "What feature on a person catches your attention first (eyes, smile, body, hands)?",
+            "Have you ever sent a flirtatious message and immediately turned off your phone out of panic?",
+            "Who in this room would you take on an all-expenses-paid weekend trip to Paris?",
+            "Have you ever had a crush on a coworker and flirted through company Slack/email?",
+            "What is the most spontaneous romantic decision you've ever made?",
+            "Have you ever kept a romantic memento or hoodie from an ex?",
+            "What is your ideal scenario for a perfect, unforgettable first kiss?",
+            "What is the biggest red flag you completely ignored because you found someone attractive?",
+            "Have you ever had a crush on someone you met on public transit or in a coffee shop?",
+            "What is the cheesiest pickup line that actually worked on you?",
+            "Have you ever practiced kissing on your hand or pillow before a big date?",
+            "What is the longest you've ever talked on the phone all night with a crush?",
+            "Who in this room has the most captivating or sexy voice?",
+            "Have you ever gone on a date just because you were bored or wanted free food?",
+            "What is the most adventurous place you've ever held hands or kissed someone?",
+            "Have you ever had a secret romance that nobody in your friend group knew about?",
+            "What is your definition of the ultimate romantic gesture?",
+            "Have you ever stalked a crush's ex to see how you compare?",
+            "Who was the last person you had butterflies in your stomach for?",
+            "Have you ever fallen for someone who lived in another country or city?",
+            "What is the hottest piece of clothing someone could wear on a date with you?",
+            "Have you ever had a romantic dream about a teacher or mentor?",
+            "Who in this room do you think gives the best hugs?",
+            "Have you ever given a fake phone number to someone who asked you out?",
+            "What is the most daring romantic text you have ever sent?",
+            "Have you ever been caught staring at someone's lips while they were talking?",
+            "What song instantly puts you in a flirty or romantic mood?",
+            "Have you ever had an intense slow dance that ended in a kiss?",
+            "What is the most attractive quality a person can possess?",
+            "Have you ever had feelings for someone who didn't feel the same way back?",
+            "Who was your biggest celebrity crush growing up that you had posters of?",
+            "Have you ever been kissed in the rain like a movie scene?",
+            "If you had to pick one person in this room to go on a blind date with, who would it be?"
         ],
-        dares: [
+        "dares": [
             "Slow dance with someone for 1 minute",
+            "Give a passionate kiss to a chosen person",
+            "Write a love note and read it aloud",
+            "Perform a romantic poem for the group",
+            "Share a heartfelt compliment with someone",
             "Give someone a passionate hug for 10 seconds",
             "Whisper your biggest secret in someone's ear",
             "Let someone feed you a piece of food sensually",
@@ -368,7 +505,6 @@ const truthOrDarePrompts = {
             "Whisper a secret in the ear of the person to your left",
             "Let someone give you a gentle face massage",
             "Stare into the eyes of the person across from you for one minute",
-            "Give someone a piggyback ride around the room",
             "Let someone feed you a snack",
             "Share a piece of clothing with someone",
             "Slow dance with the person of your choice (no music needed)",
@@ -412,13 +548,64 @@ const truthOrDarePrompts = {
             "Write a love poem and read it aloud",
             "Blindfold yourself and let someone feed you a mystery food",
             "Perform a slow dance with someone without music",
-            "Share a secret you have never told anyone"
+            "Share a secret you have never told anyone",
+            "Look into the eyes of the person to your left for 30 seconds without looking away or laughing",
+            "Whisper a compliment into the ear of the person chosen by the group",
+            "Send a spicy emoji (fire, smirk, or devil) to the third person in your recent DMs",
+            "Give a slow, gentle shoulder massage to the person on your right for 45 seconds",
+            "Re-enact your favorite romantic movie scene with a partner of your choice",
+            "Let the person to your left spray their favorite fragrance on you",
+            "Feed a grape or piece of fruit to the person of your choice",
+            "Show the group the last photo you took of yourself where you felt attractive",
+            "Do your best sultry pickup line delivery directed at the person across from you",
+            "Hold hands with the person on your right until your next turn",
+            "Let someone in the room trace an imaginary heart on your palm or wrist",
+            "Give your best flirty wink and smile to three different players",
+            "Slow dance to a 30-second imaginary romantic song with a partner of your choice",
+            "Let another player text a flirty emoji to your crush from your phone",
+            "Give a 30-second speech praising the physical attractiveness of the person to your left",
+            "Let someone gently brush your hair with their fingers for 30 seconds",
+            "Blow a slow, dramatic kiss across the circle to the person you find most charming",
+            "Do a catwalk strut while making intense eye contact with someone in the room",
+            "Let the person to your right inspect your hands and give you a palm reading",
+            "Take a cute selfie with the person to your left and save it to your favorites",
+            "Describe your dream romantic date in detail using your most charming voice",
+            "Let someone feed you a snack while you close your eyes",
+            "Write down the name of your biggest secret crush and let one player peek at it",
+            "Give a kiss on the cheek to two people of your choice in the room",
+            "Sing the chorus of a sultry love ballad while looking at someone here",
+            "Let someone adjust your collar, jacket, or jewelry while standing very close",
+            "Put your head on the shoulder of the person next to you for one full round",
+            "Give someone here a charming compliment that you have never told them before",
+            "Demonstrate your signature flirting technique on an imaginary person",
+            "Let another player choose your profile picture for the next 10 minutes",
+            "Hold eye contact with someone across the room while taking a slow sip of your drink",
+            "Share the most romantic song on your Spotify playlist and play the first 30 seconds",
+            "Gently kiss the back of the hand of the player chosen by the group",
+            "Give a gentle neck or temple massage to the person sitting across from you",
+            "Let someone whisper three mysterious words in your ear",
+            "Do a dramatic, passionate reading of a random text message from your phone",
+            "Exchange shoes or jackets with the person to your right for the next two rounds",
+            "Let the group choose a flirty contact name for someone in your phone",
+            "Tell the person to your left what first attracted you to them as a friend or person",
+            "Take a sip of your drink out of someone else's cup or straw",
+            "Let someone apply lip balm to your lips",
+            "Deliver a cheesy 90s pickup line with 100% conviction and passion",
+            "Sit back-to-back with another player for two rounds",
+            "Let someone give you a gentle forehead kiss",
+            "Make a toast celebrating the most romantic person in the room",
+            "Give your jacket or sweater to someone in the room who looks cold"
         ]
     },
-    naughty: {
-        truths: [
+    "naughty": {
+        "truths": [
             "What's your biggest sexual fantasy?",
             "Have you ever had a one-night stand?",
+            "What is the most adventurous place you've had sex?",
+            "Describe your most intense sexual fantasy.",
+            "What is a taboo you secretly enjoy?",
+            "Have you ever experimented with role-play?",
+            "What is the most surprising thing you've done in the bedroom?",
             "What's the wildest place you've ever had sex?",
             "Have you ever sent nudes to someone?",
             "What's your body count?",
@@ -520,11 +707,58 @@ const truthOrDarePrompts = {
             "Have you ever used a sex toy?",
             "What is the most public place you've been intimate?",
             "What is a taboo you are curious about?",
-            "What is the longest you've gone without sex?"
+            "What is the longest you've gone without sex?",
+            "What is the wildest thing you have ever done in the bedroom?",
+            "Have you ever had an intimate encounter in a public or semi-public setting?",
+            "What is your biggest guilty pleasure or kink that you rarely talk about?",
+            "Have you ever made an excuse to sleep over at someone's place purely to hook up?",
+            "What is the most daring photo currently stored in your hidden album?",
+            "Have you ever been walked in on by a roommate, sibling, or parent during intimacy?",
+            "What is the quickest you have ever hooked up with someone after meeting them?",
+            "Have you ever tried bedroom roleplay with costumes, accents, or scenarios?",
+            "What is the most unusual place you have ever made out or had intimacy?",
+            "Have you ever had a one-night stand that you still think about to this day?",
+            "What is the dirtiest voice note or text message you have ever sent?",
+            "Have you ever used handcuffs, silk ties, or blindfolds during bedroom play?",
+            "What is something adventurous you have always wanted to try in bed but haven't yet?",
+            "Have you ever hooked up in a car, park, or on a beach?",
+            "What is the loudest you have ever been during an intimate encounter?",
+            "Have you ever sent a spicy photo with a self-destructing timer?",
+            "What is the most sensitive or ticklish spot on your body?",
+            "Have you ever had a friends-with-benefits situation that got messy with feelings?",
+            "What is the most attractive piece of underwear or lingerie someone could wear for you?",
+            "Have you ever hooked up with an ex after swearing you were completely finished?",
+            "What is the biggest physical turn-on that gets you in the mood instantly?",
+            "Have you ever gone commando on purpose while wearing tight clothes in public?",
+            "What is the boldest thing someone has ever whispered to you in bed?",
+            "Have you ever had a spicy dream about a friend that made things awkward the next day?",
+            "What is the longest intimate session you have ever had with a partner?",
+            "Have you ever accidentally sent a naughty text to a completely wrong contact?",
+            "What is your opinion on adult toys and do you currently own any?",
+            "Have you ever had an intimate encounter in an elevator or stairwell?",
+            "What is the most risqué dare you have ever completed in a party game?",
+            "Have you ever had an intimate moment while someone else was asleep in the same room?",
+            "What is the wildest thing on your personal sexual bucket list?",
+            "Have you ever hooked up at a party while other people were in the next room?",
+            "What is the best kiss you have ever experienced in your life?",
+            "Have you ever participated in skinny dipping with friends or a partner?",
+            "What is something a partner did in bed that completely surprised or blew your mind?",
+            "Have you ever made a walk of shame in last night's party clothes the next morning?",
+            "What is the most daring spot you would be willing to try an intimate encounter in?",
+            "Have you ever had a crush on someone purely because of their physical body?",
+            "What is your favorite kind of foreplay or buildup before intimacy?",
+            "Have you ever watched adult content with a partner for inspiration?",
+            "What is the most scandalous secret you have never told anyone in this room?",
+            "Who in this room gives off the most confident, sensual energy?"
         ],
-        dares: [
+        "dares": [
             "Give someone here a lap dance for 30 seconds",
             "Kiss the person to your left",
+            "Give a seductive lap dance for 30 seconds",
+            "Whisper a dirty secret into someone's ear",
+            "Perform a blindfolded tease",
+            "Let someone draw a seductive doodle on your skin",
+            "Share your most erotic fantasy with the group",
             "Send a flirty text to your crush right now",
             "Do a sexy dance for 1 minute",
             "Let someone give you a hickey or give them one",
@@ -604,11 +838,9 @@ const truthOrDarePrompts = {
             "Let someone tie your hands together for a round",
             "Give someone a sensuous head scratch",
             "Let someone kiss your collarbone",
-            "Do a sexy workout move",
             "Let someone take off your socks with their teeth",
             "Give someone a 'wet willy' (lick your finger and put it in their ear)",
             "Let someone write a dirty word on your body",
-            "Show your searching history for 'porn'",
             "Let someone choose a sexy nickname for you",
             "Moan the name of the person to your left",
             "Let someone tickle your inner arm",
@@ -618,28 +850,69 @@ const truthOrDarePrompts = {
             "Perform a strip tease (keep underwear on)",
             "Blindfold yourself and let someone kiss you",
             "Take a selfie in a compromising position (no need to share)",
+            "Do a sexy workout move",
+            "Show your searching history for 'porn'",
             "Send a risky text to someone in your contacts",
-            "Show the group the last photo saved in your hidden folder"
+            "Show the group the last photo saved in your hidden folder",
+            "Give a seductive, slow shoulder rub to the person to your left for 45 seconds",
+            "Whisper something naughty into the ear of the player chosen by the group",
+            "Let someone give you a gentle love bite or pinch on the shoulder or arm",
+            "Demonstrate your best sultry bedroom eyes to the player across from you",
+            "Let someone trace an ice cube down your neck and over your collarbone",
+            "Remove one piece of non-essential clothing (jacket, socks, shoes, or belt)",
+            "Give a 30-second sensual lap dance or dance routine to the person of your choice",
+            "Let someone in the room kiss your neck or collarbone for 10 seconds",
+            "Bite your lower lip and deliver your most seductive line to someone in the circle",
+            "Let someone feed you a strawberry or chocolate with their eyes closed",
+            "Give a sensuous hand and wrist massage to the player on your right",
+            "Let someone untie or unbutton the top button of your shirt",
+            "Whisper your favorite spicy fantasy into the ear of the person to your right",
+            "Do a slow, seductive crawl across the rug toward a player of your choice",
+            "Let someone blindfold you for two minutes while players interact with you",
+            "Give someone a playful spank or tap on the hip",
+            "Let someone inspect your neck and collarbone with a warm breath for 15 seconds",
+            "Send a spicy or suggestive emoji to someone in the room right now",
+            "Moan the name of a fictional character or celebrity with full dramatic passion",
+            "Let someone gently stroke your inner forearm with a feather or soft touch",
+            "Take off your socks using only your other foot or hands behind your back",
+            "Give a flirtatious hip sway or body wave to the rhythm of music for 30 seconds",
+            "Let someone run their fingers through your hair while looking into your eyes",
+            "Demonstrate your best kiss on your hand with complete sound effects",
+            "Let someone choose a naughty nickname for you that everyone must use for 3 rounds",
+            "Give the person across from you an intense, sultry stare while biting a piece of fruit",
+            "Let someone trace their finger down your spine from neck to lower back",
+            "Do a playful striptease gesture (taking off your jacket or sweater dramatically)",
+            "Let someone whisper their darkest secret into your ear",
+            "Give someone a slow, sensual hug that lasts for 30 uninterrupted seconds",
+            "Let someone blow warm air on your neck while you close your eyes",
+            "Show the group the last photo you took of yourself wearing something revealing",
+            "Let another player place their hand on your hip or waist for the next round",
+            "Give a seductive wink and air kiss to every single person in the room",
+            "Let someone give you a playful, gentle nibble on the earlobe",
+            "Feed someone a sip of your drink while holding the cup for them",
+            "Sit on the lap of the person to your right until the next turn",
+            "Let someone undo your belt or adjust your waistline",
+            "Give a dramatic demonstration of how you look when waking up after a wild night",
+            "Let someone whisper a dirty word in your ear without you laughing",
+            "Exchange a sensual gaze with the player chosen by the group for 20 seconds",
+            "Give a deep, passionate back massage to the player on your left for 1 minute",
+            "Let someone tickle or caress your lower back for 20 seconds",
+            "Take a selfie posing in your most seductive pose and show the group"
         ]
     }
 };
 
 const getRandomTruth = (category = 'normal', usedTruths = []) => {
-    // Handle mixed category - randomly pick from all categories
-    let effectiveCategory = category;
-    if (category === 'mixed') {
+    let effectiveCategory = (category || 'normal').toLowerCase();
+    if (effectiveCategory === 'mixed') {
         const categories = ['normal', 'spicy', 'naughty'];
         effectiveCategory = categories[Math.floor(Math.random() * categories.length)];
     }
 
     const categoryTruths = truthOrDarePrompts[effectiveCategory]?.truths || truthOrDarePrompts.normal?.truths || [];
-    
-    // Ensure usedTruths is an array
     const safeUsedTruths = Array.isArray(usedTruths) ? usedTruths : [];
-
     const availableTruths = categoryTruths.filter(truth => !safeUsedTruths.includes(truth));
 
-    // Reset if all used
     if (availableTruths.length === 0) {
         return categoryTruths[Math.floor(Math.random() * categoryTruths.length)];
     }
@@ -648,25 +921,19 @@ const getRandomTruth = (category = 'normal', usedTruths = []) => {
 };
 
 const getRandomDare = (category = 'normal', usedDares = []) => {
-    // Handle mixed category - randomly pick from all categories
-    let effectiveCategory = category;
-    if (category === 'mixed') {
+    let effectiveCategory = (category || 'normal').toLowerCase();
+    if (effectiveCategory === 'mixed') {
         const categories = ['normal', 'spicy', 'naughty'];
         effectiveCategory = categories[Math.floor(Math.random() * categories.length)];
     }
 
     const categoryDares = truthOrDarePrompts[effectiveCategory]?.dares || truthOrDarePrompts.normal?.dares || [];
-    
-    // Ensure usedDares is an array
     const safeUsedDares = Array.isArray(usedDares) ? usedDares : [];
-
     const availableDares = categoryDares.filter(dare => !safeUsedDares.includes(dare));
-    
+
     if (availableDares.length === 0) {
-        // Reset if all used
         return categoryDares[Math.floor(Math.random() * categoryDares.length)];
     }
-    
     return availableDares[Math.floor(Math.random() * availableDares.length)];
 };
 

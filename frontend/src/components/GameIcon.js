@@ -34,6 +34,9 @@ const gameIcons = {
     'rapid-fire': require('../../assets/images/game_rapid_fire.png'),
     'ludo': require('../../assets/images/game_ludo.png'),
     'checkers': require('../../assets/images/game_checkers.png'),
+    'coin-flip': require('../../assets/images/game_coin_flip.png'),
+    'spin-wheel': require('../../assets/images/game_spin_wheel.png'),
+    'live-poll': require('../../assets/images/game_live_poll.png'),
 };
 
 const ALIASES = {

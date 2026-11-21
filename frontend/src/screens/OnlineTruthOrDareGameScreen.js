@@ -12,7 +12,7 @@ import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
-    const { room, isHost, category = 'normal', players = [], playerName } = route.params;
+    const { room, isHost, category = 'normal', players = [], playerName, gameState: initialGameState } = route.params;
     
     // Session persistence and reconnection handling
     useGameDisconnectHandler({
@@ -38,7 +38,13 @@ const OnlineTruthOrDareGameScreen = ({ route, navigation }) => {
         });
     };
 
-    const [gameState, setGameState] = useState(null);
+    const [gameState, setGameState] = useState(initialGameState || null);
+
+    useEffect(() => {
+        if (initialGameState) {
+            setGameState(initialGameState);
+        }
+    }, [initialGameState]);
     const [playerNames, setPlayerNames] = useState({});
     // FIX 10: Completion toast shown briefly when a turn ends
     const [completionToast, setCompletionToast] = useState(null);

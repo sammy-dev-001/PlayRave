@@ -152,6 +152,10 @@ export function navigateToGame(navigation, room, gameState, playerName, isHost, 
             navigation.navigate('OnlineConnectFour', navParams);
             break;
 
+        case 'ludo':
+            navigation.navigate('OnlineLudo', navParams);
+            break;
+
         case 'draw-battle':
             navigation.navigate('DrawBattle', navParams);
             break;

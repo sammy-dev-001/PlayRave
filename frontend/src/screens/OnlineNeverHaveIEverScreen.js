@@ -27,6 +27,14 @@ const OnlineNeverHaveIEverScreen = ({ route, navigation }) => {
     const [hasResponded, setHasResponded] = useState(false);
     const [gameFinished, setGameFinished] = useState(false);
 
+    useEffect(() => {
+        if (initialGameState && initialGameState.currentPrompt) {
+            setGameState(initialGameState);
+            setHasResponded(false);
+            setGameFinished(false);
+        }
+    }, [initialGameState]);
+
     // Find current user's persistent ID safely
     const myPlayer = players.find(p => p.name === playerName) || players.find(p => p.id === SocketService.socket?.id);
     const currentPlayerId = myPlayer?.uid;

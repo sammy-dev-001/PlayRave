@@ -18,6 +18,7 @@ const authManager    = require('../managers/authManager');
 const rateLimiter    = require('../managers/RateLimiter');
 
 module.exports = function configureSocketGateway(io) {
+    const activePolls = new Map(); // roomId -> { question, options, isLocked, userVotes: Map() }
 
     // ══════════════════════════════════════════════════════════════════════
     // AUTH MIDDLEWARE — runs before 'connection' is emitted
@@ -105,9 +106,14 @@ module.exports = function configureSocketGateway(io) {
             socket.emit('room-created', roomManager.getRoomSnapshot(room.id));
         });
 
-        socket.on('join-room', async ({ roomId, playerName, avatar, avatarColor }) => {
+        socket.on('join-room', async ({ roomId, playerName, avatar, avatarColor, userId: payloadUserId }) => {
             if (!checkRateLimit(socket, 'join-room')) return;
-            const userId = socket.userId;
+            const userId = socket.userId || payloadUserId;
+            if (!userId) {
+                socket.emit('error', { message: 'Missing user credentials to join room' });
+                return;
+            }
+            socket.userId = userId;
             console.log('[Gateway] join-room:', roomId, playerName, userId);
             const joinResult = await roomManager.joinRoom(roomId, userId, socket.id, playerName, avatar, avatarColor);
             if (joinResult.error) {
@@ -128,6 +134,15 @@ module.exports = function configureSocketGateway(io) {
             socket.emit('room-joined', snapshot);
             io.to(roomId).emit('room-updated', snapshot);
 
+            if (activePolls.has(roomId)) {
+                const poll = activePolls.get(roomId);
+                socket.emit('poll:update', {
+                    question: poll.question,
+                    options: poll.options,
+                    isLocked: poll.isLocked,
+                });
+            }
+
             const room = await roomManager.getRoom(roomId);
             if (room && (room.gameState === 'PLAYING' || room.gameState === 'GAMEOVER')) {
                 const gameState = await gameRouter.getPublicGameState(roomId, userId);
@@ -146,22 +161,44 @@ module.exports = function configureSocketGateway(io) {
             socket.emit('check-room-result', { roomId, exists });
         });
 
-        socket.on('request-room-sync', async ({ roomId }) => {
+        socket.on('request-room-sync', async ({ roomId, userId: payloadUserId, playerName }) => {
             if (!checkRateLimit(socket, 'request-room-sync')) return;
-            const userId = socket.userId;
-            console.log('[Gateway] request-room-sync:', roomId, userId);
+            const userId = socket.userId || payloadUserId;
+            if (!userId) {
+                socket.emit('error', { message: 'Missing user credentials for sync' });
+                return;
+            }
+            socket.userId = userId;
+
+            console.log('[Gateway] request-room-sync:', roomId, userId, playerName);
             const room = await roomManager.getRoom(roomId);
             if (!room) {
                 socket.emit('error', { message: 'Room not found during sync' });
                 return;
             }
-            const sessionResult = sessionManager.updateSocket(userId, socket.id);
-            const oldSocketId = sessionResult?.oldSocketId;
-            const roomResult = roomManager.updatePlayerSocket(roomId, userId, socket.id);
+
+            const roomResult = roomManager.updatePlayerSocket(roomId, userId, socket.id, playerName);
             if (!roomResult) {
+                console.warn(`[Gateway] sync failed — player not found in room ${roomId} for userId ${userId}`);
                 socket.emit('error', { message: 'Session expired or player not found' });
                 return;
             }
+
+            // Always update/register in sessionManager
+            const sessionResult = sessionManager.updateSocket(userId, socket.id);
+            const oldSocketId = roomResult.oldSocketId || sessionResult?.oldSocketId;
+
+            if (!sessionResult) {
+                sessionManager.registerClient(userId, socket.id, {
+                    playerName: roomResult.player.name,
+                    avatar: roomResult.player.avatar,
+                    avatarColor: roomResult.player.avatarColor,
+                    roomId
+                });
+            } else {
+                sessionManager.setRoom(userId, roomId);
+            }
+
             sessionManager.cancelDisconnect(userId);
             socket.join(roomId);
 
@@ -189,6 +226,10 @@ module.exports = function configureSocketGateway(io) {
 
             io.to(roomId).emit('player-reconnected', { playerName: roomResult.player.name, userId });
             io.to(roomId).emit('player-returned', { playerName: roomResult.player.name, userId });
+        });
+
+        socket.on('ping', () => {
+            socket.emit('pong', { timestamp: Date.now() });
         });
 
         socket.on('leave-room', async ({ roomId }) => {
@@ -248,22 +289,7 @@ module.exports = function configureSocketGateway(io) {
             if (!roomId) return;
 
             await roomManager.setPlayerAway(roomId, userId, true);
-            const room = await roomManager.getRoom(roomId);
-            if (room) {
-                const player = room.players.find(p => p.userId === userId);
-                if (player?.isHost) {
-                    const migrationResult = await roomManager.reassignHost(roomId);
-                    if (migrationResult) {
-                        console.log(`[Gateway] Host disconnected in ${roomId}, migrated to ${migrationResult.newHost.name}`);
-                        io.to(roomId).emit('host-changed', {
-                            newHostId: migrationResult.newHost.socketId,
-                            newHostName: migrationResult.newHost.name,
-                            reason: 'previous_host_disconnected'
-                        });
-                    }
-                }
-                await emitRoomUpdate(roomId);
-            }
+            await emitRoomUpdate(roomId);
 
             io.to(roomId).emit('player-connection-lost', { playerName: session.playerName, userId });
             io.to(roomId).emit('player-away', { playerName: session.playerName, userId });
@@ -377,6 +403,117 @@ module.exports = function configureSocketGateway(io) {
             io.to(roomId).emit('reaction-received', { emoji, senderId: socket.id, playerName });
         });
 
+        // ── Live Audience Poll Events ────────────────────────────────────
+        socket.on('poll:join', ({ roomId, playerName }) => {
+            if (!roomId) return;
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            socket.join(cleanRoomId);
+            console.log(`[Gateway] Socket ${socket.id} (${playerName || 'voter'}) joined poll ${cleanRoomId}`);
+
+            const poll = activePolls.get(cleanRoomId);
+            if (poll) {
+                socket.emit('poll:update', {
+                    roomId: cleanRoomId,
+                    question: poll.question,
+                    options: poll.options,
+                    isLocked: poll.isLocked,
+                });
+            } else {
+                const defaultPoll = {
+                    question: 'Who takes the penalty shot? 🍻',
+                    options: [
+                        { id: '1', text: 'Sammy', count: 0, color: '#00F0FF' },
+                        { id: '2', text: 'Alex', count: 0, color: '#FF0055' },
+                        { id: '3', text: 'David', count: 0, color: '#FFE600' },
+                        { id: '4', text: 'Host', count: 0, color: '#00FF66' },
+                    ],
+                    isLocked: false,
+                    userVotes: new Map()
+                };
+                activePolls.set(cleanRoomId, defaultPoll);
+                socket.emit('poll:update', {
+                    roomId: cleanRoomId,
+                    question: defaultPoll.question,
+                    options: defaultPoll.options,
+                    isLocked: defaultPoll.isLocked,
+                });
+            }
+        });
+
+        socket.on('poll:update', ({ roomId, question, options, isLocked }) => {
+            if (!roomId) return;
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            socket.join(cleanRoomId);
+            const existing = activePolls.get(cleanRoomId) || { userVotes: new Map() };
+            const updated = {
+                question: question || existing.question,
+                options: options || existing.options,
+                isLocked: isLocked !== undefined ? isLocked : existing.isLocked,
+                userVotes: existing.userVotes || new Map()
+            };
+            activePolls.set(cleanRoomId, updated);
+            io.to(cleanRoomId).emit('poll:update', {
+                roomId: cleanRoomId,
+                question: updated.question,
+                options: updated.options,
+                isLocked: updated.isLocked,
+            });
+        });
+
+        socket.on('poll:vote', ({ roomId, optionId, voterName }) => {
+            if (!roomId || !optionId) return;
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            socket.join(cleanRoomId);
+            const userId = socket.userId || socket.id;
+            let poll = activePolls.get(cleanRoomId);
+            if (!poll) {
+                poll = { userVotes: new Map(), options: [] };
+                activePolls.set(cleanRoomId, poll);
+            }
+            if (poll.isLocked) return;
+
+            if (!poll.userVotes) poll.userVotes = new Map();
+            const prevOptionId = poll.userVotes.get(userId);
+
+            poll.options = (poll.options || []).map(opt => {
+                let count = opt.count || 0;
+                if (prevOptionId === opt.id) count = Math.max(0, count - 1);
+                if (opt.id === optionId) count += 1;
+                return { ...opt, count };
+            });
+            poll.userVotes.set(userId, optionId);
+
+            io.to(cleanRoomId).emit('poll:update', {
+                roomId: cleanRoomId,
+                question: poll.question,
+                options: poll.options,
+                isLocked: poll.isLocked,
+                lastVote: { optionId, voterName, userId }
+            });
+        });
+
+        socket.on('poll:reset', ({ roomId }) => {
+            if (!roomId) return;
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            const poll = activePolls.get(cleanRoomId);
+            if (!poll) return;
+            poll.options = (poll.options || []).map(opt => ({ ...opt, count: 0 }));
+            if (poll.userVotes) poll.userVotes.clear();
+            io.to(cleanRoomId).emit('poll:update', {
+                roomId: cleanRoomId,
+                question: poll.question,
+                options: poll.options,
+                isLocked: false
+            });
+        });
+
+        // ── Spin & Win Wheel Broadcast ───────────────────────────────────
+        socket.on('wheel:spin', ({ roomId, winningIndex, targetRotation, winnerName }) => {
+            if (!roomId) return;
+            const cleanRoomId = String(roomId).trim().toUpperCase();
+            io.to(cleanRoomId).emit('wheel:spun', { winningIndex, targetRotation, winnerName });
+        });
+
         // ── Primary Game Action Handler (with acknowledgement) ───────────
         //
         // Clients should call:
@@ -413,7 +550,7 @@ module.exports = function configureSocketGateway(io) {
                 'request-room-sync', 'leave-room', 'game-selected', 'set-game-type',
                 'set-custom-questions', 'get-room', 'player-ready', 'kick-player',
                 'send-reaction', 'chat-message', 'play-sound', 'update-player-profile',
-                'start-game', 'game-action'
+                'start-game', 'game-action', 'poll:update', 'poll:vote', 'poll:reset', 'poll:join', 'wheel:spin'
             ];
             if (ignoredEvents.includes(eventName)) return;
 

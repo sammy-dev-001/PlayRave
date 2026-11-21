@@ -17,7 +17,7 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = React.useMemo(() => getStyles(COLORS), [COLORS]);
     const { players, category = 'normal' } = route.params;
-    const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+    const [currentPlayerIndex, setCurrentPlayerIndex] = useState(() => Math.floor(Math.random() * (players?.length || 1)));
     const [gameState, setGameState] = useState('choose'); // choose, showing
     const [currentPrompt, setCurrentPrompt] = useState(null);
     const [promptType, setPromptType] = useState(null);
@@ -26,6 +26,43 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
     const [playerSkips, setPlayerSkips] = useState({});
     const [isMuted, setIsMuted] = useState(SoundService.getMuted());
     const [isHapticsEnabled, setIsHapticsEnabled] = useState(HapticService.isEnabled);
+
+    const lastSessionKeyRef = React.useRef(route.params?.sessionKey || null);
+    const lastCategoryRef = React.useRef(category);
+
+    const startNewGame = (cat = category) => {
+        const randomStart = Math.floor(Math.random() * (players?.length || 1));
+        setCurrentPlayerIndex(randomStart);
+        setGameState('choose');
+        setCurrentPrompt(null);
+        setPromptType(null);
+        setUsedDares([]);
+        setUsedTruths([]);
+        setPlayerSkips({});
+    };
+
+    React.useEffect(() => {
+        const incomingSession = route.params?.sessionKey;
+        const categoryChanged = lastCategoryRef.current !== category;
+        const sessionChanged = incomingSession && lastSessionKeyRef.current !== incomingSession;
+
+        if (sessionChanged || categoryChanged) {
+            lastSessionKeyRef.current = incomingSession;
+            lastCategoryRef.current = category;
+            startNewGame(category);
+        }
+    }, [route.params?.sessionKey, category]);
+
+    const handleRestartGame = () => {
+        HapticService.selection();
+        startNewGame(category);
+    };
+
+    const handleEndGame = () => {
+        HapticService.selection();
+        lastSessionKeyRef.current = null;
+        navigation.navigate('LocalGameSelection', { players });
+    };
     
     // Pulsating animation state
     const [pulseAnim] = useState(new Animated.Value(1));
@@ -110,10 +147,6 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
             setUsedDares([...usedDares, dare]);
             setCurrentPrompt(genderSpecificDare);
         }
-    };
-
-    const handleEndGame = () => {
-        navigation.navigate('LocalGameSelection', { players });
     };
 
     return (
@@ -206,12 +239,20 @@ const TruthOrDareGameScreen = ({ route, navigation }) => {
                 </>
             )}
 
-            <NeonButton
-                title="END GAME"
-                variant="secondary"
-                onPress={handleEndGame}
-                style={styles.endButton}
-            />
+            <View style={styles.actionRow}>
+                <NeonButton
+                    title="RESTART"
+                    variant="secondary"
+                    onPress={handleRestartGame}
+                    style={[styles.doneButton, { flex: 1 }]}
+                />
+                <NeonButton
+                    title="END GAME"
+                    variant="secondary"
+                    onPress={handleEndGame}
+                    style={[styles.doneButton, { flex: 1 }]}
+                />
+            </View>
         </NeonContainer>
     );
 };

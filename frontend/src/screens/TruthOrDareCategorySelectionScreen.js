@@ -37,7 +37,11 @@ const TruthOrDareCategorySelectionScreen = ({ route, navigation }) => {
     ];
 
     const handleStartGame = () => {
-        navigation.navigate('TruthOrDareGame', { players, category: selectedCategory });
+        navigation.navigate('TruthOrDareGame', {
+            players,
+            category: selectedCategory,
+            sessionKey: Date.now()
+        });
     };
 
     return (

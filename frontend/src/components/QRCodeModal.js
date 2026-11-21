@@ -40,7 +40,7 @@ const QRCodeDisplay = ({ value, size = 200 }) => {
     );
 };
 
-const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
+const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '', mode = '' }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
     const [copied, setCopied] = useState(false);
@@ -50,8 +50,9 @@ const QRCodeModal = ({ visible, onClose, roomId, baseUrl = '' }) => {
         // Use the app's deployed URL or localhost for testing
         const host = baseUrl || (Platform.OS === 'web'
             ? window.location.origin
-            : 'https://playrave-ten.vercel.app');
-        return `${host}?join=${roomId}`;
+            : 'https://play-rave.vercel.app');
+        const modeQuery = mode ? `&mode=${mode}` : '';
+        return `${host}?join=${roomId}${modeQuery}`;
     };
 
     const joinUrl = getJoinUrl();

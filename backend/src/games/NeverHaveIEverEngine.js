@@ -34,7 +34,7 @@ class NeverHaveIEverEngine {
 
     startGame(room, options = {}) {
         const roomId = room.id;
-        const category = options.category || 'normal';
+        const category = (options.category || 'normal').toLowerCase();
         
         const playerOrder = room.players.map(p => p.userId);
         const firstPrompt = getRandomPrompt(category, []);

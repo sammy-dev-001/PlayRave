@@ -14,6 +14,9 @@ import CheckersDifficultyScreen from '../../screens/CheckersDifficultyScreen';
 import CheckersVsAIScreen from '../../screens/CheckersVsAIScreen';
 import LudoDifficultyScreen from '../../screens/LudoDifficultyScreen';
 import LudoVsAIScreen from '../../screens/LudoVsAIScreen';
+import LocalMathBlitzScreen from '../../screens/LocalMathBlitzScreen';
+import LocalImposterScreen from '../../screens/LocalImposterScreen';
+import LocalButtonMashScreen from '../../screens/LocalButtonMashScreen';
 
 export const LocalPlayGroup = (Stack) => (
     <Stack.Group>
@@ -31,5 +34,8 @@ export const LocalPlayGroup = (Stack) => (
         <Stack.Screen name="CheckersVsAI" component={CheckersVsAIScreen} />
         <Stack.Screen name="LudoDifficulty" component={LudoDifficultyScreen} />
         <Stack.Screen name="LudoVsAI" component={LudoVsAIScreen} />
+        <Stack.Screen name="LocalMathBlitz" component={LocalMathBlitzScreen} />
+        <Stack.Screen name="LocalImposter" component={LocalImposterScreen} />
+        <Stack.Screen name="LocalButtonMash" component={LocalButtonMashScreen} />
     </Stack.Group>
 );

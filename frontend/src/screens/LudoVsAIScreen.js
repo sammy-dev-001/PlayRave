@@ -24,7 +24,7 @@ import HapticService from '../services/HapticService';
 // ─── Dimensions ───────────────────────────────────────────────────────────────
 const { width: SW, height: SH } = Dimensions.get('window');
 const GRID = 15;
-const BOARD_PX = Math.min(SW - 14, SH * 0.52, 500);
+const BOARD_PX = Math.min(SW - 14, SH - 230, 480);
 const CELL = Math.floor(BOARD_PX / GRID);
 
 // ─── Player Setup ─────────────────────────────────────────────────────────────
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12, paddingTop: 40, paddingBottom: 2,
+    paddingHorizontal: 12, paddingTop: Platform.OS === 'ios' ? 10 : 16, paddingBottom: 2,
   },
   backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   scoreBar: {

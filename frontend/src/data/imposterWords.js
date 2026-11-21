@@ -86,27 +86,88 @@ export const IMPOSTER_WORD_PAIRS = [
     { normalWord: "Chef", imposterWord: "Cook", category: "Professions" },
     { normalWord: "Lawyer", imposterWord: "Judge", category: "Professions" },
     { normalWord: "Pilot", imposterWord: "Flight Attendant", category: "Professions" },
-    { normalWord: "Mechanic", imposterWord: "Engineer", category: "Professions" }
+    { normalWord: "Mechanic", imposterWord: "Engineer", category: "Professions" },
+
+    // Tech & Social
+    { normalWord: "TikTok", imposterWord: "Instagram Reels", category: "Tech & Social" },
+    { normalWord: "WhatsApp", imposterWord: "Telegram", category: "Tech & Social" },
+    { normalWord: "Uber", imposterWord: "Bolt", category: "Tech & Social" },
+    { normalWord: "iPhone", imposterWord: "Samsung Galaxy", category: "Tech & Social" },
+    { normalWord: "Netflix", imposterWord: "YouTube", category: "Tech & Social" },
+    { normalWord: "Spotify", imposterWord: "Apple Music", category: "Tech & Social" },
+    { normalWord: "PlayStation", imposterWord: "Xbox", category: "Tech & Social" },
+    { normalWord: "Twitter", imposterWord: "Threads", category: "Tech & Social" },
+    { normalWord: "Wi-Fi", imposterWord: "Mobile Data", category: "Tech & Social" },
+    { normalWord: "Headphones", imposterWord: "Earbuds", category: "Tech & Social" },
+
+    // Vibes & Party
+    { normalWord: "Nightclub", imposterWord: "Lounge", category: "Vibes & Party" },
+    { normalWord: "Tequila", imposterWord: "Vodka", category: "Vibes & Party" },
+    { normalWord: "Champagne", imposterWord: "Sparkling Wine", category: "Vibes & Party" },
+    { normalWord: "DJ", imposterWord: "Hype Man", category: "Vibes & Party" },
+    { normalWord: "House Party", imposterWord: "Block Party", category: "Vibes & Party" },
+    { normalWord: "Cocktail", imposterWord: "Mocktail", category: "Vibes & Party" },
+    { normalWord: "Karaoke", imposterWord: "Open Mic", category: "Vibes & Party" },
+    { normalWord: "Hookah", imposterWord: "Vape", category: "Vibes & Party" },
+
+    // Afro & Naija
+    { normalWord: "Jollof Rice", imposterWord: "Fried Rice", category: "Afro & Naija" },
+    { normalWord: "Suya", imposterWord: "Asun", category: "Afro & Naija" },
+    { normalWord: "Danfo", imposterWord: "Keke Napep", category: "Afro & Naija" },
+    { normalWord: "Agbada", imposterWord: "Senator Wear", category: "Afro & Naija" },
+    { normalWord: "Amala", imposterWord: "Pounded Yam", category: "Afro & Naija" },
+    { normalWord: "Fried Plantain", imposterWord: "Fried Yam", category: "Afro & Naija" },
+    { normalWord: "Afrobeats", imposterWord: "Amapiano", category: "Afro & Naija" },
+    { normalWord: "Egusi Soup", imposterWord: "Ogbono Soup", category: "Afro & Naija" },
+    { normalWord: "Shawarma", imposterWord: "Meat Pie", category: "Afro & Naija" },
+
+    // Sports & Fitness
+    { normalWord: "Football", imposterWord: "Rugby", category: "Sports" },
+    { normalWord: "Basketball", imposterWord: "Volleyball", category: "Sports" },
+    { normalWord: "Tennis", imposterWord: "Badminton", category: "Sports" },
+    { normalWord: "Gym", imposterWord: "CrossFit", category: "Sports" },
+    { normalWord: "Boxing", imposterWord: "Kickboxing", category: "Sports" },
+    { normalWord: "Marathon", imposterWord: "Sprint", category: "Sports" }
+];
+
+export const IMPOSTER_CATEGORIES = [
+    'All',
+    'Places',
+    'Food',
+    'Animals',
+    'Objects',
+    'Activities',
+    'Entertainment',
+    'Tech & Social',
+    'Vibes & Party',
+    'Afro & Naija',
+    'Sports'
 ];
 
 // Game configuration
 export const IMPOSTER_CONFIG = {
-    minPlayers: 4,
+    minPlayers: 3,
     maxPlayers: 12,
     discussionTimeSeconds: 180, // 3 minutes
     votingTimeSeconds: 30
 };
 
 // Get random word pair
-export function getRandomWordPair(usedPairs = []) {
-    const availablePairs = IMPOSTER_WORD_PAIRS.filter(
+export function getRandomWordPair(category = 'All', usedPairs = []) {
+    let pool = IMPOSTER_WORD_PAIRS;
+    if (category && category !== 'All') {
+        pool = pool.filter(p => p.category.toLowerCase() === category.toLowerCase());
+        if (pool.length === 0) pool = IMPOSTER_WORD_PAIRS;
+    }
+
+    const availablePairs = pool.filter(
         pair => !usedPairs.some(used =>
             used.normalWord === pair.normalWord && used.imposterWord === pair.imposterWord
         )
     );
 
     if (availablePairs.length === 0) {
-        return IMPOSTER_WORD_PAIRS[Math.floor(Math.random() * IMPOSTER_WORD_PAIRS.length)];
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 
     return availablePairs[Math.floor(Math.random() * availablePairs.length)];
@@ -114,6 +175,7 @@ export function getRandomWordPair(usedPairs = []) {
 
 export default {
     IMPOSTER_WORD_PAIRS,
+    IMPOSTER_CATEGORIES,
     IMPOSTER_CONFIG,
     getRandomWordPair
 };

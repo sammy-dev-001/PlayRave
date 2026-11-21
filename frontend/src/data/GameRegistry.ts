@@ -40,6 +40,7 @@ export const OnlineGamesRegistry: GameModule[] = [
     { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', description: 'Classic strategy game.', color: '#39FF14', category: 'competitive', minPlayers: 2, maxPlayers: 2, vibes: ['brain'], imageId: 'tic-tac-toe', routeComponent: 'Lobby', isHub: false },
     { id: 'checkers', name: 'Neon Checkers', description: 'Tournament checkers.', color: '#39FF14', category: 'competitive', minPlayers: 2, maxPlayers: 10, vibes: ['brain'], imageId: 'checkers', routeComponent: 'Lobby', isHub: false },
     { id: 'connect-four', name: 'Connect Four', description: 'Tournament connect four.', color: '#e74c3c', category: 'competitive', minPlayers: 2, maxPlayers: 10, vibes: ['brain'], imageId: 'connect-four', routeComponent: 'Lobby', isHub: false },
+    { id: 'ludo', name: 'Neon Ludo', description: 'Classic 2-4 Player Board Game', color: '#FF007F', category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['chill'], imageId: 'ludo', routeComponent: 'Lobby', isHub: false },
 
 ];
 
@@ -59,4 +60,7 @@ export const LocalGamesRegistry: GameModule[] = [
     { id: 'connect-four', name: 'Connect Four', description: 'Drop 4 in a row to win vs AI', imageId: 'connect-four', color: '#e74c3c', category: 'competitive', minPlayers: 1, maxPlayers: 2, vibes: ['brain'], routeComponent: 'ConnectFourDifficulty', singlePlayerRouteComponent: 'ConnectFourDifficulty' },
     { id: 'checkers', name: 'Neon Checkers', description: 'Classic Draughts vs AI', imageId: 'checkers', color: '#39FF14', category: 'competitive', minPlayers: 1, maxPlayers: 2, vibes: ['brain'], routeComponent: 'CheckersDifficulty', singlePlayerRouteComponent: 'CheckersDifficulty' },
     { id: 'ludo', name: 'Neon Ludo', description: 'Classic Ludo vs AI', imageId: 'ludo', color: '#FF007F', category: 'competitive', minPlayers: 1, maxPlayers: 4, vibes: ['chill'], routeComponent: 'LudoDifficulty', singlePlayerRouteComponent: 'LudoDifficulty' },
+    { id: 'math-blitz', name: 'Math Blitz', description: '60s Solo Blitz & 2-Player Split Duel!', imageId: 'math-blitz', color: '#00ffff', category: 'speed', minPlayers: 1, maxPlayers: 2, vibes: ['brain'], routeComponent: 'LocalMathBlitz', singlePlayerRouteComponent: 'LocalMathBlitz' },
+    { id: 'imposter', name: 'The Imposter', description: 'Find the faker! Pass-the-phone deception', imageId: 'imposter', color: '#B026FF', category: 'party', minPlayers: 3, maxPlayers: 12, vibes: ['hype', 'brain'], routeComponent: 'LocalImposter' },
+    { id: 'button-mash', name: 'Button Mash', description: '2-Player Split-Screen Duel & Solo CPS Drill!', imageId: 'button-mash', color: '#39FF14', category: 'speed', minPlayers: 1, maxPlayers: 2, vibes: ['hype'], routeComponent: 'LocalButtonMash', singlePlayerRouteComponent: 'LocalButtonMash' },
 ];

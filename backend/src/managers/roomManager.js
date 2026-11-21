@@ -106,7 +106,15 @@ class RoomManager {
 
         if (!room) return { error: 'Room not found' };
 
-        const existing = room.players.find(p => p.userId === userId);
+        let existing = room.players.find(p => p.userId === userId);
+        // Fallback: If not found by userId, match an away player by name
+        if (!existing && playerName) {
+            existing = room.players.find(p => p.isAway && p.name && p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+            if (existing) {
+                console.log(`[RoomManager] Re-binding joining player ${existing.name} by name matching (old userId: ${existing.userId} -> new: ${userId})`);
+                existing.userId = userId;
+            }
+        }
 
         if (existing) {
             const oldSocketId = existing.socketId;
@@ -237,11 +245,19 @@ class RoomManager {
 
     // ── Socket Re-binding ───────────────────────────────────────────────
 
-    updatePlayerSocket(roomId, userId, newSocketId) {
+    updatePlayerSocket(roomId, userId, newSocketId, playerName = null) {
         const room = this.rooms.get(roomId);
         if (!room) return null;
 
-        const player = room.players.find(p => p.userId === userId);
+        let player = room.players.find(p => p.userId === userId);
+        // Fallback: If not found by userId, match an away player by name
+        if (!player && playerName) {
+            player = room.players.find(p => p.isAway && p.name && p.name.trim().toLowerCase() === playerName.trim().toLowerCase());
+            if (player) {
+                console.log(`[RoomManager] Re-binding player ${player.name} in updatePlayerSocket by name matching (old userId: ${player.userId} -> new: ${userId})`);
+                player.userId = userId;
+            }
+        }
         if (!player) return null;
 
         const oldSocketId = player.socketId;

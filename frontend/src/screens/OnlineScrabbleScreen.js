@@ -665,8 +665,8 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                                     <NeonText size={16} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
                                 </View>
                             )}
-                            {players.map(p => (
-                                <View key={p.id} style={[styles.miniScore, styles.desktopMiniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
+                            {players.map((p, idx) => (
+                                <View key={p.userId || p.name || p.id || idx} style={[styles.miniScore, styles.desktopMiniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
                                     <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : COLORS.textMuted} numberOfLines={1}>{p.name}</NeonText>
                                     <NeonText size={16} weight="bold">{p.score}</NeonText>
                                 </View>
@@ -728,26 +728,78 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                     <>
                         {/* MOBILE TOP CONTROLS */}
                         <View style={styles.header}>
-                            <NeonText size={18} weight="bold" glow>SCRABBLE</NeonText>
-                            {tilesInBag !== null && (
-                                <View style={styles.tilesBadge}>
-                                    <NeonText size={10} color={COLORS.textMuted}>🎲 TILES LEFT</NeonText>
-                                    <NeonText size={14} weight="bold" color={COLORS.neonCyan}>{tilesInBag}</NeonText>
+                            {/* Top Tier: Title, Turn Pill, Tiles Count, End Game Button */}
+                            <View style={styles.headerTopRow}>
+                                <View style={styles.titleWrap}>
+                                    <NeonText size={15} weight="bold" glow>SCRABBLE</NeonText>
+                                    {tilesInBag !== null && (
+                                        <View style={styles.tilesBadgeCompact}>
+                                            <NeonText size={9} color={COLORS.textMuted}>🎲</NeonText>
+                                            <NeonText size={11} weight="bold" color={COLORS.neonCyan} style={{ marginLeft: 3 }}>
+                                                {tilesInBag}
+                                            </NeonText>
+                                        </View>
+                                    )}
                                 </View>
-                            )}
-                            <View style={styles.scoreRow}>
-                                {players.map(p => (
-                                    <View key={p.id} style={[styles.miniScore, p.name === currentPlayerName && styles.activeMiniScore]}>
-                                        <NeonText size={10} color={p.name === currentPlayerName ? COLORS.neonCyan : COLORS.textMuted}>{p.name}</NeonText>
-                                        <NeonText size={14} weight="bold">{p.score}</NeonText>
-                                    </View>
-                                ))}
+
+                                <View style={[styles.turnPill, isMyTurn ? styles.turnPillMyTurn : styles.turnPillOther]}>
+                                    <NeonText size={11} weight="bold" color={isMyTurn ? COLORS.limeGlow : COLORS.hotPink} numberOfLines={1}>
+                                        {isMyTurn ? '🎯 YOUR TURN' : `⏳ ${currentPlayerName || 'Opponent'}`}
+                                    </NeonText>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.endGameHeaderBtn}
+                                    onPress={() => setEndGameModalVisible(true)}
+                                    activeOpacity={0.7}
+                                >
+                                    <NeonText size={10} weight="bold" color={COLORS.hotPink}>QUIT</NeonText>
+                                </TouchableOpacity>
                             </View>
-                        </View>
-                        <View style={styles.turnIndicator}>
-                            <NeonText size={14} color={isMyTurn ? COLORS.limeGlow : COLORS.hotPink} weight="bold">
-                                {isMyTurn ? '🎯 YOUR TURN' : `⏳ ${currentPlayerName}'s Turn`}
-                            </NeonText>
+
+                            {/* Second Tier: Scrollable Player Score Strip */}
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.scoreStripContent}
+                                style={styles.scoreStrip}
+                            >
+                                {players.map((p, idx) => {
+                                    const isCurrent = p.name === currentPlayerName;
+                                    return (
+                                        <View
+                                            key={p.userId || p.name || p.id || idx}
+                                            style={[
+                                                styles.playerScoreChip,
+                                                isCurrent && styles.activePlayerScoreChip,
+                                                players.length <= 2 && styles.playerScoreChipWide,
+                                            ]}
+                                        >
+                                            <View style={styles.playerChipNameRow}>
+                                                {isCurrent && (
+                                                    <NeonText size={8} color={COLORS.limeGlow} style={{ marginRight: 2 }}>▶</NeonText>
+                                                )}
+                                                <NeonText
+                                                    size={10}
+                                                    weight={isCurrent ? "bold" : "normal"}
+                                                    color={isCurrent ? COLORS.neonCyan : COLORS.textMuted}
+                                                    numberOfLines={1}
+                                                    style={styles.playerChipName}
+                                                >
+                                                    {p.name}
+                                                </NeonText>
+                                            </View>
+                                            <NeonText
+                                                size={14}
+                                                weight="bold"
+                                                color={isCurrent ? COLORS.white : COLORS.textSecondary}
+                                            >
+                                                {p.score}
+                                            </NeonText>
+                                        </View>
+                                    );
+                                })}
+                            </ScrollView>
                         </View>
                     </>
 
@@ -798,14 +850,7 @@ const OnlineScrabbleScreen = ({ route, navigation }) => {
                 position="center"
             />
 
-            {!isDesktop && (
-                <TouchableOpacity
-                    style={styles.endGameBtn}
-                    onPress={() => setEndGameModalVisible(true)}
-                >
-                    <NeonText size={12} color={COLORS.hotPink}>End Game</NeonText>
-                </TouchableOpacity>
-            )}
+
 
             {/* Blank Tile Letter Selection Modal */}
             <Modal
@@ -916,13 +961,98 @@ const getStyles = (COLORS) => StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        paddingTop: 40,
-        paddingHorizontal: 15,
-        paddingBottom: 10,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        paddingTop: Platform.OS === 'ios' ? 44 : 36,
+        paddingHorizontal: 12,
+        paddingBottom: 8,
         backgroundColor: COLORS.deepNightBlack,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    titleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    tilesBadgeCompact: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+        borderRadius: 8,
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 240, 255, 0.3)',
+    },
+    turnPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        maxWidth: 160,
+    },
+    turnPillMyTurn: {
+        backgroundColor: 'rgba(57, 255, 20, 0.12)',
+        borderColor: COLORS.limeGlow,
+    },
+    turnPillOther: {
+        backgroundColor: 'rgba(255, 0, 127, 0.1)',
+        borderColor: 'rgba(255, 0, 127, 0.35)',
+    },
+    endGameHeaderBtn: {
+        paddingHorizontal: 9,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255, 0, 127, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 0, 127, 0.35)',
+    },
+    scoreStrip: {
+        width: '100%',
+    },
+    scoreStripContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingRight: 10,
+    },
+    playerScoreChip: {
+        minWidth: 74,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        alignItems: 'center',
+    },
+    playerScoreChipWide: {
+        flex: 1,
+    },
+    activePlayerScoreChip: {
+        borderWidth: 1.5,
+        borderColor: COLORS.neonCyan,
+        backgroundColor: 'rgba(0, 240, 255, 0.12)',
+        shadowColor: COLORS.neonCyan,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    playerChipNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 1,
+    },
+    playerChipName: {
+        maxWidth: 75,
     },
     tilesBadge: {
         alignItems: 'center',
@@ -948,11 +1078,6 @@ const getStyles = (COLORS) => StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.neonCyan,
         backgroundColor: 'rgba(0, 240, 255, 0.1)',
-    },
-    turnIndicator: {
-        paddingVertical: 8,
-        alignItems: 'center',
-        backgroundColor: COLORS.overlayDark,
     },
     boardContainer: {
         flex: 1,

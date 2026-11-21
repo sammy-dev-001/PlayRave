@@ -60,6 +60,7 @@ import LieDetectorScreen from '../../screens/LieDetectorScreen';
 import RealTalkCategoryScreen from '../../screens/RealTalkCategoryScreen';
 import OnlineCheckersScreen from '../../screens/OnlineCheckersScreen';
 import OnlineConnectFourScreen from '../../screens/OnlineConnectFourScreen';
+import OnlineLudoScreen from '../../screens/OnlineLudoScreen';
 import RealTalkScreen from '../../screens/RealTalkScreen';
 import OnlineRealTalkCategoryScreen from '../../screens/OnlineRealTalkCategoryScreen';
 import OnlineRealTalkScreen from '../../screens/OnlineRealTalkScreen';
@@ -122,6 +123,7 @@ export const OnlinePlayGroup = (Stack) => (
         <Stack.Screen name="TicTacToe" component={TicTacToeScreen} />
         <Stack.Screen name="OnlineCheckers" component={OnlineCheckersScreen} />
         <Stack.Screen name="OnlineConnectFour" component={OnlineConnectFourScreen} />
+        <Stack.Screen name="OnlineLudo" component={OnlineLudoScreen} />
         <Stack.Screen name="DrawBattle" component={DrawBattleScreen} />
         <Stack.Screen name="LieDetector" component={LieDetectorScreen} />
         <Stack.Screen name="RealTalkCategory" component={RealTalkCategoryScreen} />
