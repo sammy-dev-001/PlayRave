@@ -1,17 +1,15 @@
 // Service Worker for PlayRave - Offline Support
-const CACHE_NAME = 'playrave-v1.1'; // Bumped version
-const STATIC_CACHE = 'playrave-static-v1.1';
-const DYNAMIC_CACHE = 'playrave-dynamic-v1.1';
+const CACHE_NAME = 'playrave-v1.3';
+const STATIC_CACHE = 'playrave-static-v1.3';
+const DYNAMIC_CACHE = 'playrave-dynamic-v1.3';
 
-// Assets to cache for offline use
+// Static asset shell
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
     '/manifest.json',
     '/favicon.ico'
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets and activate immediately
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing service worker...');
     event.waitUntil(
@@ -20,7 +18,7 @@ self.addEventListener('install', (event) => {
                 console.log('[SW] Caching static assets');
                 return cache.addAll(STATIC_ASSETS);
             })
-            // We NO LONGER skipWaiting here automatically to avoid reload loops
+            .then(() => self.skipWaiting())
     );
 });
 
@@ -57,8 +55,15 @@ self.addEventListener('fetch', (event) => {
         return; 
     }
 
-    // Network-first strategy for API calls
-    if (url.pathname.startsWith('/api')) {
+    // Network-first strategy for API calls, HTML documents, and app JS/CSS bundles
+    const isCodeOrDoc =
+        request.mode === 'navigate' ||
+        url.pathname === '/' ||
+        url.pathname.endsWith('.html') ||
+        url.pathname.endsWith('.js') ||
+        url.pathname.endsWith('.css');
+
+    if (url.pathname.startsWith('/api') || isCodeOrDoc) {
         event.respondWith(networkFirst(request));
         return;
     }
@@ -107,6 +112,10 @@ async function networkFirst(request) {
     } catch (error) {
         const cached = await caches.match(request);
         if (cached) return cached;
+        if (request.mode === 'navigate') {
+            const shell = await caches.match('/index.html');
+            if (shell) return shell;
+        }
         throw error;
     }
 }

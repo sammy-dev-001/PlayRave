@@ -714,8 +714,15 @@ const getStyles = (COLORS) => StyleSheet.create({
     duelContainer: {
         flex: 1,
         width: '100%',
-        height: Platform.OS === 'web' ? '100vh' : '100%',
-        maxHeight: Platform.OS === 'web' ? '100vh' : undefined,
+        ...Platform.select({
+            web: {
+                flexBasis: 'auto',
+                height: '100%',
+                minHeight: '100vh',
+                maxHeight: '100vh',
+            },
+            default: {},
+        }),
         backgroundColor: '#0a0a14',
         overflow: 'hidden'
     },

@@ -769,7 +769,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     // ─────────────────────────────────────────────────────────────────────────────
     if (gameMode === 'duel' && duelPhase === 'countdown') {
         return (
-            <NeonContainer style={[styles.container, styles.centerAll]}>
+            <NeonContainer style={styles.centerAll}>
                 <View style={styles.countdownContainer}>
                     <NeonText size={14} color="#9CA3AF" weight="bold" style={styles.countdownVsHeader}>
                         ⚔️ 2-PLAYER DUEL
@@ -826,7 +826,7 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
         const isP1Winner = duelWinner === p1Name;
 
         return (
-            <NeonContainer style={[styles.container, styles.centerAll]}>
+            <NeonContainer style={styles.centerAll}>
                 <ConfettiEffect show={showConfetti} pieceCount={50} />
 
                 <View style={styles.duelGameOverContainer}>
@@ -1016,10 +1016,6 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
 };
 
 const getStyles = (COLORS) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: COLORS.background || '#0a0a1a',
-    },
     centerAll: {
         justifyContent: 'center',
         alignItems: 'center',
@@ -1234,8 +1230,15 @@ const getStyles = (COLORS) => StyleSheet.create({
     duelScreenWrapper: {
         flex: 1,
         width: '100%',
-        height: Platform.OS === 'web' ? '100vh' : '100%',
-        maxHeight: Platform.OS === 'web' ? '100vh' : undefined,
+        ...Platform.select({
+            web: {
+                flexBasis: 'auto',
+                height: '100%',
+                minHeight: '100vh',
+                maxHeight: '100vh',
+            },
+            default: {},
+        }),
         backgroundColor: '#050711',
         overflow: 'hidden',
         flexDirection: 'column',
@@ -1243,8 +1246,8 @@ const getStyles = (COLORS) => StyleSheet.create({
     playerZone: {
         flex: 1,
         width: '100%',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         overflow: 'hidden',
         position: 'relative',
     },
@@ -1302,14 +1305,14 @@ const getStyles = (COLORS) => StyleSheet.create({
     duelEquationWrap: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 6,
+        paddingVertical: 2,
     },
     duelSolveLabel: {
         letterSpacing: 1,
         marginBottom: 2,
     },
     penaltyBanner: {
-        marginTop: 6,
+        marginTop: 4,
         paddingHorizontal: 12,
         paddingVertical: 3,
         borderRadius: 8,
@@ -1319,16 +1322,16 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     duelChoicesContainer: {
         width: '100%',
-        gap: 8,
+        gap: 6,
     },
     duelChoiceRow: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 6,
         width: '100%',
     },
     duelChoiceBtn: {
         flex: 1,
-        height: 50,
+        height: 44,
         borderRadius: 12,
         backgroundColor: 'rgba(255, 255, 255, 0.08)',
         borderWidth: 1.5,
@@ -1356,7 +1359,7 @@ const getStyles = (COLORS) => StyleSheet.create({
         borderColor: '#EF4444',
     },
     centerDivider: {
-        height: 44,
+        height: 40,
         backgroundColor: '#0a0d1e',
         flexDirection: 'row',
         alignItems: 'center',

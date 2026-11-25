@@ -24,7 +24,7 @@ This document tracks current project status, architectural fixes, upcoming featu
   - Live Audience Poll and Spin & Win Giveaway Wheel.
 - **Local Play Expansions:**
   - Built Local Math Blitz (Solo 60s Time Attack + 2-Player Split-Screen Duel).
-  - Resolved Math Blitz 2-Player Split-Screen Web/Mobile Layout: Eliminated CSS percentage height flexbox collapse on React Native Web, split duel phases into clean full-screen countdown overlay, split-screen racing duel with responsive safe zones and 2x2 answer grids, and full-screen victory cards with rematch options. Added safe parameter guards in `MathBlitzScreen.js`.
+  - Resolved Math Blitz & Button Mash Split-Screen Blank Screen on Web: Fixed `#root` in `frontend/public/index.html` to `display: flex; flex-direction: column;` so React Navigation `NativeStackView` stack containers propagate full viewport height on Web, added explicit `flexBasis: 'auto'` and `minHeight: '100vh'` guards on split-screen containers (`LocalMathBlitzScreen.js`, `LocalButtonMashScreen.js`), separated countdown/gameover overlays cleanly, and switched `sw.js`/`service-worker.js` HTML/JS caching to network-first to eliminate stale bundle caches. Added safe parameter guards in `MathBlitzScreen.js`.
   - Built Local The Imposter (Pass-and-play).
   - Built Local Button Mash (2-Player split-screen).
 - **Online Multiplayer Ludo:**

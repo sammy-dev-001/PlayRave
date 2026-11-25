@@ -1,7 +1,5 @@
-const CACHE_NAME = 'playrave-v2';
+const CACHE_NAME = 'playrave-v3';
 const urlsToCache = [
-    '/',
-    '/index.html',
     '/manifest.json',
     '/icon-192.png',
     '/icon-512.png'
@@ -52,9 +50,14 @@ self.addEventListener('fetch', (event) => {
     }
 
     const url = new URL(event.request.url);
-    const isCodeFile = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+    const isCodeOrDoc =
+        event.request.mode === 'navigate' ||
+        url.pathname === '/' ||
+        url.pathname.endsWith('.html') ||
+        url.pathname.endsWith('.js') ||
+        url.pathname.endsWith('.css');
 
-    if (isCodeFile) {
+    if (isCodeOrDoc) {
         // NETWORK-FIRST for JS/CSS: Always get latest code from server.
         // Only fall back to cache when offline.
         event.respondWith(
