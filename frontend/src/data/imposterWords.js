@@ -1,133 +1,149 @@
-// Imposter word pairs - one player gets imposterWord, others get normalWord
-// The words should be similar enough to fool players
+// Imposter word pairs - civilians share a secret word while the imposter gets a related decoy.
+// Words share a broad theme/context so vague clues overlap, but have distinct traits for deduction
+// (no near-synonyms like Couch/Sofa, Forest/Woods, or Ocean/Sea).
 
 export const IMPOSTER_WORD_PAIRS = [
     // Places
-    { normalWord: "Beach", imposterWord: "Pool", category: "Places" },
-    { normalWord: "Restaurant", imposterWord: "Cafe", category: "Places" },
-    { normalWord: "Library", imposterWord: "Bookstore", category: "Places" },
-    { normalWord: "Cinema", imposterWord: "Theater", category: "Places" },
-    { normalWord: "Hospital", imposterWord: "Clinic", category: "Places" },
-    { normalWord: "Hotel", imposterWord: "Motel", category: "Places" },
-    { normalWord: "Park", imposterWord: "Garden", category: "Places" },
-    { normalWord: "Museum", imposterWord: "Gallery", category: "Places" },
-    { normalWord: "Stadium", imposterWord: "Arena", category: "Places" },
-    { normalWord: "Airport", imposterWord: "Train Station", category: "Places" },
+    { normalWord: 'Airport', imposterWord: 'Cruise Ship', category: 'Places' },
+    { normalWord: 'Hospital', imposterWord: 'Pharmacy', category: 'Places' },
+    { normalWord: 'Library', imposterWord: 'Coffee Shop', category: 'Places' },
+    { normalWord: 'Cinema', imposterWord: 'Concert Hall', category: 'Places' },
+    { normalWord: 'Prison', imposterWord: 'Police Station', category: 'Places' },
+    { normalWord: 'Zoo', imposterWord: 'Aquarium', category: 'Places' },
+    { normalWord: 'Gym', imposterWord: 'Spa', category: 'Places' },
+    { normalWord: 'Bakery', imposterWord: 'Ice Cream Shop', category: 'Places' },
+    { normalWord: 'Casino', imposterWord: 'Arcade', category: 'Places' },
+    { normalWord: 'Hotel', imposterWord: 'Campsite', category: 'Places' },
+    { normalWord: 'Supermarket', imposterWord: 'Shopping Mall', category: 'Places' },
+    { normalWord: 'Beach', imposterWord: 'Water Park', category: 'Places' },
 
     // Food & Drink
-    { normalWord: "Pizza", imposterWord: "Flatbread", category: "Food" },
-    { normalWord: "Burger", imposterWord: "Sandwich", category: "Food" },
-    { normalWord: "Pancakes", imposterWord: "Waffles", category: "Food" },
-    { normalWord: "Sushi", imposterWord: "Sashimi", category: "Food" },
-    { normalWord: "Ice Cream", imposterWord: "Frozen Yogurt", category: "Food" },
-    { normalWord: "Coffee", imposterWord: "Tea", category: "Food" },
-    { normalWord: "Donut", imposterWord: "Bagel", category: "Food" },
-    { normalWord: "Pasta", imposterWord: "Noodles", category: "Food" },
-    { normalWord: "Steak", imposterWord: "Pork Chop", category: "Food" },
-    { normalWord: "Soup", imposterWord: "Stew", category: "Food" },
+    { normalWord: 'Pizza', imposterWord: 'Tacos', category: 'Food' },
+    { normalWord: 'Burger', imposterWord: 'Hot Dog', category: 'Food' },
+    { normalWord: 'Pancakes', imposterWord: 'Omelette', category: 'Food' },
+    { normalWord: 'Sushi', imposterWord: 'Ramen', category: 'Food' },
+    { normalWord: 'Ice Cream', imposterWord: 'Cheesecake', category: 'Food' },
+    { normalWord: 'Coffee', imposterWord: 'Energy Drink', category: 'Food' },
+    { normalWord: 'Donut', imposterWord: 'Croissant', category: 'Food' },
+    { normalWord: 'Popcorn', imposterWord: 'Nachos', category: 'Food' },
+    { normalWord: 'Steak', imposterWord: 'Roast Chicken', category: 'Food' },
+    { normalWord: 'Soup', imposterWord: 'Salad', category: 'Food' },
+    { normalWord: 'Chocolate', imposterWord: 'Gummy Bears', category: 'Food' },
+    { normalWord: 'French Fries', imposterWord: 'Onion Rings', category: 'Food' },
 
     // Animals
-    { normalWord: "Lion", imposterWord: "Tiger", category: "Animals" },
-    { normalWord: "Dog", imposterWord: "Wolf", category: "Animals" },
-    { normalWord: "Rabbit", imposterWord: "Hare", category: "Animals" },
-    { normalWord: "Frog", imposterWord: "Toad", category: "Animals" },
-    { normalWord: "Dolphin", imposterWord: "Shark", category: "Animals" },
-    { normalWord: "Butterfly", imposterWord: "Moth", category: "Animals" },
-    { normalWord: "Crow", imposterWord: "Raven", category: "Animals" },
-    { normalWord: "Alligator", imposterWord: "Crocodile", category: "Animals" },
-    { normalWord: "Monkey", imposterWord: "Ape", category: "Animals" },
-    { normalWord: "Turtle", imposterWord: "Tortoise", category: "Animals" },
+    { normalWord: 'Lion', imposterWord: 'Bear', category: 'Animals' },
+    { normalWord: 'Dog', imposterWord: 'Cat', category: 'Animals' },
+    { normalWord: 'Eagle', imposterWord: 'Owl', category: 'Animals' },
+    { normalWord: 'Dolphin', imposterWord: 'Octopus', category: 'Animals' },
+    { normalWord: 'Elephant', imposterWord: 'Giraffe', category: 'Animals' },
+    { normalWord: 'Penguin', imposterWord: 'Flamingo', category: 'Animals' },
+    { normalWord: 'Snake', imposterWord: 'Spider', category: 'Animals' },
+    { normalWord: 'Bee', imposterWord: 'Mosquito', category: 'Animals' },
+    { normalWord: 'Shark', imposterWord: 'Whale', category: 'Animals' },
+    { normalWord: 'Horse', imposterWord: 'Camel', category: 'Animals' },
+    { normalWord: 'Monkey', imposterWord: 'Kangaroo', category: 'Animals' },
+    { normalWord: 'Turtle', imposterWord: 'Crab', category: 'Animals' },
 
     // Objects
-    { normalWord: "Guitar", imposterWord: "Ukulele", category: "Objects" },
-    { normalWord: "Laptop", imposterWord: "Tablet", category: "Objects" },
-    { normalWord: "Bicycle", imposterWord: "Motorcycle", category: "Objects" },
-    { normalWord: "Couch", imposterWord: "Sofa", category: "Objects" },
-    { normalWord: "Pen", imposterWord: "Pencil", category: "Objects" },
-    { normalWord: "Watch", imposterWord: "Clock", category: "Objects" },
-    { normalWord: "Sunglasses", imposterWord: "Glasses", category: "Objects" },
-    { normalWord: "Pillow", imposterWord: "Cushion", category: "Objects" },
-    { normalWord: "Blanket", imposterWord: "Comforter", category: "Objects" },
-    { normalWord: "Mirror", imposterWord: "Window", category: "Objects" },
+    { normalWord: 'Guitar', imposterWord: 'Piano', category: 'Objects' },
+    { normalWord: 'Laptop', imposterWord: 'Smartphone', category: 'Objects' },
+    { normalWord: 'Bicycle', imposterWord: 'Skateboard', category: 'Objects' },
+    { normalWord: 'Sofa', imposterWord: 'Hammock', category: 'Objects' },
+    { normalWord: 'Umbrella', imposterWord: 'Raincoat', category: 'Objects' },
+    { normalWord: 'Sunglasses', imposterWord: 'Baseball Cap', category: 'Objects' },
+    { normalWord: 'Backpack', imposterWord: 'Suitcase', category: 'Objects' },
+    { normalWord: 'Microwave', imposterWord: 'Toaster', category: 'Objects' },
+    { normalWord: 'Candle', imposterWord: 'Flashlight', category: 'Objects' },
+    { normalWord: 'Mirror', imposterWord: 'Camera', category: 'Objects' },
+    { normalWord: 'Key', imposterWord: 'Password', category: 'Objects' },
+    { normalWord: 'Alarm Clock', imposterWord: 'Wristwatch', category: 'Objects' },
 
     // Activities
-    { normalWord: "Swimming", imposterWord: "Diving", category: "Activities" },
-    { normalWord: "Running", imposterWord: "Jogging", category: "Activities" },
-    { normalWord: "Singing", imposterWord: "Humming", category: "Activities" },
-    { normalWord: "Dancing", imposterWord: "Ballet", category: "Activities" },
-    { normalWord: "Cooking", imposterWord: "Baking", category: "Activities" },
-    { normalWord: "Reading", imposterWord: "Studying", category: "Activities" },
-    { normalWord: "Painting", imposterWord: "Drawing", category: "Activities" },
-    { normalWord: "Camping", imposterWord: "Hiking", category: "Activities" },
-    { normalWord: "Shopping", imposterWord: "Browsing", category: "Activities" },
-    { normalWord: "Fishing", imposterWord: "Hunting", category: "Activities" },
+    { normalWord: 'Swimming', imposterWord: 'Surfing', category: 'Activities' },
+    { normalWord: 'Camping', imposterWord: 'Road Trip', category: 'Activities' },
+    { normalWord: 'Cooking', imposterWord: 'Gardening', category: 'Activities' },
+    { normalWord: 'Bowling', imposterWord: 'Golf', category: 'Activities' },
+    { normalWord: 'Skiing', imposterWord: 'Ice Skating', category: 'Activities' },
+    { normalWord: 'Karate', imposterWord: 'Yoga', category: 'Activities' },
+    { normalWord: 'Fishing', imposterWord: 'Birdwatching', category: 'Activities' },
+    { normalWord: 'Singing', imposterWord: 'Dancing', category: 'Activities' },
+    { normalWord: 'Painting', imposterWord: 'Photography', category: 'Activities' },
+    { normalWord: 'Chess', imposterWord: 'Poker', category: 'Activities' },
 
     // Weather & Nature
-    { normalWord: "Rain", imposterWord: "Drizzle", category: "Weather" },
-    { normalWord: "Snow", imposterWord: "Hail", category: "Weather" },
-    { normalWord: "Hurricane", imposterWord: "Tornado", category: "Weather" },
-    { normalWord: "Mountain", imposterWord: "Hill", category: "Nature" },
-    { normalWord: "River", imposterWord: "Stream", category: "Nature" },
-    { normalWord: "Ocean", imposterWord: "Sea", category: "Nature" },
-    { normalWord: "Forest", imposterWord: "Woods", category: "Nature" },
-    { normalWord: "Desert", imposterWord: "Beach", category: "Nature" },
+    { normalWord: 'Thunderstorm', imposterWord: 'Blizzard', category: 'Weather & Nature' },
+    { normalWord: 'Rainbow', imposterWord: 'Sunset', category: 'Weather & Nature' },
+    { normalWord: 'Volcano', imposterWord: 'Earthquake', category: 'Weather & Nature' },
+    { normalWord: 'Waterfall', imposterWord: 'Ocean', category: 'Weather & Nature' },
+    { normalWord: 'Desert', imposterWord: 'Tundra', category: 'Weather & Nature' },
+    { normalWord: 'Sunrise', imposterWord: 'Full Moon', category: 'Weather & Nature' },
+    { normalWord: 'Tornado', imposterWord: 'Tsunami', category: 'Weather & Nature' },
+    { normalWord: 'Jungle', imposterWord: 'Swamp', category: 'Weather & Nature' },
 
     // Entertainment
-    { normalWord: "Movie", imposterWord: "TV Show", category: "Entertainment" },
-    { normalWord: "Concert", imposterWord: "Festival", category: "Entertainment" },
-    { normalWord: "Comedy", imposterWord: "Satire", category: "Entertainment" },
-    { normalWord: "Novel", imposterWord: "Short Story", category: "Entertainment" },
-    { normalWord: "Video Game", imposterWord: "Board Game", category: "Entertainment" },
-    { normalWord: "Podcast", imposterWord: "Radio Show", category: "Entertainment" },
+    { normalWord: 'Horror Movie', imposterWord: 'Comedy Movie', category: 'Entertainment' },
+    { normalWord: 'Concert', imposterWord: 'Music Video', category: 'Entertainment' },
+    { normalWord: 'Podcast', imposterWord: 'Audiobook', category: 'Entertainment' },
+    { normalWord: 'Video Game', imposterWord: 'Board Game', category: 'Entertainment' },
+    { normalWord: 'Magic Show', imposterWord: 'Stand-Up Comedy', category: 'Entertainment' },
+    { normalWord: 'Cartoon', imposterWord: 'Anime', category: 'Entertainment' },
+    { normalWord: 'Karaoke', imposterWord: 'Talent Show', category: 'Entertainment' },
+    { normalWord: 'Reality TV', imposterWord: 'Documentary', category: 'Entertainment' },
 
     // Professions
-    { normalWord: "Doctor", imposterWord: "Nurse", category: "Professions" },
-    { normalWord: "Teacher", imposterWord: "Professor", category: "Professions" },
-    { normalWord: "Chef", imposterWord: "Cook", category: "Professions" },
-    { normalWord: "Lawyer", imposterWord: "Judge", category: "Professions" },
-    { normalWord: "Pilot", imposterWord: "Flight Attendant", category: "Professions" },
-    { normalWord: "Mechanic", imposterWord: "Engineer", category: "Professions" },
+    { normalWord: 'Doctor', imposterWord: 'Dentist', category: 'Professions' },
+    { normalWord: 'Teacher', imposterWord: 'Sports Coach', category: 'Professions' },
+    { normalWord: 'Chef', imposterWord: 'Bartender', category: 'Professions' },
+    { normalWord: 'Lawyer', imposterWord: 'Detective', category: 'Professions' },
+    { normalWord: 'Pilot', imposterWord: 'Astronaut', category: 'Professions' },
+    { normalWord: 'Firefighter', imposterWord: 'Lifeguard', category: 'Professions' },
+    { normalWord: 'Photographer', imposterWord: 'Fashion Model', category: 'Professions' },
+    { normalWord: 'DJ', imposterWord: 'Rockstar', category: 'Professions' },
 
     // Tech & Social
-    { normalWord: "TikTok", imposterWord: "Instagram Reels", category: "Tech & Social" },
-    { normalWord: "WhatsApp", imposterWord: "Telegram", category: "Tech & Social" },
-    { normalWord: "Uber", imposterWord: "Bolt", category: "Tech & Social" },
-    { normalWord: "iPhone", imposterWord: "Samsung Galaxy", category: "Tech & Social" },
-    { normalWord: "Netflix", imposterWord: "YouTube", category: "Tech & Social" },
-    { normalWord: "Spotify", imposterWord: "Apple Music", category: "Tech & Social" },
-    { normalWord: "PlayStation", imposterWord: "Xbox", category: "Tech & Social" },
-    { normalWord: "Twitter", imposterWord: "Threads", category: "Tech & Social" },
-    { normalWord: "Wi-Fi", imposterWord: "Mobile Data", category: "Tech & Social" },
-    { normalWord: "Headphones", imposterWord: "Earbuds", category: "Tech & Social" },
+    { normalWord: 'TikTok', imposterWord: 'YouTube', category: 'Tech & Social' },
+    { normalWord: 'WhatsApp', imposterWord: 'Email', category: 'Tech & Social' },
+    { normalWord: 'Uber', imposterWord: 'Subway', category: 'Tech & Social' },
+    { normalWord: 'iPhone', imposterWord: 'PlayStation', category: 'Tech & Social' },
+    { normalWord: 'Spotify', imposterWord: 'Shazam', category: 'Tech & Social' },
+    { normalWord: 'Zoom', imposterWord: 'Voice Note', category: 'Tech & Social' },
+    { normalWord: 'Wi-Fi', imposterWord: 'Bluetooth', category: 'Tech & Social' },
+    { normalWord: 'Google Maps', imposterWord: 'Compass', category: 'Tech & Social' },
+    { normalWord: 'Emoji', imposterWord: 'GIF', category: 'Tech & Social' },
+    { normalWord: 'VR Headset', imposterWord: 'Drone', category: 'Tech & Social' },
 
     // Vibes & Party
-    { normalWord: "Nightclub", imposterWord: "Lounge", category: "Vibes & Party" },
-    { normalWord: "Tequila", imposterWord: "Vodka", category: "Vibes & Party" },
-    { normalWord: "Champagne", imposterWord: "Sparkling Wine", category: "Vibes & Party" },
-    { normalWord: "DJ", imposterWord: "Hype Man", category: "Vibes & Party" },
-    { normalWord: "House Party", imposterWord: "Block Party", category: "Vibes & Party" },
-    { normalWord: "Cocktail", imposterWord: "Mocktail", category: "Vibes & Party" },
-    { normalWord: "Karaoke", imposterWord: "Open Mic", category: "Vibes & Party" },
-    { normalWord: "Hookah", imposterWord: "Vape", category: "Vibes & Party" },
+    { normalWord: 'Nightclub', imposterWord: 'House Party', category: 'Vibes & Party' },
+    { normalWord: 'Tequila', imposterWord: 'Champagne', category: 'Vibes & Party' },
+    { normalWord: 'VIP Table', imposterWord: 'Dance Floor', category: 'Vibes & Party' },
+    { normalWord: 'Spin the Bottle', imposterWord: 'Truth or Dare', category: 'Vibes & Party' },
+    { normalWord: 'Fireworks', imposterWord: 'Confetti', category: 'Vibes & Party' },
+    { normalWord: 'Beer Pong', imposterWord: 'Darts', category: 'Vibes & Party' },
+    { normalWord: 'Wedding', imposterWord: 'Birthday Party', category: 'Vibes & Party' },
+    { normalWord: 'Photobooth', imposterWord: 'Selfie Stick', category: 'Vibes & Party' },
 
     // Afro & Naija
-    { normalWord: "Jollof Rice", imposterWord: "Fried Rice", category: "Afro & Naija" },
-    { normalWord: "Suya", imposterWord: "Asun", category: "Afro & Naija" },
-    { normalWord: "Danfo", imposterWord: "Keke Napep", category: "Afro & Naija" },
-    { normalWord: "Agbada", imposterWord: "Senator Wear", category: "Afro & Naija" },
-    { normalWord: "Amala", imposterWord: "Pounded Yam", category: "Afro & Naija" },
-    { normalWord: "Fried Plantain", imposterWord: "Fried Yam", category: "Afro & Naija" },
-    { normalWord: "Afrobeats", imposterWord: "Amapiano", category: "Afro & Naija" },
-    { normalWord: "Egusi Soup", imposterWord: "Ogbono Soup", category: "Afro & Naija" },
-    { normalWord: "Shawarma", imposterWord: "Meat Pie", category: "Afro & Naija" },
+    { normalWord: 'Jollof Rice', imposterWord: 'Fried Rice', category: 'Afro & Naija' },
+    { normalWord: 'Suya', imposterWord: 'Puff-Puff', category: 'Afro & Naija' },
+    { normalWord: 'Danfo', imposterWord: 'Keke Napep', category: 'Afro & Naija' },
+    { normalWord: 'Agbada', imposterWord: 'Senator Wear', category: 'Afro & Naija' },
+    { normalWord: 'Amala', imposterWord: 'Pounded Yam', category: 'Afro & Naija' },
+    { normalWord: 'Garri', imposterWord: 'Plantain Chips', category: 'Afro & Naija' },
+    { normalWord: 'Afrobeats', imposterWord: 'Amapiano', category: 'Afro & Naija' },
+    { normalWord: 'Egusi Soup', imposterWord: 'Okro Soup', category: 'Afro & Naija' },
+    { normalWord: 'Meat Pie', imposterWord: 'Shawarma', category: 'Afro & Naija' },
+    { normalWord: 'Owambe', imposterWord: 'Carnival', category: 'Afro & Naija' },
 
     // Sports & Fitness
-    { normalWord: "Football", imposterWord: "Rugby", category: "Sports" },
-    { normalWord: "Basketball", imposterWord: "Volleyball", category: "Sports" },
-    { normalWord: "Tennis", imposterWord: "Badminton", category: "Sports" },
-    { normalWord: "Gym", imposterWord: "CrossFit", category: "Sports" },
-    { normalWord: "Boxing", imposterWord: "Kickboxing", category: "Sports" },
-    { normalWord: "Marathon", imposterWord: "Sprint", category: "Sports" }
+    { normalWord: 'Football', imposterWord: 'Basketball', category: 'Sports' },
+    { normalWord: 'Tennis', imposterWord: 'Golf', category: 'Sports' },
+    { normalWord: 'Boxing', imposterWord: 'Wrestling', category: 'Sports' },
+    { normalWord: 'Marathon', imposterWord: 'Weightlifting', category: 'Sports' },
+    { normalWord: 'Surfing', imposterWord: 'Snowboarding', category: 'Sports' },
+    { normalWord: 'Treadmill', imposterWord: 'Swimming Pool', category: 'Sports' },
+    { normalWord: 'Bowling', imposterWord: 'Billiards', category: 'Sports' },
+    { normalWord: 'Fencing', imposterWord: 'Archery', category: 'Sports' },
 ];
 
 export const IMPOSTER_CATEGORIES = [
@@ -137,11 +153,13 @@ export const IMPOSTER_CATEGORIES = [
     'Animals',
     'Objects',
     'Activities',
+    'Weather & Nature',
     'Entertainment',
+    'Professions',
     'Tech & Social',
     'Vibes & Party',
     'Afro & Naija',
-    'Sports'
+    'Sports',
 ];
 
 // Game configuration
@@ -149,10 +167,15 @@ export const IMPOSTER_CONFIG = {
     minPlayers: 3,
     maxPlayers: 12,
     discussionTimeSeconds: 180, // 3 minutes
-    votingTimeSeconds: 30
+    votingTimeSeconds: 30,
 };
 
-// Get random word pair
+// Check whether a pair matches regardless of normal/imposter polarity
+const isSamePair = (a, b) =>
+    (a.normalWord === b.normalWord && a.imposterWord === b.imposterWord) ||
+    (a.normalWord === b.imposterWord && a.imposterWord === b.normalWord);
+
+// Get random word pair with bidirectional deduplication and 50/50 word polarity swap
 export function getRandomWordPair(category = 'All', usedPairs = []) {
     let pool = IMPOSTER_WORD_PAIRS;
     if (category && category !== 'All') {
@@ -161,21 +184,28 @@ export function getRandomWordPair(category = 'All', usedPairs = []) {
     }
 
     const availablePairs = pool.filter(
-        pair => !usedPairs.some(used =>
-            used.normalWord === pair.normalWord && used.imposterWord === pair.imposterWord
-        )
+        pair => !usedPairs.some(used => isSamePair(used, pair))
     );
 
-    if (availablePairs.length === 0) {
-        return pool[Math.floor(Math.random() * pool.length)];
+    const chosen = availablePairs.length > 0
+        ? availablePairs[Math.floor(Math.random() * availablePairs.length)]
+        : pool[Math.floor(Math.random() * pool.length)];
+
+    // Randomly flip normalWord/imposterWord so players cannot predict which word is the decoy
+    if (Math.random() < 0.5) {
+        return {
+            ...chosen,
+            normalWord: chosen.imposterWord,
+            imposterWord: chosen.normalWord,
+        };
     }
 
-    return availablePairs[Math.floor(Math.random() * availablePairs.length)];
+    return chosen;
 }
 
 export default {
     IMPOSTER_WORD_PAIRS,
     IMPOSTER_CATEGORIES,
     IMPOSTER_CONFIG,
-    getRandomWordPair
+    getRandomWordPair,
 };
