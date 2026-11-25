@@ -4,15 +4,14 @@ import {
     StyleSheet,
     TouchableOpacity,
     Animated,
-    Dimensions,
     Modal,
     SafeAreaView,
-    ScrollView,
+    Text,
     Platform,
     useWindowDimensions
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { useTheme } from '../context/ThemeContext';
@@ -21,12 +20,22 @@ import SoundService from '../services/SoundService';
 import SocketService from '../services/socket';
 import { useGameDisconnectHandler } from '../hooks/useGameDisconnectHandler';
 import { getAvatarEmoji } from '../utils/avatarUtils';
+import {
+    LUDO_RAVE_THEME,
+    LUDO_STACK_OFFSETS,
+    LUDO_MID_SAFE_STAR_COLORS,
+    LudoHomeBase,
+    LudoCenterGoal,
+    LudoTrackTile,
+    NeonStarToken
+} from '../components/LudoBoardUI';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // ─── Geometry & Constants ─────────────────────────────────────────────────────
 const GRID = 15;
 
 const PLAYER_COLORS = ['#FF007F', '#00FFFF', '#FFD700', '#39FF14']; // P0(Pink), P1(Cyan), P2(Yellow), P3(Green)
-const PLAYER_DARKS = ['#330018', '#002e33', '#332b00', '#0a2608'];
 
 // 52-cell outer track coordinates [row, col] (clockwise)
 // Start cells: P0=0 ([14,6]), P1=13 ([6,0]), P2=26 ([0,8]), P3=39 ([8,14])
@@ -89,7 +98,7 @@ const OnlineLudoScreen = ({ route, navigation }) => {
     }, [SW, SH]);
 
     const CELL = useMemo(() => Math.floor(BOARD_PX / GRID), [BOARD_PX]);
-    const styles = useMemo(() => getStyles(COLORS, BOARD_PX, CELL), [COLORS, BOARD_PX, CELL]);
+    const styles = useMemo(() => getStyles(COLORS), [COLORS]);
 
     const { room, playerName, isHost, gameState: initialGameState } = route.params;
     const myUserId = SocketService.userId;
@@ -123,19 +132,27 @@ const OnlineLudoScreen = ({ route, navigation }) => {
 
     // Animations
     const pulseAnim = useRef(new Animated.Value(1)).current;
-    const diceShakeAnim = useRef(new Animated.Value(0)).current;
+    const isMyTurn = gameState?.currentTurnUserId === myUserId;
+    const isMovingPhase = gameState?.phase === 'moving';
+    const isRollingPhase = gameState?.phase === 'rolling';
+    const hasMovableToken = isMyTurn && isMovingPhase && (gameState?.movableTokens?.length || 0) > 0;
 
-    // Pulsing animation for movable tokens
+    // Pulsing animation for movable tokens (runs only when user has movable tokens)
     useEffect(() => {
+        if (!hasMovableToken) {
+            pulseAnim.setValue(1);
+            return undefined;
+        }
+        pulseAnim.setValue(1);
         const pulse = Animated.loop(
             Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.18, duration: 450, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1.0, duration: 450, useNativeDriver: true })
+                Animated.timing(pulseAnim, { toValue: 1.18, duration: 420, useNativeDriver: USE_NATIVE_DRIVER }),
+                Animated.timing(pulseAnim, { toValue: 1.0, duration: 420, useNativeDriver: USE_NATIVE_DRIVER })
             ])
         );
         pulse.start();
         return () => pulse.stop();
-    }, []);
+    }, [hasMovableToken, pulseAnim]);
 
     // Socket Listeners
     useEffect(() => {
@@ -193,10 +210,6 @@ const OnlineLudoScreen = ({ route, navigation }) => {
             SocketService.off('game-state-sync');
         };
     }, [room?.id]);
-
-    const isMyTurn = gameState?.currentTurnUserId === myUserId;
-    const isMovingPhase = gameState?.phase === 'moving';
-    const isRollingPhase = gameState?.phase === 'rolling';
 
     // ── Roll Action ──
     const handleRollDice = () => {
@@ -275,7 +288,7 @@ const OnlineLudoScreen = ({ route, navigation }) => {
 
     // ─── Render Cell Component ────────────────────────────────────────────────
     const renderCell = (r, c) => {
-        // Skip corner base 6x6 blocks (rendered by HomeYard components)
+        // Skip corner base 6x6 blocks (rendered by LudoHomeBase components)
         if (
             (r < 6 && c < 6) ||
             (r < 6 && c >= 9) ||
@@ -283,7 +296,7 @@ const OnlineLudoScreen = ({ route, navigation }) => {
             (r >= 9 && c >= 9) ||
             (r >= 6 && r < 9 && c >= 6 && c < 9) // center
         ) {
-            return <View key={`${r}_${c}`} style={{ width: CELL, height: CELL }} />;
+            return <View key={`${r}_${c}`} style={{ width: CELL, height: CELL }} pointerEvents="none" />;
         }
 
         // Check if cell is an entry/safe cell
@@ -309,27 +322,38 @@ const OnlineLudoScreen = ({ route, navigation }) => {
             Boolean(startColor)
         );
 
-        const cellTokens = tokensByCell[`${r}_${c}`] || [];
+        let directionArrow = null;
+        if (r === 14 && c === 7) directionArrow = { direction: 'up', color: PLAYER_COLORS[0] };
+        else if (r === 7 && c === 0) directionArrow = { direction: 'right', color: PLAYER_COLORS[1] };
+        else if (r === 0 && c === 7) directionArrow = { direction: 'down', color: PLAYER_COLORS[2] };
+        else if (r === 7 && c === 14) directionArrow = { direction: 'left', color: PLAYER_COLORS[3] };
+
+        const safeStarColor = startColor || LUDO_MID_SAFE_STAR_COLORS[`${r}_${c}`] || '#FFD700';
+
+        const rawTokens = tokensByCell[`${r}_${c}`] || [];
+        const cellTokens = rawTokens.length > 1
+            ? [...rawTokens].sort((a, b) => (a.isMovable === b.isMovable ? 0 : a.isMovable ? 1 : -1))
+            : rawTokens;
+        const isStacked = cellTokens.length > 1;
 
         return (
-            <View
+            <LudoTrackTile
                 key={`${r}_${c}`}
-                style={[
-                    styles.cell,
-                    startColor && { backgroundColor: `${startColor}33`, borderColor: startColor },
-                    homeColColor && { backgroundColor: `${homeColColor}44`, borderColor: homeColColor }
-                ]}
+                size={CELL}
+                startColor={startColor}
+                homeColColor={homeColColor}
+                isSafeStar={isStar && cellTokens.length === 0}
+                safeStarColor={safeStarColor}
+                directionArrow={directionArrow}
             >
-                {isStar && cellTokens.length === 0 && (
-                    <Ionicons name="star" size={Math.max(10, CELL * 0.45)} color="#FFD700" style={{ opacity: 0.8 }} />
-                )}
-
-                {/* Tokens inside this cell */}
                 {cellTokens.length > 0 && (
-                    <View style={styles.tokenStack}>
+                    <View style={styles.tokenStack} pointerEvents="box-none">
                         {cellTokens.slice(0, 4).map((t, idx) => {
-                            const isStacked = cellTokens.length > 1;
                             const tColor = t.player.color;
+                            const off = isStacked ? LUDO_STACK_OFFSETS[idx % 4] : { x: 0, y: 0 };
+                            const tx = off.x * CELL;
+                            const ty = off.y * CELL;
+                            const baseScale = isStacked ? (t.isMovable ? 0.88 : 0.68) : (t.isMovable ? 1.06 : 0.94);
 
                             return (
                                 <TouchableOpacity
@@ -339,34 +363,32 @@ const OnlineLudoScreen = ({ route, navigation }) => {
                                     activeOpacity={0.7}
                                     style={[
                                         styles.tokenWrapper,
-                                        isStacked && styles.tokenWrapperStacked,
-                                        { zIndex: 10 + idx }
+                                        {
+                                            zIndex: 10 + idx,
+                                            transform: [{ translateX: tx }, { translateY: ty }]
+                                        }
                                     ]}
                                 >
-                                    <Animated.View
-                                        style={[
-                                            styles.tokenDisc,
-                                            {
-                                                borderColor: tColor,
-                                                shadowColor: tColor,
-                                                backgroundColor: tColor
-                                            },
-                                            t.isMovable && {
-                                                transform: [{ scale: pulseAnim }],
-                                                borderColor: '#FFFFFF',
-                                                shadowOpacity: 1,
-                                                shadowRadius: 10
-                                            }
-                                        ]}
-                                    >
-                                        <View style={styles.tokenInnerCore} />
+                                    <Animated.View style={t.isMovable ? { transform: [{ scale: pulseAnim }] } : undefined}>
+                                        <View style={{ transform: [{ scale: baseScale }] }}>
+                                            <NeonStarToken
+                                                color={tColor}
+                                                size={Math.floor(CELL * 0.86)}
+                                                isMovable={t.isMovable}
+                                            />
+                                        </View>
                                     </Animated.View>
+                                    {isStacked && idx === Math.min(cellTokens.length - 1, 3) && cellTokens.length > 4 && (
+                                        <View style={styles.stackCountBadge}>
+                                            <Text style={styles.stackCountText}>{cellTokens.length}</Text>
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
                             );
                         })}
                     </View>
                 )}
-            </View>
+            </LudoTrackTile>
         );
     };
 
@@ -374,109 +396,61 @@ const OnlineLudoScreen = ({ route, navigation }) => {
     const renderYard = (colorIdx, top, left) => {
         const player = gameState?.players?.find(p => p.colorIdx === colorIdx);
         const yardColor = PLAYER_COLORS[colorIdx];
-        const darkColor = PLAYER_DARKS[colorIdx];
         const isCurrentTurn = gameState?.currentTurnUserId === player?.userId;
-
         const yardTokens = player?.tokens?.filter(t => t.pos === -1) || [];
 
         return (
-            <View
-                style={[
-                    styles.yardBase,
-                    {
-                        top: top * CELL,
-                        left: left * CELL,
-                        width: 6 * CELL,
-                        height: 6 * CELL,
-                        borderColor: isCurrentTurn ? '#FFFFFF' : yardColor,
-                        backgroundColor: darkColor,
-                        shadowColor: yardColor,
-                        shadowOpacity: isCurrentTurn ? 0.8 : 0.2
-                    }
-                ]}
-            >
-                {/* Yard Header info */}
-                <View style={styles.yardHeaderRow}>
-                    <NeonText style={styles.yardAvatarEmoji}>
-                        {player ? getAvatarEmoji(player.avatar) : '👤'}
-                    </NeonText>
-                    <NeonText
-                        numberOfLines={1}
-                        style={[styles.yardPlayerName, { color: yardColor }]}
-                    >
-                        {player ? player.name : 'Waiting...'}
-                    </NeonText>
-                </View>
+            <LudoHomeBase
+                color={yardColor}
+                size={6 * CELL}
+                top={top * CELL}
+                left={left * CELL}
+                label={player ? player.name : 'Waiting...'}
+                avatarEmoji={player ? getAvatarEmoji(player.avatar) : '👤'}
+                isActive={isCurrentTurn}
+                renderPadContent={(id, padSize) => {
+                    const hasToken = yardTokens.some(t => t.id === id);
+                    if (!hasToken) return null;
+                    const isMovable = isMyTurn && isMovingPhase && player?.userId === myUserId && gameState.movableTokens?.includes(id);
 
-                {/* Yard Token Wells */}
-                <View style={styles.yardWellsGrid}>
-                    {[0, 1, 2, 3].map(id => {
-                        const hasToken = yardTokens.some(t => t.id === id);
-                        const isMovable = hasToken && isMyTurn && isMovingPhase && player?.userId === myUserId && gameState.movableTokens?.includes(id);
-
-                        return (
-                            <View key={id} style={[styles.yardWell, { borderColor: yardColor }]}>
-                                {hasToken && (
-                                    <TouchableOpacity
-                                        onPress={() => isMovable && handleSelectToken(id)}
-                                        disabled={!isMovable}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Animated.View
-                                            style={[
-                                                styles.yardTokenDisc,
-                                                {
-                                                    backgroundColor: yardColor,
-                                                    borderColor: yardColor
-                                                },
-                                                isMovable && {
-                                                    transform: [{ scale: pulseAnim }],
-                                                    borderColor: '#FFFFFF',
-                                                    shadowColor: '#FFFFFF',
-                                                    shadowOpacity: 1,
-                                                    shadowRadius: 12
-                                                }
-                                            ]}
-                                        >
-                                            <View style={styles.tokenInnerCore} />
-                                        </Animated.View>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        );
-                    })}
-                </View>
-            </View>
+                    return (
+                        <TouchableOpacity
+                            onPress={() => isMovable && handleSelectToken(id)}
+                            disabled={!isMovable}
+                            activeOpacity={0.75}
+                        >
+                            <Animated.View style={isMovable ? { transform: [{ scale: pulseAnim }] } : undefined}>
+                                <NeonStarToken
+                                    color={yardColor}
+                                    size={Math.floor(padSize * 0.92)}
+                                    isMovable={isMovable}
+                                />
+                            </Animated.View>
+                        </TouchableOpacity>
+                    );
+                }}
+            />
         );
     };
 
-    // ─── Center Crown Area ────────────────────────────────────────────────────
+    // ─── Center Home Zone ─────────────────────────────────────────────────────
     const renderCenter = () => (
-        <View
-            style={[
-                styles.centerArea,
-                {
-                    top: 6 * CELL,
-                    left: 6 * CELL,
-                    width: 3 * CELL,
-                    height: 3 * CELL
-                }
-            ]}
-        >
-            {/* 4 Colored Center Triangles */}
-            <View style={[styles.centerTriangle, styles.triBottom, { borderBottomColor: PLAYER_COLORS[0] }]} />
-            <View style={[styles.centerTriangle, styles.triLeft, { borderLeftColor: PLAYER_COLORS[1] }]} />
-            <View style={[styles.centerTriangle, styles.triTop, { borderTopColor: PLAYER_COLORS[2] }]} />
-            <View style={[styles.centerTriangle, styles.triRight, { borderRightColor: PLAYER_COLORS[3] }]} />
-
-            <View style={styles.centerCrownBadge}>
-                <NeonText style={{ fontSize: Math.max(14, CELL * 0.7) }}>👑</NeonText>
-            </View>
-        </View>
+        <LudoCenterGoal
+            size={3 * CELL}
+            top={6 * CELL}
+            left={6 * CELL}
+        />
     );
 
     return (
         <SafeAreaView style={styles.container}>
+            <LinearGradient
+                colors={['#070714', '#0D0B21', '#070714']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+            />
             {/* TOP HEADER */}
             <View style={styles.headerRow}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
@@ -613,10 +587,10 @@ const OnlineLudoScreen = ({ route, navigation }) => {
 };
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
-const getStyles = (COLORS, BOARD_PX, CELL) => StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#070712'
+        backgroundColor: LUDO_RAVE_THEME.screenBg
     },
     headerRow: {
         flexDirection: 'row',
@@ -704,13 +678,13 @@ const getStyles = (COLORS, BOARD_PX, CELL) => StyleSheet.create({
     },
     boardWrapper: {
         borderWidth: 2,
-        borderColor: '#222244',
-        backgroundColor: '#0c0c1e',
+        borderColor: LUDO_RAVE_THEME.tileBorder,
+        backgroundColor: LUDO_RAVE_THEME.boardBg,
         borderRadius: 14,
         overflow: 'hidden',
         position: 'relative',
-        shadowColor: COLORS.neonCyan,
-        shadowOpacity: 0.25,
+        shadowColor: '#8B5CF6',
+        shadowOpacity: 0.28,
         shadowRadius: 16,
         elevation: 12
     },
@@ -722,130 +696,33 @@ const getStyles = (COLORS, BOARD_PX, CELL) => StyleSheet.create({
         bottom: 0,
         zIndex: 5
     },
-    cell: {
-        width: CELL,
-        height: CELL,
-        borderWidth: 0.5,
-        borderColor: 'rgba(255,255,255,0.07)',
-        backgroundColor: '#0c0c1e',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative'
-    },
     tokenStack: {
+        position: 'absolute',
         width: '100%',
         height: '100%',
-        position: 'relative',
         alignItems: 'center',
         justifyContent: 'center'
     },
     tokenWrapper: {
-        position: 'absolute'
-    },
-    tokenWrapperStacked: {
-        transform: [{ scale: 0.75 }]
-    },
-    tokenDisc: {
-        width: Math.floor(CELL * 0.78),
-        height: Math.floor(CELL * 0.78),
-        borderRadius: Math.floor(CELL * 0.39),
-        borderWidth: 2,
+        position: 'absolute',
         alignItems: 'center',
-        justifyContent: 'center',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 6,
-        elevation: 6
+        justifyContent: 'center'
     },
-    tokenInnerCore: {
-        width: '36%',
-        height: '36%',
-        borderRadius: 10,
+    stackCountBadge: {
+        position: 'absolute',
+        top: -3,
+        right: -3,
         backgroundColor: '#FFFFFF',
-        opacity: 0.85
-    },
-    yardBase: {
-        position: 'absolute',
-        borderWidth: 2,
-        borderRadius: 12,
-        padding: 6,
-        justifyContent: 'space-between',
-        zIndex: 2
-    },
-    yardHeaderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4
-    },
-    yardAvatarEmoji: {
-        fontSize: 14
-    },
-    yardPlayerName: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        maxWidth: 70
-    },
-    yardWellsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        flex: 1,
-        paddingTop: 4
-    },
-    yardWell: {
-        width: Math.floor(CELL * 1.5),
-        height: Math.floor(CELL * 1.5),
-        borderRadius: Math.floor(CELL * 0.75),
-        borderWidth: 1.5,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: 2
-    },
-    yardTokenDisc: {
-        width: Math.floor(CELL * 1.1),
-        height: Math.floor(CELL * 1.1),
-        borderRadius: Math.floor(CELL * 0.55),
-        borderWidth: 2,
+        borderRadius: 5,
+        width: 12,
+        height: 12,
         alignItems: 'center',
         justifyContent: 'center'
     },
-    centerArea: {
-        position: 'absolute',
-        backgroundColor: '#0a0a18',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 3
-    },
-    centerTriangle: {
-        position: 'absolute',
-        width: 0,
-        height: 0,
-        borderStyle: 'solid',
-        borderLeftWidth: Math.floor((3 * CELL) / 2),
-        borderRightWidth: Math.floor((3 * CELL) / 2),
-        borderTopWidth: Math.floor((3 * CELL) / 2),
-        borderBottomWidth: Math.floor((3 * CELL) / 2),
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: 'transparent',
-        borderBottomColor: 'transparent'
-    },
-    triBottom: { bottom: 0, borderTopWidth: 0 },
-    triLeft: { left: 0, borderRightWidth: 0 },
-    triTop: { top: 0, borderBottomWidth: 0 },
-    triRight: { right: 0, borderLeftWidth: 0 },
-    centerCrownBadge: {
-        zIndex: 10,
-        width: Math.floor(CELL * 1.2),
-        height: Math.floor(CELL * 1.2),
-        borderRadius: Math.floor(CELL * 0.6),
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        borderWidth: 1.5,
-        borderColor: '#FFD700',
-        alignItems: 'center',
-        justifyContent: 'center'
+    stackCountText: {
+        fontSize: 7,
+        color: '#000',
+        fontWeight: 'bold'
     },
     bottomControls: {
         paddingHorizontal: 20,

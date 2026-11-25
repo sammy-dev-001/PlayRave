@@ -12,12 +12,22 @@ import {
   View, TouchableOpacity, StyleSheet, Animated,
   Modal, SafeAreaView, Text, Platform, useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import HapticService from '../services/HapticService';
 import { buildLudoSeats } from './LudoDifficultyScreen';
+import {
+  LUDO_RAVE_THEME,
+  LUDO_STACK_OFFSETS,
+  LUDO_MID_SAFE_STAR_COLORS,
+  LudoHomeBase,
+  LudoCenterGoal,
+  LudoTrackTile,
+  NeonStarToken,
+} from '../components/LudoBoardUI';
 
 // ─── Geometry Constants ───────────────────────────────────────────────────────
 const GRID = 15;
@@ -316,76 +326,6 @@ const Die = ({ value, size, color, selected, used, style }) => (
   </View>
 );
 
-const TokenSpot = ({ color, size, top, left }) => (
-  <View style={{
-    position: 'absolute', top, left,
-    width: size, height: size, borderRadius: size / 2,
-    backgroundColor: '#111',
-    borderWidth: 2, borderColor: color,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: color, shadowOpacity: 1, shadowRadius: 6,
-    marginLeft: -size / 2, marginTop: -size / 2,
-  }}>
-    <View style={{
-      width: '60%', height: '60%', borderRadius: size,
-      backgroundColor: color,
-      opacity: 0.6,
-      shadowColor: color, shadowOpacity: 1, shadowRadius: 10,
-    }} />
-  </View>
-);
-
-const HomeBase = ({ color, size, top, left, label, isActive }) => (
-  <View style={{
-    position: 'absolute', top, left, width: size, height: size,
-    backgroundColor: '#0a0a1a', padding: size * 0.05, zIndex: 0,
-  }}>
-    <View style={{
-      flex: 1, borderRadius: size * 0.1,
-      borderWidth: isActive ? 3.5 : 2.5,
-      borderColor: color,
-      shadowColor: color, shadowOpacity: isActive ? 1 : 0.55, shadowRadius: isActive ? 14 : 8, padding: size * 0.08,
-    }}>
-      <View style={{
-        flex: 1, borderRadius: size * 0.08, borderWidth: 1.5, borderColor: color,
-        shadowColor: color, shadowOpacity: 0.4, shadowRadius: 5,
-      }} />
-    </View>
-    <View style={{ position: 'absolute', top: 0, left: 0, width: size, height: size, zIndex: 1 }} pointerEvents="none">
-      <TokenSpot color={color} size={size * 0.16} top="26%" left="26%" />
-      <TokenSpot color={color} size={size * 0.16} top="26%" left="74%" />
-      <TokenSpot color={color} size={size * 0.16} top="74%" left="26%" />
-      <TokenSpot color={color} size={size * 0.16} top="74%" left="74%" />
-      {label ? (
-        <View style={{
-          position: 'absolute', bottom: 4, left: 6, right: 6, alignItems: 'center',
-        }}>
-          <Text numberOfLines={1} style={{
-            fontSize: 9, fontWeight: 'bold', color,
-            backgroundColor: 'rgba(10,10,26,0.85)', paddingHorizontal: 5, borderRadius: 4,
-          }}>
-            {label}
-          </Text>
-        </View>
-      ) : null}
-    </View>
-  </View>
-);
-
-const CenterArea = ({ size, top, left }) => (
-  <View style={{
-    position: 'absolute', top, left, width: size, height: size,
-    backgroundColor: '#0a0a1a', zIndex: 0,
-    borderWidth: 2, borderColor: '#00FFFF', overflow: 'hidden',
-    justifyContent: 'center', alignItems: 'center',
-  }}>
-    <View style={{ position: 'absolute', width: size * 1.5, height: size * 1.5, backgroundColor: '#FF007F', opacity: 0.3, transform: [{ rotate: '45deg' }] }} />
-    <View style={{ position: 'absolute', width: size * 1.2, height: size * 1.2, backgroundColor: '#00FFFF', opacity: 0.3, transform: [{ rotate: '-45deg' }] }} />
-    <View style={{ position: 'absolute', width: size * 0.8, height: size * 0.8, backgroundColor: '#39FF14', opacity: 0.4, borderRadius: size, shadowColor: '#39FF14', shadowRadius: 20, shadowOpacity: 1 }} />
-    <Ionicons name="infinite" size={size * 0.6} color="#fff" style={{ opacity: 0.9, shadowColor: '#fff', shadowRadius: 10, shadowOpacity: 1 }} />
-  </View>
-);
-
 // ─── Component ────────────────────────────────────────────────────────────────
 const LudoVsAIScreen = ({ route, navigation }) => {
   const { COLORS: _THEME } = useTheme();
@@ -415,7 +355,7 @@ const LudoVsAIScreen = ({ route, navigation }) => {
 
   // Refs
   const diceShake = useRef([new Animated.Value(0), new Animated.Value(0)]).current;
-  const glowAnims = useRef({}).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
   const tokenRef = useRef(tokens);
   const timersRef = useRef([]);
 
@@ -434,25 +374,19 @@ const LudoVsAIScreen = ({ route, navigation }) => {
 
   useEffect(() => () => clearAllTimers(), [clearAllTimers]);
 
-  const ensureGlow = useCallback((key) => {
-    if (!glowAnims[key]) glowAnims[key] = new Animated.Value(0);
-    return glowAnims[key];
-  }, [glowAnims]);
-
   useEffect(() => {
-    movable.forEach(t => {
-      const key = `${t.player}_${t.id}`;
-      const a = ensureGlow(key);
-      a.stopAnimation();
-      Animated.loop(Animated.sequence([
-        Animated.timing(a, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.timing(a, { toValue: 0, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
-      ])).start();
-    });
-    return () => movable.forEach(t => {
-      glowAnims[`${t.player}_${t.id}`]?.stopAnimation();
-    });
-  }, [movable, glowAnims, ensureGlow]);
+    if (movable.length > 0) {
+      pulseAnim.setValue(1);
+      const loop = Animated.loop(Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.18, duration: 420, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 420, useNativeDriver: USE_NATIVE_DRIVER }),
+      ]));
+      loop.start();
+      return () => loop.stop();
+    }
+    pulseAnim.setValue(1);
+    return undefined;
+  }, [movable, pulseAnim]);
 
   const shakeDice = useCallback(() => {
     const make = (anim) => {
@@ -703,8 +637,6 @@ const LudoVsAIScreen = ({ route, navigation }) => {
 
   // ── Render Board Cell ─────────────────────────────────────────────────────
   const renderCell = (row, col) => {
-    let bg = '#111128';
-
     const inBase = [
       row >= 9 && row <= 14 && col >= 0 && col <= 5,
       row >= 0 && row <= 5 && col >= 0 && col <= 5,
@@ -714,17 +646,18 @@ const LudoVsAIScreen = ({ route, navigation }) => {
     const isBaseCell = inBase.some(Boolean);
     const isCenterArea = row >= 6 && row <= 8 && col >= 6 && col <= 8;
 
-    if (isBaseCell || isCenterArea) {
-      bg = 'transparent';
-    } else {
-      if (col === 7 && row >= 9 && row <= 13) bg = PLAYER_COLOR[0];
-      if (row === 7 && col >= 1 && col <= 5) bg = PLAYER_COLOR[1];
-      if (col === 7 && row >= 1 && row <= 5) bg = PLAYER_COLOR[2];
-      if (row === 7 && col >= 9 && col <= 13) bg = PLAYER_COLOR[3];
+    let homeColColor = null;
+    let startColor = null;
+
+    if (!isBaseCell && !isCenterArea) {
+      if (col === 7 && row >= 9 && row <= 13) homeColColor = PLAYER_COLOR[0];
+      if (row === 7 && col >= 1 && col <= 5) homeColColor = PLAYER_COLOR[1];
+      if (col === 7 && row >= 1 && row <= 5) homeColColor = PLAYER_COLOR[2];
+      if (row === 7 && col >= 9 && col <= 13) homeColColor = PLAYER_COLOR[3];
 
       const startCells = PLAYER_START.map(i => MAIN_TRACK[i]);
       const startIdx = startCells.findIndex(([r, c]) => r === row && c === col);
-      if (startIdx >= 0) bg = PLAYER_COLOR[startIdx];
+      if (startIdx >= 0) startColor = PLAYER_COLOR[startIdx];
     }
 
     const tIdx = MAIN_TRACK.findIndex(([r, c]) => r === row && c === col);
@@ -739,97 +672,99 @@ const LudoVsAIScreen = ({ route, navigation }) => {
       return (aMovable === bMovable) ? 0 : aMovable ? 1 : -1;
     });
 
-    return (
-      <View key={`${row}_${col}`} style={[
-        styles.cell,
-        {
-          width: CELL,
-          height: CELL,
-          backgroundColor: bg,
-          borderColor: (isBaseCell || isCenterArea) ? 'transparent' : '#00FFFF',
-          borderWidth: (isBaseCell || isCenterArea) ? 0 : 1,
-          shadowColor: bg !== 'transparent' && bg !== '#111128' ? bg : 'transparent',
-          shadowOpacity: 0.8,
-          shadowRadius: 5,
-        },
-      ]}>
-        {isSafe && !isCenterArea && !isBaseCell && (
-          <Ionicons name="star-outline" size={CELL * 0.65} color="#FFD700" style={{ position: 'absolute' }} />
-        )}
-        {(row === 14 && col === 7) && <Ionicons name="arrow-up" size={CELL * 0.7} color={PLAYER_COLOR[0]} style={{ position: 'absolute' }} />}
-        {(row === 7 && col === 0) && <Ionicons name="arrow-forward" size={CELL * 0.7} color={PLAYER_COLOR[1]} style={{ position: 'absolute' }} />}
-        {(row === 0 && col === 7) && <Ionicons name="arrow-down" size={CELL * 0.7} color={PLAYER_COLOR[2]} style={{ position: 'absolute' }} />}
-        {(row === 7 && col === 14) && <Ionicons name="arrow-back" size={CELL * 0.7} color={PLAYER_COLOR[3]} style={{ position: 'absolute' }} />}
-        {here.length > 0 && (
-          <View style={styles.stack}>
-            {here.slice(0, 4).map((t, idx) => {
-              const k = `${t.player}_${t.id}`;
-              const isMovable = movable.some(m => m.player === t.player && m.id === t.id);
-              const gAnim = glowAnims[k];
-              const gOp = gAnim
-                ? gAnim.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] })
-                : 1;
-              const isStacked = here.length > 1;
+    let directionArrow = null;
+    if (row === 14 && col === 7) directionArrow = { direction: 'up', color: PLAYER_COLOR[0] };
+    else if (row === 7 && col === 0) directionArrow = { direction: 'right', color: PLAYER_COLOR[1] };
+    else if (row === 0 && col === 7) directionArrow = { direction: 'down', color: PLAYER_COLOR[2] };
+    else if (row === 7 && col === 14) directionArrow = { direction: 'left', color: PLAYER_COLOR[3] };
 
-              let tx = 0;
-              let ty = 0;
-              if (isStacked) {
-                const gridOffsets = [
-                  { x: -0.22, y: -0.22 },
-                  { x: 0.22, y: 0.22 },
-                  { x: -0.22, y: 0.22 },
-                  { x: 0.22, y: -0.22 },
-                ];
-                tx = gridOffsets[idx % 4].x * CELL;
-                ty = gridOffsets[idx % 4].y * CELL;
-              }
+    const safeStarColor = startColor || LUDO_MID_SAFE_STAR_COLORS[`${row}_${col}`] || '#FFD700';
 
-              const canTapToken = isMovable && !activeSeat.isAI && t.player === turnSeat;
+    const tokenElements = here.length > 0 && (
+      <View style={styles.stack} pointerEvents="box-none">
+        {here.slice(0, 4).map((t, idx) => {
+          const k = `${t.player}_${t.id}`;
+          const isMovable = movable.some(m => m.player === t.player && m.id === t.id);
+          const isStacked = here.length > 1;
 
-              return (
-                <TouchableOpacity
-                  key={k}
-                  onPress={() => canTapToken ? moveHumanToken(t) : null}
-                  disabled={!canTapToken}
-                  style={[styles.tokenWrap, {
-                    zIndex: 10 + idx,
-                    transform: [{ translateX: tx }, { translateY: ty }],
-                  }]}
-                >
-                  <Animated.View style={[{
-                    width: CELL * 0.72,
-                    height: CELL * 0.72,
-                    borderRadius: CELL * 0.36,
-                    backgroundColor: '#111',
-                    borderWidth: isStacked ? 1.5 : 2.5,
-                    borderColor: PLAYER_COLOR[t.player],
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowColor: PLAYER_COLOR[t.player],
-                    shadowOpacity: isMovable ? gOp : 0.4,
-                    shadowRadius: isMovable ? 16 : 4,
-                    elevation: isMovable ? 16 : 4,
-                    transform: [{ scale: isStacked ? (isMovable ? 0.9 : 0.65) : (isMovable ? 1.14 : 0.85) }],
-                  }]}>
-                    <View style={{ width: '50%', height: '50%', backgroundColor: PLAYER_COLOR[t.player], borderRadius: 10, opacity: 0.85 }} />
-                  </Animated.View>
-                  {isStacked && idx === Math.min(here.length - 1, 3) && here.length > 4 && (
-                    <View style={styles.badge}>
-                      <Text style={{ fontSize: 7, color: '#000', fontWeight: 'bold' }}>{here.length}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+          let tx = 0;
+          let ty = 0;
+          if (isStacked) {
+            const off = LUDO_STACK_OFFSETS[idx % 4];
+            tx = off.x * CELL;
+            ty = off.y * CELL;
+          }
+
+          const canTapToken = isMovable && !activeSeat.isAI && t.player === turnSeat;
+          const baseScale = isStacked ? (isMovable ? 0.88 : 0.68) : (isMovable ? 1.06 : 0.94);
+
+          return (
+            <TouchableOpacity
+              key={k}
+              onPress={() => canTapToken ? moveHumanToken(t) : null}
+              disabled={!canTapToken}
+              activeOpacity={0.75}
+              style={[styles.tokenWrap, {
+                zIndex: 10 + idx,
+                transform: [{ translateX: tx }, { translateY: ty }],
+              }]}
+            >
+              <Animated.View style={isMovable ? { transform: [{ scale: pulseAnim }] } : undefined}>
+                <View style={{ transform: [{ scale: baseScale }] }}>
+                  <NeonStarToken
+                    color={PLAYER_COLOR[t.player]}
+                    size={Math.floor(CELL * 0.86)}
+                    isMovable={isMovable}
+                  />
+                </View>
+              </Animated.View>
+              {isStacked && idx === Math.min(here.length - 1, 3) && here.length > 4 && (
+                <View style={styles.badge}>
+                  <Text style={{ fontSize: 7, color: '#000', fontWeight: 'bold' }}>{here.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
+    );
+
+    if (isBaseCell || isCenterArea) {
+      return (
+        <View
+          key={`${row}_${col}`}
+          style={[styles.cell, { width: CELL, height: CELL, backgroundColor: 'transparent' }]}
+          pointerEvents="box-none"
+        >
+          {tokenElements}
+        </View>
+      );
+    }
+
+    return (
+      <LudoTrackTile
+        key={`${row}_${col}`}
+        size={CELL}
+        startColor={startColor}
+        homeColColor={homeColColor}
+        isSafeStar={isSafe && here.length === 0}
+        safeStarColor={safeStarColor}
+        directionArrow={directionArrow}
+      >
+        {tokenElements}
+      </LudoTrackTile>
     );
   };
 
   return (
     <SafeAreaView style={styles.screen}>
+      <LinearGradient
+        colors={['#070714', '#0D0B21', '#070714']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -890,15 +825,15 @@ const LudoVsAIScreen = ({ route, navigation }) => {
       {/* Board */}
       <View style={[styles.boardWrap, { minHeight: CELL * GRID + 8 }]}>
         <View style={[styles.board, { width: CELL * GRID, height: CELL * GRID }]}>
-          <HomeBase color={PLAYER_COLOR[0]} top={9 * CELL} left={0} size={6 * CELL} label={seats[0].name} isActive={turnSeat === 0 && !winner} />
-          <HomeBase color={PLAYER_COLOR[1]} top={0} left={0} size={6 * CELL} label={seats[1].name} isActive={turnSeat === 1 && !winner} />
-          <HomeBase color={PLAYER_COLOR[2]} top={0} left={9 * CELL} size={6 * CELL} label={seats[2].name} isActive={turnSeat === 2 && !winner} />
-          <HomeBase color={PLAYER_COLOR[3]} top={9 * CELL} left={9 * CELL} size={6 * CELL} label={seats[3].name} isActive={turnSeat === 3 && !winner} />
-          <CenterArea size={3 * CELL} top={6 * CELL} left={6 * CELL} />
+          <LudoHomeBase color={PLAYER_COLOR[0]} top={9 * CELL} left={0} size={6 * CELL} label={seats[0].name} isActive={turnSeat === 0 && !winner} />
+          <LudoHomeBase color={PLAYER_COLOR[1]} top={0} left={0} size={6 * CELL} label={seats[1].name} isActive={turnSeat === 1 && !winner} />
+          <LudoHomeBase color={PLAYER_COLOR[2]} top={0} left={9 * CELL} size={6 * CELL} label={seats[2].name} isActive={turnSeat === 2 && !winner} />
+          <LudoHomeBase color={PLAYER_COLOR[3]} top={9 * CELL} left={9 * CELL} size={6 * CELL} label={seats[3].name} isActive={turnSeat === 3 && !winner} />
+          <LudoCenterGoal size={3 * CELL} top={6 * CELL} left={6 * CELL} />
 
-          <View style={{ flex: 1, zIndex: 10 }}>
+          <View style={{ flex: 1, zIndex: 10 }} pointerEvents="box-none">
             {Array.from({ length: GRID }, (_, row) => (
-              <View key={row} style={{ flexDirection: 'row', height: CELL }}>
+              <View key={row} style={{ flexDirection: 'row', height: CELL }} pointerEvents="box-none">
                 {Array.from({ length: GRID }, (_, col) => renderCell(row, col))}
               </View>
             ))}
@@ -994,7 +929,7 @@ const LudoVsAIScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#07070e',
+    backgroundColor: LUDO_RAVE_THEME.screenBg,
     ...Platform.select({
       web: { height: '100%', minHeight: '100vh' },
       default: {},
@@ -1027,9 +962,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   board: {
-    borderWidth: 2, borderColor: '#2a2a5a',
-    backgroundColor: '#0c0c1e',
-    shadowColor: '#00FFFF', shadowOpacity: 0.2,
+    borderWidth: 2, borderColor: LUDO_RAVE_THEME.tileBorder,
+    borderRadius: 12,
+    backgroundColor: LUDO_RAVE_THEME.boardBg,
+    shadowColor: '#8B5CF6', shadowOpacity: 0.28,
     shadowRadius: 18, elevation: 18,
     overflow: 'hidden',
   },
