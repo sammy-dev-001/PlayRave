@@ -1,14 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
-import NeonButton from '../components/NeonButton';
 import { useTheme } from '../context/ThemeContext';
 import GameIcon from '../components/GameIcon';
 import { LocalGamesRegistry } from '../data/GameRegistry';
-
-// Dimensions imported inside component to handle dynamic updates
 
 const getGameCategories = (COLORS) => ({
     party: { name: 'Party Games', icon: 'ribbon', color: COLORS.hotPink },
@@ -17,7 +14,10 @@ const getGameCategories = (COLORS) => ({
     speed: { name: 'Speed Games', icon: 'flash', color: COLORS.electricPurple },
 });
 
-import { useWindowDimensions } from 'react-native';
+// AI-compatible games (only these show in single-player mode)
+const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories', 'whot-ai', 'connect-four', 'checkers', 'ludo', 'math-blitz', 'button-mash'];
+// Strictly 1-player vs AI games (hidden when 2+ players are in local party)
+const SINGLE_PLAYER_ONLY_GAMES = ['scrabble', 'tic-tac-toe', 'whot-ai', 'connect-four', 'checkers'];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -27,14 +27,10 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // AI-compatible games (only these show in single-player mode)
-    const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories', 'whot-ai', 'connect-four', 'checkers', 'ludo', 'math-blitz', 'button-mash'];
-
-
     const filteredGames = useMemo(() => {
         let available = isSinglePlayer
             ? LocalGamesRegistry.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-            : LocalGamesRegistry.filter(game => game.id !== 'scrabble' && game.id !== 'tic-tac-toe');
+            : LocalGamesRegistry.filter(game => !SINGLE_PLAYER_ONLY_GAMES.includes(game.id));
 
         if (selectedCategory !== 'all') {
             available = available.filter(game => game.category === selectedCategory);
@@ -49,7 +45,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         }
         
         return available;
-    }, [isSinglePlayer, searchQuery, selectedCategory, COLORS]);
+    }, [isSinglePlayer, searchQuery, selectedCategory]);
 
     const handleSelectGame = (game) => {
         if (isSinglePlayer && game.singlePlayerRouteComponent) {
@@ -87,7 +83,9 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                 <View style={styles.cardHeader}>
                     <View style={styles.playerBadge}>
                         <Ionicons name="people" size={10} color="#fff" />
-                        <NeonText size={10} color="#fff">{game.minPlayers || 2}-{game.maxPlayers || 10}</NeonText>
+                        <NeonText size={10} color="#fff">
+                            {game.maxPlayers === 1 ? '1P vs AI' : `${game.minPlayers || 2}-${game.maxPlayers || 10}`}
+                        </NeonText>
                     </View>
                 </View>
 
@@ -148,7 +146,6 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
 };
 
 const getStyles = (COLORS, SCREEN_WIDTH) => StyleSheet.create({
-    header: { marginTop: 20, marginBottom: 20, paddingHorizontal: 20 },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
