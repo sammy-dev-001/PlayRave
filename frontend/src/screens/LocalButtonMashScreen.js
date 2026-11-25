@@ -505,14 +505,17 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
                         </NeonText>
 
                         <View style={styles.duelScoresBox}>
-                            <View style={styles.scoreRow}>
-                                <NeonText style={{ color: COLORS.neonCyan, fontWeight: 'bold' }}>{player1Name}:</NeonText>
-                                <NeonText glowColor={COLORS.neonCyan} style={styles.scoreNum}>{p1Taps} taps</NeonText>
-                            </View>
-                            <View style={styles.scoreRow}>
-                                <NeonText style={{ color: COLORS.hotPink, fontWeight: 'bold' }}>{player2Name}:</NeonText>
-                                <NeonText glowColor={COLORS.hotPink} style={styles.scoreNum}>{p2Taps} taps</NeonText>
-                            </View>
+                            {[
+                                { key: 'p1', name: player1Name, taps: p1Taps, color: COLORS.neonCyan, isWinner: isP1 },
+                                { key: 'p2', name: player2Name, taps: p2Taps, color: COLORS.hotPink, isWinner: isP2 },
+                            ]
+                                .sort((a, b) => (b.taps - a.taps) || (Number(b.isWinner) - Number(a.isWinner)))
+                                .map((p) => (
+                                    <View key={p.key} style={styles.scoreRow}>
+                                        <NeonText style={{ color: p.color, fontWeight: 'bold' }}>{p.name}:</NeonText>
+                                        <NeonText glowColor={p.color} style={styles.scoreNum}>{p.taps} taps</NeonText>
+                                    </View>
+                                ))}
                         </View>
                     </View>
 

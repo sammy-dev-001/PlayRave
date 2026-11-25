@@ -824,6 +824,10 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
     // ─────────────────────────────────────────────────────────────────────────────
     if (gameMode === 'duel' && duelPhase === 'gameover') {
         const isP1Winner = duelWinner === p1Name;
+        const standings = [
+            { key: 'p1', name: p1Name, score: duelScores.p1, color: COLORS.neonCyan, isWinner: isP1Winner },
+            { key: 'p2', name: p2Name, score: duelScores.p2, color: COLORS.hotPink, isWinner: duelWinner === p2Name },
+        ].sort((a, b) => (b.score - a.score) || (Number(b.isWinner) - Number(a.isWinner)));
 
         return (
             <NeonContainer style={styles.centerAll}>
@@ -845,27 +849,22 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                     </NeonText>
 
                     <View style={styles.duelFinalScoreCard}>
-                        <View style={styles.duelFinalPlayerRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <View style={[styles.playerColorDot, { backgroundColor: COLORS.hotPink }]} />
-                                <NeonText size={16} weight="bold" color={COLORS.hotPink}>{p2Name}</NeonText>
-                            </View>
-                            <NeonText size={22} weight="bold" color={COLORS.hotPink} glow>
-                                {duelScores.p2} PTS
-                            </NeonText>
-                        </View>
-
-                        <View style={styles.summaryDivider} />
-
-                        <View style={styles.duelFinalPlayerRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <View style={[styles.playerColorDot, { backgroundColor: COLORS.neonCyan }]} />
-                                <NeonText size={16} weight="bold" color={COLORS.neonCyan}>{p1Name}</NeonText>
-                            </View>
-                            <NeonText size={22} weight="bold" color={COLORS.neonCyan} glow>
-                                {duelScores.p1} PTS
-                            </NeonText>
-                        </View>
+                        {standings.map((player, idx) => (
+                            <React.Fragment key={player.key}>
+                                {idx > 0 && <View style={styles.duelScoreDivider} />}
+                                <View style={styles.duelFinalPlayerRow}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                        <View style={[styles.playerColorDot, { backgroundColor: player.color }]} />
+                                        <NeonText size={16} weight="bold" color={player.color}>
+                                            {player.name}
+                                        </NeonText>
+                                    </View>
+                                    <NeonText size={22} weight="bold" color={player.color} glow>
+                                        {player.score} PTS
+                                    </NeonText>
+                                </View>
+                            </React.Fragment>
+                        ))}
                     </View>
 
                     <View style={styles.summaryButtons}>
@@ -1463,6 +1462,11 @@ const getStyles = (COLORS) => StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    duelScoreDivider: {
+        width: '100%',
+        height: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
     },
 });
 
