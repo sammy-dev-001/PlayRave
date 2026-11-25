@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     View,
     StyleSheet,
@@ -57,82 +57,34 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
     const soloScale = useRef(new Animated.Value(1)).current;
     const countdownScale = useRef(new Animated.Value(1)).current;
 
+    // Authoritative refs so wall-clock timers and rapid taps never read stale state
+    const p1TapsRef = useRef(0);
+    const p2TapsRef = useRef(0);
+    const soloTapsRef = useRef(0);
+    const tugPositionRef = useRef(50);
+    const soloHighScoreRef = useRef(0);
+    const hasEndedRef = useRef(false);
+
     // Load High Score on Mount
     useEffect(() => {
         (async () => {
             try {
                 const saved = await AsyncStorage.getItem(HIGH_SCORE_KEY);
-                if (saved) setSoloHighScore(parseInt(saved, 10));
+                if (saved) {
+                    const parsed = parseInt(saved, 10) || 0;
+                    soloHighScoreRef.current = parsed;
+                    setSoloHighScore(parsed);
+                }
             } catch (e) {
                 console.log('Error reading high score', e);
             }
         })();
     }, []);
 
-    // Countdown Logic
-    useEffect(() => {
-        let timer = null;
-        if (phase === 'countdown') {
-            countdownScale.setValue(0.5);
-            Animated.spring(countdownScale, {
-                toValue: 1.2,
-                friction: 3,
-                useNativeDriver: Platform.OS !== 'web'
-            }).start();
+    const endGame = useCallback((forcedWinner = null) => {
+        if (hasEndedRef.current) return;
+        hasEndedRef.current = true;
 
-            SoundService.play('tick');
-            HapticService.trigger('impactMedium');
-
-            timer = setInterval(() => {
-                setCountdown(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        setPhase('playing');
-                        SoundService.play('game-start');
-                        HapticService.trigger('notificationSuccess');
-                        return 0;
-                    }
-                    SoundService.play('tick');
-                    HapticService.trigger('impactMedium');
-                    return prev - 1;
-                });
-            }, 900);
-        }
-        return () => clearInterval(timer);
-    }, [phase]);
-
-    // Timer Logic during playing
-    useEffect(() => {
-        let interval = null;
-        if (phase === 'playing' && (mode === 'speed_duel' || mode === 'solo_drill' || mode === 'tug_of_war')) {
-            interval = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        clearInterval(interval);
-                        endGame();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [phase, mode, p1Taps, p2Taps, tugPosition]);
-
-    const startGame = (selectedMode) => {
-        const gameM = selectedMode || mode;
-        setMode(gameM);
-        setP1Taps(0);
-        setP2Taps(0);
-        setSoloTaps(0);
-        setTugPosition(50);
-        setTimeLeft(gameM === 'tug_of_war' ? 15 : 10);
-        setCountdown(3);
-        setWinner(null);
-        setPhase('countdown');
-    };
-
-    const endGame = (forcedWinner = null) => {
         setPhase('gameover');
         SoundService.play('victory');
         HapticService.trigger('notificationSuccess');
@@ -142,26 +94,119 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
             return;
         }
 
+        const finalP1 = p1TapsRef.current;
+        const finalP2 = p2TapsRef.current;
+        const finalTug = tugPositionRef.current;
+        const finalSolo = soloTapsRef.current;
+
         if (mode === 'tug_of_war') {
-            if (tugPosition > 50) setWinner('p1');
-            else if (tugPosition < 50) setWinner('p2');
+            if (finalTug > 50) setWinner('p1');
+            else if (finalTug < 50) setWinner('p2');
             else setWinner('tie');
         } else if (mode === 'speed_duel') {
-            if (p1Taps > p2Taps) setWinner('p1');
-            else if (p2Taps > p1Taps) setWinner('p2');
+            if (finalP1 > finalP2) setWinner('p1');
+            else if (finalP2 > finalP1) setWinner('p2');
             else setWinner('tie');
         } else if (mode === 'solo_drill') {
-            // Check high score
-            if (soloTaps > soloHighScore) {
-                setSoloHighScore(soloTaps);
-                AsyncStorage.setItem(HIGH_SCORE_KEY, soloTaps.toString()).catch(() => {});
+            if (finalSolo > soloHighScoreRef.current) {
+                soloHighScoreRef.current = finalSolo;
+                setSoloHighScore(finalSolo);
+                AsyncStorage.setItem(HIGH_SCORE_KEY, finalSolo.toString()).catch(() => {});
             }
         }
+    }, [mode]);
+
+    const endGameRef = useRef(endGame);
+    useEffect(() => {
+        endGameRef.current = endGame;
+    }, [endGame]);
+
+    // Countdown Logic (3 -> 2 -> 1 -> playing)
+    useEffect(() => {
+        if (phase !== 'countdown') return;
+
+        let remaining = 3;
+        setCountdown(remaining);
+        countdownScale.setValue(0.5);
+        Animated.spring(countdownScale, {
+            toValue: 1.2,
+            friction: 3,
+            useNativeDriver: Platform.OS !== 'web'
+        }).start();
+
+        SoundService.play('tick');
+        HapticService.trigger('impactMedium');
+
+        const timer = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(timer);
+                setCountdown(0);
+                setPhase('playing');
+                SoundService.play('game-start');
+                HapticService.trigger('notificationSuccess');
+                return;
+            }
+            setCountdown(remaining);
+            countdownScale.setValue(0.5);
+            Animated.spring(countdownScale, {
+                toValue: 1.2,
+                friction: 3,
+                useNativeDriver: Platform.OS !== 'web'
+            }).start();
+            SoundService.play('tick');
+            HapticService.trigger('impactMedium');
+        }, 900);
+
+        return () => clearInterval(timer);
+    }, [phase, countdownScale]);
+
+    // Accurate wall-clock playing timer (never resets on player taps)
+    useEffect(() => {
+        if (phase !== 'playing') return;
+        if (mode !== 'speed_duel' && mode !== 'solo_drill' && mode !== 'tug_of_war') return;
+
+        const durationSecs = mode === 'tug_of_war' ? 15 : 10;
+        const endTime = Date.now() + durationSecs * 1000;
+        setTimeLeft(durationSecs);
+
+        const interval = setInterval(() => {
+            const remainingMs = Math.max(0, endTime - Date.now());
+            const nextSeconds = Math.ceil(remainingMs / 1000);
+            setTimeLeft(prev => (prev === nextSeconds ? prev : nextSeconds));
+
+            if (remainingMs <= 0) {
+                clearInterval(interval);
+                endGameRef.current();
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [phase, mode]);
+
+    const startGame = (selectedMode) => {
+        const gameM = selectedMode || mode;
+        const durationSecs = gameM === 'tug_of_war' ? 15 : 10;
+        hasEndedRef.current = false;
+        p1TapsRef.current = 0;
+        p2TapsRef.current = 0;
+        soloTapsRef.current = 0;
+        tugPositionRef.current = 50;
+
+        setMode(gameM);
+        setP1Taps(0);
+        setP2Taps(0);
+        setSoloTaps(0);
+        setTugPosition(50);
+        setTimeLeft(durationSecs);
+        setCountdown(3);
+        setWinner(null);
+        setPhase('countdown');
     };
 
     // --- TAP HANDLERS ---
     const handleP1Tap = () => {
-        if (phase !== 'playing') return;
+        if (phase !== 'playing' || hasEndedRef.current) return;
         HapticService.trigger('impactLight');
         SoundService.play('click');
 
@@ -169,25 +214,25 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
         p1Scale.setValue(0.92);
         Animated.spring(p1Scale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' }).start();
 
-        setP1Taps(prev => {
-            const next = prev + 1;
-            if (mode === 'target_100' && next >= 100) {
-                endGame('p1');
-            }
-            return next;
-        });
+        p1TapsRef.current += 1;
+        setP1Taps(p1TapsRef.current);
+
+        if (mode === 'target_100' && p1TapsRef.current >= 100) {
+            endGame('p1');
+            return;
+        }
 
         if (mode === 'tug_of_war') {
-            setTugPosition(prev => {
-                const next = Math.min(100, prev + 2.5);
-                if (next >= 100) endGame('p1');
-                return next;
-            });
+            tugPositionRef.current = Math.min(100, tugPositionRef.current + 2.5);
+            setTugPosition(tugPositionRef.current);
+            if (tugPositionRef.current >= 100) {
+                endGame('p1');
+            }
         }
     };
 
     const handleP2Tap = () => {
-        if (phase !== 'playing') return;
+        if (phase !== 'playing' || hasEndedRef.current) return;
         HapticService.trigger('impactLight');
         SoundService.play('click');
 
@@ -195,32 +240,33 @@ const LocalButtonMashScreen = ({ route, navigation }) => {
         p2Scale.setValue(0.92);
         Animated.spring(p2Scale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' }).start();
 
-        setP2Taps(prev => {
-            const next = prev + 1;
-            if (mode === 'target_100' && next >= 100) {
-                endGame('p2');
-            }
-            return next;
-        });
+        p2TapsRef.current += 1;
+        setP2Taps(p2TapsRef.current);
+
+        if (mode === 'target_100' && p2TapsRef.current >= 100) {
+            endGame('p2');
+            return;
+        }
 
         if (mode === 'tug_of_war') {
-            setTugPosition(prev => {
-                const next = Math.max(0, prev - 2.5);
-                if (next <= 0) endGame('p2');
-                return next;
-            });
+            tugPositionRef.current = Math.max(0, tugPositionRef.current - 2.5);
+            setTugPosition(tugPositionRef.current);
+            if (tugPositionRef.current <= 0) {
+                endGame('p2');
+            }
         }
     };
 
     const handleSoloTap = () => {
-        if (phase !== 'playing') return;
+        if (phase !== 'playing' || hasEndedRef.current) return;
         HapticService.trigger('impactLight');
         SoundService.play('click');
 
         soloScale.setValue(0.94);
         Animated.spring(soloScale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== 'web' }).start();
 
-        setSoloTaps(prev => prev + 1);
+        soloTapsRef.current += 1;
+        setSoloTaps(soloTapsRef.current);
     };
 
     const getSoloTier = (cps) => {

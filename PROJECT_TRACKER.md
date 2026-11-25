@@ -26,7 +26,7 @@ This document tracks current project status, architectural fixes, upcoming featu
   - Built Local Math Blitz (Solo 60s Time Attack + 2-Player Split-Screen Duel).
   - Resolved Math Blitz & Button Mash Split-Screen Blank Screen on Web: Fixed `#root` in `frontend/public/index.html` to `display: flex; flex-direction: column;` so React Navigation `NativeStackView` stack containers propagate full viewport height on Web, added explicit `flexBasis: 'auto'` and `minHeight: '100vh'` guards on split-screen containers (`LocalMathBlitzScreen.js`, `LocalButtonMashScreen.js`), separated countdown/gameover overlays cleanly, and switched `sw.js`/`service-worker.js` HTML/JS caching to network-first to eliminate stale bundle caches. Added safe parameter guards in `MathBlitzScreen.js`.
   - Built Local The Imposter (Pass-and-play) & expanded/rebalanced word pairs (removed synonym pairs across frontend & backend, added Weather & Nature + Professions categories, added bidirectional deduplication and randomized word-polarity assignment).
-  - Built Local Button Mash (2-Player split-screen).
+  - Built Local Button Mash (2-Player split-screen) and fixed wall-clock playing timer accuracy (eliminated tap-triggered `useEffect` interval resets, added timestamp anchoring and ref-backed tap tallies).
 - **Online Multiplayer Ludo:**
   - Authoritative `LudoEngine.js` + `OnlineLudoScreen.js` with responsive neon board aesthetics.
 - **Full Scrabble Lexicon:**
