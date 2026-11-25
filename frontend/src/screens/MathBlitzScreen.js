@@ -8,7 +8,6 @@ import {
     Vibration,
     Keyboard
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
@@ -19,7 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 const MathBlitzScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
-    const { room, playerName, isHost, gameState: initialGameState } = route.params;
+    const { room = {}, playerName = 'Player', isHost = false, gameState: initialGameState = null } = route?.params || {};
 
     useGameDisconnectHandler({
         navigation,
@@ -147,7 +146,7 @@ const MathBlitzScreen = ({ route, navigation }) => {
             SocketService.off('math-blitz-ended', onGameEnded);
             SocketService.off('game-state-sync', onGameStateSync);
         };
-    }, [navigation, room, playerName, isHost]);
+    }, [navigation, room, playerName, isHost, shakeAnim]);
 
     useEffect(() => {
         if (phase !== 'countdown') return;
