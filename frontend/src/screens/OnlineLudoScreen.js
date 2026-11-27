@@ -110,10 +110,14 @@ const OnlineLudoScreen = ({ route, navigation }) => {
     const [statusMessage, setStatusMessage] = useState('Game started! Roll the dice.');
     const [showGameOver, setShowGameOver] = useState(false);
 
+    // Loading state: shown until first real gameState arrives
+    const [isLoadingState, setIsLoadingState] = useState(!initialGameState);
+
     // State sync reconciler for HTTP snapshot & reconnection recovery
     const handleStateSync = useCallback((syncData) => {
         if (syncData?.gameState) {
             setGameState(syncData.gameState);
+            setIsLoadingState(false);
             if (syncData.gameState.diceValue) {
                 setDiceDisplay(syncData.gameState.diceValue);
             }
@@ -159,6 +163,7 @@ const OnlineLudoScreen = ({ route, navigation }) => {
         const onStateUpdate = ({ gameState: updatedState, diceValue, message, lastMove }) => {
             if (updatedState) {
                 setGameState(updatedState);
+                setIsLoadingState(false);
                 if (updatedState.diceValue) {
                     setDiceDisplay(updatedState.diceValue);
                 }
@@ -193,23 +198,42 @@ const OnlineLudoScreen = ({ route, navigation }) => {
             HapticService.trigger('notificationSuccess');
         };
 
+        const onGameStateSync = (data) => {
+            if (data?.gameState) {
+                setGameState(data.gameState);
+                setIsLoadingState(false);
+                if (data.gameState.diceValue) {
+                    setDiceDisplay(data.gameState.diceValue);
+                }
+            }
+        };
+
         SocketService.on('ludo-state-update', onStateUpdate);
         SocketService.on('ludo-game-over', onGameOver);
-        SocketService.on('game-state-sync', (data) => {
-            if (data?.gameState) setGameState(data.gameState);
-        });
+        SocketService.on('game-state-sync', onGameStateSync);
 
         // Request initial state if missing
-        if (!gameState) {
+        if (!initialGameState && room?.id) {
             SocketService.emit('ludo-get-state', { roomId: room.id });
         }
 
         return () => {
             SocketService.off('ludo-state-update', onStateUpdate);
             SocketService.off('ludo-game-over', onGameOver);
-            SocketService.off('game-state-sync');
+            SocketService.off('game-state-sync', onGameStateSync);
         };
-    }, [room?.id]);
+    }, [room?.id, initialGameState]);
+
+    // ── Retry polling: re-request game state every 2 s until received ──
+    useEffect(() => {
+        if (!isLoadingState) return undefined;
+        // Initial request already sent in the socket effect above.
+        // Retry every 2 seconds in case the first emit is missed.
+        const retryInterval = setInterval(() => {
+            SocketService.emit('ludo-get-state', { roomId: room.id });
+        }, 2000);
+        return () => clearInterval(retryInterval);
+    }, [isLoadingState, room?.id]);
 
     // ── Roll Action ──
     const handleRollDice = () => {
@@ -451,6 +475,29 @@ const OnlineLudoScreen = ({ route, navigation }) => {
                 style={StyleSheet.absoluteFill}
                 pointerEvents="none"
             />
+
+            {/* ── LOADING OVERLAY — shown until gameState arrives ── */}
+            {isLoadingState && (
+                <View style={styles.loadingOverlay}>
+                    <NeonText glowColor="#00FFFF" style={styles.loadingTitle}>
+                        NEON LUDO
+                    </NeonText>
+                    <View style={styles.loadingSpinnerRow}>
+                        <NeonText style={styles.loadingDot}>■</NeonText>
+                        <NeonText style={[styles.loadingDot, { color: '#FFD700' }]}>■</NeonText>
+                        <NeonText style={[styles.loadingDot, { color: '#39FF14' }]}>■</NeonText>
+                        <NeonText style={[styles.loadingDot, { color: '#FF007F' }]}>■</NeonText>
+                    </View>
+                    <NeonText style={styles.loadingSubtitle}>
+                        Waiting for game to start…
+                    </NeonText>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.loadingBack}>
+                        <NeonText style={{ fontSize: 13, color: '#8B8FA8' }}>← Back to Lobby</NeonText>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {!isLoadingState && (<>
             {/* TOP HEADER */}
             <View style={styles.headerRow}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
@@ -582,6 +629,7 @@ const OnlineLudoScreen = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
+            </>)}
         </SafeAreaView>
     );
 };
@@ -591,6 +639,38 @@ const getStyles = (COLORS) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: LUDO_RAVE_THEME.screenBg
+    },
+    // ── Loading State ──────────────────────────────────────────────────────────
+    loadingOverlay: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 32
+    },
+    loadingTitle: {
+        fontSize: 32,
+        fontWeight: '900',
+        letterSpacing: 3,
+        marginBottom: 24
+    },
+    loadingSpinnerRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 20
+    },
+    loadingDot: {
+        fontSize: 20,
+        color: '#00FFFF'
+    },
+    loadingSubtitle: {
+        fontSize: 14,
+        color: '#8B8FA8',
+        textAlign: 'center',
+        marginBottom: 32
+    },
+    loadingBack: {
+        paddingVertical: 10,
+        paddingHorizontal: 20
     },
     headerRow: {
         flexDirection: 'row',

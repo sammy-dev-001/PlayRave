@@ -436,6 +436,24 @@ class LudoEngine {
     }
 
     // ─── State Helpers ───────────────────────────────────────────────────────
+    getState(roomId, userId) {
+        const state = this.getGameState(roomId, userId);
+        if (!state) {
+            return { action: 'error', targetId: userId, message: 'Game not found' };
+        }
+        return {
+            action: 'emit',
+            targetId: userId,
+            event: 'game-state-sync',
+            data: {
+                gameState: state,
+                gameType: 'ludo',
+                stateVersion: state.stateVersion || 1,
+                timestamp: Date.now()
+            }
+        };
+    }
+
     getGameState(roomId, userId) {
         const game = this.activeGames.get(roomId);
         if (!game) return null;
