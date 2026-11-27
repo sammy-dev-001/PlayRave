@@ -1,10 +1,31 @@
 // VoiceService.native.js - Agora SDK voice chat implementation for mobile
-import { Platform } from 'react-native';
-import { createAgoraRtcEngine, ChannelProfileType, ClientRoleType } from 'react-native-agora';
+import Constants from 'expo-constants';
 
 const AGORA_APP_ID = 'f258296bc0cd4d729d2a1f2f8b8df5b2';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL || 'https://playrave-backend.onrender.com';
+
+const isExpoGo =
+    Constants.executionEnvironment === 'storeClient' ||
+    Constants.appOwnership === 'expo';
+
+let _agoraSdk = null;
+
+function getAgoraSdk() {
+    // react-native-agora requires a custom native build and is not included in Expo Go.
+    if (isExpoGo) return null;
+    if (_agoraSdk) return _agoraSdk;
+    try {
+        const mod = require('react-native-agora');
+        if (mod && typeof mod.createAgoraRtcEngine === 'function') {
+            _agoraSdk = mod;
+            return _agoraSdk;
+        }
+    } catch (_) {
+        // Native module unavailable (e.g., Expo Go)
+    }
+    return null;
+}
 
 class VoiceService {
     constructor() {
@@ -20,26 +41,31 @@ class VoiceService {
 
     async init() {
         if (this.isInitialized) return true;
+        const sdk = getAgoraSdk();
+        if (!sdk) {
+            return false;
+        }
         try {
+            const { createAgoraRtcEngine, ChannelProfileType, ClientRoleType } = sdk;
             this.engine = createAgoraRtcEngine();
             this.engine.initialize({
                 appId: AGORA_APP_ID,
             });
 
             this.engine.registerEventHandler({
-                onJoinChannelSuccess: (_connection, elapsed) => {
+                onJoinChannelSuccess: (_connection, _elapsed) => {
                     console.log('VoiceService: Native Joined channel');
                     this.isJoined = true;
                 },
-                onUserJoined: (_connection, remoteUid, elapsed) => {
+                onUserJoined: (_connection, remoteUid, _elapsed) => {
                     console.log('VoiceService: Native User joined:', remoteUid);
                     if (this.onUserJoined) this.onUserJoined({ uid: remoteUid });
                 },
-                onUserOffline: (_connection, remoteUid, reason) => {
+                onUserOffline: (_connection, remoteUid, _reason) => {
                     console.log('VoiceService: Native User left:', remoteUid);
                     if (this.onUserLeft) this.onUserLeft({ uid: remoteUid });
                 },
-                onAudioVolumeIndication: (_connection, speakers, totalVolume) => {
+                onAudioVolumeIndication: (_connection, speakers, _totalVolume) => {
                     if (this.onAudioVolumeIndication) {
                         const volumes = speakers.map(s => ({
                             uid: s.uid === 0 ? 'local' : s.uid,
@@ -65,10 +91,14 @@ class VoiceService {
 
     async joinChannel(channelName, uid = 0) {
         if (!this.isInitialized) {
-            await this.init();
+            const ready = await this.init();
+            if (!ready || !this.engine) return false;
         }
+        const sdk = getAgoraSdk();
+        if (!sdk || !this.engine) return false;
 
         try {
+            const { ChannelProfileType, ClientRoleType } = sdk;
             let token = '';
             try {
                 const resp = await fetch(
@@ -130,7 +160,7 @@ class VoiceService {
     }
 
     isAvailable() {
-        return true; 
+        return Boolean(getAgoraSdk());
     }
 
     destroy() {

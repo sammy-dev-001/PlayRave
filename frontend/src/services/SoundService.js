@@ -1,4 +1,4 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
@@ -73,11 +73,11 @@ class SoundService {
         if (this.isInitialized) return;
 
         try {
-            // Set audio mode
-            await Audio.setAudioModeAsync({
-                playsInSilentModeIOS: true,
-                staysActiveInBackground: false,
-                shouldDuckAndroid: true,
+            // Set audio mode via expo-audio
+            await setAudioModeAsync({
+                playsInSilentMode: true,
+                shouldPlayInBackground: false,
+                interruptionMode: 'duckOthers',
             });
 
             // Load mute preferences
@@ -128,12 +128,10 @@ class SoundService {
             if (!source || (typeof source === 'object' && !source.uri)) {
                 return;
             }
-            
-            const { sound } = await Audio.Sound.createAsync(
-                source,
-                { shouldPlay: false, volume: this.soundVolume }
-            );
-            this.sounds[soundName] = sound;
+
+            const player = createAudioPlayer(source);
+            player.volume = this.soundVolume;
+            this.sounds[soundName] = player;
         } catch (error) {
             console.log(`Failed to preload ${soundName}:`, error);
         }
@@ -149,33 +147,34 @@ class SoundService {
         }
 
         try {
-            // Use preloaded sound if available and loaded
-            if (this.sounds[target]) {
+            const source = SOUNDS[target];
+            if (!source || (typeof source === 'object' && !source.uri)) {
+                return;
+            }
+
+            // Use preloaded player if available
+            const preloaded = this.sounds[target];
+            if (preloaded) {
                 try {
-                    const status = await this.sounds[target].getStatusAsync();
-                    if (status.isLoaded) {
-                        await this.sounds[target].setPositionAsync(0);
-                        await this.sounds[target].playAsync();
-                        return;
-                    }
+                    preloaded.volume = this.soundVolume;
+                    await preloaded.seekTo(0);
+                    preloaded.play();
+                    return;
                 } catch (e) {
-                    // Sound not ready, fall through to create new instance
-                    console.log(`Preloaded sound ${target} not ready, creating new instance`);
+                    console.log(`Preloaded sound ${target} not ready, creating new player`);
                 }
             }
 
-            // Fallback: create and play new sound instance
-            const source = SOUNDS[target];
-            const { sound } = await Audio.Sound.createAsync(
-                source,
-                { shouldPlay: true, volume: this.soundVolume }
-            );
-
-            sound.setOnPlaybackStatusUpdate((status) => {
-                if (status.didJustFinish) {
-                    sound.unloadAsync();
+            // Fallback: create a short-lived player instance
+            const player = createAudioPlayer(source);
+            player.volume = this.soundVolume;
+            const sub = player.addListener('playbackStatusUpdate', (status) => {
+                if (status?.didJustFinish) {
+                    try { sub?.remove?.(); } catch (_) { /* ignore */ }
+                    try { player.remove(); } catch (_) { /* ignore */ }
                 }
             });
+            player.play();
         } catch (error) {
             console.log(`Error playing ${soundName}:`, error);
         }
@@ -238,16 +237,9 @@ class SoundService {
                     console.log('Track already playing on web, skipping');
                     return;
                 }
-            } else {
-                try {
-                    const status = await this.currentMusic.getStatusAsync();
-                    if (status.isPlaying) {
-                        console.log('Track already playing on native, skipping');
-                        return;
-                    }
-                } catch (e) {
-                    // Sound object may be invalid, continue to recreate
-                }
+            } else if (this.currentMusic.playing) {
+                console.log('Track already playing on native, skipping');
+                return;
             }
         }
 
@@ -314,16 +306,13 @@ class SoundService {
                     }
                 }
             } else {
-                // Native playback via expo-av
-                let audioSource;
-                if (typeof source === 'object' && source.uri) {
-                    audioSource = source;
-                } else if (typeof source === 'number') {
-                    // Local asset
+                // Native playback via expo-audio
+                let audioSource = source;
+                if (typeof source === 'number') {
                     const { Asset } = await import('expo-asset');
                     const asset = Asset.fromModule(source);
                     await asset.downloadAsync();
-                    audioSource = { uri: asset.localUri || asset.uri };
+                    audioSource = asset.localUri ? { uri: asset.localUri } : source;
                 }
 
                 // Final check before creation
@@ -332,22 +321,22 @@ class SoundService {
                     return;
                 }
 
-                const { sound } = await Audio.Sound.createAsync(
-                    audioSource,
-                    { shouldPlay: true, volume: this.musicVolume, isLooping: loop }
-                );
-                this.currentMusic = sound;
-                this.currentMusicName = trackName;
+                const player = createAudioPlayer(audioSource);
+                player.loop = loop;
+                player.volume = this.musicVolume;
 
-                // Final check after creation (some time might have passed)
+                // Final check after creation
                 if (this.isMusicMuted) {
                     console.log('Muted during native creation, stopping');
-                    await sound.stopAsync();
-                    await sound.unloadAsync();
+                    try { player.remove(); } catch (_) { /* ignore */ }
                     this.currentMusic = null;
-                } else {
-                    console.log('Native audio started');
+                    return;
                 }
+
+                player.play();
+                this.currentMusic = player;
+                this.currentMusicName = trackName;
+                console.log('Native audio started');
             }
         } catch (error) {
             console.log(`Error playing music ${trackName}:`, error);
@@ -357,18 +346,17 @@ class SoundService {
     async stopMusic() {
         if (this.currentMusic) {
             try {
-                if (typeof this.currentMusic.pause === 'function' &&
-                    typeof this.currentMusic.stopAsync !== 'function') {
+                if (typeof this.currentMusic.remove === 'function') {
+                    // Native expo-audio AudioPlayer
+                    this.currentMusic.pause();
+                    this.currentMusic.remove();
+                    console.log('Native audio stopped');
+                } else if (typeof this.currentMusic.pause === 'function') {
                     // Web HTMLAudioElement
                     this.currentMusic.pause();
                     this.currentMusic.currentTime = 0;
                     this.currentMusic.src = '';
                     console.log('Web audio stopped');
-                } else {
-                    // Native expo-av Sound
-                    await this.currentMusic.stopAsync();
-                    await this.currentMusic.unloadAsync();
-                    console.log('Native audio stopped');
                 }
             } catch (error) {
                 console.log('Error stopping music:', error);
@@ -382,12 +370,7 @@ class SoundService {
     async pauseMusic() {
         if (this.currentMusic) {
             try {
-                if (typeof this.currentMusic.pause === 'function' &&
-                    typeof this.currentMusic.pauseAsync !== 'function') {
-                    this.currentMusic.pause();
-                } else {
-                    await this.currentMusic.pauseAsync();
-                }
+                this.currentMusic.pause();
             } catch (error) {
                 console.log('Error pausing music:', error);
             }
@@ -397,12 +380,7 @@ class SoundService {
     async resumeMusic() {
         if (this.currentMusic && !this.isMusicMuted) {
             try {
-                if (typeof this.currentMusic.play === 'function' &&
-                    typeof this.currentMusic.playAsync !== 'function') {
-                    await this.currentMusic.play();
-                } else {
-                    await this.currentMusic.playAsync();
-                }
+                await this.currentMusic.play();
             } catch (error) {
                 console.log('Error resuming music:', error);
             }
@@ -419,10 +397,9 @@ class SoundService {
     // === Volume Controls ===
     async setSoundVolume(volume) {
         this.soundVolume = Math.max(0, Math.min(1, volume));
-        // Update volume on all preloaded sounds
         for (const sound of Object.values(this.sounds)) {
             try {
-                await sound.setVolumeAsync(this.soundVolume);
+                sound.volume = this.soundVolume;
             } catch (e) {
                 // Ignore
             }
@@ -433,11 +410,7 @@ class SoundService {
         this.musicVolume = Math.max(0, Math.min(1, volume));
         if (this.currentMusic) {
             try {
-                if (typeof this.currentMusic.volume !== 'undefined') {
-                    this.currentMusic.volume = this.musicVolume;
-                } else {
-                    await this.currentMusic.setVolumeAsync(this.musicVolume);
-                }
+                this.currentMusic.volume = this.musicVolume;
             } catch (e) {
                 // Ignore
             }
@@ -471,7 +444,7 @@ class SoundService {
         await this.stopMusic();
         for (const sound of Object.values(this.sounds)) {
             try {
-                await sound.unloadAsync();
+                sound.remove?.();
             } catch (error) {
                 // Ignore cleanup errors
             }

@@ -85,7 +85,7 @@ module.exports = () => {
           }
         ],
         [
-          "expo-av",
+          "expo-audio",
           {
             "microphonePermission": "Allow PlayRave to access the microphone for voice chat."
           }
@@ -94,7 +94,7 @@ module.exports = () => {
           "expo-build-properties",
           {
             "ios": {
-              "deploymentTarget": "15.1"
+              "deploymentTarget": "16.4"
             }
           }
         ]
