@@ -20,29 +20,27 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-native",
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@components/*": [
-        "src/components/*"
+        "./src/components/*"
       ],
       "@screens/*": [
-        "src/screens/*"
+        "./src/screens/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "./src/services/*"
       ],
       "@utils/*": [
-        "src/utils/*"
+        "./src/utils/*"
       ],
       "@context/*": [
-        "src/context/*"
+        "./src/context/*"
       ],
       "@constants/*": [
-        "src/constants/*"
+        "./src/constants/*"
       ],
       "@data/*": [
-        "src/data/*"
+        "./src/data/*"
       ]
     }
   },
