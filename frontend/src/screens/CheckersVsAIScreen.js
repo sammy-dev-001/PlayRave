@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Easing, Dimensions, Alert, Modal } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Easing, Modal, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
@@ -174,11 +174,16 @@ const minimax = (board, depth, alpha, beta, isMaximizing, player) => {
     }
 };
 
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
 const CheckersVsAIScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
+    const { width: SW, height: SH } = useWindowDimensions();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
-    const { players, searchDepth = 3 } = route?.params || {};
-    const playerName = players?.[0]?.name || 'You';
+    const { players = [], searchDepth = 3, isSinglePlayer = true } = route?.params || {};
+    const isLocal2P = !isSinglePlayer && players.length >= 2;
+    const playerName = players?.[0]?.name || (isLocal2P ? 'Player 1' : 'You');
+    const player2Name = isLocal2P ? (players?.[1]?.name || 'Player 2') : 'AI';
 
     const [board, setBoard] = useState(createInitialBoard());
     const [turn, setTurn] = useState(P1);
@@ -207,11 +212,13 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
     // Pulse animation
     const pulseAnim = useRef(new Animated.Value(1)).current;
     useEffect(() => {
-        Animated.loop(Animated.sequence([
-            Animated.timing(pulseAnim, { toValue: 1.2, duration: 600, useNativeDriver: true }),
-            Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        ])).start();
-    }, []);
+        const loop = Animated.loop(Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1.2, duration: 600, useNativeDriver: USE_NATIVE_DRIVER }),
+            Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: USE_NATIVE_DRIVER }),
+        ]));
+        loop.start();
+        return () => loop.stop();
+    }, [pulseAnim]);
 
     // Winner animation + delayed modal
     useEffect(() => {
@@ -223,74 +230,19 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
                 toValue: 1,
                 friction: 5,
                 tension: 80,
-                useNativeDriver: true,
+                useNativeDriver: USE_NATIVE_DRIVER,
             }).start();
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(winGlowAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-                    Animated.timing(winGlowAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+                    Animated.timing(winGlowAnim, { toValue: 1, duration: 500, useNativeDriver: USE_NATIVE_DRIVER }),
+                    Animated.timing(winGlowAnim, { toValue: 0, duration: 500, useNativeDriver: USE_NATIVE_DRIVER }),
                 ])
             ).start();
         }, 400);
         return () => clearTimeout(t);
     }, [winner, winScaleAnim, winGlowAnim]);
 
-    // Calculate moves whenever turn changes
-    useEffect(() => {
-        if (winner) return;
-
-        const moves = getAllValidMoves(board, turn);
-        if (moves.length === 0) {
-            setWinner(turn === P1 ? AI : P1);
-            return;
-        }
-
-        if (turn === P1) {
-            setValidMoves(moves);
-            // If locked in a multi-jump, filter moves to only allow the jumping piece
-            if (currentJumpingPiece) {
-                const forced = moves.filter(m => m.from.r === currentJumpingPiece.r && m.from.c === currentJumpingPiece.c);
-                if (forced.length === 0) {
-                    setCurrentJumpingPiece(null);
-                    setTurn(AI);
-                } else {
-                    setValidMoves(forced);
-                    setSelectedSquare(currentJumpingPiece);
-                }
-            } else {
-                setSelectedSquare(null);
-            }
-        } else if (turn === AI) {
-            setSelectedSquare(null);
-            setValidMoves([]);
-            setTimeout(() => {
-                // Determine AI move
-                let move;
-                if (currentJumpingPiece) {
-                    const forced = moves.filter(m => m.from.r === currentJumpingPiece.r && m.from.c === currentJumpingPiece.c);
-                    if (forced.length > 0) {
-                        // AI continues jump (pick randomly if multiple, or evaluate)
-                        move = forced[0]; 
-                    } else {
-                        setCurrentJumpingPiece(null);
-                        setTurn(P1);
-                        return;
-                    }
-                } else {
-                    const result = minimax(board, searchDepth, -Infinity, Infinity, true, AI);
-                    move = result.move;
-                }
-
-                if (move) {
-                    executeMove(move);
-                } else {
-                    setWinner(P1);
-                }
-            }, 800);
-        }
-    }, [turn, board, winner, currentJumpingPiece, searchDepth]);
-
-    const executeMove = (move) => {
+    const executeMove = useCallback((move) => {
         const piece = board[move.from.r][move.from.c];
         setAnimatingMove({ ...move, piece });
         moveAnim.setValue(0);
@@ -299,7 +251,7 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
             toValue: 1,
             duration: 650,
             easing: Easing.out(Easing.quad),
-            useNativeDriver: true
+            useNativeDriver: USE_NATIVE_DRIVER
         }).start(() => {
             setAnimatingMove(null);
             
@@ -318,14 +270,68 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
             setCurrentJumpingPiece(null);
             setTurn(turn === P1 ? AI : P1);
         });
-    };
+    }, [board, moveAnim, turn]);
+
+    // Calculate moves whenever turn changes
+    useEffect(() => {
+        if (winner) return;
+
+        const moves = getAllValidMoves(board, turn);
+        if (moves.length === 0) {
+            setWinner(turn === P1 ? AI : P1);
+            return;
+        }
+
+        if (turn === P1 || isLocal2P) {
+            setValidMoves(moves);
+            // If locked in a multi-jump, filter moves to only allow the jumping piece
+            if (currentJumpingPiece) {
+                const forced = moves.filter(m => m.from.r === currentJumpingPiece.r && m.from.c === currentJumpingPiece.c);
+                if (forced.length === 0) {
+                    setCurrentJumpingPiece(null);
+                    setTurn(turn === P1 ? AI : P1);
+                } else {
+                    setValidMoves(forced);
+                    setSelectedSquare(currentJumpingPiece);
+                }
+            } else {
+                setSelectedSquare(null);
+            }
+        } else if (turn === AI) {
+            setSelectedSquare(null);
+            setValidMoves([]);
+            const aiTimer = setTimeout(() => {
+                // Determine AI move
+                let move;
+                if (currentJumpingPiece) {
+                    const forced = moves.filter(m => m.from.r === currentJumpingPiece.r && m.from.c === currentJumpingPiece.c);
+                    if (forced.length > 0) {
+                        move = forced[0];
+                    } else {
+                        setCurrentJumpingPiece(null);
+                        setTurn(P1);
+                        return;
+                    }
+                } else {
+                    const result = minimax(board, searchDepth, -Infinity, Infinity, true, AI);
+                    move = result.move;
+                }
+
+                if (move) {
+                    executeMove(move);
+                } else {
+                    setWinner(P1);
+                }
+            }, 800);
+            return () => clearTimeout(aiTimer);
+        }
+    }, [turn, board, winner, currentJumpingPiece, searchDepth, isLocal2P, executeMove]);
 
     const handleSquarePress = (r, c) => {
-        if (turn !== P1 || winner) return;
+        if ((!isLocal2P && turn !== P1) || animatingMove || winner) return;
 
         // If in multi-jump, can't select another piece
         if (currentJumpingPiece && (r !== currentJumpingPiece.r || c !== currentJumpingPiece.c)) {
-            // Check if tapped a valid destination
             const move = validMoves.find(m => m.from.r === currentJumpingPiece.r && m.from.c === currentJumpingPiece.c && m.to.r === r && m.to.c === c);
             if (move) executeMove(move);
             return;
@@ -340,10 +346,9 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
             }
         }
 
-        // Tap own piece to select
+        // Tap active player's piece to select
         const piece = board[r][c];
-        if (piece && piece.owner === P1) {
-            // Only allow selection if the piece has valid moves
+        if (piece && piece.owner === turn) {
             const hasMoves = validMoves.some(m => m.from.r === r && m.from.c === c);
             if (hasMoves) {
                 setSelectedSquare({ r, c });
@@ -351,7 +356,6 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
         }
     };
 
-    const { width: SW, height: SH } = Dimensions.get('window');
     const boardSizePx = Math.min(SW - 40, SH * 0.55, 500);
     const squareSize = Math.floor((boardSizePx - 4) / BOARD_SIZE);
 
@@ -372,24 +376,30 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
                 <View style={styles.scoreboardRow}>
                     <View style={[styles.scoreBadge, { borderColor: COLORS.neonCyan, shadowColor: COLORS.neonCyan }]}>
                         <NeonText size={20} color={COLORS.neonCyan} weight="bold">{p1Count}</NeonText>
-                        <NeonText size={10} color={COLORS.neonCyan}>PLAYER</NeonText>
+                        <NeonText size={10} color={COLORS.neonCyan} numberOfLines={1}>{playerName.toUpperCase()}</NeonText>
                     </View>
                     <View style={[styles.scoreBadge, { borderColor: COLORS.hotPink, shadowColor: COLORS.hotPink }]}>
                         <NeonText size={20} color={COLORS.hotPink} weight="bold">{aiCount}</NeonText>
-                        <NeonText size={10} color={COLORS.hotPink}>AI</NeonText>
+                        <NeonText size={10} color={COLORS.hotPink} numberOfLines={1}>{player2Name.toUpperCase()}</NeonText>
                     </View>
                 </View>
 
                 {winner ? (
                     <View style={styles.turnIndicator}>
-                        <NeonText size={14} color={winner === P1 ? COLORS.limeGlow : COLORS.hotPink}>
-                            {winner === P1 ? '🏆 You won!' : '💀 AI won!'}
+                        <NeonText size={14} color={winner === P1 ? (isLocal2P ? COLORS.neonCyan : COLORS.limeGlow) : COLORS.hotPink}>
+                            {isLocal2P
+                                ? `🏆 ${(winner === P1 ? playerName : player2Name)} won!`
+                                : (winner === P1 ? '🏆 You won!' : '💀 AI won!')}
                         </NeonText>
                     </View>
                 ) : (
                     <View style={styles.turnIndicator}>
                         <NeonText size={16} color={turn === P1 ? COLORS.neonCyan : COLORS.hotPink}>
-                            {turn === P1 ? `${playerName}'s Turn` : 'AI is Thinking...'}
+                            {turn === P1
+                                ? `${playerName}'s Turn`
+                                : isLocal2P
+                                    ? `${player2Name}'s Turn`
+                                    : 'AI is Thinking...'}
                         </NeonText>
                     </View>
                 )}
@@ -419,7 +429,11 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
                                             styles.square,
                                             { width: squareSize, height: squareSize },
                                             isDark ? styles.darkSquare : styles.lightSquare,
-                                            isSelected && styles.selectedSquare,
+                                            isSelected && {
+                                                backgroundColor: turn === P1
+                                                    ? 'rgba(0, 255, 255, 0.35)'
+                                                    : 'rgba(255, 0, 127, 0.35)',
+                                            },
                                         ]}
                                         onPress={() => handleSquarePress(r, c)}
                                         activeOpacity={0.9}
@@ -543,25 +557,40 @@ const CheckersVsAIScreen = ({ route, navigation }) => {
         <Modal visible={showWinnerModal} transparent animationType="fade">
             <View style={styles.modalOverlay}>
                 <Animated.View style={[styles.modalCard, {
-                    borderColor: winner === P1 ? COLORS.limeGlow : COLORS.hotPink,
+                    borderColor: winner === P1 ? (isLocal2P ? COLORS.neonCyan : COLORS.limeGlow) : COLORS.hotPink,
                     transform: [{ scale: winScaleAnim }],
-                    shadowColor: winner === P1 ? COLORS.limeGlow : COLORS.hotPink,
+                    shadowColor: winner === P1 ? (isLocal2P ? COLORS.neonCyan : COLORS.limeGlow) : COLORS.hotPink,
                     shadowOpacity: winGlowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }),
                     shadowRadius: 30,
                     elevation: 30,
                 }]}>
                     <NeonText size={72} style={{ marginBottom: 8 }}>
-                        {winner === P1 ? '🏆' : '💀'}
+                        {(isLocal2P || winner === P1) ? '🏆' : '💀'}
                     </NeonText>
-                    <NeonText size={32} weight="bold" glow color={winner === P1 ? COLORS.limeGlow : COLORS.hotPink}>
-                        {winner === P1 ? 'YOU WIN!' : 'AI WINS!'}
+                    <NeonText
+                        size={32}
+                        weight="bold"
+                        glow
+                        color={winner === P1 ? (isLocal2P ? COLORS.neonCyan : COLORS.limeGlow) : COLORS.hotPink}
+                        style={{ textAlign: 'center' }}
+                    >
+                        {isLocal2P
+                            ? `${(winner === P1 ? playerName : player2Name).toUpperCase()} WINS!`
+                            : (winner === P1 ? 'YOU WIN!' : 'AI WINS!')}
                     </NeonText>
                     <NeonText size={14} color="#aaa" style={{ marginTop: 8, marginBottom: 28, textAlign: 'center' }}>
-                        {winner === P1 ? 'All opponent pieces captured!' : 'Your pieces were captured!'}
+                        {(isLocal2P || winner === P1) ? 'All opponent pieces captured!' : 'Your pieces were captured!'}
                     </NeonText>
                     <View style={{ gap: 12, width: '100%' }}>
                         <NeonButton title="PLAY AGAIN" onPress={resetGame} variant="primary" />
-                        <NeonButton title="MENU" onPress={() => navigation.navigate('LocalGameSelection', { players: route?.params?.players || [], isSinglePlayer: true })} variant="secondary" />
+                        <NeonButton
+                            title="MENU"
+                            onPress={() => {
+                                setShowWinnerModal(false);
+                                navigation.navigate('LocalGameSelection', { players: route?.params?.players || [], isSinglePlayer });
+                            }}
+                            variant="secondary"
+                        />
                     </View>
                 </Animated.View>
             </View>

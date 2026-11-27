@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     View, StyleSheet, TouchableOpacity,
-    Animated, useWindowDimensions, Modal,
+    Animated, useWindowDimensions, Modal, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
@@ -196,20 +196,25 @@ const getAIMove = (board, difficulty) => {
     return bestCol;
 };
 
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
 const AI_DELAY = { easy: [400, 800], medium: [700, 1200], hard: [1200, 2000] };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const ConnectFourScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const { width: SCREEN_WIDTH } = useWindowDimensions();
-    const { difficulty = 'medium', players } = route.params;
-    const playerName = players?.[0]?.name || 'You';
+    const { difficulty = 'medium', players = [], isSinglePlayer = true } = route.params || {};
+    const isLocal2P = !isSinglePlayer && players.length >= 2;
+    const playerName = players?.[0]?.name || (isLocal2P ? 'Player 1' : 'You');
+    const player2Name = isLocal2P ? (players?.[1]?.name || 'Player 2') : 'AI';
 
     const CELL_SIZE = Math.min(Math.floor((SCREEN_WIDTH - 48) / COLS), 56);
     const styles = useMemo(() => getStyles(COLORS, CELL_SIZE), [COLORS, CELL_SIZE]);
 
     // ── Game State ────────────────────────────────────────────────────────────
     const [board, setBoard]             = useState(emptyBoard);
+    const [starter, setStarter]         = useState(PLAYER);
     const [currentTurn, setCurrentTurn] = useState(PLAYER);
     const [winner, setWinner]           = useState(null); // PLAYER | AI | 'draw' | null
     const [showModal, setShowModal]     = useState(false);
@@ -233,8 +238,8 @@ const ConnectFourScreen = ({ route, navigation }) => {
                 winAnim.setValue(0);
                 Animated.loop(
                     Animated.sequence([
-                        Animated.timing(winAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-                        Animated.timing(winAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+                        Animated.timing(winAnim, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+                        Animated.timing(winAnim, { toValue: 0, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
                     ]),
                     { iterations: 8 }
                 ).start();
@@ -243,7 +248,7 @@ const ConnectFourScreen = ({ route, navigation }) => {
                 Animated.timing(lineAnim, {
                     toValue: 1,
                     duration: 600,
-                    useNativeDriver: true
+                    useNativeDriver: USE_NATIVE_DRIVER
                 }).start();
             }
             
@@ -282,14 +287,14 @@ const ConnectFourScreen = ({ route, navigation }) => {
 
     // ── Player Move ───────────────────────────────────────────────────────────
     const handleColumnPress = useCallback((col) => {
-        if (currentTurn !== PLAYER || winner || isThinking) return;
+        if ((!isLocal2P && currentTurn !== PLAYER) || winner || isThinking) return;
         if (getLowestEmpty(board, col) === -1) return; // column full
-        applyMove(board, col, PLAYER);
-    }, [currentTurn, winner, isThinking, board, applyMove]);
+        applyMove(board, col, currentTurn);
+    }, [isLocal2P, currentTurn, winner, isThinking, board, applyMove]);
 
     // ── AI Turn ───────────────────────────────────────────────────────────────
     useEffect(() => {
-        if (currentTurn !== AI || winner) return;
+        if (isLocal2P || currentTurn !== AI || winner) return;
         setIsThinking(true);
 
         const [min, max] = AI_DELAY[difficulty] || AI_DELAY.medium;
@@ -302,25 +307,30 @@ const ConnectFourScreen = ({ route, navigation }) => {
             if (col !== null) applyMove(b, col, AI);
         }, delay);
         return () => clearTimeout(t);
-    }, [currentTurn, winner, difficulty, applyMove]);
+    }, [isLocal2P, currentTurn, winner, difficulty, applyMove]);
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     const resetGame = useCallback(() => {
+        const nextFirst = isLocal2P ? (starter === PLAYER ? AI : PLAYER) : PLAYER;
         setBoard(emptyBoard());
-        setCurrentTurn(PLAYER);
+        setStarter(nextFirst);
+        setCurrentTurn(nextFirst);
         setWinner(null);
         setShowModal(false);
         setWinCells({ set: new Set(), line: [] });
         setIsThinking(false);
         setHoverCol(null);
-    }, []);
+    }, [isLocal2P, starter]);
+
+    const activeHumanTurn = !winner && !isThinking && (isLocal2P || currentTurn === PLAYER);
+    const activeTurnColor = currentTurn === PLAYER ? COLORS.neonCyan : COLORS.hotPink;
 
     // ─ Render board cell ──────────────────────────────────────────────────────
     const renderCell = (row, col) => {
         const piece = board[row][col];
         const cellKey = `${row},${col}`;
         const isWinCell = winCells.set.has(cellKey);
-        const isHovered = col === hoverCol && !piece && currentTurn === PLAYER && !winner && !isThinking;
+        const isHovered = col === hoverCol && !piece && activeHumanTurn;
 
         const discColor = piece === PLAYER ? COLORS.neonCyan : piece === AI ? COLORS.hotPink : null;
         const glowColor = isWinCell ? (piece === PLAYER ? COLORS.neonCyan : COLORS.hotPink) : null;
@@ -342,8 +352,8 @@ const ConnectFourScreen = ({ route, navigation }) => {
                         styles.disc,
                         piece && { backgroundColor: discColor },
                         !piece && isHovered && {
-                            backgroundColor: COLORS.neonCyan + '33',
-                            borderColor: COLORS.neonCyan + '66',
+                            backgroundColor: activeTurnColor + '33',
+                            borderColor: activeTurnColor + '66',
                         },
                         isWinCell && {
                             shadowColor: glowColor,
@@ -362,19 +372,18 @@ const ConnectFourScreen = ({ route, navigation }) => {
     // ─ Column drop indicators ─────────────────────────────────────────────────
     const renderColumnHeader = (col) => {
         const full = getLowestEmpty(board, col) === -1;
-        const active = !winner && !isThinking && currentTurn === PLAYER;
         return (
             <TouchableOpacity
                 key={col}
                 style={[styles.colHeader, { width: CELL_SIZE }]}
                 onPress={() => handleColumnPress(col)}
-                disabled={full || !active}
+                disabled={full || !activeHumanTurn}
             >
-                {active && !full && (
+                {activeHumanTurn && !full && (
                     <Ionicons
                         name="caret-down"
                         size={16}
-                        color={col === hoverCol ? COLORS.neonCyan : COLORS.neonCyan + '55'}
+                        color={col === hoverCol ? activeTurnColor : activeTurnColor + '55'}
                     />
                 )}
             </TouchableOpacity>
@@ -387,8 +396,14 @@ const ConnectFourScreen = ({ route, navigation }) => {
             <View style={styles.header}>
                 <NeonText size={22} weight="bold" glow>CONNECT FOUR</NeonText>
                 <View style={styles.diffBadge}>
-                    <Ionicons name="hardware-chip-outline" size={12} color={COLORS.electricPurple} />
-                    <NeonText size={11} color={COLORS.electricPurple}> {difficulty.toUpperCase()}</NeonText>
+                    <Ionicons
+                        name={isLocal2P ? 'people-outline' : 'hardware-chip-outline'}
+                        size={12}
+                        color={COLORS.electricPurple}
+                    />
+                    <NeonText size={11} color={COLORS.electricPurple}>
+                        {isLocal2P ? ' 2P LOCAL' : ` ${difficulty.toUpperCase()}`}
+                    </NeonText>
                 </View>
             </View>
 
@@ -396,10 +411,12 @@ const ConnectFourScreen = ({ route, navigation }) => {
             <View style={styles.scoreRow}>
                 <View style={[styles.scoreSide, currentTurn === PLAYER && !winner && styles.activeSide]}>
                     <View style={[styles.discSmall, { backgroundColor: COLORS.neonCyan }]} />
-                    <NeonText size={13} weight="bold" color={COLORS.neonCyan}>{playerName}</NeonText>
+                    <NeonText size={13} weight="bold" color={COLORS.neonCyan} numberOfLines={1}>{playerName}</NeonText>
                     <NeonText size={28} weight="bold" color={COLORS.neonCyan} glow>{scores.player}</NeonText>
                     {currentTurn === PLAYER && !winner && (
-                        <NeonText size={10} color={COLORS.limeGlow}>YOUR TURN</NeonText>
+                        <NeonText size={10} color={COLORS.limeGlow}>
+                            {isLocal2P ? `${playerName.toUpperCase()}'S TURN` : 'YOUR TURN'}
+                        </NeonText>
                     )}
                 </View>
 
@@ -412,10 +429,12 @@ const ConnectFourScreen = ({ route, navigation }) => {
 
                 <View style={[styles.scoreSide, currentTurn === AI && !winner && styles.activeSideAI]}>
                     <View style={[styles.discSmall, { backgroundColor: COLORS.hotPink }]} />
-                    <NeonText size={13} weight="bold" color={COLORS.hotPink}>AI</NeonText>
+                    <NeonText size={13} weight="bold" color={COLORS.hotPink} numberOfLines={1}>{player2Name}</NeonText>
                     <NeonText size={28} weight="bold" color={COLORS.hotPink} glow>{scores.ai}</NeonText>
                     {currentTurn === AI && !winner && (
-                        <NeonText size={10} color={COLORS.hotPink}>AI THINKING...</NeonText>
+                        <NeonText size={10} color={COLORS.hotPink}>
+                            {isLocal2P ? `${player2Name.toUpperCase()}'S TURN` : 'AI THINKING...'}
+                        </NeonText>
                     )}
                 </View>
             </View>
@@ -491,30 +510,45 @@ const ConnectFourScreen = ({ route, navigation }) => {
                 <View style={styles.winOverlay}>
                     <View style={styles.winCard}>
                         <NeonText size={64} style={{ marginBottom: 12 }}>
-                            {winner === 'draw' ? '🤝' : winner === PLAYER ? '🏆' : '🤖'}
+                            {winner === 'draw' ? '🤝' : (isLocal2P || winner === PLAYER) ? '🏆' : '🤖'}
                         </NeonText>
                         <NeonText size={32} weight="bold" glow
-                            color={winner === PLAYER ? COLORS.limeGlow : winner === 'draw' ? COLORS.neonCyan : COLORS.hotPink}>
-                            {winner === 'draw' ? "IT'S A DRAW!" : winner === PLAYER ? 'YOU WIN!' : 'AI WINS!'}
+                            color={winner === 'draw' ? COLORS.neonCyan : winner === PLAYER ? (isLocal2P ? COLORS.neonCyan : COLORS.limeGlow) : COLORS.hotPink}
+                            style={{ textAlign: 'center' }}
+                        >
+                            {winner === 'draw'
+                                ? "IT'S A DRAW!"
+                                : isLocal2P
+                                    ? `${(winner === PLAYER ? playerName : player2Name).toUpperCase()} WINS!`
+                                    : (winner === PLAYER ? 'YOU WIN!' : 'AI WINS!')}
                         </NeonText>
                         <NeonText size={14} color={COLORS.textMuted} style={{ marginTop: 8, marginBottom: 24, textAlign: 'center' }}>
                             {winner === 'draw' ? "So close! Neither could connect four." :
+                             isLocal2P ? `${winner === PLAYER ? playerName : player2Name} connected 4 in a row!` :
                              winner === PLAYER ? "Amazing! 4 in a row! 🎉" :
                              "The AI connected four this time!"}
                         </NeonText>
                         <View style={styles.winScores}>
                             <View style={{ alignItems: 'center', gap: 2 }}>
                                 <View style={[styles.discSmall, { backgroundColor: COLORS.neonCyan }]} />
+                                <NeonText size={11} color={COLORS.textMuted}>{playerName}</NeonText>
                                 <NeonText size={28} weight="bold" color={COLORS.neonCyan}>{scores.player}</NeonText>
                             </View>
                             <NeonText size={20} color={COLORS.textMuted} style={{ marginHorizontal: 16 }}>–</NeonText>
                             <View style={{ alignItems: 'center', gap: 2 }}>
                                 <View style={[styles.discSmall, { backgroundColor: COLORS.hotPink }]} />
+                                <NeonText size={11} color={COLORS.textMuted}>{player2Name}</NeonText>
                                 <NeonText size={28} weight="bold" color={COLORS.hotPink}>{scores.ai}</NeonText>
                             </View>
                         </View>
                         <NeonButton title="PLAY AGAIN" onPress={resetGame} style={styles.winBtn} />
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 12 }}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowModal(false);
+                                navigation.navigate('LocalGameSelection', { players, isSinglePlayer });
+                            }}
+                            style={{ marginTop: 12 }}
+                        >
                             <NeonText size={14} color={COLORS.textMuted}>← Back to menu</NeonText>
                         </TouchableOpacity>
                     </View>

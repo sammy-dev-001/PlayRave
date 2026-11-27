@@ -17,7 +17,9 @@ const getGameCategories = (COLORS) => ({
 // AI-compatible games (only these show in single-player mode)
 const AI_COMPATIBLE_GAMES = ['trivia', 'scrabble', 'tic-tac-toe', 'memory-match', 'speed-categories', 'whot-ai', 'connect-four', 'checkers', 'ludo', 'math-blitz', 'button-mash'];
 // Strictly 1-player vs AI games (hidden when 2+ players are in local party)
-const SINGLE_PLAYER_ONLY_GAMES = ['scrabble', 'tic-tac-toe', 'whot-ai', 'connect-four', 'checkers'];
+const SINGLE_PLAYER_ONLY_GAMES = ['scrabble', 'whot-ai'];
+// Strictly 1P-vs-AI or 2-player head-to-head games (hidden when 3+ players are in local party)
+const TWO_PLAYER_HEAD_TO_HEAD_GAMES = ['tic-tac-toe', 'connect-four', 'checkers'];
 
 const LocalGameSelectionScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -30,7 +32,13 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const filteredGames = useMemo(() => {
         let available = isSinglePlayer
             ? LocalGamesRegistry.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
-            : LocalGamesRegistry.filter(game => !SINGLE_PLAYER_ONLY_GAMES.includes(game.id));
+            : LocalGamesRegistry.filter(game => {
+                if (SINGLE_PLAYER_ONLY_GAMES.includes(game.id)) return false;
+                if (TWO_PLAYER_HEAD_TO_HEAD_GAMES.includes(game.id)) {
+                    return players.length === 2;
+                }
+                return true;
+            });
 
         if (selectedCategory !== 'all') {
             available = available.filter(game => game.category === selectedCategory);
@@ -45,7 +53,7 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
         }
         
         return available;
-    }, [isSinglePlayer, searchQuery, selectedCategory]);
+    }, [isSinglePlayer, players.length, searchQuery, selectedCategory]);
 
     const handleSelectGame = (game) => {
         if (isSinglePlayer && game.singlePlayerRouteComponent) {
@@ -84,7 +92,9 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
                     <View style={styles.playerBadge}>
                         <Ionicons name="people" size={10} color="#fff" />
                         <NeonText size={10} color="#fff">
-                            {game.maxPlayers === 1 ? '1P vs AI' : `${game.minPlayers || 2}-${game.maxPlayers || 10}`}
+                            {game.maxPlayers === 1 || (isSinglePlayer && game.singlePlayerRouteComponent)
+                                ? '1P vs AI'
+                                : `${game.minPlayers || 2}-${game.maxPlayers || 10}`}
                         </NeonText>
                     </View>
                 </View>

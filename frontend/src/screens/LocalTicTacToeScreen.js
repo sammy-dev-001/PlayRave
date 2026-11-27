@@ -103,13 +103,15 @@ const getAIMove = (board, difficulty, aiSym, playerSym) => {
 const LocalTicTacToeScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
-    const { players, difficulty = 'medium', isSinglePlayer = true } = route.params;
-    const playerName = players[0]?.name || 'You';
+    const { players = [], difficulty = 'medium', isSinglePlayer = true } = route.params || {};
+    const isLocal2P = !isSinglePlayer && players.length >= 2;
+    const playerName = players?.[0]?.name || (isLocal2P ? 'Player 1' : 'You');
+    const player2Name = isLocal2P ? (players?.[1]?.name || 'Player 2') : 'AI';
 
-    // aiStartsNext: if true the AI goes first next round (plays as X)
+    // aiStartsNext: if true Player 2 / AI goes first next round (plays as X)
     const [aiStartsNext, setAiStartsNext] = useState(false);
     const [board, setBoard] = useState(Array(9).fill(null));
-    // isPlayerTurn: true = player's turn, false = AI's turn
+    // isPlayerTurn: true = Player 1's turn, false = Player 2 / AI's turn
     const [isPlayerTurn, setIsPlayerTurn] = useState(true);
     const [gameResult, setGameResult] = useState(null);
     const [aiThinking, setAiThinking] = useState(false);
@@ -118,14 +120,19 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
     const [showResult, setShowResult] = useState(false);
 
     // Symbols depend on who starts: starter is always X
-    // aiStartsNext=false → player=X, ai=O
-    // aiStartsNext=true  → ai=X, player=O
     const playerSym = aiStartsNext ? 'O' : 'X';
     const aiSym     = aiStartsNext ? 'X' : 'O';
 
     const thinkingAnim = useRef(new Animated.Value(0)).current;
     const cellAnims = useRef(Array(9).fill(null).map(() => new Animated.Value(0))).current;
     const resultAnim = useRef(new Animated.Value(0)).current;
+    const resultTimerRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+        };
+    }, []);
 
     // AI thinking pulse
     useEffect(() => {
@@ -168,45 +175,45 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                 ai:     result.winner === aiSym     ? prev.ai + 1     : prev.ai,
                 draws:  result.winner === 'draw'    ? prev.draws + 1  : prev.draws,
             }));
-            setTimeout(() => { setShowResult(true); animateResult(); }, 600);
+            if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+            resultTimerRef.current = setTimeout(() => { setShowResult(true); animateResult(); }, 600);
             return;
         }
         setBoard(newBoard);
     }, [animateCell, animateResult, playerSym, aiSym]);
 
-    // AI turn
+    // AI turn (1P mode only)
     useEffect(() => {
-        if (!isPlayerTurn && !gameResult) {
-            setAiThinking(true);
-            const delay = difficulty === 'hard' ? 700 : 400;
-            const timer = setTimeout(() => {
-                setAiThinking(false);
-                const boardCopy = [...board];
-                const move = getAIMove(boardCopy, difficulty, aiSym, playerSym);
-                if (move !== null) {
-                    boardCopy[move] = aiSym;
-                    setIsPlayerTurn(true);
-                    processMove(boardCopy, move);
-                }
-            }, delay);
-            return () => clearTimeout(timer);
-        }
-    }, [isPlayerTurn, board, gameResult, difficulty, processMove, aiSym, playerSym]);
+        if (isLocal2P || isPlayerTurn || gameResult) return;
+        setAiThinking(true);
+        const delay = difficulty === 'hard' ? 700 : 400;
+        const timer = setTimeout(() => {
+            setAiThinking(false);
+            const boardCopy = [...board];
+            const move = getAIMove(boardCopy, difficulty, aiSym, playerSym);
+            if (move !== null) {
+                boardCopy[move] = aiSym;
+                setIsPlayerTurn(true);
+                processMove(boardCopy, move);
+            }
+        }, delay);
+        return () => clearTimeout(timer);
+    }, [isLocal2P, isPlayerTurn, board, gameResult, difficulty, processMove, aiSym, playerSym]);
 
     const handleCellPress = (index) => {
-        if (!isPlayerTurn || board[index] !== null || gameResult || aiThinking) return;
+        if ((!isLocal2P && !isPlayerTurn) || board[index] !== null || gameResult || aiThinking) return;
+        const activeSym = isPlayerTurn ? playerSym : aiSym;
         const newBoard = [...board];
-        newBoard[index] = playerSym;
-        setIsPlayerTurn(false);
+        newBoard[index] = activeSym;
+        setIsPlayerTurn(!isPlayerTurn);
         processMove(newBoard, index);
     };
 
     const handlePlayAgain = () => {
-        // Flip who starts next round
+        if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
         const nextAiStarts = !aiStartsNext;
         setAiStartsNext(nextAiStarts);
         setBoard(Array(9).fill(null));
-        // If AI starts next, it goes first (isPlayerTurn = false)
         setIsPlayerTurn(!nextAiStarts);
         setGameResult(null);
         setWinLine([]);
@@ -235,7 +242,7 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                     value && styles.filledCell,
                 ]}
                 onPress={() => handleCellPress(index)}
-                disabled={!!value || !isPlayerTurn || !!gameResult}
+                disabled={!!value || (!isLocal2P && !isPlayerTurn) || !!gameResult || aiThinking}
                 activeOpacity={0.7}
             >
                 {value && (
@@ -260,22 +267,36 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
     if (showResult && gameResult) {
         const isWin = gameResult.winner === playerSym;
         const isDraw = gameResult.winner === 'draw';
+        const winColor = isDraw
+            ? COLORS.textMuted
+            : (isLocal2P || isWin)
+                ? COLORS.limeGlow
+                : COLORS.hotPink;
+        const winnerDisplayName = isWin ? playerName : player2Name;
 
         return (
             <NeonContainer>
-                <RaveLights trigger={isWin} intensity={isWin ? 'high' : 'low'} />
+                <RaveLights trigger={!isDraw && (isLocal2P || isWin)} intensity={(!isDraw && (isLocal2P || isWin)) ? 'high' : 'low'} />
                 <Animated.View style={[styles.resultOverlay, { transform: [{ scale: resultAnim }] }]}>
                     <Ionicons
-                        name={isWin ? 'trophy' : isDraw ? 'remove-circle' : 'sad'}
+                        name={isDraw ? 'remove-circle' : (isLocal2P || isWin) ? 'trophy' : 'sad'}
                         size={80}
-                        color={isWin ? COLORS.limeGlow : isDraw ? COLORS.textMuted : COLORS.hotPink}
+                        color={winColor}
                         style={{ marginBottom: 10 }}
                     />
-                    <NeonText size={36} weight="bold" glow color={isWin ? COLORS.limeGlow : isDraw ? COLORS.textMuted : COLORS.hotPink}>
-                        {isWin ? 'YOU WIN!' : isDraw ? "IT'S A DRAW" : 'AI WINS!'}
+                    <NeonText size={36} weight="bold" glow color={winColor} style={{ textAlign: 'center' }}>
+                        {isDraw
+                            ? "IT'S A DRAW"
+                            : isLocal2P
+                                ? `${winnerDisplayName.toUpperCase()} WINS!`
+                                : isWin ? 'YOU WIN!' : 'AI WINS!'}
                     </NeonText>
                     <NeonText size={16} color={COLORS.textMuted} style={{ marginTop: 8 }}>
-                        {isWin ? `Great job, ${playerName}!` : isDraw ? 'Nobody wins this round.' : 'Better luck next time!'}
+                        {isDraw
+                            ? 'Nobody wins this round.'
+                            : isLocal2P
+                                ? `${winnerDisplayName} gets 3 in a row (${gameResult.winner})!`
+                                : isWin ? `Great job, ${playerName}!` : 'Better luck next time!'}
                     </NeonText>
 
                     <View style={styles.scoreBoard}>
@@ -289,7 +310,7 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                         </View>
                         <View style={styles.scoreItem}>
                             <NeonText size={28} weight="bold" color={COLORS.hotPink}>{scores.ai}</NeonText>
-                            <NeonText size={12} color={COLORS.textMuted}>AI</NeonText>
+                            <NeonText size={12} color={COLORS.textMuted}>{player2Name}</NeonText>
                         </View>
                     </View>
 
@@ -311,8 +332,10 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                     <NeonText size={24} weight="bold" glow color={COLORS.electricPurple}>
                         TIC-TAC-TOE
                     </NeonText>
-                    <View style={[styles.difficultyBadge, { borderColor: difficultyColor }]}>
-                        <NeonText size={12} color={difficultyColor}>{difficultyLabel}</NeonText>
+                    <View style={[styles.difficultyBadge, { borderColor: isLocal2P ? COLORS.limeGlow : difficultyColor }]}>
+                        <NeonText size={12} color={isLocal2P ? COLORS.limeGlow : difficultyColor}>
+                            {isLocal2P ? '👥 2P Local' : difficultyLabel}
+                        </NeonText>
                     </View>
                 </View>
 
@@ -325,8 +348,8 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                     </View>
                     <NeonText size={18} color="#444">vs</NeonText>
                     <View style={[styles.playerTag, (!isPlayerTurn || aiThinking) && styles.activeTag]}>
-                        <Ionicons name="hardware-chip-outline" size={14} color={COLORS.hotPink} />
-                        <NeonText size={14} weight="bold" color={COLORS.hotPink}> AI ({aiSym})</NeonText>
+                        <Ionicons name={isLocal2P ? 'person-outline' : 'hardware-chip-outline'} size={14} color={COLORS.hotPink} />
+                        <NeonText size={14} weight="bold" color={COLORS.hotPink}> {player2Name} ({aiSym})</NeonText>
                     </View>
                 </View>
 
@@ -344,8 +367,10 @@ const LocalTicTacToeScreen = ({ route, navigation }) => {
                             <NeonText size={15} color={COLORS.electricPurple} glow>AI is thinking...</NeonText>
                         </Animated.View>
                     ) : (
-                        <NeonText size={15} color={isPlayerTurn ? COLORS.limeGlow : '#555'}>
-                            {isPlayerTurn ? "Your turn!" : "AI's turn..."}
+                        <NeonText size={15} color={isPlayerTurn ? COLORS.limeGlow : (isLocal2P ? COLORS.hotPink : '#555')}>
+                            {isLocal2P
+                                ? `${isPlayerTurn ? playerName : player2Name}'s turn (${isPlayerTurn ? playerSym : aiSym})!`
+                                : (isPlayerTurn ? 'Your turn!' : "AI's turn...")}
                         </NeonText>
                     )}
                 </View>
