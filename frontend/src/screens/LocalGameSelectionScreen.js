@@ -30,14 +30,17 @@ const LocalGameSelectionScreen = ({ route, navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
 
     const filteredGames = useMemo(() => {
+        const playerCount = players?.length || 1;
         let available = isSinglePlayer
             ? LocalGamesRegistry.filter(game => AI_COMPATIBLE_GAMES.includes(game.id))
             : LocalGamesRegistry.filter(game => {
                 if (SINGLE_PLAYER_ONLY_GAMES.includes(game.id)) return false;
                 if (TWO_PLAYER_HEAD_TO_HEAD_GAMES.includes(game.id)) {
-                    return players.length === 2;
+                    return playerCount === 2;
                 }
-                return true;
+                const minP = game.minPlayers || 1;
+                const maxP = game.maxPlayers || 12;
+                return playerCount >= minP && playerCount <= maxP;
             });
 
         if (selectedCategory !== 'all') {

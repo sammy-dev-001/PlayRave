@@ -121,6 +121,11 @@ const LocalPartySetupScreen = ({ navigation }) => {
         ? 'SINGLE PLAYER MODE'
         : `MULTIPLAYER MODE – ${players.length} PLAYERS`;
 
+    const Wrapper = Platform.OS === 'web' ? View : KeyboardAvoidingView;
+    const wrapperProps = Platform.OS === 'web'
+        ? { style: styles.flex }
+        : { behavior: Platform.OS === 'ios' ? 'padding' : 'height', style: styles.flex };
+
     return (
         <View style={styles.screen}>
             <StatusBar barStyle="light-content" backgroundColor="#05050A" />
@@ -135,10 +140,7 @@ const LocalPartySetupScreen = ({ navigation }) => {
                     <MuteButton style={styles.muteOverride} />
                 </View>
 
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.flex}
-                >
+                <Wrapper {...wrapperProps}>
                     <ScrollView
                         style={styles.flex}
                         contentContainerStyle={styles.scrollContent}
@@ -259,8 +261,7 @@ const LocalPartySetupScreen = ({ navigation }) => {
                             </View>
                         )}
 
-                        {/* Bottom spacer */}
-                        <View style={{ height: 100 }} />
+                        <View style={{ height: 24 }} />
                     </ScrollView>
 
                     {/* Fixed Start Button */}
@@ -279,7 +280,7 @@ const LocalPartySetupScreen = ({ navigation }) => {
                             </Animated.View>
                         </View>
                     )}
-                </KeyboardAvoidingView>
+                </Wrapper>
             </SafeAreaView>
         </View>
     );
@@ -289,7 +290,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     screen: {
         flex: 1,
         ...Platform.select({
-            web: { height: '100%', minHeight: '100vh' },
+            web: { height: '100%', minHeight: 0, maxHeight: '100%', overflow: 'hidden' },
             default: { flex: 1 },
         }),
         backgroundColor: '#05050A',
@@ -297,9 +298,11 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     safeArea: {
         flex: 1,
+        minHeight: 0,
     },
     flex: {
         flex: 1,
+        minHeight: 0,
     },
     header: {
         flexDirection: 'row',
@@ -480,8 +483,9 @@ const getStyles = (COLORS) => StyleSheet.create({
     // -- Start Button --
     bottomBar: {
         paddingHorizontal: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
+        paddingBottom: Platform.OS === 'ios' ? 28 : 16,
         paddingTop: 10,
+        flexShrink: 0,
     },
     startButton: {
         height: 60,

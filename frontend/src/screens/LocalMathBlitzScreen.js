@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Animated,
-    Platform, StatusBar
+    Platform, StatusBar, useWindowDimensions
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NeonContainer from '../components/NeonContainer';
@@ -109,7 +109,25 @@ const generateChoices = (correctAnswer) => {
 
 const LocalMathBlitzScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
+    const { height: screenHeight } = useWindowDimensions();
     const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+
+    // Responsive split-screen dimensions so neither half clips on compact mobile browsers
+    const duelLayout = useMemo(() => {
+        const dividerHeight = screenHeight < 640 ? 32 : 40;
+        const halfHeight = Math.max(180, (screenHeight - dividerHeight) / 2);
+        const isCompact = halfHeight < 290;
+        const isTiny = halfHeight < 240;
+        return {
+            dividerHeight,
+            zonePadV: isTiny ? 4 : isCompact ? 6 : 8,
+            choiceHeight: isTiny ? 32 : isCompact ? 38 : 44,
+            choiceFontSize: isTiny ? 16 : isCompact ? 19 : 22,
+            equationSize: isTiny ? 22 : isCompact ? 26 : 32,
+            playerSize: isTiny ? 13 : 15,
+            isCompact,
+        };
+    }, [screenHeight]);
 
     // Navigation params
     const incomingPlayers = route?.params?.players;
@@ -418,55 +436,75 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
 
         return (
             <View style={styles.duelChoicesContainer}>
-                <View style={styles.duelChoiceRow}>
-                    {row1.map((choice, i) => (
-                        <TouchableOpacity
-                            key={i}
-                            style={[
-                                styles.duelChoiceBtn,
-                                player === 'p2' ? styles.duelChoiceBtnP2 : styles.duelChoiceBtnP1,
-                                penalty && styles.penaltyBtn,
-                            ]}
-                            onPress={() => handleDuelAnswer(player, choice)}
-                            disabled={penalty || duelPhase !== 'playing'}
-                            activeOpacity={0.7}
-                        >
-                            <NeonText
-                                size={22}
-                                weight="bold"
-                                color={penalty ? '#6B7280' : '#FFFFFF'}
+                {[row1, row2].map((row, rowIdx) => (
+                    <View key={rowIdx} style={styles.duelChoiceRow}>
+                        {row.map((choice, i) => (
+                            <TouchableOpacity
+                                key={rowIdx * 2 + i}
+                                style={[
+                                    styles.duelChoiceBtn,
+                                    { height: duelLayout.choiceHeight },
+                                    player === 'p2' ? styles.duelChoiceBtnP2 : styles.duelChoiceBtnP1,
+                                    penalty && styles.penaltyBtn,
+                                ]}
+                                onPress={() => handleDuelAnswer(player, choice)}
+                                disabled={penalty || duelPhase !== 'playing'}
+                                activeOpacity={0.7}
                             >
-                                {choice}
-                            </NeonText>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-                <View style={styles.duelChoiceRow}>
-                    {row2.map((choice, i) => (
-                        <TouchableOpacity
-                            key={i + 2}
-                            style={[
-                                styles.duelChoiceBtn,
-                                player === 'p2' ? styles.duelChoiceBtnP2 : styles.duelChoiceBtnP1,
-                                penalty && styles.penaltyBtn,
-                            ]}
-                            onPress={() => handleDuelAnswer(player, choice)}
-                            disabled={penalty || duelPhase !== 'playing'}
-                            activeOpacity={0.7}
-                        >
-                            <NeonText
-                                size={22}
-                                weight="bold"
-                                color={penalty ? '#6B7280' : '#FFFFFF'}
-                            >
-                                {choice}
-                            </NeonText>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                                <NeonText
+                                    size={duelLayout.choiceFontSize}
+                                    weight="bold"
+                                    color={penalty ? '#6B7280' : '#FFFFFF'}
+                                >
+                                    {choice}
+                                </NeonText>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                ))}
             </View>
         );
     };
+
+    const renderDuelHalf = (player, name, score, penalty, accentColor, isRotated) => (
+        <View style={[styles.playerZone, isRotated ? styles.p2Zone : styles.p1Zone, { paddingVertical: duelLayout.zonePadV }]}>
+            <View style={isRotated ? styles.rotatedContent : styles.normalContent}>
+                <View style={styles.duelPlayerBar}>
+                    <View style={styles.duelPlayerInfo}>
+                        <View style={[styles.playerColorDot, { backgroundColor: accentColor }]} />
+                        <NeonText size={duelLayout.playerSize} weight="bold" color={accentColor} numberOfLines={1}>
+                            {name}
+                        </NeonText>
+                    </View>
+                    <View style={isRotated ? styles.duelScorePillP2 : styles.duelScorePillP1}>
+                        <NeonText size={duelLayout.playerSize} weight="bold" color={accentColor} glow>
+                            {score} / {TARGET_DUEL_SCORE}
+                        </NeonText>
+                    </View>
+                </View>
+
+                <View style={styles.duelEquationWrap}>
+                    {!duelLayout.isCompact && (
+                        <NeonText size={11} color="#9CA3AF" style={styles.duelSolveLabel}>
+                            SOLVE FIRST:
+                        </NeonText>
+                    )}
+                    <NeonText size={duelLayout.equationSize} weight="bold" color="#FFFFFF" glow>
+                        {duelProblem?.display} = ?
+                    </NeonText>
+                    {penalty && (
+                        <View style={styles.penaltyBanner}>
+                            <NeonText size={10} weight="bold" color="#EF4444">
+                                ⚠️ LOCKED (0.8s)
+                            </NeonText>
+                        </View>
+                    )}
+                </View>
+
+                {renderDuelChoices(player, penalty)}
+            </View>
+        </View>
+    );
 
     // ─────────────────────────────────────────────────────────────────────────────
     // RENDER: MENU SCREEN
@@ -897,49 +935,12 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                 <StatusBar hidden={Platform.OS !== 'web'} barStyle="light-content" />
 
                 {/* ─ TOP HALF: PLAYER 2 (ROTATED 180 DEG) ─ */}
-                <View style={[styles.playerZone, styles.p2Zone]}>
-                    <View style={styles.rotatedContent}>
-                        {/* P2 Header */}
-                        <View style={styles.duelPlayerBar}>
-                            <View style={styles.duelPlayerInfo}>
-                                <View style={[styles.playerColorDot, { backgroundColor: COLORS.hotPink }]} />
-                                <NeonText size={15} weight="bold" color={COLORS.hotPink}>
-                                    {p2Name}
-                                </NeonText>
-                            </View>
-                            <View style={styles.duelScorePillP2}>
-                                <NeonText size={16} weight="bold" color={COLORS.hotPink} glow>
-                                    {duelScores.p2} / {TARGET_DUEL_SCORE}
-                                </NeonText>
-                            </View>
-                        </View>
-
-                        {/* P2 Equation */}
-                        <View style={styles.duelEquationWrap}>
-                            <NeonText size={11} color="#9CA3AF" style={styles.duelSolveLabel}>
-                                SOLVE FIRST:
-                            </NeonText>
-                            <NeonText size={32} weight="bold" color="#FFFFFF" glow>
-                                {duelProblem?.display} = ?
-                            </NeonText>
-                            {p2Penalty && (
-                                <View style={styles.penaltyBanner}>
-                                    <NeonText size={10} weight="bold" color="#EF4444">
-                                        ⚠️ WRONG ANSWER – LOCKED (0.8s)
-                                    </NeonText>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* P2 Choices */}
-                        {renderDuelChoices('p2', p2Penalty)}
-                    </View>
-                </View>
+                {renderDuelHalf('p2', p2Name, duelScores.p2, p2Penalty, COLORS.hotPink, true)}
 
                 {/* ─ CENTER DIVIDER ─ */}
-                <View style={styles.centerDivider}>
+                <View style={[styles.centerDivider, { height: duelLayout.dividerHeight }]}>
                     <View style={styles.dividerSide}>
-                        <NeonText size={12} weight="bold" color={COLORS.hotPink}>
+                        <NeonText size={12} weight="bold" color={COLORS.hotPink} numberOfLines={1}>
                             {p2Name.slice(0, 10)}: {duelScores.p2}
                         </NeonText>
                     </View>
@@ -962,51 +963,14 @@ const LocalMathBlitzScreen = ({ route, navigation }) => {
                     </View>
 
                     <View style={[styles.dividerSide, { alignItems: 'flex-end' }]}>
-                        <NeonText size={12} weight="bold" color={COLORS.neonCyan}>
+                        <NeonText size={12} weight="bold" color={COLORS.neonCyan} numberOfLines={1}>
                             {p1Name.slice(0, 10)}: {duelScores.p1}
                         </NeonText>
                     </View>
                 </View>
 
                 {/* ─ BOTTOM HALF: PLAYER 1 (UPRIGHT) ─ */}
-                <View style={[styles.playerZone, styles.p1Zone]}>
-                    <View style={styles.normalContent}>
-                        {/* P1 Header */}
-                        <View style={styles.duelPlayerBar}>
-                            <View style={styles.duelPlayerInfo}>
-                                <View style={[styles.playerColorDot, { backgroundColor: COLORS.neonCyan }]} />
-                                <NeonText size={15} weight="bold" color={COLORS.neonCyan}>
-                                    {p1Name}
-                                </NeonText>
-                            </View>
-                            <View style={styles.duelScorePillP1}>
-                                <NeonText size={16} weight="bold" color={COLORS.neonCyan} glow>
-                                    {duelScores.p1} / {TARGET_DUEL_SCORE}
-                                </NeonText>
-                            </View>
-                        </View>
-
-                        {/* P1 Equation */}
-                        <View style={styles.duelEquationWrap}>
-                            <NeonText size={11} color="#9CA3AF" style={styles.duelSolveLabel}>
-                                SOLVE FIRST:
-                            </NeonText>
-                            <NeonText size={32} weight="bold" color="#FFFFFF" glow>
-                                {duelProblem?.display} = ?
-                            </NeonText>
-                            {p1Penalty && (
-                                <View style={styles.penaltyBanner}>
-                                    <NeonText size={10} weight="bold" color="#EF4444">
-                                        ⚠️ WRONG ANSWER – LOCKED (0.8s)
-                                    </NeonText>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* P1 Choices */}
-                        {renderDuelChoices('p1', p1Penalty)}
-                    </View>
-                </View>
+                {renderDuelHalf('p1', p1Name, duelScores.p1, p1Penalty, COLORS.neonCyan, false)}
             </View>
         );
     }
@@ -1233,8 +1197,8 @@ const getStyles = (COLORS) => StyleSheet.create({
             web: {
                 flexBasis: 'auto',
                 height: '100%',
-                minHeight: '100vh',
-                maxHeight: '100vh',
+                minHeight: 0,
+                maxHeight: '100%',
             },
             default: {},
         }),
@@ -1244,6 +1208,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     playerZone: {
         flex: 1,
+        minHeight: 0,
         width: '100%',
         paddingHorizontal: 14,
         paddingVertical: 8,
@@ -1262,11 +1227,13 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     rotatedContent: {
         flex: 1,
+        minHeight: 0,
         transform: [{ rotate: '180deg' }],
         justifyContent: 'space-between',
     },
     normalContent: {
         flex: 1,
+        minHeight: 0,
         justifyContent: 'space-between',
     },
     duelPlayerBar: {

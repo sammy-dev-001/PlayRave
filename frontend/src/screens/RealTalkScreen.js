@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import NeonContainer from '../components/NeonContainer';
 import NeonText from '../components/NeonText';
 import NeonButton from '../components/NeonButton';
 import { useTheme } from '../context/ThemeContext';
 import { getQuestionsByCategory, REAL_TALK_CATEGORIES } from '../data/realTalkData';
-
-const { width } = Dimensions.get('window');
 
 const RealTalkScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -77,7 +75,7 @@ const RealTalkScreen = ({ route, navigation }) => {
     };
 
     return (
-        <NeonContainer showBackButton>
+        <NeonContainer showBackButton scrollable>
             <View style={styles.header}>
                 <Ionicons name={category.icon} size={32} color={category.color} />
                 <NeonText size={24} weight="bold" color={category.color} glow style={{ marginLeft: 10 }}>
@@ -138,8 +136,9 @@ const getStyles = (COLORS) => StyleSheet.create({
         borderRadius: 24,
         borderWidth: 3,
         padding: 30,
-        width: width * 0.85,
-        minHeight: 300,
+        width: '100%',
+        maxWidth: 420,
+        minHeight: 240,
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',

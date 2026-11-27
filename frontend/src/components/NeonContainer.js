@@ -92,7 +92,7 @@ const getStyles = (COLORS, theme, insets) => StyleSheet.create({
     rootContainer: {
         flex: 1,
         ...Platform.select({
-            web: { height: '100%', minHeight: '100vh' },
+            web: { height: '100%', minHeight: 0, maxHeight: '100%', overflow: 'hidden' },
             default: { flex: 1 },
         }),
         // Glass themes: ThemeBackground renders the full-bleed image, so keep this transparent.
@@ -101,6 +101,7 @@ const getStyles = (COLORS, theme, insets) => StyleSheet.create({
     },
     safeArea: {
         flex: 1,
+        minHeight: 0,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
         paddingLeft: insets.left,
@@ -108,6 +109,7 @@ const getStyles = (COLORS, theme, insets) => StyleSheet.create({
     },
     scrollView: {
         flex: 1,
+        minHeight: 0,
         ...Platform.select({ web: { height: '100%' }, default: {} }),
     },
     scrollContent: {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-    View, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView,
+    View, StyleSheet, TouchableOpacity, Animated, ScrollView,
     Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,16 @@ import { useTheme } from '../context/ThemeContext';
 import SoundService from '../services/SoundService';
 import { getRandomLocalQuestions } from '../data/localTriviaQuestions';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BUZZER_COLORS = [
+    '#00FFFF',
+    '#FF007F',
+    '#39FF14',
+    '#B026FF',
+    '#FFD700',
+    '#FF6B35',
+    '#00E5FF',
+    '#FF3864',
+];
 
 const LocalTriviaScreen = ({ route, navigation }) => {
     const { COLORS } = useTheme();
@@ -140,7 +149,8 @@ const LocalTriviaScreen = ({ route, navigation }) => {
             }));
         } else {
             SoundService.playWrong();
-            if (!isSinglePlayer && buzzedPlayer) {
+            // In 2-player head-to-head trivia, missed buzz awards points to the opponent
+            if (!isSinglePlayer && buzzedPlayer && players.length === 2) {
                 const otherPlayer = players.find(p => (p.name || p.id) !== buzzedPlayer);
                 if (otherPlayer) {
                     const otherPlayerKey = otherPlayer.name || otherPlayer.id;
@@ -160,39 +170,56 @@ const LocalTriviaScreen = ({ route, navigation }) => {
         }, 3000);
     };
 
-    const renderBuzzerArea = (playerName, color, position) => {
-        if (isSinglePlayer) return null;
+    const renderBuzzerButton = (player, index) => {
+        const playerKey = player.name || player.id || `Player ${index + 1}`;
+        const color = BUZZER_COLORS[index % BUZZER_COLORS.length];
+        const isActiveBuzzer = gameState === 'BUZZED' && buzzedPlayer === playerKey;
 
         return (
             <TouchableOpacity
-                style={[styles.buzzer, { backgroundColor: color + '25', borderColor: color + '80' }, styles[position]]}
-                onPress={() => handleBuzz(playerName)}
+                key={player.id || playerKey}
+                style={[
+                    styles.buzzer,
+                    players.length > 4 && styles.buzzerCompact,
+                    {
+                        backgroundColor: isActiveBuzzer ? color + '40' : color + '20',
+                        borderColor: isActiveBuzzer ? color : color + '80',
+                    },
+                ]}
+                onPress={() => handleBuzz(playerKey)}
                 disabled={gameState !== 'QUESTION'}
+                activeOpacity={0.75}
             >
-                <NeonText size={16} color={color} weight="bold" style={{ opacity: gameState === 'QUESTION' ? 1 : 0.4 }}>{playerName}</NeonText>
-                {gameState === 'QUESTION' ? (
-                    <NeonText size={12} color={color} weight="bold" style={{ marginTop: 4, letterSpacing: 1 }}>TAP TO BUZZ!</NeonText>
-                ) : (
-                    <NeonText size={12} color={color} style={{ opacity: 0.6 }}>{scores[playerName]} PTS</NeonText>
-                )}
+                <NeonText
+                    size={players.length > 4 ? 13 : 15}
+                    color={color}
+                    weight="bold"
+                    numberOfLines={1}
+                    style={{ opacity: gameState === 'QUESTION' || isActiveBuzzer ? 1 : 0.45 }}
+                >
+                    {playerKey}
+                </NeonText>
+                <NeonText size={11} color={color} weight="bold" style={{ marginTop: 2, opacity: gameState === 'QUESTION' ? 1 : 0.75 }}>
+                    {gameState === 'QUESTION' ? 'TAP TO BUZZ' : `${scores[playerKey] || 0} PTS`}
+                </NeonText>
             </TouchableOpacity>
         );
     };
 
     if (gameState === 'FINISHED') {
         return (
-            <NeonContainer showBackButton onBackPress={() => navigation.goBack()}>
+            <NeonContainer showBackButton onBackPress={() => navigation.goBack()} scrollable>
                 <View style={styles.center}>
-                    <NeonText size={48} weight="bold" glow color={COLORS.neonCyan} variant="display">GAME OVER</NeonText>
+                    <NeonText size={42} weight="bold" glow color={COLORS.neonCyan} variant="display">GAME OVER</NeonText>
                     <View style={styles.scoreBoard}>
                         {Object.entries(scores)
                             .sort((a, b) => b[1] - a[1])
                             .map(([name, score], i) => (
                                 <View key={name} style={styles.scoreRow}>
-                                    <NeonText size={24} color={i === 0 ? COLORS.limeGlow : COLORS.white}>
-                                        {i === 0 ? '🏆 ' : ''}{name}
+                                    <NeonText size={20} color={i === 0 ? COLORS.limeGlow : COLORS.white}>
+                                        {i === 0 ? '🏆 ' : `${i + 1}. `}{name}
                                     </NeonText>
-                                    <NeonText size={24} weight="bold" color={i === 0 ? COLORS.limeGlow : COLORS.white} variant="arcade">
+                                    <NeonText size={20} weight="bold" color={i === 0 ? COLORS.limeGlow : COLORS.white} variant="arcade">
                                         {score}
                                     </NeonText>
                                 </View>
@@ -201,7 +228,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                     <NeonButton 
                         title="PLAY AGAIN" 
                         onPress={() => navigation.replace('LocalTrivia', { players, isSinglePlayer })} 
-                        style={{ marginTop: 40, width: 200 }}
+                        style={{ marginTop: 32, width: 200 }}
                     />
                 </View>
             </NeonContainer>
@@ -211,7 +238,8 @@ const LocalTriviaScreen = ({ route, navigation }) => {
     return (
         <NeonContainer showBackButton onBackPress={() => navigation.goBack()}>
             <ScrollView 
-                contentContainerStyle={[styles.scrollContent, { paddingTop: isSinglePlayer ? 20 : 80, paddingBottom: isSinglePlayer ? 40 : 180 }]}
+                style={{ flex: 1, minHeight: 0 }}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: 12, paddingBottom: 16 }]}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.gameArea}>
@@ -232,7 +260,7 @@ const LocalTriviaScreen = ({ route, navigation }) => {
 
                     <Animated.View style={[styles.questionCard, { opacity: fadeAnim }]}>
                         <NeonText size={14} color={COLORS.textMuted} style={{ marginBottom: 10 }}>{currentQuestion.category}</NeonText>
-                        <NeonText size={24} weight="bold" style={styles.questionText}>
+                        <NeonText size={22} weight="bold" style={styles.questionText}>
                             {currentQuestion.question}
                         </NeonText>
                     </Animated.View>
@@ -261,33 +289,20 @@ const LocalTriviaScreen = ({ route, navigation }) => {
                     </View>
 
                     {gameState === 'BUZZED' && (
-                        <View style={styles.buzzedOverlay}>
-                            <NeonText size={24} weight="bold" color={COLORS.neonCyan}>
-                                {buzzedPlayer}'s TURN!
+                        <View style={styles.buzzedBanner}>
+                            <NeonText size={18} weight="bold" color={COLORS.neonCyan}>
+                                {buzzedPlayer}&apos;s TURN! Choose your answer above
                             </NeonText>
-                            <NeonText size={14} color="#AAA">Choose your answer now</NeonText>
                         </View>
                     )}
 
                 </View>
             </ScrollView>
 
-            {/* Buzzer Areas are ON TOP but do not block middle touches */}
+            {/* Non-overlapping Buzzer Dock (supports 2-8 players cleanly) */}
             {!isSinglePlayer && (
-                <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-                    {players.length === 2 ? (
-                        <>
-                            {renderBuzzerArea(players[0].name, COLORS.neonCyan, 'bottomLeft')}
-                            {renderBuzzerArea(players[1].name, COLORS.hotPink, 'bottomRight')}
-                        </>
-                    ) : (
-                        <>
-                            {players[0] && renderBuzzerArea(players[0].name, COLORS.neonCyan, 'topLeft')}
-                            {players[1] && renderBuzzerArea(players[1].name, COLORS.hotPink, 'topRight')}
-                            {players[2] && renderBuzzerArea(players[2].name, COLORS.limeGlow, 'bottomLeft')}
-                            {players[3] && renderBuzzerArea(players[3].name, COLORS.electricPurple, 'bottomRight')}
-                        </>
-                    )}
+                <View style={styles.buzzerDock}>
+                    {players.map((p, idx) => renderBuzzerButton(p, idx))}
                 </View>
             )}
         </NeonContainer>
@@ -312,31 +327,39 @@ const getStyles = (COLORS) => StyleSheet.create({
     questionText: { textAlign: 'center' },
     optionsContainer: { gap: 12 },
     optionButton: { width: '100%' },
+    buzzerDock: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: 8,
+        paddingTop: 10,
+        paddingBottom: 6,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.08)',
+    },
     buzzer: {
-        position: 'absolute',
-        width: SCREEN_WIDTH / 2,
-        height: 160,
+        width: '48%',
+        minHeight: 62,
+        borderRadius: 14,
         borderWidth: 2,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
     },
-    topLeft: { top: 0, left: 0, borderBottomRightRadius: 40 },
-    topRight: { top: 0, right: 0, borderBottomLeftRadius: 40 },
-    bottomLeft: { bottom: 0, left: 0, borderTopRightRadius: 40 },
-    bottomRight: { bottom: 0, right: 0, borderTopLeftRadius: 40 },
-    buzzedOverlay: {
-        position: 'absolute',
-        top: '40%',
-        left: 20,
-        right: 20,
-        backgroundColor: 'rgba(0,0,0,0.95)',
-        padding: 25,
-        borderRadius: 20,
-        borderWidth: 2,
+    buzzerCompact: {
+        minHeight: 50,
+        paddingVertical: 5,
+    },
+    buzzedBanner: {
+        marginTop: 14,
+        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 14,
+        borderWidth: 1.5,
         borderColor: COLORS.neonCyan,
         alignItems: 'center',
-        zIndex: 100,
     },
     scoreBoard: { width: '100%', marginTop: 40, gap: 15 },
     scoreRow: {

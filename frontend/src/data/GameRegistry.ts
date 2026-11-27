@@ -45,7 +45,7 @@ export const OnlineGamesRegistry: GameModule[] = [
 ];
 
 export const LocalGamesRegistry: GameModule[] = [
-    { id: 'trivia', name: 'Quick Trivia', description: 'Test your knowledge offline!', icon: '🧠', color: '#00ffff', category: 'trivia', minPlayers: 1, maxPlayers: 4, vibes: ['brain'], routeComponent: 'LocalTrivia' },
+    { id: 'trivia', name: 'Quick Trivia', description: 'Test your knowledge offline!', icon: '🧠', color: '#00ffff', category: 'trivia', minPlayers: 1, maxPlayers: 8, vibes: ['brain'], routeComponent: 'LocalTrivia' },
     { id: 'truth-or-dare', name: 'Truth or Dare', description: 'Classic party game - choose truth or dare!', icon: '🎭', color: '#FF007F', category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'], routeComponent: 'TruthOrDareCategorySelection' },
     { id: 'real-talk', name: 'Real Talk', description: 'Deep questions and icebreakers', icon: '💬', color: '#00ffff', category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['chill'], routeComponent: 'RealTalkCategory' },
     { id: 'never-have-i-ever', name: 'Never Have I Ever', description: 'Put fingers down if you have done it', icon: '🤫', color: '#39FF14', category: 'party', minPlayers: 3, maxPlayers: 10, vibes: ['hype'], routeComponent: 'NeverHaveIEverCategory' },
@@ -53,7 +53,7 @@ export const LocalGamesRegistry: GameModule[] = [
     { id: 'scrabble', name: 'Scrabble', description: 'Create words from letter tiles!', imageId: 'scrabble', color: '#00ffff', category: 'competitive', minPlayers: 2, maxPlayers: 4, vibes: ['brain'], routeComponent: 'Scrabble', singlePlayerRouteComponent: 'ScrabbleDifficulty' },
     { id: 'speed-categories', name: 'Speed Categories', description: 'Name 5 things in 10 seconds!', icon: '🏃', color: '#FF007F', category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['hype'], routeComponent: 'SpeedCategories' },
     { id: 'memory-chain', name: 'Memory Chain', description: 'Remember the growing sequence!', icon: '🧠', color: '#39FF14', category: 'speed', minPlayers: 2, maxPlayers: 8, vibes: ['brain'], routeComponent: 'MemoryChain' },
-    { id: 'memory-match', name: 'Memory Match', description: 'Find matching pairs - test your memory!', icon: '🧩', color: '#B026FF', category: 'speed', minPlayers: 1, maxPlayers: 4, vibes: ['brain'], routeComponent: 'MemoryMatch' },
+    { id: 'memory-match', name: 'Memory Match', description: 'Find matching pairs - test your memory!', icon: '🧩', color: '#B026FF', category: 'speed', minPlayers: 1, maxPlayers: 8, vibes: ['brain'], routeComponent: 'MemoryMatch' },
     { id: 'charades', name: 'Charades', description: 'Act it out — no words allowed! Pass the phone.', icon: '🎭', color: '#FF007F', category: 'party', minPlayers: 2, maxPlayers: 10, vibes: ['hype'], routeComponent: 'LocalCharades' },
     { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', description: '1P vs AI or 2P Local Pass & Play', imageId: 'tic-tac-toe', color: '#B026FF', category: 'competitive', minPlayers: 1, maxPlayers: 2, vibes: ['brain'], routeComponent: 'LocalTicTacToe', singlePlayerRouteComponent: 'TicTacToeDifficulty' },
     { id: 'whot-ai', name: 'Naija Whot', description: 'Classic Nigerian card game vs AI', imageId: 'whot', color: '#B026FF', category: 'competitive', minPlayers: 1, maxPlayers: 1, vibes: ['chill'], routeComponent: 'WhotAIDifficulty', singlePlayerRouteComponent: 'WhotAIDifficulty' },

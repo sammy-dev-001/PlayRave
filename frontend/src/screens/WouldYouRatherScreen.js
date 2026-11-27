@@ -364,7 +364,7 @@ const WouldYouRatherScreen = ({ route, navigation }) => {
 
     // Voting Screen
     return (
-        <NeonContainer>
+        <NeonContainer scrollable>
             {/* Header */}
             <Animated.View style={[styles.header, { opacity: fadeIn }]}>
                 <NeonText size={12} color={COLORS.hotPink}>
@@ -485,6 +485,8 @@ const getStyles = (COLORS) => StyleSheet.create({
     },
     playerDots: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
         gap: 6,
         marginTop: 10,
     },

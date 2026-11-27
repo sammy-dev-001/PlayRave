@@ -227,7 +227,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
         const winnerScore = scores[winner?.name] || 0;
 
         return (
-            <NeonContainer showBackButton onBackPress={handleEndGame}>
+            <NeonContainer showBackButton onBackPress={handleEndGame} scrollable>
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
                     <NeonText size={28} weight="bold" glow>
@@ -278,7 +278,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
     // Show Sequence Phase
     if (phase === 'show') {
         return (
-            <NeonContainer showBackButton onBackPress={handleEndGame}>
+            <NeonContainer showBackButton onBackPress={handleEndGame} scrollable>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
                         ROUND {currentSequence.length}
@@ -339,7 +339,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
     // Input Phase
     if (phase === 'input') {
         return (
-            <NeonContainer showBackButton onBackPress={handleEndGame}>
+            <NeonContainer showBackButton onBackPress={handleEndGame} scrollable>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.limeGlow}>
                         YOUR TURN!
@@ -395,7 +395,7 @@ const MemoryChainScreen = ({ route, navigation }) => {
         const wasCorrect = !eliminated.includes(currentPlayer.name) || lastEliminated !== currentPlayer.name;
 
         return (
-            <NeonContainer showBackButton onBackPress={handleEndGame}>
+            <NeonContainer showBackButton onBackPress={handleEndGame} scrollable>
                 <View style={styles.resultContainer}>
                     {lastEliminated === currentPlayer.name ? (
                         <>

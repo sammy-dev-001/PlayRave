@@ -646,7 +646,11 @@ const LocalCharadesScreen = ({ route, navigation }) => {
         const rank = getRank(score, score + skips + 1);
 
         return (
-            <View style={styles.centeredFlex}>
+            <ScrollView
+                style={{ flex: 1, width: '100%' }}
+                contentContainerStyle={[styles.centeredFlex, { flexGrow: 1, paddingVertical: 20 }]}
+                showsVerticalScrollIndicator={false}
+            >
                 <Ionicons name="alarm-outline" size={60} color={COLORS.hotPink} style={{ marginBottom: 10 }} />
                 <NeonText size={36} weight="bold" glow color={COLORS.hotPink} style={{ marginBottom: 4 }}>
                     TIME&apos;S UP!
@@ -715,7 +719,7 @@ const LocalCharadesScreen = ({ route, navigation }) => {
                     onPress={handleNextPlayer}
                     style={{ width: '100%', marginTop: 16 }}
                 />
-            </View>
+            </ScrollView>
         );
     };
 

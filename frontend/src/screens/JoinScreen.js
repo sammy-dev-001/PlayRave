@@ -297,13 +297,14 @@ const getStyles = (COLORS) => StyleSheet.create({
     screen: {
         flex: 1,
         ...Platform.select({
-            web: { height: '100%', minHeight: '100vh' },
+            web: { height: '100%', minHeight: 0, maxHeight: '100%' },
             default: { flex: 1 },
         }),
         backgroundColor: '#05050A',
     },
     safeArea: {
         flex: 1,
+        minHeight: 0,
     },
     header: {
         flexDirection: 'row',

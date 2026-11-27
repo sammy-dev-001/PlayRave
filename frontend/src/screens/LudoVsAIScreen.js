@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: LUDO_RAVE_THEME.screenBg,
     ...Platform.select({
-      web: { height: '100%', minHeight: '100vh' },
+      web: { height: '100%', minHeight: 0, maxHeight: '100%' },
       default: {},
     }),
   },

@@ -181,7 +181,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
     if (showWinner) {
         const winner = sortedScores[0];
         return (
-            <NeonContainer>
+            <NeonContainer scrollable>
                 <RaveLights trigger={true} intensity="high" />
                 <View style={styles.winnerContainer}>
                     <NeonText size={32} weight="bold" glow style={styles.winnerTitle}>
@@ -216,7 +216,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
     // Ready Phase
     if (phase === 'ready') {
         return (
-            <NeonContainer showBackButton>
+            <NeonContainer showBackButton scrollable>
                 <View style={styles.header}>
                     <NeonText size={14} color={COLORS.hotPink}>
                         ROUND {currentCategoryIndex + 1} / {playerCategories[0]?.length || 10}
@@ -271,7 +271,7 @@ const SpeedCategoriesScreen = ({ route, navigation }) => {
 
                 {/* Scoreboard */}
                 <View style={styles.miniScoreboard}>
-                    {sortedScores.slice(0, 3).map(([name, score], index) => (
+                    {sortedScores.map(([name, score], index) => (
                         <View key={name} style={styles.miniScoreRow}>
                             <NeonText size={12} color={index === 0 ? COLORS.limeGlow : COLORS.textMuted}>
                                 {index + 1}. {name}: {score}
