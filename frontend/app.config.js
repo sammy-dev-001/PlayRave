@@ -97,7 +97,8 @@ module.exports = () => {
               "deploymentTarget": "16.4"
             }
           }
-        ]
+        ],
+        "./plugins/withAgoraAndroidFix"
       ],
       extra: {
         APP_ENV,
