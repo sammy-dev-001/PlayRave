@@ -1,0 +1,62 @@
+# Exclude VCS & dependencies (node_modules is also ignored by default;
+# .git must be listed so EAS deletes the temporary shallow clone's .git/)
+.git
+node_modules
+
+# Root workspace folders & docs not needed by mobile EAS native builds
+/audio
+/backend
+/docs
+/scripts
+/shared
+/*.pdf
+/*.md
+/icon-192.png
+/vercel.json
+/frontend/public
+
+# Build outputs & caches (replaces .gitignore rules when .easignore is present)
+dist
+web-build
+.expo
+expo-env.d.ts
+.kotlin
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+*.tsbuildinfo
+eslint.json
+eslint-report.*
+.vercel
+
+# Environment files
+.env
+.env.local
+.env.production
+.env*.local
+
+# IDE & OS
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Prebuilt native folders (EAS builds use CNG/prebuild from app.config.js)
+/android
+/ios
+/frontend/android
+/frontend/ios
